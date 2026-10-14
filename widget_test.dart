@@ -1,41 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:collection_by_valora/main.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    Supabase.initialize(
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+
+    await Supabase.initialize(
       url: 'https://example.supabase.co',
       anonKey: 'test-key',
     );
   });
 
-  testWidgets('HOME e maschere di sezione sono visibili', (tester) async {
-    await tester.pumpWidget(const CollectionByValoraApp());
+  testWidgets('HOME di accesso e ambiente TEST sono visibili',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const CollectionApp());
+    await tester.pump();
 
     expect(find.text('COLLECTION by VALORA'), findsOneWidget);
     expect(find.text('ACCEDI'), findsOneWidget);
-    expect(find.text('AMBIENTE TEST'), findsOneWidget);
+    expect(find.text('Beta tecnica · ambiente TEST'), findsOneWidget);
   });
 
-  testWidgets('Acquisti mostra procedure e stato del mapping API',
-      (tester) async {
-    await tester.pumpWidget(const CollectionByValoraApp());
+  testWidgets('La schermata di accesso contiene email e password',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const CollectionApp());
+    await tester.pump();
 
-    expect(find.text('Nuovo acquisto'), findsNothing);
+    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
     expect(find.text('ACCEDI'), findsOneWidget);
   });
 
-  testWidgets(
-    'Una voce senza API certa è esplicitamente da allineare',
-    (tester) async {
-      await tester.pumpWidget(const CollectionByValoraApp());
+  testWidgets('La schermata iniziale non apre procedure prima dell accesso',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const CollectionApp());
+    await tester.pump();
 
-      expect(find.text('ACCEDI'), findsOneWidget);
-      expect(find.text('Nuovo acquisto'), findsNothing);
-    },
-  );
+    expect(find.text('ACCEDI'), findsOneWidget);
+    expect(find.text('Nuovo acquisto'), findsNothing);
+  });
 }
