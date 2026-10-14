@@ -1,86 +1,97 @@
 name: COLLECTION by VALORA Build
 
 on:
-workflow_dispatch:
-push:
-branches:
-- main
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
-contents: read
+  contents: read
 
 jobs:
-build-android:
-runs-on: ubuntu-latest
-steps:
-- name: Checkout repository
-uses: actions/checkout@v4
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
 
-  - name: Set up Flutter
-    uses: subosito/flutter-action@v2
-    with:
-      channel: stable
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Prepare Flutter project
-    run: |
-      mkdir -p lib test
-      if [ -f main.dart ]; then cp main.dart lib/main.dart; fi
-      if [ -f widget_test.dart ]; then cp widget_test.dart test/widget_test.dart; fi
-      flutter create . --platforms=android --project-name collection_by_valora
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
 
-  - name: Install dependencies
-    run: flutter pub get
+      - name: Prepare Flutter project
+        run: |
+          mkdir -p lib test
+          if [ -f main.dart ]; then cp main.dart lib/main.dart; fi
+          if [ -f widget_test.dart ]; then cp widget_test.dart test/widget_test.dart; fi
+          flutter create . --platforms=android --project-name collection_by_valora
 
-  - name: Analyze
-    run: flutter analyze
+      - name: Install dependencies
+        run: flutter pub get
 
-  - name: Run tests
-    run: flutter test
+      - name: Analyze Flutter code
+        run: flutter analyze
 
-  - name: Build APK
-    run: flutter build apk --release
+      - name: Run Flutter tests
+        run: flutter test
 
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: collection-by-valora-android-apk
-      path: build/app/outputs/flutter-apk/app-release.apk
-      retention-days: 14
+      - name: Build release APK
+        run: flutter build apk --release
 
-build-windows:
-runs-on: windows-latest
-steps:
-- name: Checkout repository
-uses: actions/checkout@v4
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-by-valora-android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
 
-  - name: Set up Flutter
-    uses: subosito/flutter-action@v2
-    with:
-      channel: stable
+  build-windows:
+    name: Build Windows application
+    runs-on: windows-latest
 
-  - name: Prepare Flutter project
-    shell: pwsh
-    run: |
-      New-Item -ItemType Directory -Force lib, test | Out-Null
-      if (Test-Path main.dart) { Copy-Item main.dart lib/main.dart -Force }
-      if (Test-Path widget_test.dart) { Copy-Item widget_test.dart test/widget_test.dart -Force }
-      flutter create . --platforms=windows --project-name collection_by_valora
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Install dependencies
-    run: flutter pub get
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
 
-  - name: Analyze
-    run: flutter analyze
+      - name: Prepare Flutter project
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force lib, test | Out-Null
+          if (Test-Path main.dart) {
+            Copy-Item main.dart lib/main.dart -Force
+          }
+          if (Test-Path widget_test.dart) {
+            Copy-Item widget_test.dart test/widget_test.dart -Force
+          }
+          flutter create . --platforms=windows --project-name collection_by_valora
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-  - name: Run tests
-    run: flutter test
+      - name: Install dependencies
+        run: flutter pub get
 
-  - name: Build Windows
-    run: flutter build windows --release
+      - name: Analyze Flutter code
+        run: flutter analyze
 
-  - name: Upload Windows build
-    uses: actions/upload-artifact@v4
-    with:
-      name: collection-by-valora-windows
-      path: build/windows/x64/runner/Release/
-      retention-days: 14
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Build Windows release
+        run: flutter build windows --release
+
+      - name: Upload Windows application
+        uses: actions/upload-artifact@v4
+        with:
+          name: collection-by-valora-windows
+          path: build/windows/x64/runner/Release/
+          if-no-files-found: error
+          retention-days: 14
