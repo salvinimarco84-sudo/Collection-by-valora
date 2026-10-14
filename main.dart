@@ -30,7 +30,7 @@ class CollectionByValoraApp extends StatelessWidget {
       ),
       textTheme: const TextTheme(
         headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: ink, letterSpacing: -0.6),
-        titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w750, color: ink),
+        titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: ink),
         bodyMedium: TextStyle(fontSize: 14, color: ink),
       ),
     ),
