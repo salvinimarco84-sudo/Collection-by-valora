@@ -331,7 +331,7 @@ class _OperationTile extends StatelessWidget {
       decoration: BoxDecoration(color: color.withOpacity(.09), borderRadius: BorderRadius.circular(12)),
       child: Icon(operation.icon, color: color, size: 21),
     ),
-    title: Text(operation.title, style: const TextStyle(fontWeight: FontWeight.w750, color: ink, fontSize: 14)),
+    title: Text(operation.title, style: const TextStyle(fontWeight: FontWeight.w700, color: ink, fontSize: 14)),
     subtitle: Padding(padding: const EdgeInsets.only(top: 4), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(operation.description, style: const TextStyle(color: muted, fontSize: 12)), const SizedBox(height: 6), Wrap(spacing: 6, runSpacing: 4, children: [if (operation.apiCode != null) _StatusChip(label: operation.apiCode!, color: blue), _StatusChip(label: operation.mapped ? 'MAPPING CANDIDATO' : 'DA ALLINEARE', color: operation.mapped ? gold : muted), if (operation.readOnly) const _StatusChip(label: 'SOLA LETTURA', color: blue)])])),
     trailing: const Icon(Icons.chevron_right, color: muted),
     onTap: () => showDialog<void>(
