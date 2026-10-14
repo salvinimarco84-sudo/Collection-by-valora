@@ -30,12 +30,14 @@ void main() {
     await tester.tap(find.text('Acquisti').first);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Acquisti comparati'));
+    final comparati = find.text('Acquisti comparati').first;
+    await tester.ensureVisible(comparati);
+    await tester.tap(comparati);
     await tester.pumpAndSettle();
 
     expect(find.text('Acquisti comparati'), findsOneWidget);
 
-    await tester.tap(find.text('Acquisti comparati').last);
+    await tester.tap(find.byType(ListTile).last);
     await tester.pumpAndSettle();
 
     expect(
