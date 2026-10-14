@@ -1,0 +1,77 @@
+name: Install COLLECTION by VALORA flat upload
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'FLAT__*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  reconstruct:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Validate and reconstruct project
+        shell: bash
+        run: |
+          python - <<'PYCODE'
+          from pathlib import Path
+          import shutil
+          root = Path.cwd()
+          prefix = 'FLAT__'
+          expected = {
+              '.github/workflows/build.yml',
+              'README.md',
+              'docs/ARCHITETTURA.md',
+              'docs/PIANO_FINALE_RUNTIME_E_PROCEDURE.md',
+              'docs/STATO_AVANZAMENTO_2026-10-13.md',
+              'lib/main.dart',
+              'pubspec.yaml',
+              'scripts/build_all.ps1',
+              'scripts/build_android.sh',
+              'scripts/build_windows.ps1',
+              'scripts/prepare_android_manifest.py',
+              'scripts/static_contract_check.py',
+              'sql/001_app_authorized_users.sql',
+              'sql/002_runtime_exit_data_offline_queue_adapter.sql',
+              'test/runtime_contract_test.dart',
+          }
+          files = sorted(p for p in root.iterdir() if p.is_file() and p.name.startswith(prefix))
+          mapped = {p.name[len(prefix):].replace('__', '/'): p for p in files}
+          if set(mapped) != expected or len(files) != len(expected):
+              print('Missing:', sorted(expected - set(mapped)))
+              print('Unexpected:', sorted(set(mapped) - expected))
+              raise SystemExit('Upload incomplete or unexpected; no files changed.')
+          for relative, source in mapped.items():
+              target = root / relative
+              if not target.resolve().is_relative_to(root):
+                  raise SystemExit('Unsafe destination: ' + relative)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(source, target)
+              print(f'{source.name} -> {relative}')
+          for source in files:
+              source.unlink()
+          PYCODE
+
+      - name: Commit only installed project files
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- .github/workflows/build.yml README.md docs lib pubspec.yaml scripts sql test
+          git add -u -- 'FLAT__*'
+          if git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git commit -m 'Install COLLECTION by VALORA 0.3.0+15 project structure'
+          git push
