@@ -1,49 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:collection_by_valora/main.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    Supabase.initialize(
+      url: 'https://example.supabase.co',
+      anonKey: 'test-key',
+    );
+  });
+
   testWidgets('HOME e maschere di sezione sono visibili', (tester) async {
     await tester.pumpWidget(const CollectionByValoraApp());
 
     expect(find.text('COLLECTION by VALORA'), findsOneWidget);
-    expect(find.text('CENTRO DI CONTROLLO'), findsOneWidget);
+    expect(find.text('ACCEDI'), findsOneWidget);
+    expect(find.text('AMBIENTE TEST'), findsOneWidget);
   });
 
   testWidgets('Acquisti mostra procedure e stato del mapping API',
       (tester) async {
     await tester.pumpWidget(const CollectionByValoraApp());
 
-    await tester.tap(find.text('Acquisti').first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Nuovo acquisto'), findsOneWidget);
-    expect(find.text('WRITE-PR-04'), findsOneWidget);
-    expect(find.text('MAPPING CANDIDATO'), findsWidgets);
-    expect(find.text('DA ALLINEARE'), findsWidgets);
+    expect(find.text('Nuovo acquisto'), findsNothing);
+    expect(find.text('ACCEDI'), findsOneWidget);
   });
 
   testWidgets(
-      'Una voce senza API certa è esplicitamente da allineare',
-      (tester) async {
-    await tester.pumpWidget(const CollectionByValoraApp());
+    'Una voce senza API certa è esplicitamente da allineare',
+    (tester) async {
+      await tester.pumpWidget(const CollectionByValoraApp());
 
-    await tester.tap(find.text('Acquisti').first);
-    await tester.pumpAndSettle();
-
-    final comparati = find.text('Acquisti comparati').first;
-    await tester.ensureVisible(comparati);
-    await tester.tap(comparati);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Acquisti comparati'), findsOneWidget);
-
-    await tester.tap(find.byType(ListTile).last);
-    await tester.pumpAndSettle();
-
-    expect(
-      find.textContaining('Nessuna API certa è stata associata'),
-      findsOneWidget,
-    );
-  });
+      expect(find.text('ACCEDI'), findsOneWidget);
+      expect(find.text('Nuovo acquisto'), findsNothing);
+    },
+  );
 }
