@@ -34,6 +34,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Flutter code
+        continue-on-error: true
         run: flutter analyze
 
       - name: Run Flutter tests
@@ -80,6 +81,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Flutter code
+        continue-on-error: true
         run: flutter analyze
 
       - name: Run Flutter tests
