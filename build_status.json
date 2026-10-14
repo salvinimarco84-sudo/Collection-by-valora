@@ -1,0 +1,13 @@
+{
+  "build_kit_version": "v5",
+  "created": "2026-10-14",
+  "flutter_available_in_authoring_environment": false,
+  "workflow_added": true,
+  "workflow_executed": false,
+  "apk_created": false,
+  "windows_exe_created": false,
+  "supabase_writes_performed": 0,
+  "production_modified": false,
+  "runtime_connected_from_flutter": false,
+  "purpose": "Avviare CI Flutter per analisi, test e generazione di artefatti di collaudo"
+}

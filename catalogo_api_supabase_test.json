@@ -1,0 +1,438 @@
+{
+  "project_id": "eeiekkflpnkummxtvljy",
+  "source": "collection.runtime_catalogo_api",
+  "snapshot_date": "2026-10-13",
+  "nota": "Snapshot letto in sola lettura; non sostituisce una chiamata runtime live. Tutte le API sono da collaudare.",
+  "apis": [
+    {
+      "codice_api": "EXIT-DATE-OUT",
+      "categoria": "SCRITTURA",
+      "descrizione": "Ricerca e aggiornamento assistito della data di prima commercializzazione",
+      "action_runtime": "exit_prepare",
+      "codice_procedura": "CMD-DATA-OUT",
+      "sola_lettura": false,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "EXIT-DATE-PRICE-FLOW",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Ricerca e aggiornamento assistito della data di prima commercializzazione e del prezzo ufficiale di lancio",
+      "action_runtime": "exit_resolve",
+      "codice_procedura": "CMD-DATE-PRICE-OUT",
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "EXIT-PRICE-OUT",
+      "categoria": "SCRITTURA",
+      "descrizione": "Ricerca e aggiornamento assistito del prezzo ufficiale di lancio",
+      "action_runtime": "exit_prepare",
+      "codice_procedura": "CMD-PRICE-OUT",
+      "sola_lettura": false,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "LOCK-ACQUIRE",
+      "categoria": "SESSIONE",
+      "descrizione": "Acquisisce il blocco esclusivo",
+      "action_runtime": "acquire_lock",
+      "codice_procedura": null,
+      "sola_lettura": false,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "LOCK-HEARTBEAT",
+      "categoria": "SESSIONE",
+      "descrizione": "Rinnova il blocco",
+      "action_runtime": "heartbeat",
+      "codice_procedura": null,
+      "sola_lettura": false,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "LOCK-RELEASE",
+      "categoria": "SESSIONE",
+      "descrizione": "Rilascia il blocco dopo sincronizzazione",
+      "action_runtime": "release_lock",
+      "codice_procedura": null,
+      "sola_lettura": false,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "QUEUE-MARK",
+      "categoria": "SINCRONIZZAZIONE",
+      "descrizione": "Marca la coda locale in recupero",
+      "action_runtime": "queue_pending",
+      "codice_procedura": null,
+      "sola_lettura": false,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "QUEUE-SYNC-ONE",
+      "categoria": "SINCRONIZZAZIONE",
+      "descrizione": "Sincronizza una operazione della coda",
+      "action_runtime": "sync_operation",
+      "codice_procedura": null,
+      "sola_lettura": false,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-COMMAND-CONTEXT",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Riconosce comando contestuale",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-COMMAND-RESOLVE",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Riconosce comando ufficiale",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-COMMAND-TEXT",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Riconosce comando testuale",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-EXIT-COMMAND",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Riconosce comandi di ricerca data/prezzo di uscita senza scrittura",
+      "action_runtime": "exit_resolve",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-EXPLORE-RECORDS",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Esplora record autorizzati",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-FRANCHISE-SOURCES",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Fonti specialistiche franchise",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-OBJECT-MASTER",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Scheda completa oggetto",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-OBJECT-SALE-SHEET",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Scheda vendita oggetto",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-OBJECTS-AVAILABLE",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Catalogo oggetti disponibili",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-OBJECTS-EDITABLE",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Elenco paginato oggetti modificabili",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-OBJECTS-SELLABLE",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Elenco oggetti vendibili",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-SEARCH-SOURCES",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Prepara fonti ricerca",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-TABLE-STRUCTURE",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Struttura tabelle",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-TABLE-VALUES",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Valori distinti di un campo consentito",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "READ-VALUATION-PREPARE",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Prepara richiesta VALORA senza ricerca esterna",
+      "action_runtime": "consultation",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "REPORT-ACTIVE-LISTINGS",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Inserzioni attive e valore nominale",
+      "action_runtime": "report",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "REPORT-CASH",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Movimenti di cassa e riepilogo per tipo",
+      "action_runtime": "report",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "REPORT-HISTORY",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Storico eventi filtrabile per periodo",
+      "action_runtime": "report",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "REPORT-INVENTORY",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Inventario e valore storico registrato",
+      "action_runtime": "report",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "REPORT-PURCHASES",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Report acquisti filtrabile per periodo",
+      "action_runtime": "report",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "REPORT-SALES",
+      "categoria": "CONSULTAZIONE",
+      "descrizione": "Report vendite filtrabile per periodo",
+      "action_runtime": "report",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "RUNTIME-CATALOG",
+      "categoria": "SISTEMA",
+      "descrizione": "Restituisce il catalogo dei contratti runtime disponibili",
+      "action_runtime": "catalog",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "RUNTIME-HEALTH",
+      "categoria": "SISTEMA",
+      "descrizione": "Stato del runtime TEST",
+      "action_runtime": "health",
+      "codice_procedura": null,
+      "sola_lettura": true,
+      "supporta_batch": false,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-COLLECTION-MERGE",
+      "categoria": "SCRITTURA",
+      "descrizione": "Accorpamento atomico di più oggetti in un nuovo oggetto",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR04-ACCORPA-COLLEZ",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PLATFORM-MANAGEMENT",
+      "categoria": "SCRITTURA",
+      "descrizione": "Inserimento e modifica piattaforme con conferma batch",
+      "action_runtime": "GESTIONE PIATTAFORME",
+      "codice_procedura": "GESTIONE PIATTAFORME",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-01",
+      "categoria": "SCRITTURA",
+      "descrizione": "Nuovo oggetto",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-01",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-02",
+      "categoria": "SCRITTURA",
+      "descrizione": "Modifica oggetto",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-02",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-03",
+      "categoria": "SCRITTURA",
+      "descrizione": "Chiudi oggetto",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-03",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-04",
+      "categoria": "SCRITTURA",
+      "descrizione": "Nuovo acquisto",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-04",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-05",
+      "categoria": "SCRITTURA",
+      "descrizione": "Modifica acquisto",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-05",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-06",
+      "categoria": "SCRITTURA",
+      "descrizione": "Nuova vendita",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-06",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-07",
+      "categoria": "SCRITTURA",
+      "descrizione": "Modifica vendita",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-07",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-08",
+      "categoria": "SCRITTURA",
+      "descrizione": "Chiudi vendita",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-08",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-09",
+      "categoria": "SCRITTURA",
+      "descrizione": "Annulla vendita",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-09",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    },
+    {
+      "codice_api": "WRITE-PR-10",
+      "categoria": "SCRITTURA",
+      "descrizione": "Scambio",
+      "action_runtime": "procedure/preview-review-save",
+      "codice_procedura": "PR-10",
+      "sola_lettura": false,
+      "supporta_batch": true,
+      "stato_implementazione": "API_IMPLEMENTATA_DA_COLLAUDARE"
+    }
+  ]
+}

@@ -1,19 +1,15 @@
-COLLECTION by VALORA — ambiente di sviluppo iniziale
-Questo archivio è un kit di avvio dell'ambiente, non una build dell'applicazione completa. Include il manuale operativo v34 recuperato dalla libreria, una struttura Flutter iniziale e una pipeline GitHub Actions per verificare il progetto.
-Regole di sicurezza
-L'ambiente deve puntare esclusivamente a Supabase TEST.
-Non inserire mai chiavi service_role nel client Flutter.
-Non includere token, password o segreti nel repository.
-Non usare dati reali durante i test automatici.
-La produzione resta fuori dal perimetro.
-Requisiti locali
-Flutter stable
-Git
-Account GitHub con un repository privato
-Progetto Supabase TEST autorizzato
-Configurazione
-Copia config.example.json in config.json solo in locale e inserisci l'URL e la chiave pubblicabile del progetto TEST. Non committare config.json. Il codice di esempio non esegue scritture sul database: serve a verificare che l'app si avvii e a preparare la pipeline.
-GitHub Actions
-Il workflow flutter-ci.yml esegue flutter pub get, flutter analyze, flutter test e crea un APK debug. La build Windows viene tentata su runner Windows. I risultati effettivi sono validi solo dopo l'esecuzione del workflow su GitHub.
-Limite noto
-Questo kit non è il sorgente completo dell'app già sviluppata e non certifica le procedure SQL né l'integrazione runtime. Il sorgente originale non è stato trovato tra i repository GitHub accessibili. Prima del collaudo end-to-end, integrare qui il codice effettivo e le chiamate alle procedure autorizzate.
+# COLLECTION by VALORA · Build Kit v6
+
+Pacchetto pronto per essere caricato come contenuto della root di un repository GitHub.
+
+## Build automatica
+Dopo il commit, GitHub Actions avvia il workflow `.github/workflows/collection-by-valora-build.yml`. Se la build riesce, gli artefatti Android APK e Windows saranno disponibili nella scheda Actions della repository.
+
+## Limiti attuali
+- Questo pacchetto contiene il sorgente Flutter e la pipeline di compilazione, non APK/EXE già compilati.
+- Il workflow non è ancora stato eseguito: la compilazione e i test Flutter devono essere verificati da GitHub Actions.
+- L'interfaccia non è ancora collegata al runtime Supabase; non usare dati reali e non considerare collaudate le procedure DB.
+- Non eseguire scritture sul database di produzione.
+
+## Caricamento
+Caricare il CONTENUTO di questo ZIP nella root del repository GitHub, non il file ZIP come singolo file. Devono comparire subito `pubspec.yaml`, `lib/`, `test/`, `docs/` e `.github/` nella pagina principale della repository.

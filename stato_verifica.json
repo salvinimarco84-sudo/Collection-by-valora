@@ -1,0 +1,13 @@
+{
+  "project": "COLLECTION by VALORA",
+  "environment_reviewed": "Supabase TEST eeiekkflpnkummxtvljy",
+  "edge_function": "collection-procedure-runtime-test",
+  "edge_function_version_reviewed": 16,
+  "api_catalog_count": 43,
+  "authorized_beta_users": 0,
+  "database_writes_performed": 0,
+  "production_modified": false,
+  "flutter_build_executed": false,
+  "authenticated_end_to_end_test_executed": false,
+  "status": "AUDIT COMPLETATO; INTEGRAZIONE E COLLAUDO BLOCCATI FINO AD AUTORIZZAZIONE ACCOUNT TEST E VERIFICA FIRME RPC"
+}
