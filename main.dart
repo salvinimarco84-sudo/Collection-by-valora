@@ -229,7 +229,7 @@ class _SearchTile extends StatelessWidget {
           Icon(Icons.search, color: blue, size: 27),
           SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Cerca in COLLECTION', style: TextStyle(fontWeight: FontWeight.w750, color: ink)),
+            Text('Cerca in COLLECTION', style: TextStyle(fontWeight: FontWeight.w700, color: ink)),
             Text('Oggetti, operazioni e procedure', style: TextStyle(color: muted, fontSize: 12)),
           ])),
           Icon(Icons.arrow_forward_ios, size: 15, color: muted),
