@@ -52,10 +52,7 @@ class CollectionValoraApp extends StatelessWidget {
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(),
           focusedBorder: OutlineInputBorder(
-            borderSide: BorderSide(
-              color: goldColor,
-              width: 1.5,
-            ),
+            borderSide: BorderSide(color: goldColor, width: 1.5),
           ),
         ),
       ),
@@ -72,13 +69,9 @@ class AuthenticationGate extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        final session =
-            Supabase.instance.client.auth.currentSession;
-
-        if (session != null) {
+        if (Supabase.instance.client.auth.currentSession != null) {
           return const HomeDashboard();
         }
-
         return const LoginPage();
       },
     );
@@ -95,7 +88,6 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
-
   bool loading = false;
   bool obscurePassword = true;
   String message = '';
@@ -112,9 +104,7 @@ class _LoginPageState extends State<LoginPage> {
     final password = passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      setState(() {
-        message = 'Inserisci email e password.';
-      });
+      setState(() => message = 'Inserisci email e password.');
       return;
     }
 
@@ -129,23 +119,11 @@ class _LoginPageState extends State<LoginPage> {
         password: password,
       );
     } on AuthException catch (e) {
-      if (mounted) {
-        setState(() {
-          message = e.message;
-        });
-      }
+      if (mounted) setState(() => message = e.message);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          message = 'Errore di accesso: $e';
-        });
-      }
+      if (mounted) setState(() => message = 'Errore di accesso: $e');
     } finally {
-      if (mounted) {
-        setState(() {
-          loading = false;
-        });
-      }
+      if (mounted) setState(() => loading = false);
     }
   }
 
@@ -167,10 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: cardColor,
-                      border: Border.all(
-                        color: goldColor,
-                        width: 2,
-                      ),
+                      border: Border.all(color: goldColor, width: 2),
                     ),
                     child: const Icon(
                       Icons.inventory_2_outlined,
@@ -216,11 +191,9 @@ class _LoginPageState extends State<LoginPage> {
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            obscurePassword = !obscurePassword;
-                          });
-                        },
+                        onPressed: () => setState(
+                          () => obscurePassword = !obscurePassword,
+                        ),
                         icon: Icon(
                           obscurePassword
                               ? Icons.visibility_outlined
@@ -236,7 +209,11 @@ class _LoginPageState extends State<LoginPage> {
                     child: FilledButton(
                       onPressed: loading ? null : signIn,
                       child: loading
-                          ? const CircularProgressIndicator()
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Text(
                               'ACCEDI',
                               style: TextStyle(
@@ -251,9 +228,7 @@ class _LoginPageState extends State<LoginPage> {
                     Text(
                       message,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                      ),
+                      style: const TextStyle(color: Colors.redAccent),
                     ),
                   ],
                   const SizedBox(height: 24),
@@ -352,12 +327,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Future<void> logout() async {
     await Supabase.instance.client.auth.signOut();
-
-    if (mounted) {
-      setState(() {
-        selectedSection = null;
-      });
-    }
+    if (mounted) setState(() => selectedSection = null);
   }
 
   @override
@@ -368,19 +338,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ? null
             : IconButton(
                 tooltip: 'Torna alla dashboard',
-                onPressed: () {
-                  setState(() {
-                    selectedSection = null;
-                  });
-                },
+                onPressed: () => setState(() => selectedSection = null),
                 icon: const Icon(Icons.arrow_back),
               ),
         title: const Text(
           'COLLECTION by VALORA',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
         ),
         actions: [
           IconButton(
@@ -433,8 +396,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               child: GridView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: dashboardSections.length,
-                gridDelegate:
-                    SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
@@ -442,24 +404,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 ),
                 itemBuilder: (context, index) {
                   final section = dashboardSections[index];
-
                   return Material(
                     color: cardColor,
                     borderRadius: BorderRadius.circular(16),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
-                      onTap: () {
-                        setState(() {
-                          selectedSection = section;
-                        });
-                      },
+                      onTap: () => setState(() => selectedSection = section),
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: section.color,
-                            width: 1.2,
-                          ),
+                          border: Border.all(color: section.color, width: 1.2),
                         ),
                         padding: const EdgeInsets.all(10),
                         child: Column(
@@ -469,11 +423,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                               width: 54,
                               height: 54,
                               decoration: BoxDecoration(
-                                color: section.color.withValues(
-                                  alpha: 0.16,
-                                ),
-                                borderRadius:
-                                    BorderRadius.circular(14),
+                                color: section.color.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: Icon(
                                 section.icon,
@@ -535,11 +486,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                section.icon,
-                color: section.color,
-                size: 64,
-              ),
+              Icon(section.icon, color: section.color, size: 64),
               const SizedBox(height: 20),
               Text(
                 section.title,
@@ -555,31 +502,24 @@ class _HomeDashboardState extends State<HomeDashboard> {
               Text(
                 section.description,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
               const SizedBox(height: 24),
               const Card(
                 child: Padding(
                   padding: EdgeInsets.all(18),
                   child: Text(
-                    'La schermata grafica è predisposta. '
-                    'Per eseguire operazioni reali, questa sezione '
-                    'deve essere collegata alle procedure runtime '
-                    'già presenti nel progetto.',
+                    'Grafica pronta. In questa fase verifichiamo '
+                    'la compilazione e la navigazione; i collegamenti '
+                    'alle procedure runtime saranno aggiunti dopo '
+                    'la prima run valida.',
                     textAlign: TextAlign.center,
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               OutlinedButton.icon(
-                onPressed: () {
-                  setState(() {
-                    selectedSection = null;
-                  });
-                },
+                onPressed: () => setState(() => selectedSection = null),
                 icon: const Icon(Icons.dashboard_outlined),
                 label: const Text('TORNA ALLA DASHBOARD'),
               ),
