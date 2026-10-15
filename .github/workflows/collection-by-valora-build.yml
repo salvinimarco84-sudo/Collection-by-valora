@@ -27,8 +27,9 @@ jobs:
       - name: Prepare Flutter project
         run: |
           mkdir -p lib test
-          if [ -f main.dart ]; then cp main.dart lib/main.dart; fi
-          if [ -f widget_test.dart ]; then cp widget_test.dart test/widget_test.dart; fi
+          cp FLAT__lib__main.dart lib/main.dart
+          cp FLAT__pubspec.yaml pubspec.yaml
+          cp widget_test.dart test/widget_test.dart
           flutter create . --platforms=android --project-name collection_by_valora
 
       - name: Verify Android Internet permission
@@ -47,7 +48,6 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Flutter code
-        continue-on-error: true
         run: flutter analyze
 
       - name: Run Flutter tests
@@ -81,12 +81,9 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force lib, test | Out-Null
-          if (Test-Path main.dart) {
-            Copy-Item main.dart lib/main.dart -Force
-          }
-          if (Test-Path widget_test.dart) {
-            Copy-Item widget_test.dart test/widget_test.dart -Force
-          }
+          Copy-Item FLAT__lib__main.dart lib/main.dart -Force
+          Copy-Item FLAT__pubspec.yaml pubspec.yaml -Force
+          Copy-Item widget_test.dart test/widget_test.dart -Force
           flutter create . --platforms=windows --project-name collection_by_valora
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -94,7 +91,6 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Flutter code
-        continue-on-error: true
         run: flutter analyze
 
       - name: Run Flutter tests
