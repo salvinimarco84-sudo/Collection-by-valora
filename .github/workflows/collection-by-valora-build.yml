@@ -1,3 +1,4 @@
+
 name: COLLECTION by VALORA Build
 
 on:
@@ -29,6 +30,18 @@ jobs:
           if [ -f main.dart ]; then cp main.dart lib/main.dart; fi
           if [ -f widget_test.dart ]; then cp widget_test.dart test/widget_test.dart; fi
           flutter create . --platforms=android --project-name collection_by_valora
+
+      - name: Verify Android Internet permission
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ ! -f "$MANIFEST" ]; then
+            echo "ERROR: AndroidManifest.xml not found"
+            exit 1
+          fi
+          if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
+            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
+          fi
+          grep -n 'android.permission.INTERNET' "$MANIFEST"
 
       - name: Install dependencies
         run: flutter pub get
