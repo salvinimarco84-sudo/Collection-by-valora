@@ -264,6 +264,172 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
 };
 
+
+class NewObjectDraft {
+  const NewObjectDraft({
+    required this.description,
+    required this.purchasePrice,
+    required this.initialPrice,
+    required this.notes,
+  });
+  final String description;
+  final String purchasePrice;
+  final String initialPrice;
+  final String notes;
+}
+
+class NewObjectProcedurePage extends StatefulWidget {
+  const NewObjectProcedurePage({super.key});
+  @override
+  State<NewObjectProcedurePage> createState() => _NewObjectProcedurePageState();
+}
+
+class _NewObjectProcedurePageState extends State<NewObjectProcedurePage> {
+  final _description = TextEditingController();
+  final _purchasePrice = TextEditingController();
+  final _initialPrice = TextEditingController();
+  final _notes = TextEditingController();
+  final List<NewObjectDraft> _drafts = [];
+  bool _reviewing = false;
+
+  @override
+  void dispose() {
+    _description.dispose();
+    _purchasePrice.dispose();
+    _initialPrice.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  void _addDraft() {
+    if (_description.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inserisci la descrizione dell’oggetto.')),
+      );
+      return;
+    }
+    setState(() {
+      _drafts.add(NewObjectDraft(
+        description: _description.text.trim(),
+        purchasePrice: _purchasePrice.text.trim(),
+        initialPrice: _initialPrice.text.trim(),
+        notes: _notes.text.trim(),
+      ));
+      _description.clear();
+      _purchasePrice.clear();
+      _initialPrice.clear();
+      _notes.clear();
+      _reviewing = false;
+    });
+  }
+
+  Widget _field(TextEditingController controller, String label,
+      {bool numeric = false, int lines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        maxLines: lines,
+        keyboardType: numeric
+            ? const TextInputType.numberWithOptions(decimal: true)
+            : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('PR-01 · NUOVO OGGETTO')),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(14),
+                child: Text(
+                  'Inserisci uno o più oggetti. I dati restano temporanei in questa '
+                  'schermata e non vengono salvati nel database.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('OGGETTO ${_drafts.length + 1}',
+                style: const TextStyle(
+                    color: goldColor, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            _field(_description, 'Descrizione *', lines: 2),
+            _field(_purchasePrice, 'Prezzo di acquisto (€)', numeric: true),
+            _field(_initialPrice, 'Prezzo iniziale (€)', numeric: true),
+            _field(_notes, 'Note', lines: 2),
+            FilledButton.icon(
+              onPressed: _addDraft,
+              icon: const Icon(Icons.add),
+              label: const Text('AGGIUNGI OGGETTO AL RIEPILOGO'),
+            ),
+            if (_drafts.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Text('RIEPILOGO · ${_drafts.length} OGGETTO/I',
+                  style: const TextStyle(
+                      color: goldColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ...List.generate(_drafts.length, (index) {
+                final draft = _drafts[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: CircleAvatar(child: Text('${index + 1}')),
+                    title: Text(draft.description),
+                    subtitle: Text(
+                      'Acquisto: ${draft.purchasePrice.isEmpty ? 'non indicato' : '${draft.purchasePrice} €'}'
+                      '\nPrezzo iniziale: ${draft.initialPrice.isEmpty ? 'non indicato' : '${draft.initialPrice} €'}'
+                      '${draft.notes.isEmpty ? '' : '\nNote: ${draft.notes}'}',
+                    ),
+                    isThreeLine: true,
+                    trailing: IconButton(
+                      tooltip: 'Elimina dal riepilogo',
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => setState(() {
+                        _drafts.removeAt(index);
+                        _reviewing = false;
+                      }),
+                    ),
+                  ),
+                );
+              }),
+              OutlinedButton.icon(
+                onPressed: () => setState(() => _reviewing = true),
+                icon: const Icon(Icons.fact_check_outlined),
+                label: const Text('TERMINA INSERIMENTO E RIVEDI'),
+              ),
+            ],
+            if (_reviewing) ...[
+              const SizedBox(height: 8),
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(14),
+                  child: Text(
+                    'RIEPILOGO PRONTO PER LA VERIFICA. Il contratto input di '
+                    'WRITE-PR-01 deve essere verificato prima di abilitare il '
+                    'salvataggio runtime. Nessun dato è stato scritto.',
+                    style: TextStyle(color: Colors.orangeAccent),
+                  ),
+                ),
+              ),
+              const FilledButton(
+                onPressed: null,
+                child: Text('SALVATAGGIO DISABILITATO FINO AL COLLAUDO API'),
+              ),
+            ],
+          ],
+        ),
+      );
+}
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
@@ -377,7 +543,19 @@ class _HomeDashboardState extends State<HomeDashboard> {
           isThreeLine: true,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
             color: procedure.enabled ? section.color : Colors.white24),
-          onTap: procedure.enabled ? () => showProcedureInfo(procedure) : null,
+          onTap: procedure.enabled
+              ? () {
+                  if (procedure.apiCode == 'WRITE-PR-01') {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NewObjectProcedurePage(),
+                      ),
+                    );
+                  } else {
+                    showProcedureInfo(procedure);
+                  }
+                }
+              : null,
         ),
       )),
       const SizedBox(height: 12),
