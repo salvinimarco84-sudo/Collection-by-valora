@@ -24,24 +24,44 @@ jobs:
           channel: stable
 
       - name: Prepare Flutter project
+        shell: bash
         run: |
+          set -e
+
           mkdir -p lib test
+
           cp FLAT__lib__main.dart lib/main.dart
           cp FLAT__pubspec.yaml pubspec.yaml
-          flutter create . --platforms=android --project-name collection_by_valora
           cp FLAT__test__runtime_contract_test.dart test/runtime_contract_test.dart
+
+          flutter create . --platforms=android --project-name collection_by_valora
+
+          cp FLAT__lib__main.dart lib/main.dart
+          cp FLAT__pubspec.yaml pubspec.yaml
+          cp FLAT__test__runtime_contract_test.dart test/runtime_contract_test.dart
+
           rm -f test/widget_test.dart
+          rm -f widget_test.dart
+          rm -f main.dart
+          rm -f FLAT__lib__main.dart
+          rm -f FLAT__test__runtime_contract_test.dart
 
       - name: Verify Android Internet permission
+        shell: bash
         run: |
+          set -e
+
           MANIFEST="android/app/src/main/AndroidManifest.xml"
+
           if [ ! -f "$MANIFEST" ]; then
             echo "ERROR: AndroidManifest.xml not found"
             exit 1
           fi
+
           if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
             sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
           fi
+
           grep -n 'android.permission.INTERNET' "$MANIFEST"
 
       - name: Install dependencies
@@ -80,15 +100,29 @@ jobs:
       - name: Prepare Flutter project
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+
           New-Item -ItemType Directory -Force lib, test | Out-Null
+
           Copy-Item FLAT__lib__main.dart lib/main.dart -Force
           Copy-Item FLAT__pubspec.yaml pubspec.yaml -Force
-          flutter create . --platforms=windows --project-name collection_by_valora
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item FLAT__test__runtime_contract_test.dart test/runtime_contract_test.dart -Force
-          if (Test-Path test/widget_test.dart) {
-            Remove-Item test/widget_test.dart -Force
+
+          flutter create . --platforms=windows --project-name collection_by_valora
+
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
           }
+
+          Copy-Item FLAT__lib__main.dart lib/main.dart -Force
+          Copy-Item FLAT__pubspec.yaml pubspec.yaml -Force
+          Copy-Item FLAT__test__runtime_contract_test.dart test/runtime_contract_test.dart -Force
+
+          Remove-Item test/widget_test.dart -Force -ErrorAction SilentlyContinue
+          Remove-Item widget_test.dart -Force -ErrorAction SilentlyContinue
+          Remove-Item main.dart -Force -ErrorAction SilentlyContinue
+          Remove-Item FLAT__lib__main.dart -Force -ErrorAction SilentlyContinue
+          Remove-Item FLAT__test__runtime_contract_test.dart -Force -ErrorAction SilentlyContinue
 
       - name: Install dependencies
         run: flutter pub get
