@@ -1,7 +1,7 @@
 name: collection_by_valora
 description: App beta multipiattaforma COLLECTION by VALORA
 publish_to: none
-version: 0.3.0+15
+version: 0.3.1+16
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -25,3 +25,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/valora_logo.png
