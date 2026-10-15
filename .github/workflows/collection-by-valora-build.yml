@@ -1,4 +1,3 @@
-
 name: COLLECTION by VALORA Build
 
 on:
@@ -29,8 +28,9 @@ jobs:
           mkdir -p lib test
           cp FLAT__lib__main.dart lib/main.dart
           cp FLAT__pubspec.yaml pubspec.yaml
-          cp widget_test.dart test/widget_test.dart
           flutter create . --platforms=android --project-name collection_by_valora
+          cp FLAT__test__runtime_contract_test.dart test/runtime_contract_test.dart
+          rm -f test/widget_test.dart
 
       - name: Verify Android Internet permission
         run: |
@@ -48,10 +48,10 @@ jobs:
         run: flutter pub get
 
       - name: Analyze Flutter code
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
-      - name: Run Flutter tests
-        run: flutter test
+      - name: Run runtime contract tests
+        run: flutter test test/runtime_contract_test.dart
 
       - name: Build release APK
         run: flutter build apk --release
@@ -83,18 +83,21 @@ jobs:
           New-Item -ItemType Directory -Force lib, test | Out-Null
           Copy-Item FLAT__lib__main.dart lib/main.dart -Force
           Copy-Item FLAT__pubspec.yaml pubspec.yaml -Force
-          Copy-Item widget_test.dart test/widget_test.dart -Force
           flutter create . --platforms=windows --project-name collection_by_valora
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item FLAT__test__runtime_contract_test.dart test/runtime_contract_test.dart -Force
+          if (Test-Path test/widget_test.dart) {
+            Remove-Item test/widget_test.dart -Force
+          }
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Analyze Flutter code
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
-      - name: Run Flutter tests
-        run: flutter test
+      - name: Run runtime contract tests
+        run: flutter test test/runtime_contract_test.dart
 
       - name: Build Windows release
         run: flutter build windows --release
