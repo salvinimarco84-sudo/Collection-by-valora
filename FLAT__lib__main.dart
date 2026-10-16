@@ -980,7 +980,135 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   String _displayFieldValue(dynamic value) {
     if (value == null || value.toString().trim().isEmpty) return 'Non indicato';
-    return value.toString();
+    if (value is bool) return value ? 'Sì' : 'No';
+    final text = value.toString().trim();
+    if (text.toLowerCase() == 'true') return 'Sì';
+    if (text.toLowerCase() == 'false') return 'No';
+    return text;
+  }
+
+  Widget _detailFieldCard(String key, dynamic value) {
+    final label = _italianFieldLabel(key);
+    final text = _displayFieldValue(value);
+    final isUrl = text.startsWith('https://') || text.startsWith('http://');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(
+              color: goldColor, fontSize: 13, fontWeight: FontWeight.w600,
+            )),
+            const SizedBox(height: 5),
+            SelectableText(text, style: const TextStyle(fontSize: 15)),
+            if (isUrl) ...[
+              const SizedBox(height: 4),
+              const Text('Fonte esterna', style: TextStyle(color: Colors.white54, fontSize: 11)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _masterDetails(Map<String, dynamic> object) {
+    const imageKeys = {
+      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+      'immagine_principale', 'url_foto', 'foto', 'immagine',
+      'image', 'imageUrl', 'photo_url', 'main_image_url',
+    };
+    const summaryKeys = {
+      'id', 'codice_oggetto', 'descrizione_oggetto', 'descrizione', 'nome',
+      'destinazione', 'condizione', 'stato', 'stato_oggetto',
+      'valore_oggetto', 'valore', 'valore_stimato',
+    };
+    const identityKeys = {
+      'produttore', 'linea', 'famiglia', 'categoria', 'anno_uscita',
+      'codice_prodotto', 'codice', 'serie', 'licenza', 'franchise',
+    };
+    const conditionKeys = {
+      'completezza', 'quantita', 'note', 'data_inserimento',
+      'data_creazione', 'data_modifica', 'created_at', 'updated_at',
+      'fonte', 'fonte_dati_prodotto', 'url_fonte', 'fonte_dati',
+    };
+    const valueKeys = {
+      'valore_mercato', 'valore_mercato_eur', 'valore_stimato',
+      'valuta_valore', 'valuta', 'prezzo_acquisto', 'prezzo_vendita',
+      'valore_oggetto', 'valore',
+    };
+    const technicalKeys = {
+      'collegato_vendita', 'modificabile_pr02', 'motivo_esclusione',
+      'collegato_acquisto', 'collegato_inserzione', 'collegato_piattaforma',
+      'stato_verifica_dati', 'id', 'created_at', 'updated_at',
+      'record_id', 'deleted_at', 'versione_record',
+    };
+
+    final entries = object.entries.where((e) =>
+      !imageKeys.contains(e.key) && !summaryKeys.contains(e.key)
+    ).toList();
+    List<MapEntry<String, dynamic>> group(Set<String> keys) =>
+      entries.where((e) => keys.contains(e.key)).toList();
+    final identity = group(identityKeys);
+    final condition = group(conditionKeys).where((e) => !technicalKeys.contains(e.key)).toList();
+    final values = group(valueKeys);
+    final technical = entries.where((e) => technicalKeys.contains(e.key)).toList();
+    final assigned = <String>{
+      ...identity.map((e) => e.key),
+      ...condition.map((e) => e.key),
+      ...values.map((e) => e.key),
+      ...technical.map((e) => e.key),
+    };
+    final other = entries.where((e) => !assigned.contains(e.key)).toList();
+
+    Widget section(String title, IconData icon, List<MapEntry<String, dynamic>> fields) {
+      if (fields.isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(icon, color: goldColor, size: 19),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title, style: const TextStyle(
+                color: goldColor, fontSize: 16, fontWeight: FontWeight.bold,
+              ))),
+            ]),
+            const SizedBox(height: 8),
+            ...fields.map((e) => _detailFieldCard(e.key, e.value)),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        section('IDENTIFICAZIONE', Icons.qr_code_2, identity),
+        section('GESTIONE OGGETTO', Icons.inventory_2_outlined, condition),
+        section('VALORI E VALUTAZIONE', Icons.euro_outlined, values),
+        section('ALTRI DETTAGLI', Icons.info_outline, other),
+        if (technical.isNotEmpty)
+          Card(
+            margin: const EdgeInsets.only(top: 14),
+            child: Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                leading: const Icon(Icons.settings_outlined, color: goldColor),
+                title: const Text('DETTAGLI TECNICI', style: TextStyle(
+                  color: goldColor, fontWeight: FontWeight.bold, fontSize: 15,
+                )),
+                subtitle: Text('${technical.length} campi di sistema',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                children: technical.map((e) => _detailFieldCard(e.key, e.value)).toList(),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text, FocusNode? focusNode}) =>
@@ -1161,18 +1289,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           const SizedBox(height: 16),
           const Text('SCHEDA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
           _objectCard(_currentObject!),
-          ..._currentObject!.entries
-              .where((e) => !const {
-                    'url_immagine', 'immagine_url', 'foto_url', 'image_url',
-                    'immagine_principale', 'url_foto', 'foto', 'immagine',
-                    'image', 'imageUrl', 'photo_url', 'main_image_url',
-                  }.contains(e.key))
-              .map((e) => Card(
-                    child: ListTile(
-                      title: Text(_italianFieldLabel(e.key)),
-                      subtitle: Text(_displayFieldValue(e.value)),
-                    ),
-                  )),
+          if (isMaster)
+            _masterDetails(_currentObject!)
+          else
+            ..._currentObject!.entries
+                .where((e) => !const {
+                      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+                      'immagine_principale', 'url_foto', 'foto', 'immagine',
+                      'image', 'imageUrl', 'photo_url', 'main_image_url',
+                    }.contains(e.key))
+                .map((e) => _detailFieldCard(e.key, e.value)),
         ],
         if (_rows.isNotEmpty) ...[
           const SizedBox(height: 16),
