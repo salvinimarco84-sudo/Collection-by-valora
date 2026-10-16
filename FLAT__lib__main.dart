@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -483,6 +484,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _family = TextEditingController();
 
   final String _sessionId = _uuid.v4();
+  Timer? _metadataDebounce;
+  String _lastMetadataQuery = '';
+  int _metadataGeneration = 0;
   bool _loading = false;
   bool _lockHeld = false;
   bool _dataConfirmed = false;
@@ -502,7 +506,38 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   @override
   void initState() {
     super.initState();
+    if (widget.apiCode == 'PR-01') {
+      _description.addListener(_onDescriptionChanged);
+    }
     if (widget.initialObjectCode != null) _code.text = widget.initialObjectCode.toString();
+  }
+
+  void _onDescriptionChanged() {
+    if (widget.apiCode != 'PR-01') return;
+    _metadataDebounce?.cancel();
+    final query = _description.text.trim();
+    final generation = ++_metadataGeneration;
+    if (query.length < 4) {
+      if (mounted) {
+        setState(() {
+          _lastMetadataQuery = '';
+          _output = 'Inserisci la descrizione: la ricerca dei metadati partirà automaticamente.';
+        });
+      }
+      return;
+    }
+    if (query == _lastMetadataQuery) return;
+    _metadataDebounce = Timer(const Duration(milliseconds: 1100), () {
+      if (!mounted || generation != _metadataGeneration) return;
+      _run(() async {
+        if (query != _description.text.trim()) return;
+        setState(() => _output = 'RICERCA AUTOMATICA METADATI IN CORSO…');
+        await _prepareMetadata();
+        if (mounted && query == _description.text.trim()) {
+          setState(() => _lastMetadataQuery = query);
+        }
+      });
+    });
   }
 
   Future<void> _releaseOwnedLockSilently() async {
@@ -518,6 +553,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
+    _metadataDebounce?.cancel();
+    _description.removeListener(_onDescriptionChanged);
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
     _quantity.dispose(); _value.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
     super.dispose();
@@ -861,8 +898,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
           _field(_quantity, 'Quantità', type: TextInputType.number),
           _field(_notes, 'Note', lines: 2),
-          OutlinedButton.icon(onPressed: _loading ? null : () => _run(_prepareMetadata),
-            icon: const Icon(Icons.travel_explore), label: const Text('PREPARA METADATI E FONTI DI RICERCA')),
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.travel_explore, color: goldColor),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'RICERCA AUTOMATICA METADATI: inserisci la descrizione e attendi circa un secondo. I risultati e le fonti compariranno in ESITO RUNTIME. Verifica i dati prima di confermare.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
         if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
           _field(_code, 'Codice oggetto *', type: TextInputType.number),
