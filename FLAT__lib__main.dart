@@ -680,71 +680,168 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<void> _prepareMetadata() async {
     final description = _description.text.trim();
     if (description.isEmpty) throw Exception('Inserisci almeno la descrizione.');
-    final response = await _ValoraRuntimeApi.call('metadata_prepare', {
-      'session_id': _sessionId,
-      'metadata': {
-        'descrizione': description,
-        'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
-        'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
-        'codice_prodotto': _family.text.trim().isEmpty ? null : _family.text.trim(),
-      },
-    });
-    final result = response['result'];
 
-    // Only apply fields explicitly returned as candidate metadata. Search URLs,
-    // snippets, and unrelated source records are never treated as metadata.
-    Map<String, dynamic>? candidateFrom(dynamic value) {
-      if (value is! Map) return null;
-      final map = Map<String, dynamic>.from(value);
-      const producerKeys = ['produttore', 'manufacturer', 'brand'];
-      const yearKeys = ['anno_uscita', 'anno', 'release_year', 'year'];
-      const productKeys = ['codice_prodotto', 'product_code', 'codice', 'mpn'];
-      final hasMetadata = producerKeys.any(map.containsKey) ||
-          yearKeys.any(map.containsKey) || productKeys.any(map.containsKey);
-      if (hasMetadata) return map;
-      for (final key in const ['metadati_confermati', 'candidato_selezionato', 'candidato', 'metadati', 'metadata', 'selected_candidate']) {
-        final nested = candidateFrom(map[key]);
-        if (nested != null) return nested;
-      }
-      for (final key in const ['candidati', 'candidates', 'risultati']) {
-        final list = map[key];
-        if (list is List) {
-          for (final item in list) {
-            final nested = candidateFrom(item);
-            if (nested != null) return nested;
-          }
-        }
-      }
-      return null;
-    }
-
-    final candidate = candidateFrom(result);
-    String valueFor(Map<String, dynamic> map, List<String> keys) {
-      for (final key in keys) {
-        final value = map[key];
-        if (value != null && value.toString().trim().isNotEmpty) return value.toString().trim();
-      }
-      return '';
-    }
-
-    if (candidate != null) {
-      final producer = valueFor(candidate, const ['produttore', 'manufacturer', 'brand']);
-      final year = valueFor(candidate, const ['anno_uscita', 'anno', 'release_year', 'year']);
-      final productCode = valueFor(candidate, const ['codice_prodotto', 'product_code', 'codice', 'mpn']);
-      setState(() {
-        if (_producer.text.trim().isEmpty && producer.isNotEmpty) _producer.text = producer;
-        if (_line.text.trim().isEmpty && year.isNotEmpty && int.tryParse(year) != null) _line.text = year;
-        if (_family.text.trim().isEmpty && productCode.isNotEmpty) _family.text = productCode;
-      });
-    }
-
-    final prettyResult = _pretty(result ?? response);
     setState(() {
-      _metadataResult = candidate == null
-          ? '$prettyResult\n\nNessun candidato con metadati strutturati restituito dal runtime. I campi restano vuoti e facoltativi.'
-          : '$prettyResult\n\nMetadati strutturati trovati: controllali prima della conferma.';
+      _metadataResult = 'PR-12: ricerca web pubblica in corso…';
       _output = _metadataResult;
     });
+
+    final response = await Supabase.instance.client.functions.invoke(
+      'pr-12-web-search-test',
+      body: {
+        'descrizione': description,
+        'categoria': _inferMetadataCategory(description),
+      },
+    );
+    final data = response.data;
+    if (data is! Map) {
+      throw Exception('PR-12 ha restituito una risposta non valida.');
+    }
+    final result = Map<String, dynamic>.from(data);
+    if (result['ok'] != true) {
+      throw Exception((result['error'] ?? 'Ricerca web non riuscita').toString());
+    }
+    final rawResults = result['risultati'];
+    final candidates = rawResults is List
+        ? rawResults.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        : <Map<String, dynamic>>[];
+
+    if (!mounted) return;
+    if (candidates.isEmpty) {
+      setState(() {
+        _metadataResult = 'PR-12 ha eseguito la ricerca online ma non ha restituito risultati leggibili. Puoi riprovare o compilare i metadati manualmente.';
+        _output = _metadataResult;
+      });
+      return;
+    }
+
+    final selected = await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: cardColor,
+        title: const Text('PR-12 · RISULTATI RICERCA ONLINE'),
+        content: SizedBox(
+          width: 650,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 520),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Descrizione: $description\n'
+                  'Risultati trovati: ${candidates.length}. Seleziona un risultato per esaminarne la fonte. '
+                  'La selezione non salva automaticamente metadati.',
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: candidates.length,
+                    separatorBuilder: (_, __) => const Divider(color: goldColor),
+                    itemBuilder: (context, index) {
+                      final item = candidates[index];
+                      final title = (item['title'] ?? 'Risultato senza titolo').toString();
+                      final url = (item['url'] ?? '').toString();
+                      final snippet = (item['snippet'] ?? '').toString();
+                      return ListTile(
+                        leading: const Icon(Icons.language, color: goldColor),
+                        title: Text(title, style: const TextStyle(color: goldColor)),
+                        subtitle: Text(
+                          '${snippet.isEmpty ? url : snippet}\n$url',
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        isThreeLine: true,
+                        onTap: () => Navigator.of(dialogContext).pop(item),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('ANNULLA'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (selected == null) {
+      setState(() {
+        _metadataResult = 'Ricerca annullata. I dati già inseriti sono rimasti invariati.';
+        _output = _metadataResult;
+      });
+      return;
+    }
+
+    final url = (selected['url'] ?? '').toString();
+    final title = (selected['title'] ?? '').toString();
+    final snippet = (selected['snippet'] ?? '').toString();
+    setState(() {
+      _metadataResult = 'Fonte selezionata: $title\n$url\n\n'
+          '${snippet.isEmpty ? '' : '$snippet\n\n'}'
+          'Verifica la pagina selezionata. Produttore, anno di uscita e codice prodotto '
+          'non vengono dedotti automaticamente dal titolo di un risultato: inserisci soltanto '
+          i valori confermati consultando la fonte.';
+      _output = _metadataResult;
+    });
+
+    final openSource = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: cardColor,
+        title: const Text('PR-12 · VERIFICA FONTE'),
+        content: SelectableText('$title\n$url\n\n$snippet'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('TORNA ALLA SCHEDA'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('MOSTRA COLLEGAMENTO'),
+          ),
+        ],
+      ),
+    );
+    if (openSource == true && mounted) {
+      // Opening a public result is explicit user action. No external values are
+      // written to the database by PR-12.
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: cardColor,
+          title: const Text('Apri la fonte nel browser'),
+          content: SelectableText(url),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('CHIUDI'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  String _inferMetadataCategory(String description) {
+    final value = description.toLowerCase();
+    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(value)) {
+      return 'LEGO';
+    }
+    if (RegExp(r'fumett|comic|manga|panini|salda|bonelli').hasMatch(value)) {
+      return 'FUMETTI';
+    }
+    if (RegExp(r'myth cloth|saint seiya|bandai|gundam|dragon ball|action figure|statua').hasMatch(value)) {
+      return 'ACTION_FIGURE';
+    }
+    return 'COLLEZIONABILE';
   }
 
   Future<void> _consult() async {
