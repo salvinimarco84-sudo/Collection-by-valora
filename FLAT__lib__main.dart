@@ -1157,12 +1157,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               : null);
           }),
         ],
-        const SizedBox(height: 16),
-        const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
-          color: cardColor, borderRadius: BorderRadius.circular(12)),
-          child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
+        if (code != 'PR-01') ...[
+          const SizedBox(height: 16),
+          const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
+            color: cardColor, borderRadius: BorderRadius.circular(12)),
+            child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
+        ],
       ]),
     );
   }
