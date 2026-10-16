@@ -8,7 +8,6 @@ const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
 const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
-const uuid = Uuid();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,32 +19,45 @@ class CollectionValoraApp extends StatelessWidget {
   const CollectionValoraApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'COLLECTION by VALORA',
-    debugShowCheckedModeBanner: false,
-    theme: ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: backgroundColor,
-      colorScheme: const ColorScheme.dark(primary: goldColor, secondary: goldColor, surface: cardColor),
-      appBarTheme: const AppBarTheme(backgroundColor: backgroundColor, foregroundColor: goldColor, centerTitle: true),
-      cardTheme: const CardThemeData(color: cardColor, elevation: 3),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
-        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: goldColor, width: 1.5)),
-      ),
-    ),
-    home: const AuthenticationGate(),
-  );
+        title: 'COLLECTION by VALORA',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: backgroundColor,
+          colorScheme: const ColorScheme.dark(
+            primary: goldColor,
+            secondary: goldColor,
+            surface: cardColor,
+            error: Color(0xFFE35D5D),
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: backgroundColor,
+            foregroundColor: goldColor,
+            centerTitle: true,
+          ),
+          cardTheme: const CardThemeData(color: cardColor, elevation: 3),
+          inputDecorationTheme: const InputDecorationTheme(
+            border: OutlineInputBorder(),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: goldColor, width: 1.5),
+            ),
+          ),
+        ),
+        home: const AuthenticationGate(),
+      );
 }
 
 class AuthenticationGate extends StatelessWidget {
   const AuthenticationGate({super.key});
   @override
   Widget build(BuildContext context) => StreamBuilder<AuthState>(
-    stream: Supabase.instance.client.auth.onAuthStateChange,
-    builder: (context, snapshot) => Supabase.instance.client.auth.currentSession != null
-      ? const HomeDashboard() : const LoginPage(),
-  );
+        stream: Supabase.instance.client.auth.onAuthStateChange,
+        builder: (context, snapshot) =>
+            Supabase.instance.client.auth.currentSession != null
+                ? const HomeDashboard()
+                : const LoginPage(),
+      );
 }
 
 class LoginPage extends StatefulWidget {
@@ -53,366 +65,849 @@ class LoginPage extends StatefulWidget {
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
+
 class _LoginPageState extends State<LoginPage> {
-  final email = TextEditingController();
-  final password = TextEditingController();
-  bool loading = false, obscure = true;
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  bool loading = false;
+  bool obscurePassword = true;
   String message = '';
+
   @override
-  void dispose() { email.dispose(); password.dispose(); super.dispose(); }
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> signIn() async {
-    if (email.text.trim().isEmpty || password.text.isEmpty) {
-      setState(() => message = 'Inserisci email e password.'); return;
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => message = 'Inserisci email e password.');
+      return;
     }
     setState(() { loading = true; message = ''; });
     try {
-      await Supabase.instance.client.auth.signInWithPassword(email: email.text.trim(), password: password.text);
-    } on AuthException catch (e) { if (mounted) setState(() => message = e.message); }
-      catch (e) { if (mounted) setState(() => message = 'Errore di accesso: $e'); }
-      finally { if (mounted) setState(() => loading = false); }
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: email, password: password,
+      );
+    } on AuthException catch (e) {
+      if (mounted) setState(() => message = e.message);
+    } catch (e) {
+      if (mounted) setState(() => message = 'Errore di accesso: $e');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(child: Center(child: SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: Column(
-        mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(width: 112, height: 112, decoration: BoxDecoration(
-            shape: BoxShape.circle, color: cardColor, border: Border.all(color: goldColor, width: 2)),
-            child: const Icon(Icons.inventory_2_outlined, color: goldColor, size: 56)),
-          const SizedBox(height: 24),
-          const Text('COLLECTION', style: TextStyle(color: goldColor, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 3)),
-          const SizedBox(height: 4),
-          const Text('by VALORA', style: TextStyle(color: Colors.white70, fontSize: 16, letterSpacing: 2)),
-          const SizedBox(height: 36),
-          TextField(controller: email, keyboardType: TextInputType.emailAddress, autocorrect: false,
-            decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined))),
-          const SizedBox(height: 16),
-          TextField(controller: password, obscureText: obscure, onSubmitted: (_) => signIn(),
-            decoration: InputDecoration(labelText: 'Password', prefixIcon: const Icon(Icons.lock_outline),
-              suffixIcon: IconButton(onPressed: () => setState(() => obscure = !obscure),
-                icon: Icon(obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined)))),
-          const SizedBox(height: 24),
-          SizedBox(width: double.infinity, height: 52, child: FilledButton(
-            onPressed: loading ? null : signIn,
-            child: loading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('ACCEDI', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)))),
-          if (message.isNotEmpty) ...[const SizedBox(height: 16), Text(message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent))],
-          const SizedBox(height: 24),
-          const Text('AMBIENTE TEST', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-        ],
-      )),
-    ))),
-  );
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 112, height: 112,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle, color: cardColor,
+                        border: Border.all(color: goldColor, width: 2),
+                      ),
+                      child: const Icon(Icons.inventory_2_outlined,
+                          color: goldColor, size: 56),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('COLLECTION', style: TextStyle(
+                      color: goldColor, fontSize: 28,
+                      fontWeight: FontWeight.bold, letterSpacing: 3,
+                    )),
+                    const SizedBox(height: 4),
+                    const Text('by VALORA', style: TextStyle(
+                      color: Colors.white70, fontSize: 16, letterSpacing: 2,
+                    )),
+                    const SizedBox(height: 36),
+                    TextField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Email', prefixIcon: Icon(Icons.email_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: passwordController,
+                      obscureText: obscurePassword,
+                      onSubmitted: (_) => signIn(),
+                      decoration: InputDecoration(
+                        labelText: 'Password', prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          onPressed: () => setState(() => obscurePassword = !obscurePassword),
+                          icon: Icon(obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity, height: 52,
+                      child: FilledButton(
+                        onPressed: loading ? null : signIn,
+                        child: loading
+                            ? const SizedBox(width: 22, height: 22,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('ACCEDI', style: TextStyle(
+                                fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      ),
+                    ),
+                    if (message.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Text(message, textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.redAccent)),
+                    ],
+                    const SizedBox(height: 24),
+                    const Text('AMBIENTE TEST', style: TextStyle(
+                      color: Colors.orangeAccent, fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    )),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class DashboardSection {
-  const DashboardSection(this.title, this.description, this.icon, this.color);
-  final String title, description;
+  const DashboardSection({required this.title, required this.description,
+    required this.icon, required this.color});
+  final String title;
+  final String description;
   final IconData icon;
   final Color color;
 }
-const sections = <DashboardSection>[
-  DashboardSection('CATALOGO','Consulta e gestisci gli oggetti',Icons.inventory_2_outlined,Color(0xFF3978C5)),
-  DashboardSection('ACQUISTI','Gestione acquisti',Icons.shopping_cart_outlined,Color(0xFF39875B)),
-  DashboardSection('VENDITE','Gestione vendite',Icons.sell_outlined,Color(0xFFC74444)),
-  DashboardSection('FLUSSI','Movimenti e saldi',Icons.account_balance_wallet_outlined,Color(0xFFD6A83F)),
-  DashboardSection('VALUTAZIONI','Valore degli oggetti',Icons.query_stats,Color(0xFF8556C7)),
-  DashboardSection('REPORT','Riepiloghi e risultati',Icons.analytics_outlined,Color(0xFFE17D35)),
-  DashboardSection('RICERCHE','Cerca dati e fonti',Icons.search,Color(0xFF568DAD)),
-  DashboardSection('CONTROLLO','Stato e verifiche',Icons.admin_panel_settings_outlined,Color(0xFF777777)),
+
+const List<DashboardSection> dashboardSections = [
+  DashboardSection(title: 'CATALOGO', description: 'Consulta gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
+  DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti', icon: Icons.shopping_cart_outlined, color: Color(0xFF39875B)),
+  DashboardSection(title: 'VENDITE', description: 'Gestione vendite', icon: Icons.sell_outlined, color: Color(0xFFC74444)),
+  DashboardSection(title: 'FLUSSI', description: 'Movimenti e saldi', icon: Icons.account_balance_wallet_outlined, color: Color(0xFFD6A83F)),
+  DashboardSection(title: 'VALUTAZIONI', description: 'Valore degli oggetti', icon: Icons.query_stats, color: Color(0xFF8556C7)),
+  DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
+  DashboardSection(title: 'RICERCHE', description: 'Cerca dati e fonti', icon: Icons.search, color: Color(0xFF568DAD)),
+  DashboardSection(title: 'CONTROLLO', description: 'Stato e verifiche', icon: Icons.admin_panel_settings_outlined, color: Color(0xFF777777)),
 ];
+
+class ProcedureEntry {
+  const ProcedureEntry({required this.title, required this.description,
+    this.apiCode, this.readOnly = true, this.enabled = true});
+  final String title;
+  final String description;
+  final String? apiCode;
+  final bool readOnly;
+  final bool enabled;
+}
+
+// Le voci senza mapping certo restano disabilitate: non chiamano API inventate.
+const Map<String, List<ProcedureEntry>> sectionProcedures = {
+  'CATALOGO': [
+    ProcedureEntry(title: 'PR-01 · Nuovo oggetto', description: 'Crea un oggetto e prepara i metadati per la ricerca.', apiCode: 'PR-01', readOnly: false),
+    ProcedureEntry(title: 'PR-02 · Modifica oggetto', description: 'Carica la scheda completa prima di modificarla.', apiCode: 'PR-02', readOnly: false),
+    ProcedureEntry(title: 'PR-03 · Chiudi oggetto', description: 'Registra la chiusura con motivazione.', apiCode: 'PR-03', readOnly: false),
+    ProcedureEntry(title: 'PR-11 · Visualizza scheda', description: 'Mostra la scheda completa in formato leggibile.', apiCode: 'OBJECT_MASTER'),
+    ProcedureEntry(title: 'CR · Elenco oggetti disponibili', description: 'Mostra gli oggetti con stato DISPONIBILE.', apiCode: 'OBJECTS_AVAILABLE'),
+    ProcedureEntry(title: 'CR · Esplora record', description: 'Mostra la cronologia del singolo oggetto selezionato.', apiCode: 'EXPLORE_RECORDS'),
+  ],
+  'ACQUISTI': [
+    ProcedureEntry(title: 'Nuovo acquisto', description: 'Registra un nuovo acquisto.', apiCode: 'WRITE-PR-04', readOnly: false),
+    ProcedureEntry(title: 'Modifica acquisto', description: 'Modifica un acquisto esistente.', apiCode: 'WRITE-PR-05', readOnly: false),
+    ProcedureEntry(title: 'Elenco acquisti', description: 'Consulta gli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
+    ProcedureEntry(title: 'Acquisti comparati', description: 'Confronta gli acquisti.', enabled: false),
+  ],
+  'VENDITE': [
+    ProcedureEntry(title: 'Nuova vendita', description: 'Registra una vendita.', apiCode: 'WRITE-PR-06', readOnly: false),
+    ProcedureEntry(title: 'Nuova inserzione', description: 'Crea una nuova inserzione.', enabled: false, readOnly: false),
+    ProcedureEntry(title: 'Modifica inserzione', description: 'Modifica un’inserzione esistente.', enabled: false, readOnly: false),
+    ProcedureEntry(title: 'Chiudi inserzione', description: 'Chiude un’inserzione attiva.', enabled: false, readOnly: false),
+    ProcedureEntry(title: 'Vendita multipla Vinted', description: 'Registra una vendita multipla.', enabled: false, readOnly: false),
+    ProcedureEntry(title: 'Inserzioni attive', description: 'Consulta le inserzioni attive.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
+    ProcedureEntry(title: 'Report vendite', description: 'Consulta il riepilogo delle vendite.', apiCode: 'REPORT-SALES'),
+  ],
+  'FLUSSI': [
+    ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta i movimenti di cassa.', apiCode: 'REPORT-CASH'),
+    ProcedureEntry(title: 'Nuovo movimento extra', description: 'Registra un movimento extra.', enabled: false, readOnly: false),
+    ProcedureEntry(title: 'Giroconto', description: 'Sposta fondi tra destinazioni.', enabled: false, readOnly: false),
+    ProcedureEntry(title: 'Mostra saldi', description: 'Consulta i saldi disponibili.', enabled: false),
+    ProcedureEntry(title: 'Report spese', description: 'Consulta il riepilogo delle spese.', enabled: false),
+  ],
+  'VALUTAZIONI': [
+    ProcedureEntry(title: 'Valuta oggetto', description: 'Prepara la consultazione per la valutazione di un oggetto.', apiCode: 'READ-VALUATION-PREPARE'),
+    ProcedureEntry(title: 'Valuta più oggetti', description: 'Prepara la valutazione di più oggetti.', apiCode: 'READ-VALUATION-PREPARE'),
+    ProcedureEntry(title: 'Opportunità di acquisto', description: 'Individua opportunità di acquisto.', enabled: false),
+    ProcedureEntry(title: 'Report opportunità', description: 'Consulta il report delle opportunità.', enabled: false),
+  ],
+  'REPORT': [
+    ProcedureEntry(title: 'Report acquisti', description: 'Riepilogo degli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
+    ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate.', apiCode: 'REPORT-SALES'),
+    ProcedureEntry(title: 'Report mattutino', description: 'Riepilogo operativo del mattino.', enabled: false),
+  ],
+  'RICERCHE': [
+    ProcedureEntry(title: 'Ricerca oggetti', description: 'Cerca gli oggetti nel catalogo.', apiCode: 'READ-EXPLORE-RECORDS'),
+    ProcedureEntry(title: 'Ricerca #DEMONOFLU', description: 'Ricerca inserzioni associate a #DEMONOFLU.', enabled: false),
+  ],
+  'CONTROLLO': [
+    ProcedureEntry(title: 'Stato runtime', description: 'Verifica lo stato del servizio runtime.', apiCode: 'RUNTIME-HEALTH'),
+    ProcedureEntry(title: 'Catalogo API', description: 'Consulta il catalogo delle API runtime.', apiCode: 'RUNTIME-CATALOG'),
+    ProcedureEntry(title: 'Pulizia file', description: 'Operazione non disponibile nell’app runtime.', enabled: false),
+  ],
+};
 
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
   State<HomeDashboard> createState() => _HomeDashboardState();
 }
+
 class _HomeDashboardState extends State<HomeDashboard> {
-  DashboardSection? selected;
-  Future<void> logout() async { await Supabase.instance.client.auth.signOut(); if (mounted) setState(() => selected = null); }
+  DashboardSection? selectedSection;
+
+  Future<void> logout() async {
+    await Supabase.instance.client.auth.signOut();
+    if (mounted) setState(() => selectedSection = null);
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      leading: selected == null ? null : IconButton(onPressed: () => setState(() => selected = null), icon: const Icon(Icons.arrow_back)),
-      title: const Text('COLLECTION by VALORA', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
-      actions: [IconButton(tooltip: 'Esci', onPressed: logout, icon: const Icon(Icons.logout))],
-    ),
-    body: SafeArea(child: selected == null ? dashboard() : sectionPage(selected!)),
-  );
-  Widget dashboard() => LayoutBuilder(builder: (context, c) {
-    final cols = c.maxWidth >= 1000 ? 4 : c.maxWidth >= 600 ? 3 : 2;
-    return Column(children: [
-      const Padding(padding: EdgeInsets.fromLTRB(16,18,16,4), child: Text('CENTRO OPERATIVO', textAlign: TextAlign.center,
-        style: TextStyle(color: goldColor,fontSize:20,fontWeight:FontWeight.bold,letterSpacing:2))),
-      const Padding(padding: EdgeInsets.symmetric(horizontal:16), child: Text('Gestione della tua collezione',style:TextStyle(color:Colors.white60))),
-      Expanded(child: GridView.builder(padding: const EdgeInsets.all(16), itemCount: sections.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: cols,crossAxisSpacing:12,mainAxisSpacing:12,childAspectRatio:.95),
-        itemBuilder: (_, i) { final s = sections[i]; return Material(color:cardColor,borderRadius:BorderRadius.circular(16),
-          child: InkWell(borderRadius:BorderRadius.circular(16),onTap:()=>setState(()=>selected=s),
-            child: Container(decoration:BoxDecoration(borderRadius:BorderRadius.circular(16),border:Border.all(color:s.color,width:1.2)),
-              padding:const EdgeInsets.all(10),child:Column(mainAxisAlignment:MainAxisAlignment.center,children:[
-                Container(width:54,height:54,decoration:BoxDecoration(color:s.color.withValues(alpha:.16),borderRadius:BorderRadius.circular(14)),
-                  child:Icon(s.icon,color:s.color,size:30)),
-                const SizedBox(height:12),Text(s.title,textAlign:TextAlign.center,style:TextStyle(color:s.color,fontWeight:FontWeight.bold,fontSize:13,letterSpacing:.5)),
-                const SizedBox(height:6),Text(s.description,textAlign:TextAlign.center,style:const TextStyle(color:Colors.white70,fontSize:11)),
-              ]))));
-        })),
-      const Padding(padding:EdgeInsets.all(10),child:Text('COLLECTION by VALORA · TEST',style:TextStyle(color:Colors.white38,fontSize:11,letterSpacing:1))),
-    ]);
-  });
-  Widget sectionPage(DashboardSection s) {
-    final entries = s.title == 'CATALOGO' ? const [
-      ('PR-01 · Nuovo oggetto','Crea uno o più oggetti',Icons.add_box_outlined),
-      ('PR-02 · Modifica oggetto','Cerca, visualizza e modifica schede',Icons.edit_outlined),
-      ('PR-03 · Chiudi oggetto','Registra smarrimento, distruzione o cessione',Icons.archive_outlined),
-      ('PR-11 · Visualizza scheda','Leggi la scheda completa, inclusi i campi vuoti',Icons.visibility_outlined),
-      ('CR · Elenco oggetti','Consulta e cerca il catalogo',Icons.list_alt),
-      ('CR · Esplora record','Ricerca paginata nel database',Icons.search),
-    ] : const [
-      ('Consultazioni disponibili','Apri gli strumenti runtime verificati',Icons.search),
-    ];
-    return ListView(padding:const EdgeInsets.all(16),children:[
-      Icon(s.icon,color:s.color,size:50),const SizedBox(height:10),
-      Text(s.title,textAlign:TextAlign.center,style:TextStyle(color:s.color,fontSize:24,fontWeight:FontWeight.bold)),
-      const SizedBox(height:18),
-      ...entries.map((e)=>Card(margin:const EdgeInsets.only(bottom:10),child:ListTile(
-        leading:CircleAvatar(backgroundColor:s.color.withValues(alpha:.16),child:Icon(e.$3,color:s.color)),
-        title:Text(e.$1),subtitle:Text(e.$2),trailing:const Icon(Icons.chevron_right),
-        onTap:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>ObjectRuntimePage(title:e.$1))),
+        appBar: AppBar(
+          leading: selectedSection == null ? null : IconButton(
+            tooltip: 'Torna alla dashboard',
+            onPressed: () => setState(() => selectedSection = null),
+            icon: const Icon(Icons.arrow_back),
+          ),
+          title: const Text('COLLECTION by VALORA', style: TextStyle(
+            fontWeight: FontWeight.bold, letterSpacing: 1,
+          )),
+          actions: [IconButton(tooltip: 'Esci', onPressed: logout, icon: const Icon(Icons.logout))],
+        ),
+        body: SafeArea(child: selectedSection == null
+            ? buildDashboard() : buildSection(selectedSection!)),
+      );
+
+  Widget buildDashboard() => LayoutBuilder(builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 1000 ? 4 : constraints.maxWidth >= 600 ? 3 : 2;
+        return Column(children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 18, 16, 4),
+            child: Text('CENTRO OPERATIVO', textAlign: TextAlign.center,
+              style: TextStyle(color: goldColor, fontSize: 20,
+                fontWeight: FontWeight.bold, letterSpacing: 2)),
+          ),
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text('Gestione della tua collezione', style: TextStyle(color: Colors.white60))),
+          Expanded(child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: dashboardSections.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns, crossAxisSpacing: 12, mainAxisSpacing: 12,
+              childAspectRatio: 0.95,
+            ),
+            itemBuilder: (context, index) {
+              final section = dashboardSections[index];
+              return Material(
+                color: cardColor, borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => setState(() => selectedSection = section),
+                  child: Container(
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: section.color, width: 1.2)),
+                    padding: const EdgeInsets.all(10),
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Container(width: 54, height: 54,
+                        decoration: BoxDecoration(color: section.color.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(14)),
+                        child: Icon(section.icon, color: section.color, size: 30)),
+                      const SizedBox(height: 12),
+                      Text(section.title, textAlign: TextAlign.center,
+                        style: TextStyle(color: section.color, fontWeight: FontWeight.bold,
+                          fontSize: 13, letterSpacing: 0.5)),
+                      const SizedBox(height: 6),
+                      Text(section.description, textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    ]),
+                  ),
+                ),
+              );
+            },
+          )),
+          const Padding(padding: EdgeInsets.all(10), child: Text('COLLECTION by VALORA · TEST',
+            style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
+        ]);
+      });
+
+  Widget buildSection(DashboardSection section) {
+    final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
+    return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
+      Icon(section.icon, color: section.color, size: 52),
+      const SizedBox(height: 12),
+      Text(section.title, textAlign: TextAlign.center, style: TextStyle(
+        color: section.color, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
+      const SizedBox(height: 6),
+      Text(section.description, textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white70)),
+      const SizedBox(height: 20),
+      ...procedures.map((procedure) => Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        child: ListTile(
+          enabled: procedure.enabled,
+          leading: CircleAvatar(
+            backgroundColor: procedure.enabled ? section.color.withValues(alpha: 0.18) : Colors.white10,
+            child: Icon(procedure.enabled
+                ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
+                : Icons.lock_outline,
+              color: procedure.enabled ? section.color : Colors.white38),
+          ),
+          title: Text(procedure.title, style: TextStyle(fontWeight: FontWeight.w600,
+            color: procedure.enabled ? Colors.white : Colors.white38)),
+          subtitle: Text(procedure.enabled
+              ? '${procedure.description}${procedure.apiCode == null ? '' : '\nAPI candidata: ${procedure.apiCode}'}'
+              : '${procedure.description}\nIn attesa di un mapping runtime verificato'),
+          isThreeLine: true,
+          trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
+            color: procedure.enabled ? section.color : Colors.white24),
+          onTap: procedure.enabled && procedure.apiCode != null
+              ? () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
+              : null,
+        ),
+      )),
+      const SizedBox(height: 12),
+      const Card(child: Padding(padding: EdgeInsets.all(14), child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, color: goldColor), SizedBox(width: 10),
+          Expanded(child: Text('Le procedure sono collocate nel sottomenu corretto. '
+            'Le API mostrate sono candidate e da collaudare. Le scritture restano protette: '
+            'nessun dato viene salvato da questa schermata.')),
+        ],
       ))),
-      const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('Ambiente TEST. Le scritture richiedono autenticazione, blocco esclusivo, conferma esplicita e verifica della rilettura.'))),
+      const SizedBox(height: 12),
+      OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
+        icon: const Icon(Icons.dashboard_outlined), label: const Text('TORNA ALLA DASHBOARD')),
     ]);
+  }
+
+  void showProcedureInfo(ProcedureEntry procedure) {
+    showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
+      title: Text(procedure.title),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(procedure.description),
+        const SizedBox(height: 14),
+        if (procedure.apiCode != null) Text('Codice API candidato: ${procedure.apiCode}'),
+        const SizedBox(height: 10),
+        Text(procedure.readOnly ? 'Modalità prevista: consultazione / sola lettura.'
+          : 'Modalità prevista: scrittura, ancora non attivata.'),
+        const SizedBox(height: 10),
+        const Text('Il collegamento runtime sarà attivato dopo la verifica del contratto input '
+          'e dei passaggi di anteprima, conferma e verifica in ambiente TEST.'),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('CHIUDI'))],
+    ));
   }
 }
 
-class RuntimeApi {
-  static final client = Supabase.instance.client;
-  static Future<Map<String,dynamic>> call(String action, Map<String,dynamic> body) async {
-    final response = await client.functions.invoke('collection-procedure-runtime-test',
-      body: {'action':action, ...body});
+
+const _uuid = Uuid();
+
+class _ValoraRuntimeApi {
+  static final _client = Supabase.instance.client;
+
+  static Future<Map<String, dynamic>> call(String action, Map<String, dynamic> body) async {
+    final response = await _client.functions.invoke(
+      'collection-procedure-runtime-test',
+      body: {'action': action, ...body},
+    );
     final data = response.data;
-    if (data is Map) {
-      final map = Map<String,dynamic>.from(data);
-      if (response.status >= 400 || map['error'] != null) throw Exception(map['error'] ?? 'HTTP ${response.status}');
-      return map;
+    if (data is! Map) throw Exception('Risposta runtime non valida (HTTP ${response.status}).');
+    final map = Map<String, dynamic>.from(data);
+    if (response.status >= 400 || map['error'] != null) {
+      throw Exception(map['error'] ?? 'HTTP ${response.status}');
     }
-    throw Exception('Risposta runtime non valida (HTTP ${response.status}).');
+    return map;
   }
-  static Future<Map<String,dynamic>> procedure(String code,String step,Map<String,dynamic> payload,
-      {required String sessionId,String? requestId}) async {
-    final response = await client.functions.invoke('collection-procedure-runtime-test',
-      body:{'procedure':code,'step':step,'payload':payload,'session_id':sessionId,'request_id':requestId});
-    final data=response.data;
-    if(data is Map){
-      final map=Map<String,dynamic>.from(data);
-      if(response.status>=400 || map['error']!=null) throw Exception(map['error']??'HTTP ${response.status}');
-      final result=map['result'];
-      if(result is Map) return Map<String,dynamic>.from(result);
-      throw Exception('La funzione runtime non ha restituito un risultato strutturato.');
+
+  static Future<Map<String, dynamic>> procedure(
+    String code, String step, Map<String, dynamic> payload, {
+    required String sessionId, String? requestId,
+  }) async {
+    final response = await _client.functions.invoke(
+      'collection-procedure-runtime-test',
+      body: {
+        'procedure': code, 'step': step, 'payload': payload,
+        'session_id': sessionId, 'request_id': requestId,
+      },
+    );
+    final data = response.data;
+    if (data is! Map) throw Exception('Risposta runtime non valida.');
+    final map = Map<String, dynamic>.from(data);
+    if (response.status >= 400 || map['error'] != null) {
+      throw Exception(map['error'] ?? 'HTTP ${response.status}');
     }
-    throw Exception('Risposta runtime non valida.');
+    if (map['result'] is Map) return Map<String, dynamic>.from(map['result']);
+    throw Exception('Il runtime non ha restituito un risultato strutturato.');
   }
 }
 
 class ObjectRuntimePage extends StatefulWidget {
-  const ObjectRuntimePage({super.key,required this.title});
+  const ObjectRuntimePage({super.key, required this.title, required this.apiCode, this.initialObjectCode});
   final String title;
+  final String apiCode;
+  final int? initialObjectCode;
+
   @override
-  State<ObjectRuntimePage> createState()=>_ObjectRuntimePageState();
+  State<ObjectRuntimePage> createState() => _ObjectRuntimePageState();
 }
+
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
-  final search=TextEditingController(), description=TextEditingController(), notes=TextEditingController(), code=TextEditingController();
-  final quantity=TextEditingController(text:'1'), value=TextEditingController();
-  final sessionId=uuid.v4();
-  String condition='USATO', completeness='COMPLETO', destination='COLLEZIONE', closeReason='SMARRITO';
-  String? procedureCode;
-  bool loading=false, lockHeld=false, dataConfirmed=false, anotherOperation=false, finalReady=false;
-  int? loadedObjectId;
-  Map<String,dynamic>? lastResult;
-  String output='Pronto. Le consultazioni sono in sola lettura; le scritture richiedono conferme distinte.';
-  List<dynamic> rows=[];
+  final _search = TextEditingController();
+  final _description = TextEditingController();
+  final _notes = TextEditingController();
+  final _code = TextEditingController();
+  final _quantity = TextEditingController(text: '1');
+  final _value = TextEditingController();
+  final _producer = TextEditingController();
+  final _line = TextEditingController();
+  final _family = TextEditingController();
+
+  final String _sessionId = _uuid.v4();
+  bool _loading = false;
+  bool _lockHeld = false;
+  bool _dataConfirmed = false;
+  bool _finalReady = false;
+  int? _loadedObjectId;
+  String _condition = 'USATO';
+  String _completeness = 'COMPLETO';
+  String _destination = 'COLLEZIONE';
+  String _closeReason = 'SMARRITO';
+  String _output = 'Pronto. Le consultazioni sono in sola lettura.';
+  Map<String, dynamic>? _lastResult;
+  List<dynamic> _rows = [];
+  Map<String, dynamic>? _currentObject;
+
+  bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03'}.contains(widget.apiCode);
+
   @override
-  void initState(){super.initState();procedureCode=_chooseCode(widget.title);}
-  String? _chooseCode(String t){if(t.contains('PR-01'))return 'PR-01';if(t.contains('PR-02'))return 'PR-02';if(t.contains('PR-03'))return 'PR-03';if(t.contains('PR-11'))return 'OBJECT_MASTER';if(t.contains('Elenco'))return 'OBJECTS_AVAILABLE';if(t.contains('Esplora'))return 'EXPLORE_RECORDS';return null;}
+  void initState() {
+    super.initState();
+    if (widget.initialObjectCode != null) _code.text = widget.initialObjectCode.toString();
+  }
+
   @override
-  void dispose(){search.dispose();description.dispose();notes.dispose();code.dispose();quantity.dispose();value.dispose();super.dispose();}
-  Future<void> _run(Future<void> Function() action) async {if(loading)return;setState(()=>loading=true);try{await action();}catch(e){if(mounted)setState(()=>output='ERRORE: $e');}finally{if(mounted)setState(()=>loading=false);}}
-  Future<void> _lock() async {
-    final r=await RuntimeApi.call('acquire_lock',{'session_id':sessionId});
-    final result=r['result'];
-    if(result is Map && result['acquisito']==true){lockHeld=true;setState(()=>output='Blocco esclusivo acquisito. Ora puoi preparare la procedura.');}
-    else throw Exception(result is Map ? result['messaggio']??'Archivio bloccato.' : 'Blocco esclusivo non acquisito.');
+  void dispose() {
+    _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
+    _quantity.dispose(); _value.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
+    super.dispose();
   }
-  Future<void> _consult(String code,Map<String,dynamic> args) async {
-    final r=await RuntimeApi.call('consultation',{'session_id':sessionId,'consultation_code':code,'arguments':args});
-    final result=r['result'];
-    if(result is Map){final val=result['risultato'];rows=val is List?val:val==null?[]:[val];}
-    else {rows=result is List?result:result==null?[]:[result];}
-    setState(()=>output=const JsonEncoder.withIndent('  ').convert(r));
-  }
-  Map<String,dynamic> _payload() {
-    final id=int.tryParse(code.text.trim());
-    if(procedureCode=='PR-01') return {'oggetti':[{'descrizione':description.text.trim(),'condizione':condition,'completezza':completeness,'destinazione':destination,'quantita':int.tryParse(quantity.text)??1,'note':notes.text.trim().isEmpty?null:notes.text.trim()}]};
-    if(procedureCode=='PR-02') {
-      if(id==null || id<=0) throw Exception('Inserisci un codice oggetto valido.');
-      if(loadedObjectId != id) throw Exception('Prima di modificare, carica la scheda completa dal database e verifica i valori correnti.');
-      final item=<String,dynamic>{'codice_oggetto':id};
-      if(description.text.trim().isNotEmpty)item['descrizione']=description.text.trim();
-      item['condizione']=condition;item['completezza']=completeness;item['destinazione']=destination;
-      if(notes.text.trim().isNotEmpty)item['note']=notes.text.trim();
-      if(value.text.trim().isNotEmpty)item['valore_oggetto']=double.tryParse(value.text.replaceAll(',','.'));
-      return {'oggetti':[item]};
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      await action();
+    } catch (e) {
+      if (mounted) setState(() => _output = 'ERRORE: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-    if(procedureCode=='PR-03'){
-      if(id==null || id<=0) throw Exception('Inserisci un codice oggetto valido.');
-      return {'oggetti':[{'codice_oggetto':id,'motivo_chiusura':closeReason,'note':notes.text.trim()}]};
-    }
-    throw Exception('Procedura non selezionata.');
   }
-  Future<void> _loadObjectSheet() async {
-    final id = int.tryParse(code.text.trim());
+
+  Future<void> _acquireLock() async {
+    final response = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _sessionId});
+    final result = response['result'];
+    if (result is Map && result['acquisito'] == true) {
+      setState(() { _lockHeld = true; _output = 'Blocco esclusivo acquisito.'; });
+      return;
+    }
+    throw Exception(result is Map ? (result['messaggio'] ?? 'Archivio bloccato.') : 'Blocco esclusivo non acquisito.');
+  }
+
+  Future<void> _releaseLock() async {
+    final response = await _ValoraRuntimeApi.call('release_lock', {'session_id': _sessionId});
+    final result = response['result'];
+    if (result is Map && result['rilasciato'] == true) {
+      setState(() { _lockHeld = false; _output = 'Blocco archivio rilasciato.'; });
+      return;
+    }
+    throw Exception(result is Map ? (result['messaggio'] ?? 'Blocco non rilasciato.') : 'Blocco non rilasciato.');
+  }
+
+  Map<String, dynamic> _payload() {
+    final id = int.tryParse(_code.text.trim());
+    if (widget.apiCode == 'PR-01') {
+      if (_description.text.trim().isEmpty) throw Exception('La descrizione è obbligatoria.');
+      final q = int.tryParse(_quantity.text.trim());
+      if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
+      return {'oggetti': [{
+        'descrizione': _description.text.trim(),
+        'condizione': _condition, 'completezza': _completeness,
+        'destinazione': _destination, 'quantita': q,
+        'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+      }]};
+    }
     if (id == null || id <= 0) throw Exception('Inserisci un codice oggetto valido.');
-    final r = await RuntimeApi.call('consultation', {
-      'session_id': sessionId,
+    if (widget.apiCode == 'PR-02') {
+      if (_loadedObjectId != id) throw Exception('Carica la scheda completa del codice selezionato prima di procedere.');
+      final item = <String, dynamic>{'codice_oggetto': id};
+      if (_description.text.trim() != (_currentObject?['descrizione_oggetto'] ?? _currentObject?['descrizione'] ?? '').toString()) {
+        item['descrizione'] = _description.text.trim();
+      }
+      if (_condition != (_currentObject?['condizione'] ?? _condition)) item['condizione'] = _condition;
+      if (_completeness != (_currentObject?['completezza'] ?? _completeness)) item['completezza'] = _completeness;
+      if (_destination != (_currentObject?['destinazione'] ?? _destination)) item['destinazione'] = _destination;
+      if (_notes.text.trim() != (_currentObject?['note'] ?? '').toString()) item['note'] = _notes.text.trim().isEmpty ? null : _notes.text.trim();
+      if (_value.text.trim().isNotEmpty) {
+        final n = double.tryParse(_value.text.trim().replaceAll(',', '.'));
+        if (n == null || n < 0) throw Exception('Valore oggetto non valido.');
+        item['valore_oggetto'] = n;
+      }
+      if (item.length == 1) throw Exception('Nessuna modifica rilevata.');
+      return {'oggetti': [item]};
+    }
+    if (widget.apiCode == 'PR-03') {
+      return {'oggetti': [{
+        'codice_oggetto': id, 'motivo_chiusura': _closeReason, 'note': _notes.text.trim(),
+      }]};
+    }
+    throw Exception('Procedura di scrittura non riconosciuta.');
+  }
+
+  Future<void> _loadObject() async {
+    final id = int.tryParse(_code.text.trim());
+    if (id == null || id <= 0) throw Exception('Inserisci un codice oggetto valido.');
+    final response = await _ValoraRuntimeApi.call('consultation', {
+      'session_id': _sessionId,
       'consultation_code': 'OBJECT_MASTER',
       'arguments': {'codice_oggetto': id},
     });
-    final outer = r['result'];
+    final outer = response['result'];
     dynamic data = outer is Map ? outer['risultato'] : null;
     if (data is List) {
       if (data.isEmpty) throw Exception('Nessuna scheda trovata per il codice $id.');
       data = data.first;
     }
-    if (data is! Map) throw Exception('La consultazione non ha restituito una scheda leggibile: ${const JsonEncoder.withIndent('  ').convert(r)}');
+    if (data is! Map) throw Exception('Scheda non disponibile per il codice $id.');
     final m = Map<String, dynamic>.from(data);
-    String getText(List<String> keys, [String fallback = '']) {
-      for (final k in keys) {
-        final v = m[k];
-        if (v != null) return v.toString();
-      }
+    String txt(List<String> keys, [String fallback = '']) {
+      for (final k in keys) { if (m[k] != null) return m[k].toString(); }
       return fallback;
     }
     setState(() {
-      loadedObjectId = id;
-      description.text = getText(['descrizione_oggetto', 'descrizione']);
-      notes.text = getText(['note']);
-      quantity.text = getText(['quantita'], '1');
-      value.text = getText(['valore_oggetto']);
-      final c = getText(['condizione'], condition);
-      if (['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) condition = c;
-      final cp = getText(['completezza'], completeness);
-      if (['SIGILLATO','COMPLETO','INCOMPLETO'].contains(cp)) completeness = cp;
-      final d = getText(['destinazione'], destination);
-      if (['COLLEZIONE','RIVENDITA','ALTRO'].contains(d)) destination = d;
-      output = 'SCHEDA COMPLETA LETTA DAL DATABASE (sola lettura):\n${const JsonEncoder.withIndent('  ').convert(m)}\n\nI campi sono stati precompilati con i valori correnti. Controlla e modifica solo ciò che desideri.';
+      _currentObject = m;
+      _loadedObjectId = id;
+      _description.text = txt(['descrizione_oggetto', 'descrizione']);
+      _notes.text = txt(['note']);
+      _quantity.text = txt(['quantita'], '1');
+      _value.text = txt(['valore_oggetto', 'valore']);
+      final c = txt(['condizione'], _condition);
+      if (const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
+      final cp = txt(['completezza'], _completeness);
+      if (const ['SIGILLATO','COMPLETO','INCOMPLETO'].contains(cp)) _completeness = cp;
+      final d = txt(['destinazione'], _destination);
+      if (const ['COLLEZIONE','RIVENDITA','ALTRO'].contains(d)) _destination = d;
+      _output = 'Scheda corrente caricata dal database. I campi sono in sola lettura fino alla conferma della procedura.';
     });
   }
 
-  Future<void> _preview() async {
-    if(procedureCode=='PR-02' && loadedObjectId != int.tryParse(code.text.trim())) throw Exception('Per PR-02 carica prima la scheda completa del codice selezionato.');
-    if(procedureCode==null){await _consult(_chooseCode(widget.title)??'OBJECTS_AVAILABLE',{'cerca':search.text.trim(),'limite':100,'offset':0});return;}
-    if(!lockHeld)await _lock();
-    final p=_payload();
-    final r=await RuntimeApi.procedure(procedureCode!,'preview',p,sessionId:sessionId);
-    setState(() {
-      lastResult = r;
-      dataConfirmed = false;
-      finalReady = false;
-      output = const JsonEncoder.withIndent('  ').convert(r);
+  Future<void> _prepareMetadata() async {
+    final id = int.tryParse(_code.text.trim());
+    final args = {
+      'descrizione': _description.text.trim(),
+      'produttore': _producer.text.trim(),
+      'linea': _line.text.trim(),
+      'famiglia': _family.text.trim(),
+    };
+    if ((args['descrizione'] as String).isEmpty) throw Exception('Inserisci almeno la descrizione.');
+    final response = await _ValoraRuntimeApi.call('metadata_prepare', {
+      'session_id': _sessionId, 'codice_oggetto': id, 'metadata': args,
     });
+    final result = response['result'];
+    setState(() => _output = _pretty(result ?? response));
   }
-  Future<void> _confirmData() async {
-    if(lastResult==null)throw Exception('Esegui prima l’anteprima.');
-    final p=_payload()..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=false;
-    final r=await RuntimeApi.procedure(procedureCode!,'review',p,sessionId:sessionId);
-    setState(() {
-      lastResult = r;
-      dataConfirmed = true;
-      finalReady = true;
-      output = 'Dati confermati. Verifica il riepilogo e premi SALVA solo se corretto.\n${const JsonEncoder.withIndent('  ').convert(r)}';
-    });
-  }
-  Future<void> _save() async {
-    if(!dataConfirmed||!finalReady)throw Exception('Conferma i dati prima del salvataggio.');
-    final p=_payload()..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=true;
-    final r=await RuntimeApi.procedure(procedureCode!,'save',p,sessionId:sessionId,requestId:uuid.v4());
-    setState(() {
-      lastResult = r;
-      output = const JsonEncoder.withIndent('  ').convert(r);
-      dataConfirmed = false;
-      finalReady = false;
-    });
-    if(r['scrittura_eseguita']!=true) throw Exception('Il runtime non ha confermato una scrittura verificata. Controlla l’esito prima di riprovare.');
-    if(procedureCode=='PR-01'){description.clear();notes.clear();quantity.text='1';}
-  }
-  Future<void> _release() async {
-    final r=await RuntimeApi.call('release_lock',{'session_id':sessionId});
-    final result=r['result'];
-    if (result is Map && result['rilasciato'] == true) {
+
+  Future<void> _consult() async {
+    if (widget.apiCode == 'EXPLORE_RECORDS') {
+      final id = int.tryParse(_code.text.trim());
+      if (id == null || id <= 0) throw Exception('Inserisci il codice dell’oggetto di cui vuoi leggere lo storico.');
+      final response = await _ValoraRuntimeApi.call('object_history', {'codice_oggetto': id});
+      final result = response['result'];
+      if (result is! Map) throw Exception('Risposta dello storico non valida.');
+      final history = Map<String, dynamic>.from(result);
+      final object = history['scheda_corrente'];
       setState(() {
-        lockHeld = false;
-        output = 'Blocco esclusivo rilasciato.';
+        _currentObject = object is Map ? Map<String, dynamic>.from(object) : null;
+        final events = history['eventi_storici'];
+        _rows = events is List ? events : [];
+        _output = 'Storico in sola lettura · ${history['numero_eventi'] ?? _rows.length} eventi.';
       });
+      return;
     }
-    else throw Exception(result is Map?result['messaggio']??'Blocco non rilasciato':'Blocco non rilasciato');
+
+    final args = widget.apiCode == 'OBJECT_MASTER'
+      ? {'codice_oggetto': int.tryParse(_code.text.trim())}
+      : {'cerca': _search.text.trim(), 'limite': 100, 'offset': 0};
+    final response = await _ValoraRuntimeApi.call('consultation', {
+      'session_id': _sessionId, 'consultation_code': widget.apiCode, 'arguments': args,
+    });
+    final result = response['result'];
+    dynamic data = result is Map ? result['risultato'] : result;
+    final list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
+    setState(() {
+      _rows = list;
+      _output = list.isEmpty ? 'Nessun risultato.' : 'Risultati: ${list.length}.';
+      _currentObject = widget.apiCode == 'OBJECT_MASTER' && list.isNotEmpty && list.first is Map
+        ? Map<String, dynamic>.from(list.first as Map) : null;
+    });
   }
-  Widget field(TextEditingController c,String label,{int lines=1,TextInputType type=TextInputType.text})=>Padding(
-    padding:const EdgeInsets.only(bottom:12),child:TextField(controller:c,maxLines:lines,keyboardType:type,decoration:InputDecoration(labelText:label)));
-  Widget dropdown(String label,String current,List<String> options,ValueChanged<String?> changed)=>Padding(
-    padding:const EdgeInsets.only(bottom:12),child:DropdownButtonFormField<String>(initialValue:current,decoration:InputDecoration(labelText:label),
-      items:options.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:changed));
-  @override
-  Widget build(BuildContext context){
-    final write=procedureCode!=null && procedureCode!.startsWith('PR-');
-    return Scaffold(appBar:AppBar(title:Text(widget.title)),body:ListView(padding:const EdgeInsets.all(16),children:[
-      Card(child:Padding(padding:const EdgeInsets.all(12),child:Text('COLLECTION by VALORA · TEST\nUtente: ${Supabase.instance.client.auth.currentUser?.email??'sessione autenticata'}\n${lockHeld?'Blocco archivio: ATTIVO':'Blocco archivio: non acquisito'}',style:const TextStyle(color:goldColor)))),
-      if(procedureCode=='PR-01') ...[
-        field(description,'Descrizione oggetto *',lines:2),
-        dropdown('Condizione',condition,['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'],(v)=>setState(()=>condition=v!)),
-        dropdown('Completezza',completeness,['SIGILLATO','COMPLETO','INCOMPLETO'],(v)=>setState(()=>completeness=v!)),
-        dropdown('Destinazione',destination,['COLLEZIONE','RIVENDITA','ALTRO'],(v)=>setState(()=>destination=v!)),
-        field(quantity,'Quantità',type:TextInputType.number),field(notes,'Note',lines:2),
-      ],
-      if(procedureCode=='PR-02'||procedureCode=='PR-03'||procedureCode=='OBJECT_MASTER') ...[
-        field(code,'Codice oggetto'),
-        if(procedureCode=='PR-02') ...[
-          OutlinedButton.icon(onPressed:loading?null:()=>_run(_loadObjectSheet),icon:const Icon(Icons.download_outlined),label:const Text('CARICA SCHEDA COMPLETA DAL DATABASE')),
-        ],
-        if(procedureCode=='PR-02') ...[
-          field(description,'Nuova descrizione (lascia vuoto per non cambiarla)',lines:2),
-          dropdown('Condizione',condition,['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'],(v)=>setState(()=>condition=v!)),
-          dropdown('Completezza',completeness,['SIGILLATO','COMPLETO','INCOMPLETO'],(v)=>setState(()=>completeness=v!)),
-          dropdown('Destinazione',destination,['COLLEZIONE','RIVENDITA','ALTRO'],(v)=>setState(()=>destination=v!)),
-          field(value,'Valore oggetto (€)',type:const TextInputType.numberWithOptions(decimal:true)),field(notes,'Note',lines:2),
-        ],
-        if(procedureCode=='PR-03') ...[
-          dropdown('Motivo chiusura',closeReason,['SMARRITO','DISTRUTTO','DATO VIA'],(v)=>setState(()=>closeReason=v!)),
-          field(notes,'Note',lines:2),
-        ],
-      ],
-      if(procedureCode=='OBJECTS_AVAILABLE'||procedureCode=='EXPLORE_RECORDS') ...[
-        field(search,'Cerca descrizione o codice'),
-        if(procedureCode=='EXPLORE_RECORDS') const Text('Tabella consultata: master_oggetti. Risultati paginati, in sola lettura.',style:TextStyle(color:Colors.white70)),
-      ],
-      if(procedureCode==null) const Text('Seleziona una procedura OGGETTO dal menu precedente.',style:TextStyle(color:Colors.white70)),
-      if(write) ...[
-        FilledButton.icon(onPressed:loading?null:()=>_run(_preview),icon:const Icon(Icons.fact_check_outlined),label:Text(loading?'ATTENDI...':'1 · CONTROLLA DATI E ANTEPRIMA')),
-        const SizedBox(height:8),
-        OutlinedButton.icon(onPressed:loading||lastResult==null?null:()=>_run(_confirmData),icon:const Icon(Icons.verified_outlined),label:const Text('2 · CONFERMO I DATI'),
+
+  String _pretty(dynamic data) {
+    try { return const JsonEncoder.withIndent('  ').convert(data); }
+    catch (_) { return data?.toString() ?? ''; }
+  }
+
+  String _valueFor(Map<String, dynamic> m, List<String> keys, [String fallback = 'Non indicato']) {
+    for (final k in keys) {
+      final v = m[k];
+      if (v != null && v.toString().trim().isNotEmpty) return v.toString();
+    }
+    return fallback;
+  }
+
+  Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text}) =>
+    Padding(padding: const EdgeInsets.only(bottom: 12), child: TextField(
+      controller: c, maxLines: lines, keyboardType: type,
+      decoration: InputDecoration(labelText: label),
+    ));
+
+  Widget _dropdown(String label, String current, List<String> options, ValueChanged<String?> onChanged) =>
+    Padding(padding: const EdgeInsets.only(bottom: 12), child: DropdownButtonFormField<String>(
+      value: current, decoration: InputDecoration(labelText: label),
+      items: options.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+      onChanged: onChanged,
+    ));
+
+  Widget _objectCard(Map<String, dynamic> item, {VoidCallback? onTap}) {
+    final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
+    final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
+    final imageUrl = _valueFor(item, ['url_immagine', 'immagine_url', 'foto_url', 'image_url'], '');
+    final destination = _valueFor(item, ['destinazione'], 'Non indicata');
+    final condition = _valueFor(item, ['condizione'], 'Non indicata');
+    final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
+    final value = _valueFor(item, ['valore_oggetto', 'valore', 'valore_stimato'], 'Non indicato');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: imageUrl.startsWith('http')
+                ? Image.network(imageUrl, width: 88, height: 88, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imagePlaceholder())
+                : _imagePlaceholder(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('CODICE $code', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(desc, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              const SizedBox(height: 6),
+              Text('Destinazione: $destination'),
+              Text('Condizione: $condition'),
+              Text('Stato: $state'),
+              Text('Valore: $value'),
+            ])),
+            if (onTap != null) const Icon(Icons.chevron_right, color: goldColor),
+          ]),
         ),
-        const SizedBox(height:8),
-        FilledButton.icon(onPressed:loading||!dataConfirmed||!finalReady?null:()=>_run(_save),icon:const Icon(Icons.save_outlined),label:const Text('3 · CONFERMA DEFINITIVA E SALVA')),
-        const SizedBox(height:8),
-        OutlinedButton.icon(onPressed:loading||!lockHeld?null:()=>_run(_release),icon:const Icon(Icons.lock_open),label:const Text('RILASCIA BLOCCO ARCHIVIO')),
-      ] else ...[
-        FilledButton.icon(onPressed:loading?null:()=>_run(()=>_consult(procedureCode??'OBJECTS_AVAILABLE',procedureCode=='OBJECT_MASTER'?{'codice_oggetto':int.tryParse(code.text.trim())}:procedureCode=='EXPLORE_RECORDS'?{'tabella':'master_oggetti','limite':100,'offset':0}:{'cerca':search.text.trim(),'limite':100,'offset':0}),),icon:const Icon(Icons.search),label:Text(loading?'RICERCA...':'ESEGUI CONSULTAZIONE')),
-      ],
-      const SizedBox(height:16),
-      const Text('ESITO RUNTIME / RILETTURA DATABASE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
-      const SizedBox(height:8),
-      Container(padding:const EdgeInsets.all(12),decoration:BoxDecoration(color:cardColor,borderRadius:BorderRadius.circular(12)),
-        child:SelectableText(output,style:const TextStyle(fontFamily:'monospace',fontSize:12))),
-    ]));
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder() => Container(
+    width: 88, height: 88, color: Colors.white10,
+    child: const Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 30),
+  );
+
+  Widget _historyCard(Map<String, dynamic> event) {
+    final date = _valueFor(event, ['data_evento', 'data', 'created_at'], 'Data non indicata');
+    final type = _valueFor(event, ['tipo_evento', 'tipo', 'azione'], 'Evento');
+    final detail = _valueFor(event, ['descrizione', 'dettaglio', 'note', 'motivazione'], 'Nessun dettaglio registrato');
+    return Card(child: ListTile(
+      leading: const Icon(Icons.history, color: goldColor),
+      title: Text(type),
+      subtitle: Text('$date\n$detail'),
+      isThreeLine: true,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final code = widget.apiCode;
+    final isAvailableList = code == 'OBJECTS_AVAILABLE';
+    final isHistory = code == 'EXPLORE_RECORDS';
+    final isMaster = code == 'OBJECT_MASTER';
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.title)),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        Card(child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text('COLLECTION by VALORA · TEST\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
+            style: const TextStyle(color: goldColor)),
+        )),
+        if (_isWrite && code == 'PR-01') ...[
+          _field(_description, 'Descrizione oggetto *', lines: 2),
+          _field(_producer, 'Produttore'),
+          _field(_line, 'Linea'),
+          _field(_family, 'Famiglia / categoria'),
+          _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+          _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+          _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
+          _field(_quantity, 'Quantità', type: TextInputType.number),
+          _field(_notes, 'Note', lines: 2),
+          OutlinedButton.icon(onPressed: _loading ? null : () => _run(_prepareMetadata),
+            icon: const Icon(Icons.travel_explore), label: const Text('PREPARA METADATI E FONTI DI RICERCA')),
+        ],
+        if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
+          _field(_code, 'Codice oggetto *', type: TextInputType.number),
+          if (code == 'PR-02') OutlinedButton.icon(
+            onPressed: _loading ? null : () => _run(_loadObject),
+            icon: const Icon(Icons.download_outlined), label: const Text('CARICA SCHEDA COMPLETA DAL DATABASE')),
+          if (code == 'PR-02') ...[
+            _field(_description, 'Descrizione'),
+            _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+            _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+            _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
+            _field(_value, 'Valore oggetto (€)', type: const TextInputType.numberWithOptions(decimal: true)),
+            _field(_notes, 'Note', lines: 2),
+          ],
+          if (code == 'PR-03') ...[
+            _dropdown('Motivo chiusura', _closeReason, const ['SMARRITO','DISTRUTTO','DATO VIA'], (v) => setState(() => _closeReason = v!)),
+            _field(_notes, 'Note', lines: 2),
+          ],
+        ],
+        if (!_isWrite && (isHistory || isMaster))
+          _field(_code, isHistory ? 'Codice oggetto per lo storico *' : 'Codice oggetto per la scheda', type: TextInputType.number),
+        if (!_isWrite && isAvailableList)
+          const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: Colors.white70))),
+        if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
+          _field(_search, 'Cerca'),
+        if (_isWrite) ...[
+          FilledButton.icon(onPressed: _loading ? null : () => _run(_preview),
+            icon: const Icon(Icons.fact_check_outlined), label: const Text('1 · CONTROLLA DATI E ANTEPRIMA')),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(onPressed: _loading || _lastResult == null ? null : () => _run(_confirmData),
+            icon: const Icon(Icons.verified_outlined), label: const Text('2 · CONFERMO I DATI')),
+          const SizedBox(height: 8),
+          FilledButton.icon(onPressed: _loading || !_dataConfirmed || !_finalReady ? null : () => _run(_save),
+            icon: const Icon(Icons.save_outlined), label: const Text('3 · CONFERMA DEFINITIVA E SALVA')),
+          const SizedBox(height: 8),
+          if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
+            icon: const Icon(Icons.lock_open), label: const Text('RILASCIA BLOCCO ARCHIVIO')),
+        ] else
+          FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
+            icon: const Icon(Icons.search),
+            label: Text(_loading ? 'RICERCA...' : isAvailableList
+              ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
+              : isHistory ? 'VISUALIZZA CRONOLOGIA OGGETTO'
+              : isMaster ? 'CARICA SCHEDA COMPLETA' : 'ESEGUI CONSULTAZIONE')),
+        if (_currentObject != null) ...[
+          const SizedBox(height: 16),
+          const Text('SCHEDA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
+          _objectCard(_currentObject!),
+          ..._currentObject!.entries.map((e) => Card(
+            child: ListTile(title: Text(e.key), subtitle: Text(e.value?.toString() ?? 'Vuoto')),
+          )),
+        ],
+        if (_rows.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
+            style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
+          ..._rows.map((r) {
+            if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
+            final item = Map<String, dynamic>.from(r);
+            if (isHistory) return _historyCard(item);
+            return _objectCard(item, onTap: isAvailableList
+              ? () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => ObjectRuntimePage(
+                      title: 'PR-11 · Visualizza scheda',
+                      apiCode: 'OBJECT_MASTER',
+                      initialObjectCode: int.tryParse(item['codice_oggetto']?.toString() ?? item['id']?.toString() ?? ''),
+                    )
+                  )).then((_) {})
+              : null);
+          }),
+        ],
+        const SizedBox(height: 16),
+        const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
+          color: cardColor, borderRadius: BorderRadius.circular(12)),
+          child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
+      ]),
+    );
+  }
+
+  Future<void> _preview() async {
+    if (codeIsPR02() && _loadedObjectId != int.tryParse(_code.text.trim())) {
+      throw Exception('Per PR-02 carica prima la scheda completa.');
+    }
+    if (!_lockHeld) await _acquireLock();
+    final result = await _ValoraRuntimeApi.procedure(widget.apiCode, 'preview', _payload(), sessionId: _sessionId);
+    setState(() { _lastResult = result; _dataConfirmed = false; _finalReady = false; _output = _pretty(result); });
+  }
+
+  bool codeIsPR02() => widget.apiCode == 'PR-02';
+
+  Future<void> _confirmData() async {
+    if (_lastResult == null) throw Exception('Esegui prima l’anteprima.');
+    final payload = _payload()
+      ..['dati_confermati'] = true
+      ..['altra_operazione'] = false
+      ..['conferma_finale'] = false;
+    final result = await _ValoraRuntimeApi.procedure(widget.apiCode, 'review', payload, sessionId: _sessionId);
+    setState(() { _lastResult = result; _dataConfirmed = true; _finalReady = true; _output = _pretty(result); });
+  }
+
+  Future<void> _save() async {
+    if (!_dataConfirmed || !_finalReady) throw Exception('Conferma i dati prima del salvataggio.');
+    final payload = _payload()
+      ..['dati_confermati'] = true
+      ..['altra_operazione'] = false
+      ..['conferma_finale'] = true;
+    final result = await _ValoraRuntimeApi.procedure(
+      widget.apiCode, 'save', payload, sessionId: _sessionId, requestId: _uuid.v4());
+    setState(() { _lastResult = result; _output = _pretty(result); _dataConfirmed = false; _finalReady = false; });
+    if (result['scrittura_eseguita'] != true) {
+      throw Exception('Scrittura non confermata dal runtime: blocco mantenuto per sicurezza.');
+    }
+    // The runtime SQL releases the lock in the same transaction after a verified write.
+    if (result['blocco_rilasciato_automaticamente'] == true) {
+      setState(() => _lockHeld = false);
+    } else {
+      throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
+    }
+    if (widget.apiCode == 'PR-01') {
+      _description.clear(); _producer.clear(); _line.clear(); _family.clear();
+      _notes.clear(); _quantity.text = '1';
+    }
   }
 }
+
