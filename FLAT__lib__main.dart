@@ -507,8 +507,21 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (widget.initialObjectCode != null) _code.text = widget.initialObjectCode.toString();
   }
 
+  Future<void> _releaseOwnedLockSilently() async {
+    try {
+      await _ValoraRuntimeApi.call('release_lock', {'session_id': _sessionId});
+    } catch (_) {
+      // Il rilascio server-side può fallire; non mascherare l'uscita dalla schermata.
+    }
+  }
+
   @override
   void dispose() {
+    // In caso di uscita normale dalla schermata, prova a rilasciare solo
+    // il blocco associato a questa sessione. Non sblocca sessioni altrui.
+    if (_lockHeld) {
+      _releaseOwnedLockSilently();
+    }
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
     _quantity.dispose(); _value.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
     super.dispose();
@@ -643,7 +656,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (widget.apiCode == 'EXPLORE_RECORDS') {
       final id = int.tryParse(_code.text.trim());
       if (id == null || id <= 0) throw Exception('Inserisci il codice dell’oggetto di cui vuoi leggere lo storico.');
-      final response = await _ValoraRuntimeApi.call('object_history', {'codice_oggetto': id});
+      final response = await _ValoraRuntimeApi.call('object_history', {
+        'session_id': _sessionId,
+        'codice_oggetto': id,
+      });
       final result = response['result'];
       if (result is! Map) throw Exception('Risposta dello storico non valida.');
       final history = Map<String, dynamic>.from(result);
@@ -687,6 +703,58 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     return fallback;
   }
 
+  String _italianFieldLabel(String key) {
+    const labels = <String, String>{
+      'id': 'ID record',
+      'codice_oggetto': 'Codice oggetto',
+      'descrizione_oggetto': 'Descrizione oggetto',
+      'descrizione': 'Descrizione',
+      'nome': 'Nome',
+      'produttore': 'Produttore',
+      'linea': 'Linea',
+      'famiglia': 'Famiglia / categoria',
+      'categoria': 'Categoria',
+      'condizione': 'Condizione',
+      'completezza': 'Completezza',
+      'destinazione': 'Destinazione',
+      'quantita': 'Quantità',
+      'note': 'Note',
+      'valore_oggetto': 'Valore oggetto (€)',
+      'valore': 'Valore (€)',
+      'valore_stimato': 'Valore stimato (€)',
+      'stato': 'Stato',
+      'stato_oggetto': 'Stato oggetto',
+      'url_immagine': 'Immagine',
+      'immagine_url': 'Immagine',
+      'foto_url': 'Immagine',
+      'image_url': 'Immagine',
+      'data_inserimento': 'Data inserimento',
+      'data_creazione': 'Data creazione',
+      'data_modifica': 'Data ultima modifica',
+      'created_at': 'Data creazione',
+      'updated_at': 'Data ultima modifica',
+      'data_evento': 'Data evento',
+      'tipo_evento': 'Tipo evento',
+      'motivo_chiusura': 'Motivo chiusura',
+      'prezzo_acquisto': 'Prezzo di acquisto (€)',
+      'prezzo_vendita': 'Prezzo di vendita (€)',
+      'piattaforma': 'Piattaforma',
+      'fonte': 'Fonte',
+    };
+    if (labels.containsKey(key)) return labels[key]!;
+    final normalized = key
+        .replaceAll('_', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (normalized.isEmpty) return 'Campo';
+    return normalized[0].toUpperCase() + normalized.substring(1);
+  }
+
+  String _displayFieldValue(dynamic value) {
+    if (value == null || value.toString().trim().isEmpty) return 'Non indicato';
+    return value.toString();
+  }
+
   Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text}) =>
     Padding(padding: const EdgeInsets.only(bottom: 12), child: TextField(
       controller: c, maxLines: lines, keyboardType: type,
@@ -703,7 +771,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Widget _objectCard(Map<String, dynamic> item, {VoidCallback? onTap}) {
     final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
     final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
-    final imageUrl = _valueFor(item, ['url_immagine', 'immagine_url', 'foto_url', 'image_url'], '');
+    final imageUrl = _valueFor(item, [
+      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+      'immagine_principale', 'url_foto', 'foto', 'immagine',
+      'image', 'imageUrl', 'photo_url', 'main_image_url',
+    ], '');
     final destination = _valueFor(item, ['destinazione'], 'Non indicata');
     final condition = _valueFor(item, ['condizione'], 'Non indicata');
     final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
@@ -804,7 +876,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ],
         ],
         if (!_isWrite && (isHistory || isMaster))
-          _field(_code, isHistory ? 'Codice oggetto per lo storico *' : 'Codice oggetto per la scheda', type: TextInputType.number),
+          _field(_code, isHistory ? 'Codice oggetto *' : 'Codice oggetto', type: TextInputType.number),
         if (!_isWrite && isAvailableList)
           const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: Colors.white70))),
         if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
@@ -826,15 +898,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             icon: const Icon(Icons.search),
             label: Text(_loading ? 'RICERCA...' : isAvailableList
               ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
-              : isHistory ? 'VISUALIZZA CRONOLOGIA OGGETTO'
+              : isHistory ? 'VISUALIZZA STORICO OGGETTO'
               : isMaster ? 'CARICA SCHEDA COMPLETA' : 'ESEGUI CONSULTAZIONE')),
         if (_currentObject != null) ...[
           const SizedBox(height: 16),
           const Text('SCHEDA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
           _objectCard(_currentObject!),
-          ..._currentObject!.entries.map((e) => Card(
-            child: ListTile(title: Text(e.key), subtitle: Text(e.value?.toString() ?? 'Vuoto')),
-          )),
+          ..._currentObject!.entries
+              .where((e) => !const {
+                    'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+                    'immagine_principale', 'url_foto', 'foto', 'immagine',
+                    'image', 'imageUrl', 'photo_url', 'main_image_url',
+                  }.contains(e.key))
+              .map((e) => Card(
+                    child: ListTile(
+                      title: Text(_italianFieldLabel(e.key)),
+                      subtitle: Text(_displayFieldValue(e.value)),
+                    ),
+                  )),
         ],
         if (_rows.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -870,8 +951,34 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       throw Exception('Per PR-02 carica prima la scheda completa.');
     }
     if (!_lockHeld) await _acquireLock();
-    final result = await _ValoraRuntimeApi.procedure(widget.apiCode, 'preview', _payload(), sessionId: _sessionId);
-    setState(() { _lastResult = result; _dataConfirmed = false; _finalReady = false; _output = _pretty(result); });
+    try {
+      final result = await _ValoraRuntimeApi.procedure(
+        widget.apiCode, 'preview', _payload(), sessionId: _sessionId,
+      );
+      setState(() {
+        _lastResult = result;
+        _dataConfirmed = false;
+        _finalReady = false;
+        _output = _pretty(result);
+      });
+    } catch (_) {
+      // Rilascia esclusivamente il blocco appartenente a questa sessione.
+      // Non tentare mai di sbloccare una sessione altrui.
+      if (_lockHeld) {
+        try {
+          final response = await _ValoraRuntimeApi.call(
+            'release_lock', {'session_id': _sessionId},
+          );
+          final result = response['result'];
+          if (result is Map && result['rilasciato'] == true && mounted) {
+            setState(() => _lockHeld = false);
+          }
+        } catch (_) {
+          // L'errore originale dell'anteprima resta quello mostrato all'utente.
+        }
+      }
+      rethrow;
+    }
   }
 
   bool codeIsPR02() => widget.apiCode == 'PR-02';
