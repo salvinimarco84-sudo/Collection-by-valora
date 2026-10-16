@@ -1,7 +1,7 @@
 name: collection_by_valora
-description: COLLECTION by VALORA - app per la gestione delle collezioni.
-publish_to: 'none'
-version: 0.1.0+1
+description: App beta multipiattaforma COLLECTION by VALORA
+publish_to: none
+version: 0.3.1+16
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -9,13 +9,21 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  supabase_flutter: ^2.10.0
+  supabase_flutter: ^2.8.0
+  speech_to_text: ^7.0.0
+  http: ^1.2.2
+  path: ^1.9.0
+  path_provider: ^2.1.5
+  sqflite: ^2.4.1
+  sqflite_common_ffi: ^2.3.4+4
+  uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/valora_logo.png
