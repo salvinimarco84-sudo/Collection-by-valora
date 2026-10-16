@@ -12,7 +12,7 @@ const uuid = Uuid();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(url: supabaseUrl, anonKey: publishableKey);
+  await Supabase.initialize(url: supabaseUrl, publishableKey: publishableKey);
   runApp(const CollectionValoraApp());
 }
 
@@ -315,32 +315,52 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if(!lockHeld)await _lock();
     final p=_payload();
     final r=await RuntimeApi.procedure(procedureCode!,'preview',p,sessionId:sessionId);
-    setState(()=>{lastResult=r,dataConfirmed=false,finalReady=false,output=const JsonEncoder.withIndent('  ').convert(r)});
+    setState(() {
+      lastResult = r;
+      dataConfirmed = false;
+      finalReady = false;
+      output = const JsonEncoder.withIndent('  ').convert(r);
+    });
   }
   Future<void> _confirmData() async {
     if(lastResult==null)throw Exception('Esegui prima l’anteprima.');
     final p=_payload()..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=false;
     final r=await RuntimeApi.procedure(procedureCode!,'review',p,sessionId:sessionId);
-    setState(()=>{lastResult=r,dataConfirmed=true,finalReady=true,output='Dati confermati. Verifica il riepilogo e premi SALVA solo se corretto.\n${const JsonEncoder.withIndent('  ').convert(r)}'});
+    setState(() {
+      lastResult = r;
+      dataConfirmed = true;
+      finalReady = true;
+      output = 'Dati confermati. Verifica il riepilogo e premi SALVA solo se corretto.\n${const JsonEncoder.withIndent('  ').convert(r)}';
+    });
   }
   Future<void> _save() async {
     if(!dataConfirmed||!finalReady)throw Exception('Conferma i dati prima del salvataggio.');
     final p=_payload()..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=true;
     final r=await RuntimeApi.procedure(procedureCode!,'save',p,sessionId:sessionId,requestId:uuid.v4());
-    setState(()=>{lastResult=r,output=const JsonEncoder.withIndent('  ').convert(r),dataConfirmed=false,finalReady=false});
+    setState(() {
+      lastResult = r;
+      output = const JsonEncoder.withIndent('  ').convert(r);
+      dataConfirmed = false;
+      finalReady = false;
+    });
     if(r['scrittura_eseguita']!=true) throw Exception('Il runtime non ha confermato una scrittura verificata. Controlla l’esito prima di riprovare.');
     if(procedureCode=='PR-01'){description.clear();notes.clear();quantity.text='1';}
   }
   Future<void> _release() async {
     final r=await RuntimeApi.call('release_lock',{'session_id':sessionId});
     final result=r['result'];
-    if(result is Map && result['rilasciato']==true){setState(()=>{lockHeld=false,output='Blocco esclusivo rilasciato.'});}
+    if (result is Map && result['rilasciato'] == true) {
+      setState(() {
+        lockHeld = false;
+        output = 'Blocco esclusivo rilasciato.';
+      });
+    }
     else throw Exception(result is Map?result['messaggio']??'Blocco non rilasciato':'Blocco non rilasciato');
   }
   Widget field(TextEditingController c,String label,{int lines=1,TextInputType type=TextInputType.text})=>Padding(
     padding:const EdgeInsets.only(bottom:12),child:TextField(controller:c,maxLines:lines,keyboardType:type,decoration:InputDecoration(labelText:label)));
   Widget dropdown(String label,String current,List<String> options,ValueChanged<String?> changed)=>Padding(
-    padding:const EdgeInsets.only(bottom:12),child:DropdownButtonFormField<String>(value:current,decoration:InputDecoration(labelText:label),
+    padding:const EdgeInsets.only(bottom:12),child:DropdownButtonFormField<String>(initialValue:current,decoration:InputDecoration(labelText:label),
       items:options.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:changed));
   @override
   Widget build(BuildContext context){
