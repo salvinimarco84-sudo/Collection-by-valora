@@ -788,7 +788,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           '${snippet.isEmpty ? '' : '$snippet\n\n'}'
           'Verifica la pagina selezionata. Produttore, anno di uscita e codice prodotto '
           'non vengono dedotti automaticamente dal titolo di un risultato: inserisci soltanto '
-          i valori confermati consultando la fonte.';
+          'i valori confermati consultando la fonte.';
       _output = _metadataResult;
     });
 
