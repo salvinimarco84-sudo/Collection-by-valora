@@ -484,9 +484,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _family = TextEditingController();
 
   final String _sessionId = _uuid.v4();
-  Timer? _metadataDebounce;
+  final FocusNode _descriptionFocus = FocusNode();
   String _lastMetadataQuery = '';
-  int _metadataGeneration = 0;
+  String _metadataResult = 'La ricerca dei metadati partirà quando esci dal campo Descrizione oggetto.';
   bool _loading = false;
   bool _lockHeld = false;
   bool _dataConfirmed = false;
@@ -507,36 +507,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   void initState() {
     super.initState();
     if (widget.apiCode == 'PR-01') {
-      _description.addListener(_onDescriptionChanged);
+      _descriptionFocus.addListener(_onDescriptionFocusChanged);
     }
     if (widget.initialObjectCode != null) _code.text = widget.initialObjectCode.toString();
   }
 
-  void _onDescriptionChanged() {
-    if (widget.apiCode != 'PR-01') return;
-    _metadataDebounce?.cancel();
+  void _onDescriptionFocusChanged() {
+    if (widget.apiCode != 'PR-01' || _descriptionFocus.hasFocus) return;
     final query = _description.text.trim();
-    final generation = ++_metadataGeneration;
-    if (query.length < 4) {
-      if (mounted) {
-        setState(() {
-          _lastMetadataQuery = '';
-          _output = 'Inserisci la descrizione: la ricerca dei metadati partirà automaticamente.';
-        });
-      }
-      return;
-    }
-    if (query == _lastMetadataQuery) return;
-    _metadataDebounce = Timer(const Duration(milliseconds: 1100), () {
-      if (!mounted || generation != _metadataGeneration) return;
-      _run(() async {
-        if (query != _description.text.trim()) return;
-        setState(() => _output = 'RICERCA AUTOMATICA METADATI IN CORSO…');
+    if (query.length < 4 || query == _lastMetadataQuery || _loading) return;
+    _run(() async {
+      if (query != _description.text.trim()) return;
+      setState(() {
+        _metadataResult = 'RICERCA METADATI IN CORSO…';
+        _output = 'Ricerca metadati in corso…';
+      });
+      try {
         await _prepareMetadata();
         if (mounted && query == _description.text.trim()) {
           setState(() => _lastMetadataQuery = query);
         }
-      });
+      } catch (e) {
+        if (mounted) setState(() => _metadataResult = 'Ricerca metadati non riuscita: $e');
+        rethrow;
+      }
     });
   }
 
@@ -553,8 +547,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
-    _metadataDebounce?.cancel();
-    _description.removeListener(_onDescriptionChanged);
+    _descriptionFocus.removeListener(_onDescriptionFocusChanged);
+    _descriptionFocus.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
     _quantity.dispose(); _value.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
     super.dispose();
@@ -693,7 +687,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       'session_id': _sessionId, 'codice_oggetto': id, 'metadata': args,
     });
     final result = response['result'];
-    setState(() => _output = _pretty(result ?? response));
+    final prettyResult = _pretty(result ?? response);\n    setState(() { _metadataResult = prettyResult; _output = prettyResult; });
   }
 
   Future<void> _consult() async {
@@ -799,9 +793,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     return value.toString();
   }
 
-  Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text}) =>
+  Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text, FocusNode? focusNode}) =>
     Padding(padding: const EdgeInsets.only(bottom: 12), child: TextField(
-      controller: c, maxLines: lines, keyboardType: type,
+      controller: c, focusNode: focusNode, maxLines: lines, keyboardType: type,
       decoration: InputDecoration(labelText: label),
     ));
 
@@ -889,33 +883,37 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             style: const TextStyle(color: goldColor)),
         )),
         if (_isWrite && code == 'PR-01') ...[
-          _field(_description, 'Descrizione oggetto *', lines: 2),
-          _field(_producer, 'Produttore'),
-          _field(_line, 'Linea'),
-          _field(_family, 'Famiglia / categoria'),
-          _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-          _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
-          _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
-          _field(_quantity, 'Quantità', type: TextInputType.number),
-          _field(_notes, 'Note', lines: 2),
-          const Card(
+          _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
+          Card(
             child: Padding(
-              padding: EdgeInsets.all(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Row(children: [
                   Icon(Icons.travel_explore, color: goldColor),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'RICERCA AUTOMATICA METADATI: inserisci la descrizione e attendi circa un secondo. I risultati e le fonti compariranno in ESITO RUNTIME. Verifica i dati prima di confermare.',
-                      style: TextStyle(color: Colors.white70),
-                    ),
-                  ),
-                ],
-              ),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('DATI OTTENUTI DALLA RICERCA METADATI',
+                    style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+                ]),
+                const SizedBox(height: 8),
+                SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 6),
+                const Text('La ricerca parte quando esci dal campo descrizione. I risultati non verificati non vengono considerati dati certi.',
+                  style: TextStyle(color: Colors.white54, fontSize: 11)),
+              ]),
             ),
           ),
+          const SizedBox(height: 12),
+          const Text('DATI OBBLIGATORI E COMPLETAMENTO SCHEDA',
+            style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 10),
+          _field(_producer, 'Produttore *'),
+          _field(_line, 'Linea / serie *'),
+          _field(_family, 'Famiglia / categoria *'),
+          _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+          _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+          _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
+          _field(_quantity, 'Quantità', type: TextInputType.number),
+          _field(_notes, 'Note', lines: 2),
         ],
         if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
           _field(_code, 'Codice oggetto *', type: TextInputType.number),
@@ -941,7 +939,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: Colors.white70))),
         if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
           _field(_search, 'Cerca'),
-        if (_isWrite) ...[
+        if (_isWrite && code == 'PR-01') ...[
+          FilledButton.icon(
+            onPressed: _loading ? null : () => _run(_confirmAndSaveNewObject),
+            icon: const Icon(Icons.save_outlined),
+            label: Text(_loading ? 'SALVATAGGIO IN CORSO…' : 'CONFERMA E SALVA OGGETTO'),
+          ),
+          const SizedBox(height: 8),
+          if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
+            icon: const Icon(Icons.lock_open), label: const Text('RILASCIA BLOCCO ARCHIVIO')),
+        ] else if (_isWrite) ...[
           FilledButton.icon(onPressed: _loading ? null : () => _run(_preview),
             icon: const Icon(Icons.fact_check_outlined), label: const Text('1 · CONTROLLA DATI E ANTEPRIMA')),
           const SizedBox(height: 8),
@@ -1004,6 +1011,81 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
       ]),
     );
+  }
+
+  Future<void> _confirmAndSaveNewObject() async {
+    if (_description.text.trim().isEmpty) throw Exception('La descrizione oggetto è obbligatoria.');
+    if (_producer.text.trim().isEmpty) throw Exception('Il produttore è obbligatorio.');
+    if (_line.text.trim().isEmpty) throw Exception('La linea / serie è obbligatoria.');
+    if (_family.text.trim().isEmpty) throw Exception('La famiglia / categoria è obbligatoria.');
+    final qty = int.tryParse(_quantity.text.trim());
+    if (qty == null || qty < 1) throw Exception('La quantità deve essere un numero intero maggiore di zero.');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Conferma inserimento oggetto'),
+        content: SingleChildScrollView(child: Text(
+          'Descrizione: ${_description.text.trim()}\\n'
+          'Produttore: ${_producer.text.trim()}\\n'
+          'Linea / serie: ${_line.text.trim()}\\n'
+          'Famiglia / categoria: ${_family.text.trim()}\\n'
+          'Condizione: $_condition\\n'
+          'Completezza: $_completeness\\n'
+          'Destinazione: $_destination\\n'
+          'Quantità: ${_quantity.text.trim()}\\n'
+          'Note: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}\\n\\n'
+          'Confermi il salvataggio di questo oggetto nel database TEST?'
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA E SALVA')),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      setState(() => _output = 'Salvataggio annullato. Nessun oggetto salvato.');
+      return;
+    }
+
+    await _preview();
+    await _confirmData();
+    await _save();
+
+    if (!mounted) return;
+    final addAnother = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Oggetto salvato'),
+        content: const Text('Vuoi inserire un altro oggetto?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, TORNA AL MENU')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, NUOVO OGGETTO')),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (addAnother == true) {
+      setState(() {
+        _description.clear();
+        _producer.clear();
+        _line.clear();
+        _family.clear();
+        _notes.clear();
+        _quantity.text = '1';
+        _condition = 'USATO';
+        _completeness = 'COMPLETO';
+        _destination = 'COLLEZIONE';
+        _lastMetadataQuery = '';
+        _metadataResult = 'Inserisci la descrizione e poi esci dal campo per avviare la ricerca metadati.';
+        _output = 'Pronto per il prossimo oggetto.';
+      });
+      _descriptionFocus.requestFocus();
+    } else {
+      if (mounted) Navigator.of(context).pop();
+    }
   }
 
   Future<void> _preview() async {
