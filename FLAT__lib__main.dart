@@ -744,12 +744,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       final title = (item['title'] ?? 'Risultato senza titolo').toString();
                       final url = (item['url'] ?? '').toString();
                       final snippet = (item['snippet'] ?? '').toString();
+                      final producer = (item['produttore'] ?? '').toString().trim();
+                      final productCode = (item['codice_prodotto'] ?? '').toString().trim();
+                      final year = (item['anno_uscita'] ?? '').toString().trim();
+                      final metadataLines = <String>[
+                        if (producer.isNotEmpty) 'Produttore: $producer',
+                        if (productCode.isNotEmpty) 'Codice prodotto: $productCode',
+                        if (year.isNotEmpty) 'Anno di uscita: $year',
+                      ];
                       return ListTile(
                         leading: const Icon(Icons.language, color: goldColor),
                         title: Text(title, style: const TextStyle(color: goldColor)),
                         subtitle: Text(
-                          '${snippet.isEmpty ? url : snippet}\n$url',
-                          maxLines: 4,
+                          '${metadataLines.isEmpty ? '' : '${metadataLines.join('\n')}\n'}${snippet.isEmpty ? url : snippet}\n$url',
+                          maxLines: 7,
                           overflow: TextOverflow.ellipsis,
                         ),
                         isThreeLine: true,
@@ -792,27 +800,55 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _output = _metadataResult;
     });
 
-    final openSource = await showDialog<bool>(
+    final sourceAction = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
         title: const Text('PR-12 · VERIFICA FONTE'),
-        content: SelectableText('$title\n$url\n\n$snippet'),
+        content: SelectableText(
+          '$title\n$url\n\n'
+          '${(selected['produttore'] ?? '').toString().trim().isEmpty ? '' : 'Produttore: ${selected['produttore']}\n'}'
+          '${(selected['codice_prodotto'] ?? '').toString().trim().isEmpty ? '' : 'Codice prodotto: ${selected['codice_prodotto']}\n'}'
+          '${(selected['anno_uscita'] ?? '').toString().trim().isEmpty ? '' : 'Anno di uscita: ${selected['anno_uscita']}\n'}'
+          '\n$snippet',
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop('back'),
             child: const Text('TORNA ALLA SCHEDA'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop('open'),
             child: const Text('MOSTRA COLLEGAMENTO'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop('apply'),
+            child: const Text('USA METADATI'),
           ),
         ],
       ),
     );
-    if (openSource == true && mounted) {
-      // Opening a public result is explicit user action. No external values are
-      // written to the database by PR-12.
+    if (!mounted) return;
+    if (sourceAction == 'apply') {
+      final producer = (selected['produttore'] ?? '').toString().trim();
+      final productCode = (selected['codice_prodotto'] ?? '').toString().trim();
+      final year = (selected['anno_uscita'] ?? '').toString().trim();
+      if (producer.isEmpty && productCode.isEmpty && year.isEmpty) {
+        setState(() {
+          _metadataResult = 'La fonte non ha restituito metadati strutturati. Compila i campi manualmente dopo aver verificato la pagina.';
+          _output = _metadataResult;
+        });
+      } else {
+        setState(() {
+          if (producer.isNotEmpty) _producer.text = producer;
+          if (productCode.isNotEmpty) _family.text = productCode;
+          if (year.isNotEmpty && int.tryParse(year) != null) _line.text = year;
+          _metadataResult = 'Metadati applicati alla maschera PR-01 su tua conferma. Nessun dato è stato salvato nel database.';
+          _output = _metadataResult;
+        });
+      }
+    } else if (sourceAction == 'open') {
+      // La selezione mostra l'URL senza scrivere dati nel database.
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
@@ -1157,14 +1193,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               : null);
           }),
         ],
-        if (code != 'PR-01') ...[
-          const SizedBox(height: 16),
-          const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
-            color: cardColor, borderRadius: BorderRadius.circular(12)),
-            child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
-        ],
+        const SizedBox(height: 16),
+        const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
+          color: cardColor, borderRadius: BorderRadius.circular(12)),
+          child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
       ]),
     );
   }
