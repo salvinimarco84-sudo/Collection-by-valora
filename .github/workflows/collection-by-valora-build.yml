@@ -22,29 +22,33 @@ jobs:
         with:
           channel: stable
 
+      - name: Verify required root files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f FLAT__lib__main.dart
+          test -f FLAT__pubspec.yaml
+          test -f valora_logo.png
+          test -f apply_valora_logo.py
+
       - name: Prepare Flutter project
         shell: bash
         run: |
-          set -e
-          test -f valora_logo.png
-          mkdir -p lib test
-          cp FLAT__lib__main.dart lib/main.dart
-          cp FLAT__pubspec.yaml pubspec.yaml
+          set -euo pipefail
+          mkdir -p lib test assets
           flutter create . --platforms=android --project-name collection_by_valora
           cp FLAT__lib__main.dart lib/main.dart
           cp FLAT__pubspec.yaml pubspec.yaml
+          cp valora_logo.png assets/valora_logo.png
           python apply_valora_logo.py
           rm -f test/widget_test.dart widget_test.dart main.dart
 
       - name: Verify Android Internet permission
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if [ ! -f "$MANIFEST" ]; then
-            echo "ERROR: AndroidManifest.xml not found"
-            exit 1
-          fi
+          test -f "$MANIFEST"
           if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
             sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
           fi
@@ -78,20 +82,24 @@ jobs:
         with:
           channel: stable
 
+      - name: Verify required root files
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          foreach ($file in @("FLAT__lib__main.dart", "FLAT__pubspec.yaml", "valora_logo.png", "apply_valora_logo.py")) {
+            if (-not (Test-Path $file)) { throw "File richiesto mancante: $file" }
+          }
+
       - name: Prepare Flutter project
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          if (-not (Test-Path "valora_logo.png")) {
-            throw "ERRORE: valora_logo.png non trovato nella radice del repository."
-          }
-          New-Item -ItemType Directory -Force lib | Out-Null
-          Copy-Item FLAT__lib__main.dart lib/main.dart -Force
-          Copy-Item FLAT__pubspec.yaml pubspec.yaml -Force
+          New-Item -ItemType Directory -Force lib, test, assets | Out-Null
           flutter create . --platforms=windows --project-name collection_by_valora
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item FLAT__lib__main.dart lib/main.dart -Force
           Copy-Item FLAT__pubspec.yaml pubspec.yaml -Force
+          Copy-Item valora_logo.png assets/valora_logo.png -Force
           python apply_valora_logo.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Remove-Item test/widget_test.dart -Force -ErrorAction SilentlyContinue
