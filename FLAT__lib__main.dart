@@ -213,7 +213,6 @@ class ProcedureEntry {
   final bool enabled;
 }
 
-// Le voci senza mapping certo restano disabilitate: non chiamano API inventate.
 const Map<String, List<ProcedureEntry>> sectionProcedures = {
   'CATALOGO': [
     ProcedureEntry(title: 'PR-01 · Nuovo oggetto', description: 'Crea un oggetto e prepara i metadati per la ricerca.', apiCode: 'PR-01', readOnly: false),
@@ -421,7 +420,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 }
 
-
 const _uuid = Uuid();
 
 class _ValoraRuntimeApi {
@@ -517,8 +515,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   @override
   void dispose() {
-    // In caso di uscita normale dalla schermata, prova a rilasciare solo
-    // il blocco associato a questa sessione. Non sblocca sessioni altrui.
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
@@ -583,17 +579,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_completeness != (_currentObject?['completezza'] ?? _completeness)) item['completezza'] = _completeness;
       if (_destination != (_currentObject?['destinazione'] ?? _destination)) item['destinazione'] = _destination;
       if (_notes.text.trim() != (_currentObject?['note'] ?? '').toString()) item['note'] = _notes.text.trim().isEmpty ? null : _notes.text.trim();
-      if (_value.text.trim().isNotEmpty) {
-        final n = double.tryParse(_value.text.trim().replaceAll(',', '.'));
-        if (n == null || n < 0) throw Exception('Valore oggetto non valido.');
-        item['valore_oggetto'] = n;
+      final currentValueRaw = _currentObject?['valore_oggetto'] ?? _currentObject?['valore'];
+      final currentValueText = currentValueRaw == null ? '' : currentValueRaw.toString().trim();
+      final proposedValueText = _value.text.trim().replaceAll(',', '.');
+      if (proposedValueText != currentValueText.replaceAll(',', '.')) {
+        if (proposedValueText.isEmpty) {
+          item['valore_oggetto'] = null;
+        } else {
+          final n = double.tryParse(proposedValueText);
+          if (n == null || n < 0) throw Exception('Valore oggetto non valido.');
+          item['valore_oggetto'] = n;
+        }
       }
       if (item.length == 1) throw Exception('Nessuna modifica rilevata.');
       return {'oggetti': [item]};
     }
     if (widget.apiCode == 'PR-03') {
+      if (_loadedObjectId != id || _currentObject == null) {
+        throw Exception('Per PR-03 carica prima la scheda completa del codice selezionato.');
+      }
       return {'oggetti': [{
-        'codice_oggetto': id, 'motivo_chiusura': _closeReason, 'note': _notes.text.trim(),
+        'codice_oggetto': id, 'motivo_chiusura': _closeReason,
+        'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       }]};
     }
     throw Exception('Procedura di scrittura non riconosciuta.');
@@ -859,7 +866,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ],
         if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
           _field(_code, 'Codice oggetto *', type: TextInputType.number),
-          if (code == 'PR-02') OutlinedButton.icon(
+          if (code == 'PR-02' || code == 'PR-03') OutlinedButton.icon(
             onPressed: _loading ? null : () => _run(_loadObject),
             icon: const Icon(Icons.download_outlined), label: const Text('CARICA SCHEDA COMPLETA DAL DATABASE')),
           if (code == 'PR-02') ...[
@@ -947,8 +954,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Future<void> _preview() async {
-    if (codeIsPR02() && _loadedObjectId != int.tryParse(_code.text.trim())) {
-      throw Exception('Per PR-02 carica prima la scheda completa.');
+    if ((widget.apiCode == 'PR-02' || widget.apiCode == 'PR-03') &&
+        _loadedObjectId != int.tryParse(_code.text.trim())) {
+      throw Exception('Per questa procedura carica prima la scheda completa del codice selezionato.');
     }
     if (!_lockHeld) await _acquireLock();
     try {
@@ -962,8 +970,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _output = _pretty(result);
       });
     } catch (_) {
-      // Rilascia esclusivamente il blocco appartenente a questa sessione.
-      // Non tentare mai di sbloccare una sessione altrui.
       if (_lockHeld) {
         try {
           final response = await _ValoraRuntimeApi.call(
@@ -973,15 +979,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (result is Map && result['rilasciato'] == true && mounted) {
             setState(() => _lockHeld = false);
           }
-        } catch (_) {
-          // L'errore originale dell'anteprima resta quello mostrato all'utente.
-        }
+        } catch (_) {}
       }
       rethrow;
     }
   }
-
-  bool codeIsPR02() => widget.apiCode == 'PR-02';
 
   Future<void> _confirmData() async {
     if (_lastResult == null) throw Exception('Esegui prima l’anteprima.');
@@ -1005,7 +1007,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (result['scrittura_eseguita'] != true) {
       throw Exception('Scrittura non confermata dal runtime: blocco mantenuto per sicurezza.');
     }
-    // The runtime SQL releases the lock in the same transaction after a verified write.
     if (result['blocco_rilasciato_automaticamente'] == true) {
       setState(() => _lockHeld = false);
     } else {
@@ -1017,4 +1018,3 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 }
-
