@@ -687,7 +687,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       'session_id': _sessionId, 'codice_oggetto': id, 'metadata': args,
     });
     final result = response['result'];
-    final prettyResult = _pretty(result ?? response);\n    setState(() { _metadataResult = prettyResult; _output = prettyResult; });
+    final prettyResult = _pretty(result ?? response);
+    setState(() { _metadataResult = prettyResult; _output = prettyResult; });
   }
 
   Future<void> _consult() async {
