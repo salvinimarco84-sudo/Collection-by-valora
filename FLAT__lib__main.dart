@@ -594,6 +594,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
       return {'oggetti': [{
         'descrizione': _description.text.trim(),
+        'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
+        'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
+        'codice_prodotto': _family.text.trim().isEmpty ? null : _family.text.trim(),
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
@@ -675,20 +678,73 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Future<void> _prepareMetadata() async {
-    final id = int.tryParse(_code.text.trim());
-    final args = {
-      'descrizione': _description.text.trim(),
-      'produttore': _producer.text.trim(),
-      'linea': _line.text.trim(),
-      'famiglia': _family.text.trim(),
-    };
-    if ((args['descrizione'] as String).isEmpty) throw Exception('Inserisci almeno la descrizione.');
+    final description = _description.text.trim();
+    if (description.isEmpty) throw Exception('Inserisci almeno la descrizione.');
     final response = await _ValoraRuntimeApi.call('metadata_prepare', {
-      'session_id': _sessionId, 'codice_oggetto': id, 'metadata': args,
+      'session_id': _sessionId,
+      'metadata': {
+        'descrizione': description,
+        'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
+        'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
+        'codice_prodotto': _family.text.trim().isEmpty ? null : _family.text.trim(),
+      },
     });
     final result = response['result'];
+
+    // Only apply fields explicitly returned as candidate metadata. Search URLs,
+    // snippets, and unrelated source records are never treated as metadata.
+    Map<String, dynamic>? candidateFrom(dynamic value) {
+      if (value is! Map) return null;
+      final map = Map<String, dynamic>.from(value);
+      const producerKeys = ['produttore', 'manufacturer', 'brand'];
+      const yearKeys = ['anno_uscita', 'anno', 'release_year', 'year'];
+      const productKeys = ['codice_prodotto', 'product_code', 'codice', 'mpn'];
+      final hasMetadata = producerKeys.any(map.containsKey) ||
+          yearKeys.any(map.containsKey) || productKeys.any(map.containsKey);
+      if (hasMetadata) return map;
+      for (final key in const ['metadati_confermati', 'candidato_selezionato', 'candidato', 'metadati', 'metadata', 'selected_candidate']) {
+        final nested = candidateFrom(map[key]);
+        if (nested != null) return nested;
+      }
+      for (final key in const ['candidati', 'candidates', 'risultati']) {
+        final list = map[key];
+        if (list is List) {
+          for (final item in list) {
+            final nested = candidateFrom(item);
+            if (nested != null) return nested;
+          }
+        }
+      }
+      return null;
+    }
+
+    final candidate = candidateFrom(result);
+    String valueFor(Map<String, dynamic> map, List<String> keys) {
+      for (final key in keys) {
+        final value = map[key];
+        if (value != null && value.toString().trim().isNotEmpty) return value.toString().trim();
+      }
+      return '';
+    }
+
+    if (candidate != null) {
+      final producer = valueFor(candidate, const ['produttore', 'manufacturer', 'brand']);
+      final year = valueFor(candidate, const ['anno_uscita', 'anno', 'release_year', 'year']);
+      final productCode = valueFor(candidate, const ['codice_prodotto', 'product_code', 'codice', 'mpn']);
+      setState(() {
+        if (_producer.text.trim().isEmpty && producer.isNotEmpty) _producer.text = producer;
+        if (_line.text.trim().isEmpty && year.isNotEmpty && int.tryParse(year) != null) _line.text = year;
+        if (_family.text.trim().isEmpty && productCode.isNotEmpty) _family.text = productCode;
+      });
+    }
+
     final prettyResult = _pretty(result ?? response);
-    setState(() { _metadataResult = prettyResult; _output = prettyResult; });
+    setState(() {
+      _metadataResult = candidate == null
+          ? '$prettyResult\n\nNessun candidato con metadati strutturati restituito dal runtime. I campi restano vuoti e facoltativi.'
+          : '$prettyResult\n\nMetadati strutturati trovati: controllali prima della conferma.';
+      _output = _metadataResult;
+    });
   }
 
   Future<void> _consult() async {
@@ -898,18 +954,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 const SizedBox(height: 8),
                 SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 6),
-                const Text('La ricerca parte quando esci dal campo descrizione. I risultati non verificati non vengono considerati dati certi.',
+                const Text('La ricerca prepara le fonti disponibili. I metadati sono facoltativi e vengono compilati solo se il runtime restituisce campi strutturati; verifica i valori prima di salvare.',
                   style: TextStyle(color: Colors.white54, fontSize: 11)),
               ]),
             ),
           ),
           const SizedBox(height: 12),
-          const Text('DATI OBBLIGATORI E COMPLETAMENTO SCHEDA',
+          const Text('METADATI TECNICI (FACOLTATIVI) E COMPLETAMENTO SCHEDA',
             style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 10),
-          _field(_producer, 'Produttore *'),
-          _field(_line, 'Linea / serie *'),
-          _field(_family, 'Famiglia / categoria *'),
+          _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
+          _field(_producer, 'Produttore (facoltativo)'),
+          _field(_family, 'Codice prodotto (facoltativo)'),
           _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
           _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
           _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
@@ -1016,9 +1072,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Future<void> _confirmAndSaveNewObject() async {
     if (_description.text.trim().isEmpty) throw Exception('La descrizione oggetto è obbligatoria.');
-    if (_producer.text.trim().isEmpty) throw Exception('Il produttore è obbligatorio.');
-    if (_line.text.trim().isEmpty) throw Exception('La linea / serie è obbligatoria.');
-    if (_family.text.trim().isEmpty) throw Exception('La famiglia / categoria è obbligatoria.');
+    final yearText = _line.text.trim();
+    if (yearText.isNotEmpty) {
+      final year = int.tryParse(yearText);
+      if (year == null || year < 1000 || year > DateTime.now().year + 2) {
+        throw Exception('Anno di uscita non valido. Inserisci un anno plausibile oppure lascia il campo vuoto.');
+      }
+    }
     final qty = int.tryParse(_quantity.text.trim());
     if (qty == null || qty < 1) throw Exception('La quantità deve essere un numero intero maggiore di zero.');
 
@@ -1028,15 +1088,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Conferma inserimento oggetto'),
         content: SingleChildScrollView(child: Text(
-          'Descrizione: ${_description.text.trim()}\\n'
+          'Descrizione: ${_description.text.trim()}\n'
           'Produttore: ${_producer.text.trim()}\\n'
           'Linea / serie: ${_line.text.trim()}\\n'
           'Famiglia / categoria: ${_family.text.trim()}\\n'
-          'Condizione: $_condition\\n'
-          'Completezza: $_completeness\\n'
-          'Destinazione: $_destination\\n'
-          'Quantità: ${_quantity.text.trim()}\\n'
-          'Note: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}\\n\\n'
+          'Condizione: $_condition\n'
+          'Completezza: $_completeness\n'
+          'Destinazione: $_destination\n'
+          'Quantità: ${_quantity.text.trim()}\n'
+          'Note: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}\n\n'
           'Confermi il salvataggio di questo oggetto nel database TEST?'
         )),
         actions: [
@@ -1080,7 +1140,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
         _lastMetadataQuery = '';
-        _metadataResult = 'Inserisci la descrizione e poi esci dal campo per avviare la ricerca metadati.';
+        _metadataResult = 'Inserisci la descrizione e poi esci dal campo per preparare la ricerca metadati.';
         _output = 'Pronto per il prossimo oggetto.';
       });
       _descriptionFocus.requestFocus();
