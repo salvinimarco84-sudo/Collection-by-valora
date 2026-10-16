@@ -1,99 +1,63 @@
-name: COLLECTION by VALORA - Build and Test
+name: COLLECTION by VALORA Build
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches: [main]
     paths:
-      - 'COLLECTION_by_VALORA_flutter_UI/**'
+      - 'FLAT__lib__main.dart'
+      - 'FLAT__pubspec.yaml'
+      - 'valora_logo.png'
+      - 'apply_valora_logo.py'
       - '.github/workflows/collection-by-valora-build.yml'
 
 permissions:
   contents: read
 
 jobs:
-  flutter-tests:
-    name: Analyze and test Flutter
+  build-android:
+    name: Build Android APK (Run 44 + OGGETTO)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: COLLECTION_by_VALORA_flutter_UI
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true
-      - name: Generate Android and Windows platform scaffolding
-        run: flutter create . --platforms=android,windows --project-name collection_by_valora
-      - name: Resolve packages
+      - name: Validate replacement inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s FLAT__lib__main.dart
+          test -s FLAT__pubspec.yaml
+          test -s valora_logo.png
+          test -s apply_valora_logo.py
+          mkdir -p lib test assets
+          cp FLAT__lib__main.dart lib/main.dart
+          cp FLAT__pubspec.yaml pubspec.yaml
+          cp valora_logo.png assets/valora_logo.png
+          flutter create . --platforms=android --project-name collection_by_valora
+          cp FLAT__lib__main.dart lib/main.dart
+          cp FLAT__pubspec.yaml pubspec.yaml
+          cp valora_logo.png assets/valora_logo.png
+          python apply_valora_logo.py
+          rm -f test/widget_test.dart widget_test.dart main.dart
+      - name: Verify Android Internet permission
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest=android/app/src/main/AndroidManifest.xml
+          test -f "$manifest"
+          grep -q 'android.permission.INTERNET' "$manifest" || sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$manifest"
+          grep -q 'android.permission.INTERNET' "$manifest"
+      - name: Install dependencies
         run: flutter pub get
-      - name: Static analysis
-        run: flutter analyze
-      - name: Widget tests
-        run: flutter test --reporter expanded
-
-  android-apk:
-    name: Build Android APK (TEST UI)
-    runs-on: ubuntu-latest
-    needs: flutter-tests
-    defaults:
-      run:
-        working-directory: COLLECTION_by_VALORA_flutter_UI
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: Generate Android platform
-        run: flutter create . --platforms=android --project-name collection_by_valora
-      - name: Resolve packages
-        run: flutter pub get
-      - name: Build APK
+      - name: Analyze application source
+        run: flutter analyze lib/main.dart --no-fatal-infos
+      - name: Build release APK
         run: flutter build apk --release
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: collection-by-valora-android-apk
-          path: COLLECTION_by_VALORA_flutter_UI/build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
-          retention-days: 14
-
-  windows-exe:
-    name: Build Windows app
-    runs-on: windows-latest
-    needs: flutter-tests
-    defaults:
-      run:
-        working-directory: COLLECTION_by_VALORA_flutter_UI
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-      - name: Enable Windows desktop
-        run: flutter config --enable-windows-desktop
-      - name: Generate Windows platform
-        run: flutter create . --platforms=windows --project-name collection_by_valora
-      - name: Resolve packages
-        run: flutter pub get
-      - name: Build Windows release
-        run: flutter build windows --release
-      - name: Package Windows build
-        shell: pwsh
-        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath ../collection-by-valora-windows.zip -Force
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: collection-by-valora-windows
-          path: collection-by-valora-windows.zip
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14

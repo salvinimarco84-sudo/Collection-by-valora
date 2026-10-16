@@ -1,0 +1,11 @@
+STATIC CHECK REPORT
+Base source: Run 44 commit d1cefe8949edd95ea14f093c468377d52861f10c
+Source bytes: 27984
+Source SHA256: 862590ee54308fe41041b043c161394c0a5c31e5d4b589c402e6e179e2fddad0
+Dashboard OGGETTO tile: PASS
+Dedicated OGGETTO procedure map: PASS
+PR-01, PR-02, PR-03, PR-11 entries: PASS
+Write operations gated until runtime verification: PASS
+Supabase writes performed: 0
+Production touched: NO
+Flutter analyze/build executed in authoring environment: NO
