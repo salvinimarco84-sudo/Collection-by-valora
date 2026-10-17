@@ -486,6 +486,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
   String _lastMetadataQuery = '';
+  String? _metadataSourceUrl;
+  bool _metadataSearchExecuted = false;
   String _metadataResult = 'La ricerca dei metadati partirà quando esci dal campo Descrizione oggetto.';
   bool _loading = false;
   bool _lockHeld = false;
@@ -586,6 +588,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     throw Exception(result is Map ? (result['messaggio'] ?? 'Blocco non rilasciato.') : 'Blocco non rilasciato.');
   }
 
+  bool get _hasAnyMetadata =>
+      _producer.text.trim().isNotEmpty ||
+      _line.text.trim().isNotEmpty ||
+      _family.text.trim().isNotEmpty ||
+      (_metadataSourceUrl?.trim().isNotEmpty ?? false);
+
   Map<String, dynamic> _payload() {
     final id = int.tryParse(_code.text.trim());
     if (widget.apiCode == 'PR-01') {
@@ -597,6 +605,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
         'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
         'codice_prodotto': _family.text.trim().isEmpty ? null : _family.text.trim(),
+        if (_hasAnyMetadata)
+          'fonte_dati_prodotto': (_metadataSourceUrl?.trim().isNotEmpty == true)
+              ? _metadataSourceUrl!.trim()
+              : (_metadataSearchExecuted
+                  ? 'RICERCA_ESEGUITA_NESSUNA_FONTE_SELEZIONATA'
+                  : 'RICERCA_NON_ESEGUITA'),
+        if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
@@ -701,6 +716,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (result['ok'] != true) {
       throw Exception((result['error'] ?? 'Ricerca web non riuscita').toString());
     }
+    _metadataSearchExecuted = true;
     final rawResults = result['risultati'];
     final candidates = rawResults is List
         ? rawResults.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
@@ -708,30 +724,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
     if (!mounted) return;
     if (candidates.isEmpty) {
-      // Diagnostica temporanea: rende visibile la risposta reale di PR-12,
-      // senza modificare il motore di ricerca o salvare dati nel database.
-      const diagnosticKeys = <String>[
-        'diagnostica',
-        'errori_fonti',
-        'fonti_database',
-        'regole_franchise_applicate',
-        'query_eseguite',
-      ];
-      final diagnostic = <String, dynamic>{};
-      for (final key in diagnosticKeys) {
-        if (result.containsKey(key)) diagnostic[key] = result[key];
-      }
-      const jsonEncoder = JsonEncoder.withIndent('  ');
-      final diagnosticJson = diagnostic.isEmpty
-          ? 'PR-12 non ha incluso i campi diagnostici nella risposta.\n'
-              'Risposta ricevuta: ${jsonEncoder.convert(result)}'
-          : jsonEncoder.convert(diagnostic);
-      if (!mounted) return;
       setState(() {
-        _metadataResult = 'PR-12 non ha restituito risultati utilizzabili.\n\n'
-            'DIAGNOSTICA TEMPORANEA\n'
-            'Descrizione cercata: $description\n\n'
-            '$diagnosticJson';
+        _metadataResult = 'PR-12 ha eseguito la ricerca online ma non ha restituito risultati leggibili. Puoi riprovare o compilare i metadati manualmente.';
         _output = _metadataResult;
       });
       return;
@@ -810,8 +804,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       return;
     }
 
-    final url = (selected['url'] ?? '').toString();
-    final title = (selected['title'] ?? '').toString();
+    final url = (selected['url'] ?? '').toString().trim();
+    final title = (selected['title'] ?? '').toString().trim();
     final snippet = (selected['snippet'] ?? '').toString();
     setState(() {
       _metadataResult = 'Fonte selezionata: $title\n$url\n\n'
@@ -855,20 +849,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final producer = (selected['produttore'] ?? '').toString().trim();
       final productCode = (selected['codice_prodotto'] ?? '').toString().trim();
       final year = (selected['anno_uscita'] ?? '').toString().trim();
-      if (producer.isEmpty && productCode.isEmpty && year.isEmpty) {
-        setState(() {
-          _metadataResult = 'La fonte non ha restituito metadati strutturati. Compila i campi manualmente dopo aver verificato la pagina.';
-          _output = _metadataResult;
-        });
-      } else {
-        setState(() {
-          if (producer.isNotEmpty) _producer.text = producer;
-          if (productCode.isNotEmpty) _family.text = productCode;
-          if (year.isNotEmpty && int.tryParse(year) != null) _line.text = year;
-          _metadataResult = 'Metadati applicati alla maschera PR-01 su tua conferma. Nessun dato è stato salvato nel database.';
-          _output = _metadataResult;
-        });
-      }
+      setState(() {
+        // La conferma accetta il titolo del risultato anche se la fonte non
+        // restituisce tutti i campi strutturati; i campi assenti restano manuali.
+        if (title.isNotEmpty) _description.text = title;
+        if (producer.isNotEmpty) _producer.text = producer;
+        if (productCode.isNotEmpty) _family.text = productCode;
+        if (year.isNotEmpty && int.tryParse(year) != null) _line.text = year;
+        _metadataSourceUrl = url.isNotEmpty ? url : null;
+        _metadataResult = (producer.isEmpty && productCode.isEmpty && year.isEmpty)
+            ? 'Titolo e fonte applicati su tua conferma. La fonte non ha restituito metadati strutturati: completa i campi manualmente. Stato: DA_VERIFICARE. Nessun dato è stato salvato nel database.'
+            : 'Metadati applicati alla maschera PR-01 su tua conferma. Descrizione aggiornata al titolo selezionato. Fonte registrata; stato: DA_VERIFICARE. Nessun dato è stato salvato nel database.';
+        _output = _metadataResult;
+      });
     } else if (sourceAction == 'open') {
       // La selezione mostra l'URL senza scrivere dati nel database.
       await showDialog<void>(
