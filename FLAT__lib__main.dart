@@ -1001,7 +1001,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         }]
       };
       try {
-        final preview = await _ValoraRuntimeApi.procedure('PR-03', 'preview', payload, sessionId: _sessionId);
+        if (!_lockHeld) await _acquireLock();
+        await _ValoraRuntimeApi.procedure('PR-03', 'preview', payload, sessionId: _sessionId);
         final reviewPayload = Map<String, dynamic>.from(payload)
           ..['dati_confermati'] = true
           ..['altra_operazione'] = false
