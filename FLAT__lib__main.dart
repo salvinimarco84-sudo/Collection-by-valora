@@ -540,6 +540,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _notes = TextEditingController();
   final _code = TextEditingController();
   final _quantity = TextEditingController(text: '1');
+  final _unitPrice = TextEditingController();
+  final _totalValue = TextEditingController();
   final _value = TextEditingController();
   final _marketValue = TextEditingController(text: '0.00');
   final _producer = TextEditingController();
@@ -573,8 +575,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     super.initState();
     if (widget.apiCode == 'PR-01') {
       _descriptionFocus.addListener(_onDescriptionFocusChanged);
+      _quantity.addListener(_recalculateTotal);
+      _unitPrice.addListener(_recalculateTotal);
     }
     if (widget.initialObjectCode != null) _code.text = widget.initialObjectCode.toString();
+  }
+
+  void _recalculateTotal() {
+    if (widget.apiCode != 'PR-01') return;
+    final quantity = int.tryParse(_quantity.text.trim());
+    final unitText = _unitPrice.text.trim();
+    if (quantity == null || quantity < 1 || unitText.isEmpty) {
+      if (_totalValue.text.isNotEmpty) _totalValue.clear();
+      return;
+    }
+    final unitPrice = double.tryParse(unitText.replaceAll(',', '.'));
+    if (unitPrice == null || unitPrice < 0) {
+      if (_totalValue.text.isNotEmpty) _totalValue.clear();
+      return;
+    }
+    final totalCents = (unitPrice * 100 * quantity).round();
+    final total = (totalCents / 100).toStringAsFixed(2);
+    if (_totalValue.text != total) _totalValue.text = total;
   }
 
   void _onDescriptionFocusChanged() {
@@ -615,7 +637,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _descriptionFocus.removeListener(_onDescriptionFocusChanged);
     _descriptionFocus.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
-    _quantity.dispose(); _value.dispose(); _marketValue.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
+    _quantity.dispose(); _unitPrice.dispose(); _totalValue.dispose(); _value.dispose(); _marketValue.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
     super.dispose();
   }
 
@@ -671,6 +693,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_description.text.trim().isEmpty) throw Exception('La descrizione è obbligatoria.');
       final q = int.tryParse(_quantity.text.trim());
       if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
+      final unitPriceText = _unitPrice.text.trim();
+      final double? unitPrice = unitPriceText.isEmpty
+          ? null
+          : _parseNonNegativeValue(unitPriceText, 'Prezzo unitario');
+      final double? totalValue = unitPrice == null
+          ? null
+          : ((unitPrice * 100 * q).round() / 100.0);
+      _recalculateTotal();
       return {'oggetti': [{
         'descrizione': _description.text.trim(),
         'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
@@ -685,10 +715,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
-        if (_value.text.trim().isNotEmpty) ...{
-          'valore_oggetto': _parseNonNegativeValue(_value.text, 'Valore oggetto'),
-          if (q > 1) 'modalita_prezzo': 'PREZZO_UNITARIO',
-        },
+        if (totalValue != null) 'valore_oggetto': totalValue,
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       }]};
     }
@@ -1335,7 +1362,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
                 _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
                 _field(_quantity, 'Quantità', type: TextInputType.number),
-                _field(_value, 'Valore oggetto registrato (€)', type: const TextInputType.numberWithOptions(decimal: true)),
+                _field(_unitPrice, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextField(
+                    controller: _totalValue,
+                    readOnly: true,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Valore totale calcolato (€)',
+                      helperText: 'Quantità × prezzo unitario. Il totale viene registrato in valore_oggetto.',
+                    ),
+                  ),
+                ),
                 _field(_notes, 'Note', lines: 2),
               ]),
             ),
@@ -1487,7 +1526,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'Completezza: $_completeness\n'
           'Destinazione: $_destination\n'
           'Quantità: ${_quantity.text.trim()}\n'
-          'Valore oggetto: ${_value.text.trim().isEmpty ? 'Non indicato' : _value.text.trim() + ' €'}\n'
+          'Prezzo unitario: ${_unitPrice.text.trim().isEmpty ? 'Non indicato' : _unitPrice.text.trim() + ' €'}\n'
+          'Valore totale: ${_totalValue.text.trim().isEmpty ? 'Non indicato' : _totalValue.text.trim() + ' €'}\n'
           'Valore di mercato stimato: ${_marketValue.text.trim().isEmpty ? 'Non indicato' : _marketValue.text.trim() + ' €'}\n'
           'Note: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}\n\n'
           'Confermi il salvataggio di questo oggetto nel database TEST?'
@@ -1529,6 +1569,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _family.clear();
         _notes.clear();
         _quantity.text = '1';
+        _unitPrice.clear();
+        _totalValue.clear();
         _value.clear();
         _marketValue.text = '0.00';
         _condition = 'USATO';
@@ -1610,7 +1652,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     if (widget.apiCode == 'PR-01') {
       _description.clear(); _producer.clear(); _line.clear(); _family.clear();
-      _notes.clear(); _quantity.text = '1';
+      _notes.clear(); _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear();
     }
   }
 }
