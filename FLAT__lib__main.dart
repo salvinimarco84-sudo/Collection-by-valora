@@ -856,6 +856,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _field(_producer, 'Produttore'),
             _field(_line, 'Anno di uscita', type: TextInputType.number),
             _field(_family, 'Codice prodotto'),
+            _detailFieldCard('fonte_dati_prodotto', _metadataSourceUrl ?? object['fonte_dati_prodotto']),
+            _detailFieldCard('stato_verifica_dati', object['stato_verifica_dati'] ?? 'DA_VERIFICARE'),
             _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
             _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
             _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
@@ -1557,19 +1559,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           )),
           if (_currentObject != null) ...[
             const SizedBox(height: 12),
-            LayoutBuilder(builder: (context, constraints) {
-              if (constraints.maxWidth >= 760) {
-                return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(child: _pr02Side(oldValues: true)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _pr02Side(oldValues: false)),
-                ]);
-              }
-              return Column(children: [
-                _pr02Side(oldValues: true),
-                _pr02Side(oldValues: false),
-              ]);
-            }),
             Card(child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1584,6 +1573,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 ),
               ]),
             )),
+            LayoutBuilder(builder: (context, constraints) {
+              if (constraints.maxWidth >= 760) {
+                return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: _pr02Side(oldValues: true)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _pr02Side(oldValues: false)),
+                ]);
+              }
+              return Column(children: [
+                _pr02Side(oldValues: true),
+                _pr02Side(oldValues: false),
+              ]);
+            }),
           ],
         ],
         if (_isWrite && code == 'PR-03') ...[
