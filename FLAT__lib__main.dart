@@ -1538,7 +1538,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _metadataResult = 'Inserisci la descrizione e poi esci dal campo per preparare la ricerca metadati.';
         _output = 'Pronto per il prossimo oggetto.';
       });
-      _descriptionFocus.requestFocus();
+      // Aspetta che il dialogo sia chiuso e il modulo sia ridisegnato prima di
+      // riportare il cursore sul primo campo utile del nuovo oggetto.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        FocusScope.of(context).requestFocus(_descriptionFocus);
+      });
     } else {
       if (mounted) Navigator.of(context).pop();
     }
