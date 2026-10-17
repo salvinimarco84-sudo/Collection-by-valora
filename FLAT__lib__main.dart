@@ -1809,6 +1809,56 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Future<void> _save() async {
     if (!_dataConfirmed || !_finalReady) throw Exception('Conferma i dati prima del salvataggio.');
+    if (widget.apiCode == 'PR-02') {
+      final restart = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Conferma PR-02'),
+          content: const Text('Vuoi ricominciare la procedura per modificare un altro oggetto? SÌ riavvia la ricerca senza salvare queste modifiche. NO salva le modifiche appena confermate.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('NO, SALVA LE MODIFICHE'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('SÌ, RICOMINCIA'),
+            ),
+          ],
+        ),
+      );
+      if (restart == true) {
+        if (_lockHeld) await _releaseLock();
+        if (!mounted) return;
+        setState(() {
+          _search.clear();
+          _code.clear();
+          _description.clear();
+          _notes.clear();
+          _producer.clear();
+          _line.clear();
+          _family.clear();
+          _value.clear();
+          _currentObject = null;
+          _loadedObjectId = null;
+          _pr02SearchResults = [];
+          _pr02SearchCompleted = false;
+          _metadataSourceUrl = null;
+          _metadataSearchExecuted = false;
+          _lastMetadataQuery = '';
+          _metadataResult = 'Inserisci una parola o parte della descrizione per iniziare.';
+          _lastResult = null;
+          _dataConfirmed = false;
+          _finalReady = false;
+          _output = 'PR-02 pronta per una nuova ricerca.';
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) FocusScope.of(context).requestFocus(_searchFocusNode);
+        });
+        return;
+      }
+    }
     final payload = _payload()
       ..['dati_confermati'] = true
       ..['altra_operazione'] = false
