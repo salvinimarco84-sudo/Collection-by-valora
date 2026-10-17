@@ -600,14 +600,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_description.text.trim().isEmpty) throw Exception('La descrizione è obbligatoria.');
       final q = int.tryParse(_quantity.text.trim());
       if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
-      final valueText = _value.text.trim().replaceAll(',', '.');
-      final objectValue = valueText.isEmpty ? null : double.tryParse(valueText);
-      if (valueText.isNotEmpty && (objectValue == null || !objectValue.isFinite || objectValue < 0)) {
-        throw Exception('Il valore unitario deve essere un numero valido maggiore o uguale a zero, oppure lascia il campo vuoto.');
-      }
       return {'oggetti': [{
         'descrizione': _description.text.trim(),
-        'valore_oggetto': objectValue,
         'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
         'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
         'codice_prodotto': _family.text.trim().isEmpty ? null : _family.text.trim(),
@@ -1132,10 +1126,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     );
   }
 
-  Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text, FocusNode? focusNode, ValueChanged<String>? onChanged}) =>
+  Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text, FocusNode? focusNode}) =>
     Padding(padding: const EdgeInsets.only(bottom: 12), child: TextField(
       controller: c, focusNode: focusNode, maxLines: lines, keyboardType: type,
-      onChanged: onChanged,
       decoration: InputDecoration(labelText: label),
     ));
 
@@ -1252,25 +1245,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
           _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
           _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
-          _field(_quantity, 'Quantità', type: TextInputType.number, onChanged: (_) => setState(() {})),
-          _field(_value, 'Valore unitario oggetto (€) (facoltativo)', type: const TextInputType.numberWithOptions(decimal: true), onChanged: (_) => setState(() {})),
-          Builder(builder: (context) {
-            final unitText = _value.text.trim().replaceAll(',', '.');
-            final qty = int.tryParse(_quantity.text.trim());
-            final unit = unitText.isEmpty ? null : double.tryParse(unitText);
-            if (unit == null || !unit.isFinite || unit < 0 || qty == null || qty < 1) {
-              return const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text('Inserisci un valore unitario e una quantità valida per calcolare il totale.',
-                  style: TextStyle(color: Colors.white54, fontSize: 12)),
-              );
-            }
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text('Valore totale: € ${(unit * qty).toStringAsFixed(2)}',
-                style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-            );
-          }),
+          _field(_quantity, 'Quantità', type: TextInputType.number),
           _field(_notes, 'Note', lines: 2),
         ],
         if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
@@ -1394,7 +1369,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'Condizione: $_condition\n'
           'Completezza: $_completeness\n'
           'Destinazione: $_destination\n'
-          'Valore unitario: ${_value.text.trim().isEmpty ? 'Non indicato' : '€ ${_value.text.trim()}'}\n'
           'Quantità: ${_quantity.text.trim()}\n'
           'Note: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}\n\n'
           'Confermi il salvataggio di questo oggetto nel database TEST?'
@@ -1434,7 +1408,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _producer.clear();
         _line.clear();
         _family.clear();
-        _value.clear();
         _notes.clear();
         _quantity.text = '1';
         _condition = 'USATO';
@@ -1511,7 +1484,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     if (widget.apiCode == 'PR-01') {
       _description.clear(); _producer.clear(); _line.clear(); _family.clear();
-      _value.clear(); _notes.clear(); _quantity.text = '1';
+      _notes.clear(); _quantity.text = '1';
     }
   }
 }
