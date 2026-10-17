@@ -896,6 +896,17 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _code.text = id.toString();
     await _loadObject();
     if (!mounted || _currentObject == null) return;
+
+    // In PR-03 il campo di ricerca diventa la descrizione del record effettivamente selezionato.
+    // Non lasciare visibile la query digitata dall'utente come se fosse la descrizione dell'oggetto.
+    final selectedDescription = (_currentObject?['descrizione_oggetto']
+        ?? _currentObject?['descrizione']
+        ?? item['descrizione_oggetto']
+        ?? '').toString().trim();
+    if (selectedDescription.isNotEmpty) {
+      setState(() => _search.text = selectedDescription);
+    }
+
     final metadataKeys = ['produttore', 'anno_uscita', 'codice_prodotto', 'fonte_dati_prodotto'];
     final missing = metadataKeys.any((key) => (_currentObject?[key]?.toString().trim().isEmpty ?? true));
     if (missing) {
