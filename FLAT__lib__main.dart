@@ -568,6 +568,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<dynamic> _rows = [];
   Map<String, dynamic>? _currentObject;
   List<Map<String, dynamic>> _pr02SearchResults = [];
+  bool _showPr02TechnicalTab = false;
   bool _pr02SearchCompleted = false;
   final FocusNode _searchFocusNode = FocusNode();
 
@@ -885,6 +886,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final id = int.tryParse(item['codice_oggetto']?.toString() ?? '');
     if (id == null) throw Exception('Il risultato non contiene un codice oggetto valido.');
     _code.text = id.toString();
+    _showPr02TechnicalTab = false;
     await _loadObject();
     if (!mounted || _currentObject == null) return;
     final hasMetadata = ['produttore', 'anno_uscita', 'codice_prodotto', 'fonte_dati_prodotto']
@@ -898,6 +900,106 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     } else {
       setState(() => _metadataResult = 'Metadati già presenti. Ricerca automatica PR-12 non necessaria.');
     }
+  }
+
+  Widget _pr02MetadataCard(Map<String, dynamic> object) {
+    const imageKeys = [
+      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+      'immagine_principale', 'url_foto', 'foto', 'immagine',
+      'image', 'imageUrl', 'photo_url', 'main_image_url',
+    ];
+    String valueFor(List<String> keys) {
+      for (final key in keys) {
+        final value = object[key];
+        if (value != null && value.toString().trim().isNotEmpty) return value.toString().trim();
+      }
+      return 'Non disponibile';
+    }
+    final imageUrl = valueFor(imageKeys);
+    final hasImage = imageUrl != 'Non disponibile' &&
+        (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'));
+    final producer = valueFor(['produttore']);
+    final year = valueFor(['anno_uscita', 'data_uscita', 'data_di_uscita']);
+    final productCode = valueFor(['codice_prodotto']);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('METADATI DEL PRODOTTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 104,
+              height: 104,
+              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
+              clipBehavior: Clip.antiAlias,
+              child: hasImage
+                  ? Image.network(imageUrl, fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 36))
+                  : const Icon(Icons.image_outlined, color: Colors.white38, size: 36),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _metadataValue('Produttore', producer),
+              const SizedBox(height: 8),
+              _metadataValue('Data di uscita', year),
+              const SizedBox(height: 8),
+              _metadataValue('Codice prodotto', productCode),
+            ])),
+          ]),
+          const SizedBox(height: 8),
+          const Text('Metadati informativi, non modificabili da questa scheda.',
+            style: TextStyle(color: Colors.white54, fontSize: 11)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _metadataValue(String label, String value) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: const TextStyle(color: goldColor, fontSize: 11, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 2),
+      Text(value, style: const TextStyle(color: Colors.white, fontSize: 13)),
+    ],
+  );
+
+  Widget _pr02TechnicalCard(Map<String, dynamic> object) {
+    const operationalKeys = {
+      'codice_oggetto', 'descrizione_oggetto', 'descrizione', 'produttore',
+      'anno_uscita', 'data_uscita', 'data_di_uscita', 'codice_prodotto',
+      'condizione', 'completezza', 'destinazione', 'quantita',
+      'valore_oggetto', 'valore', 'note', 'stato',
+      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+      'immagine_principale', 'url_foto', 'foto', 'immagine',
+      'image', 'imageUrl', 'photo_url', 'main_image_url',
+    };
+    final technicalEntries = object.entries
+        .where((entry) => !operationalKeys.contains(entry.key))
+        .toList();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('DATI TECNICI · SOLA LETTURA',
+            style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _loading ? null : () => _run(_prepareMetadata),
+            icon: const Icon(Icons.travel_explore),
+            label: const Text('RICHIAMA METADATI PR-12'),
+          ),
+          const Divider(height: 24),
+          if (technicalEntries.isEmpty)
+            const Text('Nessun altro dato tecnico presente nel record.',
+              style: TextStyle(color: Colors.white60))
+          else
+            ...technicalEntries.map((entry) => _detailFieldCard(entry.key, entry.value)),
+        ]),
+      ),
+    );
   }
 
   Widget _pr02Side({required bool oldValues}) {
@@ -1629,33 +1731,52 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           )),
           if (_currentObject != null) ...[
             const SizedBox(height: 12),
-            Card(child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('METADATI · PR-12', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _loading ? null : () => _run(_prepareMetadata),
-                  icon: const Icon(Icons.travel_explore),
-                  label: const Text('RICERCA / RICHIAMA METADATI PR-12'),
-                ),
-              ]),
-            )),
-            LayoutBuilder(builder: (context, constraints) {
-              if (constraints.maxWidth >= 760) {
-                return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(child: _pr02Side(oldValues: true)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _pr02Side(oldValues: false)),
+            _pr02MetadataCard(_currentObject!),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(children: [
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: !_showPr02TechnicalTab ? goldColor : cardColor,
+                        foregroundColor: !_showPr02TechnicalTab ? Colors.black : Colors.white,
+                      ),
+                      onPressed: () => setState(() => _showPr02TechnicalTab = false),
+                      child: const Text('SCHEDA OGGETTO'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _showPr02TechnicalTab ? goldColor : cardColor,
+                        foregroundColor: _showPr02TechnicalTab ? Colors.black : Colors.white,
+                      ),
+                      onPressed: () => setState(() => _showPr02TechnicalTab = true),
+                      child: const Text('DATI TECNICI'),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            if (!_showPr02TechnicalTab)
+              LayoutBuilder(builder: (context, constraints) {
+                if (constraints.maxWidth >= 760) {
+                  return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(child: _pr02Side(oldValues: true)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _pr02Side(oldValues: false)),
+                  ]);
+                }
+                return Column(children: [
+                  _pr02Side(oldValues: true),
+                  _pr02Side(oldValues: false),
                 ]);
-              }
-              return Column(children: [
-                _pr02Side(oldValues: true),
-                _pr02Side(oldValues: false),
-              ]);
-            }),
+              })
+            else
+              _pr02TechnicalCard(_currentObject!),
           ],
         ],
         if (_isWrite && code == 'PR-03') ...[
