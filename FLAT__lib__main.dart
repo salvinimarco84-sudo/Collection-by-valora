@@ -567,6 +567,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Map<String, dynamic>? _lastResult;
   List<dynamic> _rows = [];
   Map<String, dynamic>? _currentObject;
+  List<Map<String, dynamic>> _pr02SearchResults = [];
+  bool _pr02SearchCompleted = false;
+  final FocusNode _searchFocusNode = FocusNode();
 
   bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03'}.contains(widget.apiCode);
 
@@ -636,6 +639,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     _descriptionFocus.removeListener(_onDescriptionFocusChanged);
     _descriptionFocus.dispose();
+    _searchFocusNode.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
     _quantity.dispose(); _unitPrice.dispose(); _totalValue.dispose(); _value.dispose(); _marketValue.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
     super.dispose();
@@ -730,6 +734,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_completeness != (_currentObject?['completezza'] ?? _completeness)) item['completezza'] = _completeness;
       if (_destination != (_currentObject?['destinazione'] ?? _destination)) item['destinazione'] = _destination;
       if (_notes.text.trim() != (_currentObject?['note'] ?? '').toString()) item['note'] = _notes.text.trim().isEmpty ? null : _notes.text.trim();
+      if (_quantity.text.trim() != (_currentObject?['quantita'] ?? '1').toString()) {
+        final q = int.tryParse(_quantity.text.trim());
+        if (q == null || q < 1) throw Exception('La quantità deve essere un intero maggiore di zero.');
+        item['quantita'] = q;
+      }
+      if (_producer.text.trim() != (_currentObject?['produttore'] ?? '').toString()) item['produttore'] = _producer.text.trim().isEmpty ? null : _producer.text.trim();
+      if (_line.text.trim() != (_currentObject?['anno_uscita'] ?? '').toString()) {
+        final year = _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim());
+        if (_line.text.trim().isNotEmpty && year == null) throw Exception('Anno di uscita non valido.');
+        item['anno_uscita'] = year;
+      }
+      if (_family.text.trim() != (_currentObject?['codice_prodotto'] ?? '').toString()) item['codice_prodotto'] = _family.text.trim().isEmpty ? null : _family.text.trim();
       final currentValueRaw = _currentObject?['valore_oggetto'] ?? _currentObject?['valore'];
       final currentValueText = currentValueRaw == null ? '' : currentValueRaw.toString().trim();
       final proposedValueText = _value.text.trim().replaceAll(',', '.');
@@ -755,6 +771,101 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }]};
     }
     throw Exception('Procedura di scrittura non riconosciuta.');
+  }
+
+  Future<void> _searchPr02Objects() async {
+    final query = _search.text.trim();
+    if (query.isEmpty) throw Exception('Inserisci una parola, parte della descrizione o un codice.');
+    final response = await Supabase.instance.client.schema('collection').rpc(
+      'pr_02_interfaccia_modifica',
+      params: {'p_cerca': query},
+    );
+    if (response is! Map) throw Exception('Risposta della ricerca PR-02 non valida.');
+    final raw = response['oggetti'];
+    final results = raw is List
+        ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        : <Map<String, dynamic>>[];
+    setState(() {
+      _pr02SearchResults = results;
+      _pr02SearchCompleted = true;
+      _output = results.isEmpty
+          ? 'Nessun oggetto disponibile corrisponde a ' + query
+          : 'Risultati PR-02: ' + results.length.toString() + ' per ' + query + '. Seleziona il record corretto.';
+    });
+  }
+
+  Future<void> _selectPr02Object(Map<String, dynamic> item) async {
+    final id = int.tryParse(item['codice_oggetto']?.toString() ?? '');
+    if (id == null) throw Exception('Il risultato non contiene un codice oggetto valido.');
+    final description = (item['descrizione_oggetto'] ?? item['descrizione'] ?? '').toString();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: cardColor,
+        title: const Text('Conferma oggetto da modificare'),
+        content: Text('Codice: ' + id.toString() + '\nDescrizione: ' + description + '\n\nConfermi che questo è il record da modificare?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, TORNA AI RISULTATI')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, QUESTO È L’OGGETTO')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    _code.text = id.toString();
+    await _loadObject();
+    if (!mounted || _currentObject == null) return;
+    final hasMetadata = ['produttore', 'anno_uscita', 'codice_prodotto', 'fonte_dati_prodotto']
+        .any((key) => (_currentObject?[key]?.toString().trim().isNotEmpty ?? false));
+    if (!hasMetadata) {
+      setState(() {
+        _metadataResult = 'Metadati assenti. Avvio della ricerca tramite PR-12…';
+        _output = _metadataResult;
+      });
+      await _prepareMetadata();
+    } else {
+      setState(() => _metadataResult = 'Metadati già presenti. Ricerca automatica PR-12 non necessaria.');
+    }
+  }
+
+  Widget _pr02Side({required bool oldValues}) {
+    final object = _currentObject ?? <String, dynamic>{};
+    final title = oldValues ? 'VECCHI VALORI · SOLA LETTURA' : 'NUOVI VALORI · MODIFICABILI';
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          if (oldValues) ...[
+            _detailFieldCard('codice_oggetto', object['codice_oggetto']),
+            _detailFieldCard('descrizione_oggetto', object['descrizione_oggetto']),
+            _detailFieldCard('produttore', object['produttore']),
+            _detailFieldCard('anno_uscita', object['anno_uscita']),
+            _detailFieldCard('codice_prodotto', object['codice_prodotto']),
+            _detailFieldCard('fonte_dati_prodotto', object['fonte_dati_prodotto']),
+            _detailFieldCard('condizione', object['condizione']),
+            _detailFieldCard('completezza', object['completezza']),
+            _detailFieldCard('destinazione', object['destinazione']),
+            _detailFieldCard('quantita', object['quantita']),
+            _detailFieldCard('valore_oggetto', object['valore_oggetto']),
+            _detailFieldCard('note', object['note']),
+            _detailFieldCard('stato', object['stato']),
+          ] else ...[
+            _field(_description, 'Descrizione oggetto'),
+            _field(_producer, 'Produttore'),
+            _field(_line, 'Anno di uscita', type: TextInputType.number),
+            _field(_family, 'Codice prodotto'),
+            _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+            _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+            _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
+            _field(_quantity, 'Quantità', type: TextInputType.number),
+            _field(_value, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
+            _field(_notes, 'Note', lines: 2),
+          ],
+        ]),
+      ),
+    );
   }
 
   Future<void> _loadObject() async {
@@ -784,6 +895,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _notes.text = txt(['note']);
       _quantity.text = txt(['quantita'], '1');
       _value.text = txt(['valore_oggetto', 'valore']);
+      _producer.text = txt(['produttore']);
+      _line.text = txt(['anno_uscita']);
+      _family.text = txt(['codice_prodotto']);
       final c = txt(['condizione'], _condition);
       if (const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
       final cp = txt(['completezza'], _completeness);
@@ -1404,19 +1518,79 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ),
           ),
         ],
-        if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
+        if (_isWrite && code == 'PR-02') ...[
+          Card(child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('RICERCA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _search,
+                focusNode: _searchFocusNode,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _run(_searchPr02Objects),
+                decoration: InputDecoration(
+                  labelText: 'Parola, parte della descrizione o codice',
+                  hintText: 'Es. Batman',
+                  suffixIcon: IconButton(
+                    tooltip: 'Cerca',
+                    onPressed: _loading ? null : () => _run(_searchPr02Objects),
+                    icon: const Icon(Icons.search),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              if (_pr02SearchCompleted) ...[
+                const SizedBox(height: 10),
+                Text('RISULTATI (' + _pr02SearchResults.length.toString() + ')', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                ..._pr02SearchResults.map((item) => Card(
+                  child: ListTile(
+                    title: Text((item['codice_oggetto'] ?? '').toString() + ' · ' + (item['descrizione_oggetto'] ?? '').toString()),
+                    subtitle: Text('Stato: ' + (item['stato'] ?? 'Non indicato').toString() + ' · Quantità: ' + (item['quantita'] ?? 'Non indicata').toString()),
+                    trailing: const Icon(Icons.chevron_right, color: goldColor),
+                    onTap: _loading ? null : () => _run(() => _selectPr02Object(item)),
+                  ),
+                )),
+              ],
+            ]),
+          )),
+          if (_currentObject != null) ...[
+            const SizedBox(height: 12),
+            LayoutBuilder(builder: (context, constraints) {
+              if (constraints.maxWidth >= 760) {
+                return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: _pr02Side(oldValues: true)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _pr02Side(oldValues: false)),
+                ]);
+              }
+              return Column(children: [
+                _pr02Side(oldValues: true),
+                _pr02Side(oldValues: false),
+              ]);
+            }),
+            Card(child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('METADATI · PR-12', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _loading ? null : () => _run(_prepareMetadata),
+                  icon: const Icon(Icons.travel_explore),
+                  label: const Text('RICERCA / RICHIAMA METADATI PR-12'),
+                ),
+              ]),
+            )),
+          ],
+        ],
+        if (_isWrite && code == 'PR-03') ...[
           _field(_code, 'Codice oggetto *', type: TextInputType.number),
-          if (code == 'PR-02' || code == 'PR-03') OutlinedButton.icon(
+          OutlinedButton.icon(
             onPressed: _loading ? null : () => _run(_loadObject),
             icon: const Icon(Icons.download_outlined), label: const Text('CARICA SCHEDA COMPLETA DAL DATABASE')),
-          if (code == 'PR-02') ...[
-            _field(_description, 'Descrizione'),
-            _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-            _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
-            _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
-            _field(_value, 'Valore oggetto (€)', type: const TextInputType.numberWithOptions(decimal: true)),
-            _field(_notes, 'Note', lines: 2),
-          ],
           if (code == 'PR-03') ...[
             _dropdown('Motivo chiusura', _closeReason, const ['SMARRITO','DISTRUTTO','DATO VIA'], (v) => setState(() => _closeReason = v!)),
             _field(_notes, 'Note', lines: 2),
