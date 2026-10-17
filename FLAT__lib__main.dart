@@ -686,7 +686,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
         if (_value.text.trim().isNotEmpty) 'valore_oggetto': _parseNonNegativeValue(_value.text, 'Valore oggetto'),
-        if (_marketValue.text.trim().isNotEmpty) 'valore_mercato': _parseNonNegativeValue(_marketValue.text, 'Valore di mercato'),
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       }]};
     }
