@@ -841,30 +841,51 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _pr02SearchCompleted = true;
       _output = results.isEmpty
           ? 'Nessun oggetto disponibile per: ' + query
-          : 'Risultati PR-02: ' + results.length.toString() + ' per ' + query +
-            (matchedPhrase != query ? ' (corrispondenza precisa: ' + matchedPhrase + ')' : '') +
-            '. Seleziona il record corretto.';
+          : 'Trovati ' + results.length.toString() + ' risultati. Seleziona il record nella finestra di ricerca.';
     });
+
+    if (results.isEmpty || !mounted) return;
+    final selected = await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: cardColor,
+        title: Text('RISULTATI RICERCA (' + results.length.toString() + ')',
+          style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 560,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 460),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: results.map((item) => Card(
+                  child: ListTile(
+                    title: Text((item['codice_oggetto'] ?? '').toString() + ' · ' +
+                      (item['descrizione_oggetto'] ?? '').toString()),
+                    subtitle: Text('Stato: ' + (item['stato'] ?? 'Non indicato').toString() +
+                      ' · Quantità: ' + (item['quantita'] ?? 'Non indicata').toString() +
+                      ' · Prezzo unitario: € ' + (item['valore_oggetto'] ?? 'Non indicato').toString()),
+                    trailing: const Icon(Icons.chevron_right, color: goldColor),
+                    onTap: () => Navigator.of(dialogContext).pop(item),
+                  ),
+                )).toList(),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('ANNULLA')),
+        ],
+      ),
+    );
+    if (selected != null && mounted) await _selectPr02Object(selected);
   }
 
   Future<void> _selectPr02Object(Map<String, dynamic> item) async {
     final id = int.tryParse(item['codice_oggetto']?.toString() ?? '');
     if (id == null) throw Exception('Il risultato non contiene un codice oggetto valido.');
-    final description = (item['descrizione_oggetto'] ?? item['descrizione'] ?? '').toString();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
-        title: const Text('Conferma oggetto da modificare'),
-        content: Text('Codice: ' + id.toString() + '\nDescrizione: ' + description + '\n\nConfermi che questo è il record da modificare?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, TORNA AI RISULTATI')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, QUESTO È L’OGGETTO')),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
     _code.text = id.toString();
     await _loadObject();
     if (!mounted || _currentObject == null) return;
@@ -1596,18 +1617,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ),
               const SizedBox(height: 8),
               const Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: Colors.white60, fontSize: 12)),
-              if (_pr02SearchCompleted) ...[
-                const SizedBox(height: 10),
-                Text('RISULTATI (' + _pr02SearchResults.length.toString() + ')', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-                ..._pr02SearchResults.map((item) => Card(
-                  child: ListTile(
-                    title: Text((item['codice_oggetto'] ?? '').toString() + ' · ' + (item['descrizione_oggetto'] ?? '').toString()),
-                    subtitle: Text('Stato: ' + (item['stato'] ?? 'Non indicato').toString() + ' · Quantità: ' + (item['quantita'] ?? 'Non indicata').toString()),
-                    trailing: const Icon(Icons.chevron_right, color: goldColor),
-                    onTap: _loading ? null : () => _run(() => _selectPr02Object(item)),
+              if (_pr02SearchCompleted)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _pr02SearchResults.isEmpty
+                      ? 'Nessun risultato trovato.'
+                      : 'Risultati mostrati nella finestra sovrapposta: ' + _pr02SearchResults.length.toString(),
+                    style: const TextStyle(color: Colors.white60, fontSize: 12),
                   ),
-                )),
-              ],
+                ),
             ]),
           )),
           if (_currentObject != null) ...[
