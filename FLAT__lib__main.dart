@@ -1774,6 +1774,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Future<void> _preview() async {
+    if (widget.apiCode == 'PR-02' && _currentObject == null) {
+      await _searchPr02Objects();
+      return;
+    }
     if ((widget.apiCode == 'PR-02' || widget.apiCode == 'PR-03') &&
         _loadedObjectId != int.tryParse(_code.text.trim())) {
       throw Exception('Per questa procedura carica prima la scheda completa del codice selezionato.');
