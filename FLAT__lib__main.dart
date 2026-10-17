@@ -788,20 +788,34 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // nella descrizione registrata (es. "LEGO 6660 Hook & Haul Wrecker").
     final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toSet().toList();
     final byId = <String, Map<String, dynamic>>{};
+    final debugCounts = <String>[];
     for (final token in tokens) {
       final response = await Supabase.instance.client.schema('collection').rpc(
         'pr_02_interfaccia_modifica',
-        params: {'p_cerca': token},
+        params: {'p_codice_oggetto': null, 'p_cerca': token},
       );
-      if (response is! Map) throw Exception('Risposta della ricerca PR-02 non valida.');
-      final raw = response['oggetti'];
+      dynamic payload = response;
+      if (payload is List && payload.length == 1 && payload.first is Map) {
+        payload = payload.first;
+      }
+      if (payload is! Map) {
+        throw Exception('Risposta PR-02 non valida per il termine ' + token + ': ' + payload.runtimeType.toString());
+      }
+      final raw = payload['oggetti'];
+      var found = 0;
       if (raw is List) {
         for (final entry in raw.whereType<Map>()) {
           final item = Map<String, dynamic>.from(entry);
           final id = item['codice_oggetto']?.toString();
-          if (id != null) byId.putIfAbsent(id, () => item);
+          if (id != null) {
+            byId.putIfAbsent(id, () => item);
+            found++;
+          }
         }
+      } else {
+        debugCounts.add(token + ': formato oggetti ' + raw.runtimeType.toString());
       }
+      debugCounts.add(token + ': ' + found.toString());
     }
     final results = byId.values.toList()
       ..sort((a, b) => (int.tryParse(a['codice_oggetto']?.toString() ?? '') ?? 0)
@@ -810,7 +824,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _pr02SearchResults = results;
       _pr02SearchCompleted = true;
       _output = results.isEmpty
-          ? 'Nessun oggetto disponibile corrisponde alle parole di: ' + query
+          ? 'Nessun oggetto disponibile per: ' + query + '\\nDettaglio ricerca: ' + debugCounts.join(' | ')
           : 'Risultati PR-02: ' + results.length.toString() + ' per ' + query + '. Seleziona il record corretto.';
     });
   }
