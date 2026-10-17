@@ -783,49 +783,67 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final query = _search.text.trim();
     if (query.isEmpty) throw Exception('Inserisci una parola, parte della descrizione o un codice.');
 
-    // Ricerca per parole singole: consente di trovare un oggetto anche se
-    // la query contiene un marchio o più termini non presenti consecutivamente
-    // nella descrizione registrata (es. "LEGO 6660 Hook & Haul Wrecker").
-    final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toSet().toList();
-    final byId = <String, Map<String, dynamic>>{};
-    final debugCounts = <String>[];
-    for (final token in tokens) {
+    Future<List<Map<String, dynamic>>> searchPhrase(String phrase) async {
       final response = await Supabase.instance.client.schema('collection').rpc(
         'pr_02_ricerca_oggetti',
-        params: {'p_cerca': token},
+        params: {'p_cerca': phrase},
       );
       dynamic payload = response;
       if (payload is List && payload.length == 1 && payload.first is Map) {
         payload = payload.first;
       }
       if (payload is! Map) {
-        throw Exception('Risposta PR-02 non valida per il termine ' + token + ': ' + payload.runtimeType.toString());
+        throw Exception('Risposta PR-02 non valida per la ricerca: ' + phrase);
       }
       final raw = payload['oggetti'];
-      var found = 0;
-      if (raw is List) {
-        for (final entry in raw.whereType<Map>()) {
-          final item = Map<String, dynamic>.from(entry);
-          final id = item['codice_oggetto']?.toString();
-          if (id != null) {
-            byId.putIfAbsent(id, () => item);
-            found++;
-          }
-        }
-      } else {
-        debugCounts.add(token + ': formato oggetti ' + raw.runtimeType.toString());
-      }
-      debugCounts.add(token + ': ' + found.toString());
+      if (raw is! List) return <Map<String, dynamic>>[];
+      return raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
     }
-    final results = byId.values.toList()
-      ..sort((a, b) => (int.tryParse(a['codice_oggetto']?.toString() ?? '') ?? 0)
-          .compareTo(int.tryParse(b['codice_oggetto']?.toString() ?? '') ?? 0));
+
+    // Priorità assoluta alla frase completa. Se il marchio iniziale non è
+    // registrato nella descrizione (es. "LEGO 6660 ..."), prova le frasi
+    // complete rimuovendo progressivamente le parole iniziali. Appena trova
+    // corrispondenze, mostra solo quelle, senza unire risultati generici.
+    final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toList();
+    List<Map<String, dynamic>> results = await searchPhrase(query);
+    var matchedPhrase = query;
+    if (results.isEmpty && tokens.length > 1) {
+      for (var startAt = 1; startAt < tokens.length; startAt++) {
+        final candidate = tokens.skip(startAt).join(' ').trim();
+        if (candidate.isEmpty) continue;
+        final candidateResults = await searchPhrase(candidate);
+        if (candidateResults.isNotEmpty) {
+          results = candidateResults;
+          matchedPhrase = candidate;
+          break;
+        }
+      }
+    }
+
+    // Solo se nessuna frase completa (né una sua variante senza prefisso)
+    // corrisponde, ripiega sulla ricerca per singole parole.
+    if (results.isEmpty && tokens.length > 1) {
+      final byId = <String, Map<String, dynamic>>{};
+      for (final token in tokens) {
+        for (final item in await searchPhrase(token)) {
+          final id = item['codice_oggetto']?.toString();
+          if (id != null) byId.putIfAbsent(id, () => item);
+        }
+      }
+      results = byId.values.toList();
+    }
+
+    results.sort((a, b) =>
+      (int.tryParse(a['codice_oggetto']?.toString() ?? '') ?? 0)
+        .compareTo(int.tryParse(b['codice_oggetto']?.toString() ?? '') ?? 0));
     setState(() {
       _pr02SearchResults = results;
       _pr02SearchCompleted = true;
       _output = results.isEmpty
-          ? 'Nessun oggetto disponibile per: ' + query + '\\nDettaglio ricerca: ' + debugCounts.join(' | ')
-          : 'Risultati PR-02: ' + results.length.toString() + ' per ' + query + '. Seleziona il record corretto.';
+          ? 'Nessun oggetto disponibile per: ' + query
+          : 'Risultati PR-02: ' + results.length.toString() + ' per ' + query +
+            (matchedPhrase != query ? ' (corrispondenza precisa: ' + matchedPhrase + ')' : '') +
+            '. Seleziona il record corretto.';
     });
   }
 
