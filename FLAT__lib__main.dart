@@ -791,8 +791,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final debugCounts = <String>[];
     for (final token in tokens) {
       final response = await Supabase.instance.client.schema('collection').rpc(
-        'pr_02_interfaccia_modifica',
-        params: {'p_codice_oggetto': null, 'p_cerca': token},
+        'pr_02_ricerca_oggetti',
+        params: {'p_cerca': token},
       );
       dynamic payload = response;
       if (payload is List && payload.length == 1 && payload.first is Map) {
