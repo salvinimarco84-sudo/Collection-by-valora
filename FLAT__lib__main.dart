@@ -685,8 +685,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
-        if (_value.text.trim().isNotEmpty) 'valore_oggetto': _parseNonNegativeValue(_value.text, 'Valore oggetto'),
-        if (_marketValue.text.trim().isNotEmpty) 'valore_mercato': _parseNonNegativeValue(_marketValue.text, 'Valore di mercato'),
+        if (_value.text.trim().isNotEmpty) ...{
+          'valore_oggetto': _parseNonNegativeValue(_value.text, 'Valore oggetto'),
+          if (q > 1) 'modalita_prezzo': 'PREZZO_UNITARIO',
+        },
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       }]};
     }
