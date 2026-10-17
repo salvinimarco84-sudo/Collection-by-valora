@@ -782,20 +782,35 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<void> _searchPr02Objects() async {
     final query = _search.text.trim();
     if (query.isEmpty) throw Exception('Inserisci una parola, parte della descrizione o un codice.');
-    final response = await Supabase.instance.client.schema('collection').rpc(
-      'pr_02_interfaccia_modifica',
-      params: {'p_cerca': query},
-    );
-    if (response is! Map) throw Exception('Risposta della ricerca PR-02 non valida.');
-    final raw = response['oggetti'];
-    final results = raw is List
-        ? raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
-        : <Map<String, dynamic>>[];
+
+    // Ricerca per parole singole: consente di trovare un oggetto anche se
+    // la query contiene un marchio o più termini non presenti consecutivamente
+    // nella descrizione registrata (es. "LEGO 6660 Hook & Haul Wrecker").
+    final tokens = query.split(RegExp(r'\\s+')).where((t) => t.trim().isNotEmpty).toSet().toList();
+    final byId = <String, Map<String, dynamic>>{};
+    for (final token in tokens) {
+      final response = await Supabase.instance.client.schema('collection').rpc(
+        'pr_02_interfaccia_modifica',
+        params: {'p_cerca': token},
+      );
+      if (response is! Map) throw Exception('Risposta della ricerca PR-02 non valida.');
+      final raw = response['oggetti'];
+      if (raw is List) {
+        for (final entry in raw.whereType<Map>()) {
+          final item = Map<String, dynamic>.from(entry);
+          final id = item['codice_oggetto']?.toString();
+          if (id != null) byId.putIfAbsent(id, () => item);
+        }
+      }
+    }
+    final results = byId.values.toList()
+      ..sort((a, b) => (int.tryParse(a['codice_oggetto']?.toString() ?? '') ?? 0)
+          .compareTo(int.tryParse(b['codice_oggetto']?.toString() ?? '') ?? 0));
     setState(() {
       _pr02SearchResults = results;
       _pr02SearchCompleted = true;
       _output = results.isEmpty
-          ? 'Nessun oggetto disponibile corrisponde a ' + query
+          ? 'Nessun oggetto disponibile corrisponde alle parole di: ' + query
           : 'Risultati PR-02: ' + results.length.toString() + ' per ' + query + '. Seleziona il record corretto.';
     });
   }
