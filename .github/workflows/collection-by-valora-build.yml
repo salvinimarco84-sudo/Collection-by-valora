@@ -31,11 +31,13 @@ jobs:
           test -f valora_logo.png
           test -f apply_valora_logo.py
 
-      - name: Prepare Flutter project
+      - name: Prepare clean Flutter Android project
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p lib test assets
+          # Recreate platform scaffolding to avoid stale native plugin registrants.
+          rm -rf android
           flutter create . --platforms=android --project-name collection_by_valora
           cp FLAT__lib__main.dart lib/main.dart
           cp FLAT__pubspec.yaml pubspec.yaml
@@ -90,11 +92,13 @@ jobs:
             if (-not (Test-Path $file)) { throw "File richiesto mancante: $file" }
           }
 
-      - name: Prepare Flutter project
+      - name: Prepare clean Flutter Windows project
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force lib, test, assets | Out-Null
+          # Recreate platform scaffolding to avoid stale generated platform files.
+          if (Test-Path windows) { Remove-Item windows -Recurse -Force }
           flutter create . --platforms=windows --project-name collection_by_valora
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Copy-Item FLAT__lib__main.dart lib/main.dart -Force
