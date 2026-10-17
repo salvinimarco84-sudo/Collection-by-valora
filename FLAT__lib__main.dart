@@ -786,7 +786,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // Ricerca per parole singole: consente di trovare un oggetto anche se
     // la query contiene un marchio o più termini non presenti consecutivamente
     // nella descrizione registrata (es. "LEGO 6660 Hook & Haul Wrecker").
-    final tokens = query.split(RegExp(r'\\s+')).where((t) => t.trim().isNotEmpty).toSet().toList();
+    final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toSet().toList();
     final byId = <String, Map<String, dynamic>>{};
     for (final token in tokens) {
       final response = await Supabase.instance.client.schema('collection').rpc(
