@@ -746,6 +746,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         item['anno_uscita'] = year;
       }
       if (_family.text.trim() != (_currentObject?['codice_prodotto'] ?? '').toString()) item['codice_prodotto'] = _family.text.trim().isEmpty ? null : _family.text.trim();
+      final currentSource = (_currentObject?['fonte_dati_prodotto'] ?? '').toString().trim();
+      final proposedSource = (_metadataSourceUrl ?? '').trim();
+      if (proposedSource.isNotEmpty && proposedSource != currentSource) {
+        item['fonte_dati_prodotto'] = proposedSource;
+        item['stato_verifica_dati'] = 'DA_VERIFICARE';
+      }
       final currentValueRaw = _currentObject?['valore_oggetto'] ?? _currentObject?['valore'];
       final currentValueText = currentValueRaw == null ? '' : currentValueRaw.toString().trim();
       final proposedValueText = _value.text.trim().replaceAll(',', '.');
