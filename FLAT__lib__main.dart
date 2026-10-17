@@ -12,12 +12,24 @@ const Color goldColor = Color(0xFFD6B15E);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(url: supabaseUrl, publishableKey: publishableKey);
-  runApp(const CollectionValoraApp());
+  String? startupError;
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      publishableKey: publishableKey,
+    );
+  } catch (error, stackTrace) {
+    startupError = '$error';
+    debugPrint('VALORA startup initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+  runApp(CollectionValoraApp(startupError: startupError));
 }
 
 class CollectionValoraApp extends StatelessWidget {
-  const CollectionValoraApp({super.key});
+  const CollectionValoraApp({super.key, this.startupError});
+
+  final String? startupError;
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'COLLECTION by VALORA',
@@ -45,7 +57,57 @@ class CollectionValoraApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const AuthenticationGate(),
+        home: startupError == null
+            ? const AuthenticationGate()
+            : StartupFailurePage(error: startupError!),
+      );
+}
+
+class StartupFailurePage extends StatelessWidget {
+  const StartupFailurePage({super.key, required this.error});
+
+  final String error;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: goldColor, size: 64),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'COLLECTION by VALORA',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: goldColor,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Avvio non completato. Il dettaglio seguente aiuta a individuare la causa.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    SelectableText(
+                      error,
+                      style: const TextStyle(color: Color(0xFFE35D5D)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       );
 }
 
