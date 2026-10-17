@@ -1823,7 +1823,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
               : isHistory ? 'VISUALIZZA STORICO OGGETTO'
               : isMaster ? 'CARICA SCHEDA COMPLETA' : 'ESEGUI CONSULTAZIONE')),
-        if (_currentObject != null) ...[
+        if (_currentObject != null && code != 'PR-02') ...[
           const SizedBox(height: 16),
           const Text('SCHEDA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
           _objectCard(_currentObject!),
@@ -1857,12 +1857,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               : null);
           }),
         ],
-        const SizedBox(height: 16),
-        const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
-          color: cardColor, borderRadius: BorderRadius.circular(12)),
-          child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
+        if (code != 'PR-02') ...[
+          const SizedBox(height: 16),
+          const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
+            color: cardColor, borderRadius: BorderRadius.circular(12)),
+            child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
+        ],
       ]),
     );
   }
