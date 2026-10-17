@@ -541,6 +541,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _code = TextEditingController();
   final _quantity = TextEditingController(text: '1');
   final _value = TextEditingController();
+  final _marketValue = TextEditingController();
   final _producer = TextEditingController();
   final _line = TextEditingController();
   final _family = TextEditingController();
@@ -614,7 +615,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _descriptionFocus.removeListener(_onDescriptionFocusChanged);
     _descriptionFocus.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
-    _quantity.dispose(); _value.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
+    _quantity.dispose(); _value.dispose(); _marketValue.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
     super.dispose();
   }
 
@@ -656,6 +657,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _family.text.trim().isNotEmpty ||
       (_metadataSourceUrl?.trim().isNotEmpty ?? false);
 
+  double _parseNonNegativeValue(String raw, String label) {
+    final parsed = double.tryParse(raw.trim().replaceAll(',', '.'));
+    if (parsed == null || parsed < 0) {
+      throw Exception('$label non valido. Inserisci un importo positivo o zero, oppure lascia vuoto.');
+    }
+    return parsed;
+  }
+
   Map<String, dynamic> _payload() {
     final id = int.tryParse(_code.text.trim());
     if (widget.apiCode == 'PR-01') {
@@ -676,6 +685,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
+        if (_value.text.trim().isNotEmpty) 'valore_oggetto': _parseNonNegativeValue(_value.text, 'Valore oggetto'),
+        if (_marketValue.text.trim().isNotEmpty) 'valore_mercato': _parseNonNegativeValue(_marketValue.text, 'Valore di mercato'),
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       }]};
     }
@@ -1308,6 +1319,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
           _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
           _field(_quantity, 'Quantità', type: TextInputType.number),
+          _field(_value, 'Valore oggetto (€)', type: const TextInputType.numberWithOptions(decimal: true)),
+          _field(_marketValue, 'Valore di mercato stimato (€)', type: const TextInputType.numberWithOptions(decimal: true)),
           _field(_notes, 'Note', lines: 2),
         ],
         if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
@@ -1432,6 +1445,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'Completezza: $_completeness\n'
           'Destinazione: $_destination\n'
           'Quantità: ${_quantity.text.trim()}\n'
+          'Valore oggetto: ${_value.text.trim().isEmpty ? 'Non indicato' : _value.text.trim() + ' €'}\n'
+          'Valore di mercato stimato: ${_marketValue.text.trim().isEmpty ? 'Non indicato' : _marketValue.text.trim() + ' €'}\n'
           'Note: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}\n\n'
           'Confermi il salvataggio di questo oggetto nel database TEST?'
         )),
@@ -1472,6 +1487,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _family.clear();
         _notes.clear();
         _quantity.text = '1';
+        _value.clear();
+        _marketValue.clear();
         _condition = 'USATO';
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
