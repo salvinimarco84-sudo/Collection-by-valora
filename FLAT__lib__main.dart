@@ -806,7 +806,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // corrispondenze, mostra solo quelle, senza unire risultati generici.
     final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toList();
     List<Map<String, dynamic>> results = await searchPhrase(query);
-    var matchedPhrase = query;
     if (results.isEmpty && tokens.length > 1) {
       for (var startAt = 1; startAt < tokens.length; startAt++) {
         final candidate = tokens.skip(startAt).join(' ').trim();
@@ -814,7 +813,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         final candidateResults = await searchPhrase(candidate);
         if (candidateResults.isNotEmpty) {
           results = candidateResults;
-          matchedPhrase = candidate;
           break;
         }
       }
