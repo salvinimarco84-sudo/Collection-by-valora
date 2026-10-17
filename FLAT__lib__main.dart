@@ -901,6 +901,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     } else {
       setState(() => _metadataResult = 'Metadati già presenti. Ricerca automatica PR-12 non necessaria.');
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
+    });
   }
 
   Widget _pr02MetadataCard(Map<String, dynamic> object) {
