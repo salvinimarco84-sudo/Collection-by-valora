@@ -570,6 +570,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<Map<String, dynamic>> _pr02SearchResults = [];
   bool _showPr02TechnicalTab = false;
   bool _pr02SearchCompleted = false;
+  final List<Map<String, dynamic>> _pr02PendingChanges = [];
   final FocusNode _searchFocusNode = FocusNode();
 
   bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03'}.contains(widget.apiCode);
@@ -1026,7 +1027,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _detailFieldCard('note', object['note']),
             _detailFieldCard('stato', object['stato']),
           ] else ...[
-            _field(_description, 'Descrizione oggetto'),
+            _field(_description, 'Descrizione oggetto', focusNode: _descriptionFocus),
             _field(_producer, 'Produttore'),
             _field(_line, 'Anno di uscita', type: TextInputType.number),
             _field(_family, 'Codice prodotto'),
@@ -1763,16 +1764,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ),
             if (!_showPr02TechnicalTab)
               LayoutBuilder(builder: (context, constraints) {
-                if (constraints.maxWidth >= 760) {
-                  return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(child: _pr02Side(oldValues: true)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _pr02Side(oldValues: false)),
-                  ]);
-                }
-                return Column(children: [
-                  _pr02Side(oldValues: true),
-                  _pr02Side(oldValues: false),
+                return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: _pr02Side(oldValues: true)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _pr02Side(oldValues: false)),
                 ]);
               })
             else
@@ -1804,6 +1799,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
             icon: const Icon(Icons.lock_open), label: const Text('RILASCIA BLOCCO ARCHIVIO')),
+        ] else if (_isWrite && code == 'PR-02') ...[
+          FilledButton.icon(
+            onPressed: _loading || _currentObject == null ? null : () => _run(_confirmPr02Changes),
+            icon: const Icon(Icons.verified_outlined),
+            label: const Text('CONFERMA DATI'),
+          ),
         ] else if (_isWrite) ...[
           FilledButton.icon(onPressed: _loading ? null : () => _run(_preview),
             icon: const Icon(Icons.fact_check_outlined), label: const Text('1 · CONTROLLA DATI E ANTEPRIMA')),
@@ -1857,7 +1858,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               : null);
           }),
         ],
-        if (code != 'PR-02') ...[
+        if (code != 'PR-01' && code != 'PR-02') ...[
           const SizedBox(height: 16),
           const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -2006,58 +2007,181 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     setState(() { _lastResult = result; _dataConfirmed = true; _finalReady = true; _output = _pretty(result); });
   }
 
-  Future<void> _save() async {
-    if (!_dataConfirmed || !_finalReady) throw Exception('Conferma i dati prima del salvataggio.');
-    if (widget.apiCode == 'PR-02') {
-      final restart = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Conferma PR-02'),
-          content: const Text('Vuoi ricominciare la procedura per modificare un altro oggetto? SÌ riavvia la ricerca senza salvare queste modifiche. NO salva le modifiche appena confermate.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('NO, SALVA LE MODIFICHE'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('SÌ, RICOMINCIA'),
-            ),
-          ],
+  Map<String, dynamic> _pr02ConfirmationPayload() {
+    final payload = _payload();
+    final rows = payload['oggetti'];
+    if (rows is! List || rows.isEmpty || rows.first is! Map) {
+      throw Exception('Non ci sono modifiche valide da confermare.');
+    }
+    return Map<String, dynamic>.from(rows.first as Map);
+  }
+
+  String _pr02ConfirmationText(Map<String, dynamic> item) {
+    final labels = <String, String>{
+      'codice_oggetto': 'Codice oggetto',
+      'descrizione': 'Descrizione oggetto',
+      'produttore': 'Produttore',
+      'anno_uscita': 'Anno di uscita',
+      'codice_prodotto': 'Codice prodotto',
+      'fonte_dati_prodotto': 'Fonte dati',
+      'stato_verifica_dati': 'Stato verifica dati',
+      'condizione': 'Condizione',
+      'completezza': 'Completezza',
+      'destinazione': 'Destinazione',
+      'quantita': 'Quantità',
+      'valore_oggetto': 'Valore oggetto (€)',
+      'note': 'Note',
+    };
+    return item.entries.map((e) =>
+      '${labels[e.key] ?? _italianFieldLabel(e.key)}: ${_displayFieldValue(e.value)}'
+    ).join('\\n');
+  }
+
+  Future<void> _confirmPr02Changes() async {
+    if (_currentObject == null || _loadedObjectId == null) {
+      throw Exception('Seleziona prima un oggetto dalla ricerca.');
+    }
+
+    // Prepara e valida i dati, ma non scrive ancora nel database.
+    final item = _pr02ConfirmationPayload();
+    await _preview();
+    await _confirmData();
+
+    if (!mounted) return;
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Conferma modifiche oggetto'),
+        content: SingleChildScrollView(
+          child: SelectableText(_pr02ConfirmationText(item)),
         ),
-      );
-      if (restart == true) {
-        if (_lockHeld) await _releaseLock();
-        if (!mounted) return;
-        setState(() {
-          _search.clear();
-          _code.clear();
-          _description.clear();
-          _notes.clear();
-          _producer.clear();
-          _line.clear();
-          _family.clear();
-          _value.clear();
-          _currentObject = null;
-          _loadedObjectId = null;
-          _pr02SearchResults = [];
-          _pr02SearchCompleted = false;
-          _metadataSourceUrl = null;
-          _metadataSearchExecuted = false;
-          _lastMetadataQuery = '';
-          _metadataResult = 'Inserisci una parola o parte della descrizione per iniziare.';
-          _lastResult = null;
-          _dataConfirmed = false;
-          _finalReady = false;
-          _output = 'PR-02 pronta per una nuova ricerca.';
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) FocusScope.of(context).requestFocus(_searchFocusNode);
-        });
-        return;
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ANNULLA'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('CONFERMA DATI'),
+          ),
+        ],
+      ),
+    );
+    if (accepted != true || !mounted) {
+      if (_lockHeld) await _releaseLock();
+      if (mounted) setState(() { _dataConfirmed = false; _finalReady = false; });
+      return;
+    }
+
+    _pr02PendingChanges.removeWhere((e) =>
+      e['codice_oggetto']?.toString() == item['codice_oggetto']?.toString());
+    _pr02PendingChanges.add(Map<String, dynamic>.from(item));
+
+    if (_lockHeld) await _releaseLock();
+    if (!mounted) return;
+
+    final another = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Modifica confermata'),
+        content: const Text('Vuoi modificare un altro oggetto?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('NO, SALVA E TERMINA'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('SÌ, MODIFICA UN ALTRO'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (another == true) {
+      setState(() {
+        _search.clear();
+        _code.clear();
+        _description.clear();
+        _notes.clear();
+        _producer.clear();
+        _line.clear();
+        _family.clear();
+        _value.clear();
+        _currentObject = null;
+        _loadedObjectId = null;
+        _pr02SearchResults = [];
+        _pr02SearchCompleted = false;
+        _metadataSourceUrl = null;
+        _metadataSearchExecuted = false;
+        _lastMetadataQuery = '';
+        _metadataResult = 'Inserisci una parola o parte della descrizione per iniziare.';
+        _lastResult = null;
+        _dataConfirmed = false;
+        _finalReady = false;
+        _showPr02TechnicalTab = false;
+        _output = 'PR-02 pronta per una nuova ricerca.';
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) FocusScope.of(context).requestFocus(_searchFocusNode);
+      });
+      return;
+    }
+
+    if (_pr02PendingChanges.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    await _savePr02PendingChanges();
+  }
+
+  Future<void> _savePr02PendingChanges() async {
+    final pending = _pr02PendingChanges
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList(growable: false);
+    for (final item in pending) {
+      final payload = <String, dynamic>{
+        'oggetti': [Map<String, dynamic>.from(item)],
+        'dati_confermati': true,
+        'altra_operazione': false,
+        'conferma_finale': true,
+      };
+      await _acquireLock();
+      try {
+        final preview = await _ValoraRuntimeApi.procedure(
+          'PR-02', 'preview', payload, sessionId: _sessionId);
+        if (preview['errore'] != null) {
+          throw Exception(preview['errore'].toString());
+        }
+        await _ValoraRuntimeApi.procedure(
+          'PR-02', 'review', payload, sessionId: _sessionId);
+        final result = await _ValoraRuntimeApi.procedure(
+          'PR-02', 'save', payload, sessionId: _sessionId, requestId: _uuid.v4());
+        if (result['scrittura_eseguita'] != true) {
+          throw Exception('Salvataggio non confermato per oggetto ${item['codice_oggetto']}.');
+        }
+        if (result['blocco_rilasciato_automaticamente'] == true) {
+          setState(() => _lockHeld = false);
+        } else {
+          throw Exception('Salvataggio eseguito ma rilascio del blocco non confermato.');
+        }
+      } catch (_) {
+        if (_lockHeld) {
+          try { await _releaseLock(); } catch (_) {}
+        }
+        rethrow;
       }
     }
+    _pr02PendingChanges.clear();
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _save() async {
+    if (!_dataConfirmed || !_finalReady) throw Exception('Conferma i dati prima del salvataggio.');
     final payload = _payload()
       ..['dati_confermati'] = true
       ..['altra_operazione'] = false
