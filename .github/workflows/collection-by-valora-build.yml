@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - fix/pr03-flusso-semplificato
 
 permissions:
   contents: read
