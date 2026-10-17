@@ -600,8 +600,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_description.text.trim().isEmpty) throw Exception('La descrizione è obbligatoria.');
       final q = int.tryParse(_quantity.text.trim());
       if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
+      final valueText = _value.text.trim().replaceAll(',', '.');
+      final objectValue = valueText.isEmpty ? null : double.tryParse(valueText);
+      if (valueText.isNotEmpty && (objectValue == null || objectValue < 0)) {
+        throw Exception('Valore oggetto non valido. Inserisci un importo pari o superiore a zero.');
+      }
       return {'oggetti': [{
         'descrizione': _description.text.trim(),
+        'valore_oggetto': objectValue,
         'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
         'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
         'codice_prodotto': _family.text.trim().isEmpty ? null : _family.text.trim(),
@@ -1126,9 +1132,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     );
   }
 
-  Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text, FocusNode? focusNode}) =>
+  Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text, FocusNode? focusNode, ValueChanged<String>? onChanged}) =>
     Padding(padding: const EdgeInsets.only(bottom: 12), child: TextField(
       controller: c, focusNode: focusNode, maxLines: lines, keyboardType: type,
+      onChanged: onChanged,
       decoration: InputDecoration(labelText: label),
     ));
 
@@ -1242,10 +1249,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
           _field(_producer, 'Produttore (facoltativo)'),
           _field(_family, 'Codice prodotto (facoltativo)'),
+          _field(_value, 'Valore unitario oggetto (€) (facoltativo)', type: const TextInputType.numberWithOptions(decimal: true), onChanged: (_) => setState(() {})),
+          Builder(builder: (context) {
+            final unit = double.tryParse(_value.text.trim().replaceAll(',', '.'));
+            final qty = int.tryParse(_quantity.text.trim());
+            final total = unit == null || qty == null || _value.text.trim().isEmpty || qty < 1
+                ? 'Inserisci valore e quantità per calcolare il totale.'
+                : 'Valore totale: € ${(unit * qty).toStringAsFixed(2)}';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Align(alignment: Alignment.centerLeft, child: Text(total, style: const TextStyle(color: goldColor, fontWeight: FontWeight.w600))),
+            );
+          }),
           _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
           _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
           _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
-          _field(_quantity, 'Quantità', type: TextInputType.number),
+          _field(_quantity, 'Quantità', type: TextInputType.number, onChanged: (_) => setState(() {})),
           _field(_notes, 'Note', lines: 2),
         ],
         if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
@@ -1408,6 +1427,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _producer.clear();
         _line.clear();
         _family.clear();
+        _value.clear();
         _notes.clear();
         _quantity.text = '1';
         _condition = 'USATO';
@@ -1483,7 +1503,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
     }
     if (widget.apiCode == 'PR-01') {
-      _description.clear(); _producer.clear(); _line.clear(); _family.clear();
+      _description.clear(); _producer.clear(); _line.clear(); _family.clear(); _value.clear();
       _notes.clear(); _quantity.text = '1';
     }
   }
