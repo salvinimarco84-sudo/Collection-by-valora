@@ -541,7 +541,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _code = TextEditingController();
   final _quantity = TextEditingController(text: '1');
   final _value = TextEditingController();
-  final _marketValue = TextEditingController();
+  final _marketValue = TextEditingController(text: '0.00');
   final _producer = TextEditingController();
   final _line = TextEditingController();
   final _family = TextEditingController();
@@ -1289,7 +1289,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             style: const TextStyle(color: goldColor)),
         )),
         if (_isWrite && code == 'PR-01') ...[
-          _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('IDENTIFICAZIONE OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 8),
+                _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -1297,31 +1309,59 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 const Row(children: [
                   Icon(Icons.travel_explore, color: goldColor),
                   SizedBox(width: 8),
-                  Expanded(child: Text('DATI OTTENUTI DALLA RICERCA METADATI',
-                    style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+                  Expanded(child: Text('RICERCA METADATI', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
                 ]),
                 const SizedBox(height: 8),
                 SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 6),
-                const Text('La ricerca prepara le fonti disponibili. I metadati sono facoltativi e vengono compilati solo se il runtime restituisce campi strutturati; verifica i valori prima di salvare.',
-                  style: TextStyle(color: Colors.white54, fontSize: 11)),
+                const Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                const SizedBox(height: 10),
+                _field(_producer, 'Produttore (facoltativo)'),
+                _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
+                _field(_family, 'Codice prodotto (facoltativo)'),
               ]),
             ),
           ),
           const SizedBox(height: 12),
-          const Text('METADATI TECNICI (FACOLTATIVI) E COMPLETAMENTO SCHEDA',
-            style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 10),
-          _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
-          _field(_producer, 'Produttore (facoltativo)'),
-          _field(_family, 'Codice prodotto (facoltativo)'),
-          _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-          _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
-          _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
-          _field(_quantity, 'Quantità', type: TextInputType.number),
-          _field(_value, 'Valore oggetto (€)', type: const TextInputType.numberWithOptions(decimal: true)),
-          _field(_marketValue, 'Valore di mercato stimato (€)', type: const TextInputType.numberWithOptions(decimal: true)),
-          _field(_notes, 'Note', lines: 2),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('DATI INSERIBILI', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+                _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+                _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
+                _field(_quantity, 'Quantità', type: TextInputType.number),
+                _field(_value, 'Valore oggetto registrato (€)', type: const TextInputType.numberWithOptions(decimal: true)),
+                _field(_notes, 'Note', lines: 2),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('VALORI DETERMINATI DA ALTRE PROCEDURE', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text('Valore di mercato attuale (€)', style: TextStyle(color: Colors.white70)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: _marketValue,
+                  readOnly: true,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    hintText: '0,00',
+                    helperText: 'Valore restituito dalla procedura di valutazione. 0,00 finché non è disponibile una stima.',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+              ]),
+            ),
+          ),
         ],
         if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
           _field(_code, 'Codice oggetto *', type: TextInputType.number),
@@ -1488,7 +1528,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _notes.clear();
         _quantity.text = '1';
         _value.clear();
-        _marketValue.clear();
+        _marketValue.text = '0.00';
         _condition = 'USATO';
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
