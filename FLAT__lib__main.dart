@@ -602,8 +602,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
       final valueText = _value.text.trim().replaceAll(',', '.');
       final objectValue = valueText.isEmpty ? null : double.tryParse(valueText);
-      if (valueText.isNotEmpty && (objectValue == null || !objectValue.isFinite || objectValue < 0)) {
-        throw Exception('Il valore unitario deve essere un numero valido maggiore o uguale a zero, oppure lascia il campo vuoto.');
+      if (valueText.isNotEmpty && (objectValue == null || objectValue < 0)) {
+        throw Exception('Valore oggetto non valido. Inserisci un importo pari o superiore a zero.');
       }
       return {'oggetti': [{
         'descrizione': _description.text.trim(),
@@ -1249,28 +1249,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
           _field(_producer, 'Produttore (facoltativo)'),
           _field(_family, 'Codice prodotto (facoltativo)'),
+          _field(_value, 'Valore unitario oggetto (€) (facoltativo)', type: const TextInputType.numberWithOptions(decimal: true), onChanged: (_) => setState(() {})),
+          Builder(builder: (context) {
+            final unit = double.tryParse(_value.text.trim().replaceAll(',', '.'));
+            final qty = int.tryParse(_quantity.text.trim());
+            final total = unit == null || qty == null || _value.text.trim().isEmpty || qty < 1
+                ? 'Inserisci valore e quantità per calcolare il totale.'
+                : 'Valore totale: € ${(unit * qty).toStringAsFixed(2)}';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Align(alignment: Alignment.centerLeft, child: Text(total, style: const TextStyle(color: goldColor, fontWeight: FontWeight.w600))),
+            );
+          }),
           _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
           _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
           _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
           _field(_quantity, 'Quantità', type: TextInputType.number, onChanged: (_) => setState(() {})),
-          _field(_value, 'Valore unitario oggetto (€) (facoltativo)', type: const TextInputType.numberWithOptions(decimal: true), onChanged: (_) => setState(() {})),
-          Builder(builder: (context) {
-            final unitText = _value.text.trim().replaceAll(',', '.');
-            final qty = int.tryParse(_quantity.text.trim());
-            final unit = unitText.isEmpty ? null : double.tryParse(unitText);
-            if (unit == null || !unit.isFinite || unit < 0 || qty == null || qty < 1) {
-              return const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Text('Inserisci un valore unitario e una quantità valida per calcolare il totale.',
-                  style: TextStyle(color: Colors.white54, fontSize: 12)),
-              );
-            }
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text('Valore totale: € ${(unit * qty).toStringAsFixed(2)}',
-                style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-            );
-          }),
           _field(_notes, 'Note', lines: 2),
         ],
         if (_isWrite && (code == 'PR-02' || code == 'PR-03')) ...[
@@ -1394,7 +1388,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'Condizione: $_condition\n'
           'Completezza: $_completeness\n'
           'Destinazione: $_destination\n'
-          'Valore unitario: ${_value.text.trim().isEmpty ? 'Non indicato' : '€ ${_value.text.trim()}'}\n'
           'Quantità: ${_quantity.text.trim()}\n'
           'Note: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}\n\n'
           'Confermi il salvataggio di questo oggetto nel database TEST?'
@@ -1510,8 +1503,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
     }
     if (widget.apiCode == 'PR-01') {
-      _description.clear(); _producer.clear(); _line.clear(); _family.clear();
-      _value.clear(); _notes.clear(); _quantity.text = '1';
+      _description.clear(); _producer.clear(); _line.clear(); _family.clear(); _value.clear();
+      _notes.clear(); _quantity.text = '1';
     }
   }
 }
