@@ -2081,6 +2081,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             color: cardColor, borderRadius: BorderRadius.circular(12)),
             child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
         ],
+        if (isMaster) ...[
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: goldColor,
+                side: const BorderSide(color: goldColor),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              icon: const Icon(Icons.close),
+              label: const Text('CHIUDI E TORNA AL MENU OGGETTO'),
+            ),
+          ),
+        ],
       ]),
     );
   }
