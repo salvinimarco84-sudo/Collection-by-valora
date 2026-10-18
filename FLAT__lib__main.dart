@@ -2387,7 +2387,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ]),
           ),
         ],
-        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster) ...[
+        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList) ...[
           const SizedBox(height: 16),
           Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
