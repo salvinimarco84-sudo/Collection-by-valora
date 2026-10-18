@@ -1854,11 +1854,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        Card(child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text('COLLECTION by VALORA · TEST\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
-            style: const TextStyle(color: goldColor)),
-        )),
+        if (!isMaster)
+          Card(child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text('COLLECTION by VALORA · TEST\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
+              style: const TextStyle(color: goldColor)),
+          )),
         if (_isWrite && code == 'PR-01') ...[
           Card(
             child: Padding(
@@ -2178,7 +2179,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               : null);
           }),
         ],
-        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03') ...[
+        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster) ...[
           const SizedBox(height: 16),
           const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
