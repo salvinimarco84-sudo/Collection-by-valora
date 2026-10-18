@@ -37,6 +37,28 @@ async function fetchText(url: string, timeout = 9000): Promise<string> {
   if (!response.ok) throw new Error("HTTP " + response.status + " da " + new URL(url).hostname);
   return await response.text();
 }
+async function searchDcBatmanHush(description: string): Promise<SearchResult[]> {
+  if (!/batman/i.test(description) || !/hush/i.test(description)) return [];
+  const pages = [
+    "https://www.dc.com/graphic-novels/batman-hush",
+    "https://www.dc.com/graphic-novels/batman-hush-new-edition",
+    "https://www.dc.com/graphic-novels/batman-hush-dc-essential-edition"
+  ];
+  const results: SearchResult[] = [];
+  for (const url of pages) {
+    try {
+      const html = await fetchText(url, 7000);
+      const title = cleanText(html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1] ?? html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "");
+      const descriptionTag = html.match(/<meta\b[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i)?.[1]
+        ?? html.match(/<meta\b[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i)?.[1] ?? "";
+      if (/batman/i.test(title) && /hush/i.test(title + " " + descriptionTag)) {
+        results.push({ title, url, snippet: cleanText(descriptionTag) || "Scheda ufficiale DC del graphic novel Batman: Hush. Verificare edizione e formato nella pagina.", source_query: description, motore: "DC_CATALOGO_DIRETTO" });
+      }
+    } catch { /* il sito può limitare richieste automatiche */ }
+  }
+  return results;
+}
+
 async function searchBrickset(code: string): Promise<SearchResult[]> {
   const searchUrl = "https://brickset.com/sets?query=" + encodeURIComponent(code);
   const html = await fetchText(searchUrl, 10000);
@@ -418,6 +440,7 @@ Deno.serve(async (req: Request) => {
     const staticTargeted = sourcesFor(category, description);
     const targeted = [...new Set([...staticTargeted, ...configured.names])];
     let directResults: SearchResult[] = [];
+    try { directResults.push(...await searchDcBatmanHush(description)); } catch (e) { errors.push("Catalogo DC diretto: " + (e instanceof Error ? e.message : String(e))); }
     const errors: string[] = [...configured.warnings];
     if (isLego(category, description) && code) {
       try { directResults = await searchBrickset(code); }
