@@ -278,12 +278,12 @@ class ProcedureEntry {
 
 const Map<String, List<ProcedureEntry>> sectionProcedures = {
   'CATALOGO': [
-    ProcedureEntry(title: 'PR-01 · Nuovo oggetto', description: 'Crea un oggetto e prepara i metadati per la ricerca.', apiCode: 'PR-01', readOnly: false),
-    ProcedureEntry(title: 'PR-02 · Modifica oggetto', description: 'Carica la scheda completa prima di modificarla.', apiCode: 'PR-02', readOnly: false),
-    ProcedureEntry(title: 'PR-03 · Chiudi oggetto', description: 'Registra la chiusura con motivazione.', apiCode: 'PR-03', readOnly: false),
-    ProcedureEntry(title: 'PR-11 · Visualizza scheda', description: 'Mostra la scheda completa in formato leggibile.', apiCode: 'OBJECT_MASTER'),
-    ProcedureEntry(title: 'CR · Elenco oggetti disponibili', description: 'Mostra gli oggetti con stato DISPONIBILE.', apiCode: 'OBJECTS_AVAILABLE'),
-    ProcedureEntry(title: 'CR · Esplora record', description: 'Mostra la cronologia del singolo oggetto selezionato.', apiCode: 'EXPLORE_RECORDS'),
+    ProcedureEntry(title: 'Nuovo oggetto', description: 'Crea un oggetto e prepara i metadati per la ricerca.', apiCode: 'PR-01', readOnly: false),
+    ProcedureEntry(title: 'Modifica oggetto', description: 'Carica la scheda completa prima di modificarla.', apiCode: 'PR-02', readOnly: false),
+    ProcedureEntry(title: 'Chiudi oggetto', description: 'Registra la chiusura con motivazione.', apiCode: 'PR-03', readOnly: false),
+    ProcedureEntry(title: 'Visualizza scheda', description: 'Mostra la scheda completa in formato leggibile.', apiCode: 'OBJECT_MASTER'),
+    ProcedureEntry(title: 'Elenco oggetti disponibili', description: 'Mostra gli oggetti con stato DISPONIBILE.', apiCode: 'OBJECTS_AVAILABLE'),
+    ProcedureEntry(title: 'Esplora record', description: 'Mostra la cronologia del singolo oggetto selezionato.', apiCode: 'EXPLORE_RECORDS'),
   ],
   'ACQUISTI': [
     ProcedureEntry(title: 'Nuovo acquisto', description: 'Registra un nuovo acquisto.', apiCode: 'WRITE-PR-04', readOnly: false),
@@ -1229,7 +1229,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           OutlinedButton.icon(
             onPressed: _loading ? null : () => _run(_prepareMetadata),
             icon: Icon(Icons.travel_explore),
-            label: Text('RICHIAMA METADATI PR-12'),
+            label: Text('RICHIAMA METADATI'),
           ),
           Divider(height: 24),
           if (technicalEntries.isEmpty)
@@ -1368,7 +1368,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
-        title: Text('PR-12 · RISULTATI RICERCA ONLINE'),
+        title: Text('RISULTATI RICERCA ONLINE'),
         content: SizedBox(
           width: 650,
           child: ConstrainedBox(
@@ -1452,7 +1452,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
-        title: Text('PR-12 · VERIFICA FONTE'),
+        title: Text('VERIFICA FONTE'),
         content: SelectableText(
           '$title\n$url\n\n'
           '${(selected['produttore'] ?? '').toString().trim().isEmpty ? '' : 'Produttore: ${selected['produttore']}\n'}'
@@ -2228,7 +2228,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             return _objectCard(item, onTap: isAvailableList
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(
-                      title: 'PR-11 · Visualizza scheda',
+                      title: 'Visualizza scheda',
                       apiCode: 'OBJECT_MASTER',
                       initialObjectCode: int.tryParse(item['codice_oggetto']?.toString() ?? item['id']?.toString() ?? ''),
                     )
