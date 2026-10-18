@@ -2302,6 +2302,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ),
             ] else
               _pr11TechnicalDetails(_currentObject!),
+          ] else if (isHistory) ...[
+            Text(
+              _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
+              style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
+            ),
+            const SizedBox(height: 12),
+            Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            _objectCard(_currentObject!),
           ] else ...[
             Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
             _objectCard(_currentObject!),
@@ -2387,7 +2395,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ]),
           ),
         ],
-        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList) ...[
+        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory) ...[
           const SizedBox(height: 16),
           Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -2395,19 +2403,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             color: cardColor, borderRadius: BorderRadius.circular(12)),
             child: SelectableText(_output, style: TextStyle(fontSize: 13))),
         ],
-        if (isMaster) ...[
-          const SizedBox(height: 20),
+        if (!_isWrite) ...[
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 foregroundColor: sectionColor,
-                side: BorderSide(color: sectionColor),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                side: BorderSide(color: sectionColor, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-              icon: Icon(Icons.close),
-              label: Text('CHIUDI E TORNA AL MENU OGGETTO'),
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close),
+              label: const Text('CHIUDI E TORNA AL BLOCCO DI APPARTENENZA'),
             ),
           ),
         ],
