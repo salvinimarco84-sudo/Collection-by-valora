@@ -2076,9 +2076,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     Widget infoChip(IconData icon, String label) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: sectionColor.withOpacity(0.10),
+        color: sectionColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: sectionColor.withOpacity(0.28)),
+        border: Border.all(color: sectionColor.withValues(alpha: 0.28)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 13, color: sectionColor),
@@ -2092,7 +2092,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: availableStyle ? sectionColor.withOpacity(0.35) : ValoraAppearance.instance.neutralOverlay,
+          color: availableStyle ? sectionColor.withValues(alpha: 0.35) : ValoraAppearance.instance.neutralOverlay,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -2608,15 +2608,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: sectionColor.withOpacity(0.10),
+              color: sectionColor.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: sectionColor.withOpacity(0.40)),
+              border: Border.all(color: sectionColor.withValues(alpha: 0.40)),
             ),
             child: Row(children: [
               Container(
                 width: 46, height: 46,
                 decoration: BoxDecoration(
-                  color: sectionColor.withOpacity(0.18),
+                  color: sectionColor.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(Icons.inventory_2_outlined, color: sectionColor, size: 26),
@@ -2630,7 +2630,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 Text('${_rows.length} ${_rows.length == 1 ? 'oggetto trovato' : 'oggetti trovati'}',
                   style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 3),
-                const Text('Seleziona una scheda per vedere tutti i dettagli.',
+                Text('Seleziona una scheda per vedere tutti i dettagli.',
                   style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
               ])),
             ]),
@@ -2662,7 +2662,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             decoration: BoxDecoration(
               color: ValoraAppearance.instance.card,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: sectionColor.withOpacity(0.28)),
+              border: Border.all(color: sectionColor.withValues(alpha: 0.28)),
             ),
             child: Column(children: [
               Icon(Icons.inventory_2_outlined, size: 42, color: sectionColor),
@@ -2671,7 +2671,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center),
               const SizedBox(height: 6),
-              const Text('Premi “Visualizza elenco oggetti disponibili” per caricare l’elenco.',
+              Text('Premi “Visualizza elenco oggetti disponibili” per caricare l’elenco.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary), textAlign: TextAlign.center),
             ]),
           ),
