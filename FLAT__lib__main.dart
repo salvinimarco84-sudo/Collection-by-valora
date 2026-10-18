@@ -1690,26 +1690,85 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         section('GESTIONE OGGETTO', Icons.inventory_2_outlined, condition),
         section('VALORI E VALUTAZIONE', Icons.euro_outlined, values),
         section('ALTRI DETTAGLI', Icons.info_outline, other),
-        if (technical.isNotEmpty)
-          Card(
-            margin: const EdgeInsets.only(top: 14),
-            child: Theme(
-              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                leading: const Icon(Icons.settings_outlined, color: goldColor),
-                title: const Text('DETTAGLI TECNICI', style: TextStyle(
-                  color: goldColor, fontWeight: FontWeight.bold, fontSize: 15,
-                )),
-                subtitle: Text('${technical.length} campi di sistema',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                children: technical.map((e) => _detailFieldCard(e.key, e.value)).toList(),
-              ),
-            ),
-          ),
       ],
     );
   }
+
+  Widget _pr11TechnicalDetails(Map<String, dynamic> object) {
+    const technicalKeys = {
+      'collegato_vendita', 'modificabile_pr02', 'motivo_esclusione',
+      'collegato_acquisto', 'collegato_inserzione', 'collegato_piattaforma',
+      'stato_verifica_dati', 'id', 'created_at', 'updated_at',
+      'record_id', 'deleted_at', 'versione_record',
+    };
+    final technical = object.entries.where((e) => technicalKeys.contains(e.key)).toList();
+    if (technical.isEmpty) {
+      return const Card(child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('Nessun campo tecnico disponibile per questo oggetto.',
+          style: TextStyle(color: Colors.white70)),
+      ));
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('DATI TECNICI E DI SISTEMA',
+            style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          ...technical.map((e) => _detailFieldCard(e.key, e.value)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _pr11HeaderCard(Map<String, dynamic> item) {
+    final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
+    final imageUrl = _valueFor(item, [
+      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+      'immagine_principale', 'url_foto', 'foto', 'immagine',
+      'image', 'imageUrl', 'photo_url', 'main_image_url',
+    ], '');
+    final destination = _valueFor(item, ['destinazione'], 'Non indicata');
+    final condition = _valueFor(item, ['condizione'], 'Non indicata');
+    final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
+    final value = _valueFor(item, ['valore_oggetto', 'valore', 'valore_stimato'], 'Non indicato');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('CODICE OGGETTO $code',
+            style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: imageUrl.startsWith('http')
+                ? Image.network(imageUrl, width: 112, height: 112, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imagePlaceholder())
+                : _imagePlaceholder(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _pr11SummaryValue('Destinazione', destination),
+              _pr11SummaryValue('Condizione', condition),
+              _pr11SummaryValue('Stato', state),
+              _pr11SummaryValue('Valore registrato', value),
+            ])),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _pr11SummaryValue(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 7),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.w600)),
+      Text(value, style: const TextStyle(color: Colors.white, fontSize: 14)),
+    ]),
+  );
 
   Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text, FocusNode? focusNode}) =>
     Padding(padding: const EdgeInsets.only(bottom: 12), child: TextField(
@@ -2041,11 +2100,56 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               : isMaster ? 'CARICA SCHEDA COMPLETA' : 'ESEGUI CONSULTAZIONE')),
         if (_currentObject != null && code != 'PR-02' && code != 'PR-03') ...[
           const SizedBox(height: 16),
-          const Text('SCHEDA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
-          _objectCard(_currentObject!),
-          if (isMaster)
-            _masterDetails(_currentObject!)
-          else
+          if (isMaster) ...[
+            Text(
+              _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
+              style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 22),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(children: [
+                  Expanded(child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: !_showPr02TechnicalTab ? goldColor : cardColor,
+                      foregroundColor: !_showPr02TechnicalTab ? Colors.black : Colors.white,
+                    ),
+                    onPressed: () => setState(() => _showPr02TechnicalTab = false),
+                    child: const Text('SCHEDA OGGETTO'),
+                  )),
+                  const SizedBox(width: 8),
+                  Expanded(child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _showPr02TechnicalTab ? goldColor : cardColor,
+                      foregroundColor: _showPr02TechnicalTab ? Colors.black : Colors.white,
+                    ),
+                    onPressed: () => setState(() => _showPr02TechnicalTab = true),
+                    child: const Text('DATI TECNICI'),
+                  )),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (!_showPr02TechnicalTab) ...[
+              _pr11HeaderCard(_currentObject!),
+              Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('DATI DELL’OGGETTO',
+                      style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    _masterDetails(_currentObject!),
+                  ]),
+                ),
+              ),
+            ] else
+              _pr11TechnicalDetails(_currentObject!),
+          ] else ...[
+            const Text('SCHEDA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            _objectCard(_currentObject!),
             ..._currentObject!.entries
                 .where((e) => !const {
                       'url_immagine', 'immagine_url', 'foto_url', 'image_url',
@@ -2053,6 +2157,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       'image', 'imageUrl', 'photo_url', 'main_image_url',
                     }.contains(e.key))
                 .map((e) => _detailFieldCard(e.key, e.value)),
+          ],
         ],
         if (_rows.isNotEmpty) ...[
           const SizedBox(height: 16),
