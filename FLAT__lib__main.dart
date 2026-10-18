@@ -1291,16 +1291,37 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _showPr02TechnicalTab = false;
     await _loadObject();
     if (!mounted || _currentObject == null) return;
-    final hasMetadata = ['produttore', 'anno_uscita', 'codice_prodotto', 'fonte_dati_prodotto']
-        .any((key) => (_currentObject?[key]?.toString().trim().isNotEmpty ?? false));
-    if (!hasMetadata) {
+
+    // La descrizione deve provenire dal record riletto dal database, non dalla query digitata.
+    final selectedDescription = (_currentObject?['descrizione_oggetto']
+        ?? _currentObject?['descrizione']
+        ?? item['descrizione_oggetto']
+        ?? item['descrizione']
+        ?? '').toString().trim();
+    if (selectedDescription.isNotEmpty) {
+      _description.value = TextEditingValue(
+        text: selectedDescription,
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    // La sola presenza della fonte non significa che i metadati siano completi.
+    // Se manca anche uno dei campi identificativi, prova PR-12 automaticamente.
+    const requiredMetadata = ['produttore', 'anno_uscita', 'codice_prodotto'];
+    final missingMetadata = requiredMetadata.where((key) =>
+      (_currentObject?[key]?.toString().trim().isEmpty ?? true)).toList();
+    if (missingMetadata.isNotEmpty) {
       setState(() {
-        _metadataResult = 'Metadati assenti. Avvio della ricerca tramite PR-12…';
+        _metadataResult = 'Oggetto ' + id.toString() +
+            ' selezionato. Descrizione caricata. Metadati incompleti (' +
+            missingMetadata.join(', ') + '): avvio della ricerca PR-12…';
         _output = _metadataResult;
       });
       await _prepareMetadata();
     } else {
-      setState(() => _metadataResult = 'Metadati già presenti. Ricerca automatica PR-12 non necessaria.');
+      setState(() => _metadataResult =
+          'Oggetto ' + id.toString() +
+          ' selezionato. Descrizione caricata. Metadati identificativi già presenti.');
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
