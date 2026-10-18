@@ -99,11 +99,14 @@ if flutter_match:
         lines.append("  uses-material-design: true")
     if not any(re.match(r"^\s+assets\s*:", line) for line in lines):
         lines.append("  assets:")
+    # Dichiarare entrambi i percorsi: il file originale alla radice e la copia
+    # usata dalla schermata di accesso Flutter.
     lines.append("    - valora_logo.png")
+    lines.append("    - assets/valora_logo.png")
     replacement = "\n".join(lines) + "\n"
     yaml = yaml[:flutter_match.start()] + replacement + yaml[flutter_match.end():]
 else:
-    yaml = yaml.rstrip() + "\n\nflutter:\n  uses-material-design: true\n  assets:\n    - valora_logo.png\n"
+    yaml = yaml.rstrip() + "\n\nflutter:\n  uses-material-design: true\n  assets:\n    - valora_logo.png\n    - assets/valora_logo.png\n"
 
 # Scrittura solo dopo aver controllato tutti i file richiesti.
 MAIN.write_text(source, encoding="utf-8")
