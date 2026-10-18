@@ -600,7 +600,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _quantity.addListener(_recalculateTotal);
       _unitPrice.addListener(_recalculateTotal);
     }
-    if (widget.initialObjectCode != null) _code.text = widget.initialObjectCode.toString();
+    if (widget.initialObjectCode != null) {
+      _code.text = widget.initialObjectCode.toString();
+      // Quando si apre la scheda da un elemento dell'elenco, carica subito
+      // il record selezionato invece di mostrare una maschera vuota.
+      if (widget.apiCode == 'OBJECT_MASTER') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _run(_loadObject);
+        });
+      }
+    }
   }
 
   void _onPr11SearchFocusChanged() {
