@@ -1684,9 +1684,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     );
     if (!mounted) return;
     if (sourceAction == 'apply') {
-      final producer = (selected['produttore'] ?? '').toString().trim();
-      final productCode = (selected['codice_prodotto'] ?? '').toString().trim();
-      final year = (selected['anno_uscita'] ?? '').toString().trim();
+      final producer = (selected['produttore'] ?? selected['editore'] ?? '').toString().trim();
+      final productCode = (selected['codice_prodotto'] ?? selected['isbn'] ?? '').toString().trim();
+      final year = (selected['anno_uscita'] ?? selected['anno_pubblicazione'] ?? '').toString().trim();
       setState(() {
         // La conferma accetta il titolo del risultato anche se la fonte non
         // restituisce tutti i campi strutturati; i campi assenti restano manuali.
