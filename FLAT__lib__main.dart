@@ -1851,7 +1851,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       onChanged: onChanged,
     ));
 
-  Widget _objectCard(Map<String, dynamic> item, {VoidCallback? onTap}) {
+  Widget _objectCard(
+    Map<String, dynamic> item, {
+    VoidCallback? onTap,
+    bool availableStyle = false,
+  }) {
     final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
     final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
     final imageUrl = _valueFor(item, [
@@ -1863,41 +1867,88 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final condition = _valueFor(item, ['condizione'], 'Non indicata');
     final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
     final value = _valueFor(item, ['valore_oggetto', 'valore', 'valore_stimato'], 'Non indicato');
+    final imageSize = availableStyle ? 104.0 : 88.0;
+    Widget infoChip(IconData icon, String label) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: sectionColor.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: sectionColor.withOpacity(0.28)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13, color: sectionColor),
+        const SizedBox(width: 4),
+        Flexible(child: Text(label, style: const TextStyle(fontSize: 11))),
+      ]),
+    );
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: availableStyle ? sectionColor.withOpacity(0.35) : Colors.white10,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(availableStyle ? 14 : 12),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
               child: imageUrl.startsWith('http')
-                ? Image.network(imageUrl, width: 88, height: 88, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _imagePlaceholder())
-                : _imagePlaceholder(),
+                ? Image.network(imageUrl, width: imageSize, height: imageSize, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize))
+                : _imagePlaceholder(size: imageSize),
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('CODICE $code', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text(desc, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-              const SizedBox(height: 6),
-              Text('Destinazione: $destination'),
-              Text('Condizione: $condition'),
-              Text('Stato: $state'),
-              Text('Valore: $value'),
+              Row(children: [
+                Expanded(child: Text(
+                  'CODICE $code',
+                  style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 12),
+                )),
+                if (onTap != null) Icon(Icons.chevron_right, color: sectionColor, size: 20),
+              ]),
+              const SizedBox(height: 5),
+              Text(desc, style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: availableStyle ? 16 : 16,
+              )),
+              const SizedBox(height: 9),
+              if (availableStyle) ...[
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  infoChip(Icons.inventory_2_outlined, destination),
+                  infoChip(Icons.verified_outlined, condition),
+                ]),
+                const SizedBox(height: 7),
+                Row(children: [
+                  Icon(Icons.circle, size: 8, color: sectionColor),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text('Stato: $state', style: const TextStyle(color: Colors.white70, fontSize: 12))),
+                ]),
+                const SizedBox(height: 5),
+                Text(
+                  'Valore: $value',
+                  style: TextStyle(color: sectionColor, fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+              ] else ...[
+                Text('Destinazione: $destination'),
+                Text('Condizione: $condition'),
+                Text('Stato: $state'),
+                Text('Valore: $value'),
+              ],
             ])),
-            if (onTap != null) Icon(Icons.chevron_right, color: sectionColor),
           ]),
         ),
       ),
     );
   }
 
-  Widget _imagePlaceholder() => Container(
-    width: 88, height: 88, color: Colors.white10,
+  Widget _imagePlaceholder({double size = 88}) => Container(
+    width: size, height: size, color: Colors.white10,
     child: Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 30),
   );
 
@@ -2254,15 +2305,49 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 .map((e) => _detailFieldCard(e.key, e.value)),
           ],
         ],
+        if (isAvailableList && _rows.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: sectionColor.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: sectionColor.withOpacity(0.40)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 46, height: 46,
+                decoration: BoxDecoration(
+                  color: sectionColor.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.inventory_2_outlined, color: sectionColor, size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('OGGETTI DISPONIBILI', style: TextStyle(
+                  color: sectionColor, fontWeight: FontWeight.bold, letterSpacing: 0.5,
+                )),
+                const SizedBox(height: 4),
+                Text('${_rows.length} ${_rows.length == 1 ? 'oggetto trovato' : 'oggetti trovati'}',
+                  style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 3),
+                const Text('Seleziona una scheda per vedere tutti i dettagli.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+              ])),
+            ]),
+          ),
+        ],
         if (_rows.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
-            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
+          if (!isAvailableList)
+            Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
+              style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
           ..._rows.map((r) {
             if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
             final item = Map<String, dynamic>.from(r);
             if (isHistory) return _historyCard(item);
-            return _objectCard(item, onTap: isAvailableList
+            return _objectCard(item, availableStyle: isAvailableList, onTap: isAvailableList
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(
                       title: 'Visualizza scheda',
@@ -2272,6 +2357,26 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   )).then((_) {})
               : null);
           }),
+        ] else if (isAvailableList && !_loading) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: sectionColor.withOpacity(0.28)),
+            ),
+            child: Column(children: [
+              Icon(Icons.inventory_2_outlined, size: 42, color: sectionColor),
+              const SizedBox(height: 12),
+              const Text('Nessun oggetto da mostrare',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center),
+              const SizedBox(height: 6),
+              const Text('Premi “Visualizza elenco oggetti disponibili” per caricare l’elenco.',
+                style: TextStyle(color: Colors.white70), textAlign: TextAlign.center),
+            ]),
+          ),
         ],
         if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster) ...[
           const SizedBox(height: 16),
