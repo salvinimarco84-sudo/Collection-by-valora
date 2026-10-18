@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - fix/pr03-flusso-semplificato
+      - fix/pr12-category-selection
 
 permissions:
   contents: read
