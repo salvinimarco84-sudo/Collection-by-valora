@@ -204,7 +204,7 @@ function makeQueries(category: string, description: string): string[] {
 }
 async function searchDuckDuckGo(query: string): Promise<SearchResult[]> {
   const html = await fetchText("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query), 8000);
-  if (/anomaly-modal|bots use duckduckgo|select all squares/i.test(html)) throw new Error("DuckDuckGo ha richiesto una verifica automatica");
+  if (/anomaly-modal|bots use duckduckgo|select all squares/i.test(html)) throw new Error("Google/Bing o API web non hanno restituito risultati leggibili");
   const results: SearchResult[] = [];
   const pattern = /<a\b([^>]*class=["'][^"']*result__a[^"']*["'][^>]*)>([\s\S]*?)<\/a>/gi;
   let m: RegExpExecArray | null;
@@ -252,9 +252,36 @@ async function searchBingRss(query: string): Promise<SearchResult[]> {
   }
   return results;
 }
+async function searchBrave(query: string): Promise<SearchResult[]> {
+  const apiKey = Deno.env.get("BRAVE_SEARCH_API_KEY") ?? "";
+  if (!apiKey) throw new Error("BRAVE_SEARCH_API_KEY non configurata");
+  const response = await fetch("https://api.search.brave.com/res/v1/web/search?q=" + encodeURIComponent(query) + "&count=8", {
+    headers: { "Accept": "application/json", "X-Subscription-Token": apiKey },
+    signal: AbortSignal.timeout(9000),
+  });
+  if (!response.ok) throw new Error("Brave Search API: HTTP " + response.status);
+  const data = await response.json();
+  const items = Array.isArray(data?.web?.results) ? data.web.results : [];
+  return items.slice(0, 8).flatMap((item: any) => {
+    const url = String(item.url ?? "");
+    const title = cleanText(String(item.title ?? ""));
+    if (!/^https?:\/\//i.test(url) || title.length < 3) return [];
+    return [{ title, url, snippet: cleanText(String(item.description ?? "")), source_query: query, motore: "BRAVE_SEARCH_API" }];
+  });
+}
 async function searchOne(query: string): Promise<SearchResult[]> {
   const errors: string[] = [];
-  for (const [name, search] of [["DuckDuckGo", searchDuckDuckGo], ["Google", searchGoogle], ["Bing RSS", searchBingRss]] as const) {
+  // Provider API documentata, se è stata configurata la relativa chiave segreta.
+  try {
+    const results = await searchBrave(query);
+    if (results.length) return results;
+    errors.push("Brave Search API: nessun risultato");
+  } catch (e) {
+    errors.push(e instanceof Error ? e.message : String(e));
+  }
+  // Fallback web senza dipendere da DuckDuckGo: i parser sono best-effort,
+  // la diagnostica distingue chiaramente provider non configurato e risultati vuoti.
+  for (const [name, search] of [["Google", searchGoogle], ["Bing RSS", searchBingRss]] as const) {
     try {
       const results = await search(query);
       if (results.length) return results;
