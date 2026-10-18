@@ -2051,14 +2051,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ],
         if (!_isWrite && isHistory)
           _field(_code, 'Codice oggetto *', type: TextInputType.number),
-        if (!_isWrite && isMaster) ...[
-          _field(_search, 'Cerca per descrizione oggetto (anche parziale)'),
-          FilledButton.icon(
-            onPressed: _loading ? null : () => _run(_searchPr02Objects),
-            icon: const Icon(Icons.search),
-            label: const Text('CERCA E SELEZIONA OGGETTO'),
-          ),
-        ],
+        if (!_isWrite && isMaster)
+          _field(_search, 'Descrizione oggetto'),
         if (!_isWrite && isAvailableList)
           const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: Colors.white70))),
         if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
@@ -2092,13 +2086,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
             icon: const Icon(Icons.lock_open), label: const Text('RILASCIA BLOCCO ARCHIVIO')),
-        ] else
+        ] else if (!isMaster)
           FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
             icon: const Icon(Icons.search),
             label: Text(_loading ? 'RICERCA...' : isAvailableList
               ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
               : isHistory ? 'VISUALIZZA STORICO OGGETTO'
-              : isMaster ? 'CARICA SCHEDA COMPLETA' : 'ESEGUI CONSULTAZIONE')),
+              : 'ESEGUI CONSULTAZIONE'),
         if (_currentObject != null && code != 'PR-02' && code != 'PR-03') ...[
           const SizedBox(height: 16),
           if (isMaster) ...[
