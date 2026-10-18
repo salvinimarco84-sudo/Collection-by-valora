@@ -2159,12 +2159,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Widget _historyCard(Map<String, dynamic> event) {
     final date = _valueFor(event, ['data_evento', 'data', 'created_at'], 'Data non indicata');
-    final type = _valueFor(event, ['tipo_evento', 'tipo', 'azione'], 'Evento');
-    final detail = _valueFor(event, ['descrizione', 'dettaglio', 'note', 'motivazione'], 'Nessun dettaglio registrato');
+    final rawType = _valueFor(event, ['tipo_evento', 'tipo', 'azione'], 'Evento');
+    final reason = (event['motivo'] ?? event['motivazione'] ?? '').toString().trim();
+    final previous = (event['valore_precedente'] ?? '').toString().trim();
+    final next = (event['valore_nuovo'] ?? '').toString().trim();
+    final note = (event['note'] ?? event['descrizione'] ?? event['dettaglio'] ?? '').toString().trim();
+    final isPr03Closure = rawType == 'CAMBIO_STATO' &&
+        (reason == 'DISTRUTTO' || reason == 'SMARRITO' || reason == 'DATO VIA' ||
+         next == 'DISTRUTTO' || next == 'PERSO' || next == 'USCITO');
+    final type = isPr03Closure ? 'CHIUSURA OGGETTO · PR-03' : rawType;
+    final detailParts = <String>[];
+    if (previous.isNotEmpty || next.isNotEmpty) {
+      detailParts.add('Stato: ${previous.isEmpty ? 'non indicato' : previous} → ${next.isEmpty ? 'non indicato' : next}');
+    }
+    if (reason.isNotEmpty) detailParts.add('Motivo: $reason');
+    if (note.isNotEmpty) detailParts.add('Note: $note');
+    final detail = detailParts.isEmpty
+        ? _valueFor(event, ['descrizione', 'dettaglio', 'note', 'motivazione'], 'Nessun dettaglio registrato')
+        : detailParts.join('\\n');
     return Card(child: ListTile(
-      leading: Icon(Icons.history, color: sectionColor),
+      leading: Icon(isPr03Closure ? Icons.logout : Icons.history, color: sectionColor),
       title: Text(type),
-      subtitle: Text('$date\n$detail'),
+      subtitle: Text('$date\\n$detail'),
       isThreeLine: true,
     ));
   }
