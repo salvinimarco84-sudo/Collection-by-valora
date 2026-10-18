@@ -357,7 +357,7 @@ function hasTopicEvidence(result: SearchResult, description: string): boolean {
     // ma i titoli dei cataloghi possono riportare solo il titolo dell'arco narrativo.
     if (/hush/i.test(q)) {
       const host = hostnameFromUrl(result.url);
-      const trustedComicCatalog = /(^|\\.)((leagueofcomicgeeks\\.com)|(comics\\.org)|(comicvine\\.gamespot\\.com)|(dc\\.com)|(fandom\\.com))$/i.test(host);
+      const trustedComicCatalog = /(^|\.)((leagueofcomicgeeks\.com)|(comics\.org)|(comicvine\.gamespot\.com)|(dc\.com)|(fandom\.com))$/i.test(host);
       const comicContext = /comic|comics|graphic|issue|volume|dc comics|batman|hush/i.test(title + " " + snippet + " " + url);
       return /hush|batman/i.test(evidence) || (trustedComicCatalog && comicContext);
     }
