@@ -153,10 +153,14 @@ async function loadConfiguredSources(category: string, description: string): Pro
     const haystack = normalizeText([s.codice_fonte,s.nome_fonte,s.produttore,s.linea_prodotto,s.famiglia_prodotto].join(" "));
     const franchiseMatch = preferredCodes.has(normalizeText(s.codice_fonte)) ||
       activeRules.some(r => normalizeText(s.famiglia_prodotto).includes(normalizeText(r.franchise)) || normalizeText(s.linea_prodotto).includes(normalizeText(r.franchise)));
-    const categoryMatch = hints.some(h => haystack.includes(normalizeText(h)));
+    // La categoria generica non deve caricare fonti casuali: abbina la descrizione
+    // a produttore, linea, famiglia, nome o codice della fonte.
+    const categoryMatch = category !== "COLLEZIONABILE" && hints.some(h => haystack.includes(normalizeText(h)));
+    const descriptionTokens = normalizeText(description).split(/[^a-z0-9]+/).filter(t => t.length >= 4 && !/^\\d+$/.test(t));
+    const descriptionMatch = descriptionTokens.some(token => haystack.includes(token));
     const productMatch = /transformer|optimus prime|bumblebee|megatron/i.test(description) && /transformer|hasbro|optimus|toy/i.test(haystack);
     const makerMatch = /lego/i.test(description) && /lego|brickset|bricklink|rebrickable/i.test(haystack);
-    return franchiseMatch || categoryMatch || productMatch || makerMatch;
+    return franchiseMatch || categoryMatch || descriptionMatch || productMatch || makerMatch;
   }).sort((a,b) => (a.priorita_metadati ?? 99) - (b.priorita_metadati ?? 99));
   const unique: ConfiguredSource[] = []; const seen = new Set<string>();
   for (const s of matching) {

@@ -1735,11 +1735,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(value)) {
       return 'LEGO';
     }
-    if (RegExp(r'fumett|comic|manga|panini|salda|bonelli').hasMatch(value)) {
+    if (RegExp(r'fumett|comic|manga|panini|salda|bonelli|graphic novel|isbn').hasMatch(value)) {
       return 'FUMETTI';
     }
-    if (RegExp(r'myth cloth|saint seiya|bandai|gundam|dragon ball|action figure|statua').hasMatch(value)) {
+    if (RegExp(r'myth cloth|saint seiya|bandai|gundam|gunpla|dragon ball|action figure|statua|transformers|optimus prime|bumblebee|megatron|star wars|naruto|one piece|hokuto|mazinger|grendizer').hasMatch(value)) {
       return 'ACTION_FIGURE';
+    }
+    if (RegExp(r'maisto|die.?cast|modellino|motorbike|motocicletta|modellismo|auto in scala').hasMatch(value)) {
+      return 'DIECAST';
+    }
+    if (RegExp(r'kinder|sorpresine|kinder surprise|kinder joy').hasMatch(value)) {
+      return 'GIOCATTOLO';
+    }
+    if (RegExp(r'robot vintage|robottoni|giocattolo vintage|toy vintage').hasMatch(value)) {
+      return 'GIOCATTOLO';
     }
     return 'COLLEZIONABILE';
   }
