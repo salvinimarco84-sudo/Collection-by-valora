@@ -584,18 +584,31 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
   final FocusNode _searchFocusNode = FocusNode();
+  final FocusNode _pr11SearchFocusNode = FocusNode();
+  String _lastPr11SearchQuery = '';
 
   bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03'}.contains(widget.apiCode);
 
   @override
   void initState() {
     super.initState();
+    if (widget.apiCode == 'OBJECT_MASTER') {
+      _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
+    }
     if (widget.apiCode == 'PR-01') {
       _descriptionFocus.addListener(_onDescriptionFocusChanged);
       _quantity.addListener(_recalculateTotal);
       _unitPrice.addListener(_recalculateTotal);
     }
     if (widget.initialObjectCode != null) _code.text = widget.initialObjectCode.toString();
+  }
+
+  void _onPr11SearchFocusChanged() {
+    if (widget.apiCode != 'OBJECT_MASTER' || _pr11SearchFocusNode.hasFocus || _loading) return;
+    final query = _search.text.trim();
+    if (query.length < 2 || query == _lastPr11SearchQuery) return;
+    _lastPr11SearchQuery = query;
+    _run(_searchPr02Objects);
   }
 
   void _recalculateTotal() {
@@ -652,6 +665,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _releaseOwnedLockSilently();
     }
     _descriptionFocus.removeListener(_onDescriptionFocusChanged);
+    _pr11SearchFocusNode.removeListener(_onPr11SearchFocusChanged);
+    _pr11SearchFocusNode.dispose();
     _descriptionFocus.dispose();
     _searchFocusNode.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
@@ -2084,7 +2099,23 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (!_isWrite && isHistory)
           _field(_code, 'Codice oggetto *', type: TextInputType.number),
         if (!_isWrite && isMaster)
-          _field(_search, 'Descrizione oggetto'),
+          TextField(
+            controller: _search,
+            focusNode: _pr11SearchFocusNode,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) {
+              final query = _search.text.trim();
+              if (query.length >= 2 && !_loading) {
+                _lastPr11SearchQuery = query;
+                _run(_searchPr02Objects);
+              }
+            },
+            decoration: const InputDecoration(
+              labelText: 'Descrizione oggetto',
+              hintText: 'Inserisci la descrizione completa o una parte',
+              border: OutlineInputBorder(),
+            ),
+          ),
         if (!_isWrite && isAvailableList)
           const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: Colors.white70))),
         if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
