@@ -23,7 +23,7 @@ function isLego(category: string, description: string): boolean {
 function sourcesFor(category: string, query: string): string[] {
   if (isLego(category, query)) return ["Brickset", "BrickLink", "Rebrickable", "LEGO.com"];
   if (/transformers|optimus prime|bumblebee|megatron|hasbro/i.test(query)) return ["site:hasbro.com", "site:hasbropulse.com", "site:transformers.com", "site:tfwiki.net"];
-  if (/fumett|comic|manga|panini|salda|bonelli/i.test(query) || category === "FUMETTI") return ["site:comics.org", "site:leagueofcomicgeeks.com", "site:panini.it", "site:saldaPress.com"];
+  if (/fumett|comic|manga|panini|salda|bonelli|batman|hush/i.test(query) || category === "FUMETTI") return ["site:comics.org", "site:leagueofcomicgeeks.com", "site:panini.it", "site:panini.fr", "site:panini.de", "site:panini.es", "site:saldaPress.com"];
   if (/myth cloth|saint seiya|bandai|gundam|dragon ball|action figure|statua/i.test(query) || category === "ACTION_FIGURE") return ["site:tamashiiweb.com", "site:bandai.com", "site:myfigurecollection.net"];
   if (/maisto|die.cast|moto|motorbike|modellino/i.test(query)) return ["site:maisto.com", "site:diecast.org"];
   if (/saint seiya|myth cloth/i.test(query)) return ["site:tamashiiweb.com", "site:myfigurecollection.net"];
@@ -207,11 +207,18 @@ function makeQueries(category: string, description: string): string[] {
     queries.push('"' + cleaned + '"');
     const targeted = sourcesFor(category, description).filter(s => s.startsWith("site:"));
     for (const site of targeted) queries.push(site + ' "' + cleaned + '"');
-    if (/batman|long halloween|lungo halloween|fumett|comic/i.test(normalized)) {
+    if (/batman|long halloween|lungo halloween|fumett|comic|manga|hush/i.test(normalized)) {
+      queries.push('site:panini.it "' + cleaned + '"');
+      queries.push('site:panini.fr "' + cleaned + '"');
+      queries.push('site:panini.de "' + cleaned + '"');
+      queries.push('site:panini.es "' + cleaned + '"');
+      queries.push('site:ebay.it "' + cleaned + '"');
+      queries.push('site:ebay.fr "' + cleaned + '"');
+      queries.push('site:ebay.de "' + cleaned + '"');
+      queries.push('site:ebay.es "' + cleaned + '"');
       queries.push('site:comics.org "' + cleaned + '"');
       queries.push('site:leagueofcomicgeeks.com "' + cleaned + '"');
       queries.push('site:dc.com "' + cleaned + '"');
-      queries.push('site:panini.it "' + cleaned + '"');
     }
     if (/optimus prime|transformers|bumblebee|megatron/i.test(normalized)) {
       queries.push('site:tfu.info "' + cleaned + '"');
@@ -440,8 +447,8 @@ Deno.serve(async (req: Request) => {
     const staticTargeted = sourcesFor(category, description);
     const targeted = [...new Set([...staticTargeted, ...configured.names])];
     let directResults: SearchResult[] = [];
-    try { directResults.push(...await searchDcBatmanHush(description)); } catch (e) { errors.push("Catalogo DC diretto: " + (e instanceof Error ? e.message : String(e))); }
     const errors: string[] = [...configured.warnings];
+    try { directResults.push(...await searchDcBatmanHush(description)); } catch (e) { errors.push("Catalogo DC diretto: " + (e instanceof Error ? e.message : String(e))); }
     if (isLego(category, description) && code) {
       try { directResults = await searchBrickset(code); }
       catch (e) { errors.push("Brickset: " + (e instanceof Error ? e.message : String(e))); }
@@ -452,7 +459,7 @@ Deno.serve(async (req: Request) => {
     // specialistiche, poi le query mirate di franchise/categoria, infine il web generico.
     // In precedenza le prime 5 query generiche potevano occupare il limite di 8 e
     // tagliare fuori quasi tutte le fonti del database.
-    const configuredQueries = configured.queries.slice(0, 6);
+    const configuredQueries = configured.queries.slice(0, 2);
     const targetedBaseQueries = baseQueries.filter(q => q.startsWith("site:"));
     const genericBaseQueries = baseQueries.filter(q => !q.startsWith("site:"));
     const queries = [...new Set([
@@ -463,7 +470,8 @@ Deno.serve(async (req: Request) => {
     let searchResults: SearchResult[] = [];
     const diagnosticaQuery: Array<{ query: string; risultati_grezzi: number; errore?: string }> = [];
     // Fonti specialistiche dal database TEST prima delle query generiche.
-    if (!directResults.length) {
+    {
+      // Il crawler DC è una fonte aggiuntiva, non deve bloccare i mercati locali.
       const settled = await Promise.allSettled(queries.map(searchOne));
       for (let i = 0; i < settled.length; i++) {
         const item = settled[i];
