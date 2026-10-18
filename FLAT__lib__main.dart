@@ -100,13 +100,13 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
           useMaterial3: true,
           brightness: Brightness.dark,
           scaffoldBackgroundColor: ValoraAppearance.instance.background,
-          colorScheme: const ColorScheme.dark(
+          colorScheme: ColorScheme.dark(
             primary: goldColor,
             secondary: goldColor,
             surface: ValoraAppearance.instance.card,
             error: Color(0xFFE35D5D),
           ),
-          appBarTheme: const AppBarTheme(
+          appBarTheme: AppBarTheme(
             backgroundColor: ValoraAppearance.instance.background,
             foregroundColor: goldColor,
             centerTitle: true,
@@ -997,8 +997,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         final narrowed = candidateResults.where((item) => matchesPhrase(item, candidate)).toList();
         if (narrowed.isNotEmpty) {
           results = narrowed;
-          break;
-        }
+          break;        }
       }
     }
 
@@ -1997,8 +1996,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Widget _objectCard(
     Map<String, dynamic> item, {
-    VoidCallback? onTap,
-    bool availableStyle = false,
+    VoidCallback? onTap,    bool availableStyle = false,
   }) {
     final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
     final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
