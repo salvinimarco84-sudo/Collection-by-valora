@@ -884,10 +884,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (selected != null && mounted) {
       if (widget.apiCode == 'PR-03') {
         await _selectPr03Object(selected);
+      } else if (widget.apiCode == 'OBJECT_MASTER') {
+        await _selectPr11Object(selected);
       } else {
         await _selectPr02Object(selected);
       }
     }
+  }
+
+  Future<void> _selectPr11Object(Map<String, dynamic> item) async {
+    final id = int.tryParse(item['codice_oggetto']?.toString() ?? '');
+    if (id == null) throw Exception('Il risultato non contiene un codice oggetto valido.');
+    _code.text = id.toString();
+    await _loadObject();
+    if (!mounted || _currentObject == null) return;
+    final description = (_currentObject?['descrizione_oggetto']
+        ?? _currentObject?['descrizione']
+        ?? item['descrizione_oggetto']
+        ?? '').toString().trim();
+    setState(() {
+      _search.text = description;
+      _output = 'Scheda completa caricata in sola lettura · codice $id.';
+    });
   }
 
   Future<void> _selectPr03Object(Map<String, dynamic> item) async {
@@ -1971,8 +1989,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ),
           ],
         ],
-        if (!_isWrite && (isHistory || isMaster))
-          _field(_code, isHistory ? 'Codice oggetto *' : 'Codice oggetto', type: TextInputType.number),
+        if (!_isWrite && isHistory)
+          _field(_code, 'Codice oggetto *', type: TextInputType.number),
+        if (!_isWrite && isMaster) ...[
+          _field(_search, 'Cerca per descrizione oggetto (anche parziale)'),
+          FilledButton.icon(
+            onPressed: _loading ? null : () => _run(_searchPr02Objects),
+            icon: const Icon(Icons.search),
+            label: const Text('CERCA E SELEZIONA OGGETTO'),
+          ),
+        ],
         if (!_isWrite && isAvailableList)
           const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: Colors.white70))),
         if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
