@@ -313,7 +313,7 @@ class _LoginPageState extends State<LoginPage> {
                           errorBuilder: (_, __, ___) => Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: cardColor,
+                              color: ValoraAppearance.instance.card,
                               border: Border.all(color: goldColor, width: 2),
                             ),
                             child: const Icon(Icons.inventory_2_outlined,
@@ -525,7 +525,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             itemBuilder: (context, index) {
               final section = dashboardSections[index];
               return Material(
-                color: cardColor, borderRadius: BorderRadius.circular(16),
+                color: ValoraAppearance.instance.card, borderRadius: BorderRadius.circular(16),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () => setState(() => selectedSection = section),
@@ -1030,7 +1030,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          backgroundColor: cardColor,
+          backgroundColor: ValoraAppearance.instance.card,
           title: Text('NESSUN RISULTATO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           content: Text('Non ho trovato oggetti per “' + query + '”. Prova con una parte più breve della descrizione o con il codice oggetto.'),
           actions: [
@@ -1044,7 +1044,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
+        backgroundColor: ValoraAppearance.instance.card,
         title: Text('RISULTATI RICERCA (' + results.length.toString() + ')',
           style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
         content: SizedBox(
@@ -1162,7 +1162,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
+        backgroundColor: ValoraAppearance.instance.card,
         title: Text('CONFERMA CHIUSURA'),
         content: Text('Oggetto: $id · $description\nMotivo: $reason\nNote: ${notes.isEmpty ? "Nessuna" : notes}\n\nConfermi questa chiusura?'),
         actions: [
@@ -1185,7 +1185,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
+        backgroundColor: ValoraAppearance.instance.card,
         title: Text('ALTRO OGGETTO?'),
         content: Text('Vuoi chiudere un altro oggetto?\n\nOggetti confermati: ${_pr03PendingClosures.length}'),
         actions: [
@@ -1221,7 +1221,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
+        backgroundColor: ValoraAppearance.instance.card,
         title: Text('RIEPILOGO FINALE'),
         content: SingleChildScrollView(child: Text('Saranno salvate queste chiusure:\n\n$summary\n\nConfermi il salvataggio?')),
         actions: [
@@ -1554,7 +1554,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
+        backgroundColor: ValoraAppearance.instance.card,
         title: Text('RISULTATI RICERCA ONLINE'),
         content: SizedBox(
           width: 650,
@@ -1638,7 +1638,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final sourceAction = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
+        backgroundColor: ValoraAppearance.instance.card,
         title: Text('VERIFICA FONTE'),
         content: SelectableText(
           '$title\n$url\n\n'
@@ -1699,7 +1699,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           await showDialog<void>(
             context: context,
             builder: (dialogContext) => AlertDialog(
-              backgroundColor: cardColor,
+              backgroundColor: ValoraAppearance.instance.card,
               title: Text('Collegamento non apribile'),
               content: SelectableText(url),
               actions: [
@@ -1716,7 +1716,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           await showDialog<void>(
             context: context,
             builder: (dialogContext) => AlertDialog(
-              backgroundColor: cardColor,
+              backgroundColor: ValoraAppearance.instance.card,
               title: Text('Collegamento non apribile'),
               content: SelectableText('$url\\n\\nDettaglio: $e'),
               actions: [
@@ -2395,7 +2395,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: !_showPr02TechnicalTab ? sectionColor : cardColor,
+                        backgroundColor: !_showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
                         foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                       ),
                       onPressed: () => setState(() => _showPr02TechnicalTab = false),
@@ -2406,7 +2406,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: _showPr02TechnicalTab ? sectionColor : cardColor,
+                        backgroundColor: _showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
                         foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                       ),
                       onPressed: () => setState(() => _showPr02TechnicalTab = true),
@@ -2548,7 +2548,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 child: Row(children: [
                   Expanded(child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: !_showPr02TechnicalTab ? sectionColor : cardColor,
+                      backgroundColor: !_showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
                       foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                     ),
                     onPressed: () => setState(() => _showPr02TechnicalTab = false),
@@ -2557,7 +2557,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   const SizedBox(width: 8),
                   Expanded(child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: _showPr02TechnicalTab ? sectionColor : cardColor,
+                      backgroundColor: _showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
                       foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                     ),
                     onPressed: () => setState(() => _showPr02TechnicalTab = true),
@@ -2660,7 +2660,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
             decoration: BoxDecoration(
-              color: cardColor,
+              color: ValoraAppearance.instance.card,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: sectionColor.withOpacity(0.28)),
             ),
@@ -2681,7 +2681,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
-            color: cardColor, borderRadius: BorderRadius.circular(12)),
+            color: ValoraAppearance.instance.card, borderRadius: BorderRadius.circular(12)),
             child: SelectableText(_output, style: TextStyle(fontSize: 13))),
         ],
         if (!_isWrite) ...[
