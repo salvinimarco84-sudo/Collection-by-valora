@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
@@ -10,8 +11,61 @@ const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
 
+class ValoraAppearance extends ChangeNotifier {
+  ValoraAppearance._();
+  static final instance = ValoraAppearance._();
+  static const Map<String, Color> defaults = {
+    'CATALOGO': Color(0xFF3978C5), 'ACQUISTI': Color(0xFF39875B),
+    'VENDITE': Color(0xFFC74444), 'FLUSSI': Color(0xFFD6A83F),
+    'VALUTAZIONI': Color(0xFF8556C7), 'REPORT': Color(0xFFE17D35),
+    'RICERCHE': Color(0xFF568DAD), 'CONTROLLO': Color(0xFF777777),
+  };
+  static const List<Color> palette = [
+    Color(0xFF3978C5),Color(0xFF39875B),Color(0xFFC74444),Color(0xFFD6A83F),
+    Color(0xFF8556C7),Color(0xFFE17D35),Color(0xFF568DAD),Color(0xFF777777),
+    Color(0xFF00897B),Color(0xFF8E24AA),Color(0xFF5C6BC0),Color(0xFF7CB342),
+    Color(0xFFEF6C00),Color(0xFFAD1457),Color(0xFF00838F),Color(0xFF6D4C41),
+    Color(0xFF546E7A),Color(0xFF9E9D24),Color(0xFF3949AB),Color(0xFF00ACC1),
+    Color(0xFFF4511E),Color(0xFF43A047),Color(0xFF6A1B9A),Color(0xFF283593),
+  ];
+  final Map<String, Color> colors = Map<String, Color>.from(defaults);
+  bool whiteBackground = false;
+  Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
+  Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
+  Color get card => whiteBackground ? Colors.white : cardColor;
+  Future<void> load() async {
+    final p = await SharedPreferences.getInstance();
+    whiteBackground = p.getBool('valora_white_background') ?? false;
+    for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
+    final used=<int>{};
+    for(final k in defaults.keys) {
+      if(!used.add(colors[k]!.value)) {
+        final replacement=palette.firstWhere((c)=>used.add(c.value),orElse:()=>defaults[k]!);
+        colors[k]=replacement;
+      }
+    }
+    notifyListeners();
+  }
+  Future<void> setBackground(bool white) async {
+    whiteBackground=white;
+    final p=await SharedPreferences.getInstance(); await p.setBool('valora_white_background',white); notifyListeners();
+  }
+  Future<void> setColor(String section,Color color) async {
+    if(colors.entries.any((e)=>e.key!=section&&e.value.value==color.value)) return;
+    colors[section]=color;
+    final p=await SharedPreferences.getInstance(); await p.setInt('valora_color_$section',color.value); notifyListeners();
+  }
+  Future<void> reset() async {
+    whiteBackground=false; colors..clear()..addAll(defaults);
+    final p=await SharedPreferences.getInstance(); await p.remove('valora_white_background');
+    for(final k in defaults.keys){await p.remove('valora_color_$k');}
+    notifyListeners();
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ValoraAppearance.instance.load();
   String? startupError;
   try {
     await Supabase.initialize(
@@ -26,10 +80,18 @@ Future<void> main() async {
   runApp(CollectionValoraApp(startupError: startupError));
 }
 
-class CollectionValoraApp extends StatelessWidget {
+class CollectionValoraApp extends StatefulWidget {
   const CollectionValoraApp({super.key, this.startupError});
-
   final String? startupError;
+  @override
+  State<CollectionValoraApp> createState() => _CollectionValoraAppState();
+}
+class _CollectionValoraAppState extends State<CollectionValoraApp> {
+  @override
+  void initState(){super.initState();ValoraAppearance.instance.addListener(_refresh);}
+  void _refresh(){if(mounted)setState((){});}
+  @override
+  void dispose(){ValoraAppearance.instance.removeListener(_refresh);super.dispose();}
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'COLLECTION by VALORA',
@@ -37,19 +99,19 @@ class CollectionValoraApp extends StatelessWidget {
         theme: ThemeData(
           useMaterial3: true,
           brightness: Brightness.dark,
-          scaffoldBackgroundColor: backgroundColor,
+          scaffoldBackgroundColor: ValoraAppearance.instance.background,
           colorScheme: const ColorScheme.dark(
             primary: goldColor,
             secondary: goldColor,
-            surface: cardColor,
+            surface: ValoraAppearance.instance.card,
             error: Color(0xFFE35D5D),
           ),
           appBarTheme: const AppBarTheme(
-            backgroundColor: backgroundColor,
+            backgroundColor: ValoraAppearance.instance.background,
             foregroundColor: goldColor,
             centerTitle: true,
           ),
-          cardTheme: const CardThemeData(color: cardColor, elevation: 3),
+          cardTheme: CardThemeData(color: ValoraAppearance.instance.card, elevation: 3),
           inputDecorationTheme: const InputDecorationTheme(
             border: OutlineInputBorder(),
             focusedBorder: OutlineInputBorder(
@@ -57,10 +119,57 @@ class CollectionValoraApp extends StatelessWidget {
             ),
           ),
         ),
-        home: startupError == null
+        home: widget.startupError == null
             ? const AuthenticationGate()
-            : StartupFailurePage(error: startupError!),
+            : StartupFailurePage(error: widget.startupError!),
       );
+}
+
+class AppearanceSettingsPage extends StatefulWidget {
+  const AppearanceSettingsPage({super.key});
+  @override State<AppearanceSettingsPage> createState()=>_AppearanceSettingsPageState();
+}
+class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
+  final a=ValoraAppearance.instance;
+  @override void initState(){super.initState();a.addListener(refresh);}
+  void refresh(){if(mounted)setState((){});}
+  @override void dispose(){a.removeListener(refresh);super.dispose();}
+  @override Widget build(BuildContext context)=>Scaffold(
+    appBar:AppBar(title:const Text('Personalizzazione')),
+    body:ListView(padding:const EdgeInsets.all(16),children:[
+      Text('SFONDO',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const SizedBox(height:8),
+      SegmentedButton<bool>(segments:const [
+        ButtonSegment<bool>(value:false,label:Text('Nero')),
+        ButtonSegment<bool>(value:true,label:Text('Bianco'))],
+        selected:{a.whiteBackground},onSelectionChanged:(v)=>a.setBackground(v.first)),
+      const SizedBox(height:20),
+      Text('COLORE DEI BLOCCHI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const SizedBox(height:4),
+      const Text('Ogni blocco ha un colore esclusivo. I colori già assegnati agli altri blocchi non sono disponibili.'),
+      ...ValoraAppearance.defaults.keys.map((section){
+        final current=a.colorFor(section);
+        final available=ValoraAppearance.palette.where((c)=>c.value==current.value||
+          !a.colors.entries.any((e)=>e.key!=section&&e.value.value==c.value)).toList();
+        return Card(child:Padding(padding:const EdgeInsets.symmetric(horizontal:12,vertical:6),
+          child:Row(children:[
+            Container(width:18,height:18,decoration:BoxDecoration(color:current,borderRadius:BorderRadius.circular(4))),
+            const SizedBox(width:10),
+            Expanded(child:Text(section,style:TextStyle(color:a.whiteBackground?Colors.black87:Colors.white))),
+            DropdownButton<int>(value:current.value,items:available.map((c)=>DropdownMenuItem<int>(
+              value:c.value,child:Row(children:[
+                Container(width:20,height:20,decoration:BoxDecoration(color:c,borderRadius:BorderRadius.circular(4))),
+                const SizedBox(width:8),Text('#${c.value.toRadixString(16).substring(2).toUpperCase()}')
+              ]))).toList(),
+              onChanged:(v){if(v!=null)a.setColor(section,Color(v));}),
+          ])));
+      }),
+      const SizedBox(height:20),
+      OutlinedButton.icon(onPressed:()async{
+        await a.reset();
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Impostazioni iniziali ripristinate.')));
+      },icon:const Icon(Icons.restart_alt),label:const Text('RIPRISTINA IMPOSTAZIONI INIZIALI')),
+    ]));
 }
 
 class StartupFailurePage extends StatelessWidget {
@@ -333,7 +442,7 @@ Color sectionColorForApiCode(String apiCode) {
   for (final section in dashboardSections) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     if (procedures.any((procedure) => procedure.apiCode == apiCode)) {
-      return section.color;
+      return ValoraAppearance.instance.colorFor(section.title);
     }
   }
   return goldColor;
@@ -364,7 +473,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
           title: const Text('COLLECTION by VALORA', style: TextStyle(
             fontWeight: FontWeight.bold, letterSpacing: 1,
           )),
-          actions: [IconButton(tooltip: 'Esci', onPressed: logout, icon: const Icon(Icons.logout))],
+          actions: [
+            IconButton(tooltip: 'Personalizza interfaccia', onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppearanceSettingsPage()));
+            }, icon: const Icon(Icons.palette_outlined)),
+            IconButton(tooltip: 'Esci', onPressed: logout, icon: const Icon(Icons.logout)),
+          ],
         ),
         body: SafeArea(child: selectedSection == null
             ? buildDashboard() : buildSection(selectedSection!)),
@@ -397,16 +511,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   onTap: () => setState(() => selectedSection = section),
                   child: Container(
                     decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: section.color, width: 1.2)),
+                      border: Border.all(color: ValoraAppearance.instance.colorFor(section.title), width: 1.2)),
                     padding: const EdgeInsets.all(10),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Container(width: 54, height: 54,
-                        decoration: BoxDecoration(color: section.color.withValues(alpha: 0.16),
+                        decoration: BoxDecoration(color: ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(14)),
-                        child: Icon(section.icon, color: section.color, size: 30)),
+                        child: Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: 30)),
                       const SizedBox(height: 12),
                       Text(section.title, textAlign: TextAlign.center,
-                        style: TextStyle(color: section.color, fontWeight: FontWeight.bold,
+                        style: TextStyle(color: ValoraAppearance.instance.colorFor(section.title), fontWeight: FontWeight.bold,
                           fontSize: 13, letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Text(section.description, textAlign: TextAlign.center,
@@ -425,10 +539,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-      Icon(section.icon, color: section.color, size: 52),
+      Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: 52),
       const SizedBox(height: 12),
       Text(section.title, textAlign: TextAlign.center, style: TextStyle(
-        color: section.color, fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
       const SizedBox(height: 6),
       Text(section.description, textAlign: TextAlign.center,
         style: const TextStyle(color: Colors.white70)),
@@ -438,11 +552,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
         child: ListTile(
           enabled: procedure.enabled,
           leading: CircleAvatar(
-            backgroundColor: procedure.enabled ? section.color.withValues(alpha: 0.18) : Colors.white10,
+            backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.18) : Colors.white10,
             child: Icon(procedure.enabled
                 ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
                 : Icons.lock_outline,
-              color: procedure.enabled ? section.color : Colors.white38),
+              color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : Colors.white38),
           ),
           title: Text(procedure.title, style: TextStyle(fontWeight: FontWeight.w600,
             color: procedure.enabled ? Colors.white : Colors.white38)),
@@ -451,7 +565,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               : '${procedure.description}\nIn attesa di un mapping runtime verificato'),
           isThreeLine: true,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
-            color: procedure.enabled ? section.color : Colors.white24),
+            color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : Colors.white24),
           onTap: procedure.enabled && procedure.apiCode != null
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
@@ -586,6 +700,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
   String _lastPr11SearchQuery = '';
+  bool _exactSearchMode = false;
 
   bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03'}.contains(widget.apiCode);
 
@@ -870,6 +985,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
 
     results = results.where((item) => matchesPhrase(item, query)).toList();
+    if (_exactSearchMode) results = results.where((item) => normalize(descriptionOf(item)) == normalizedQuery).toList();
 
     // Se il prefisso digitato non è presente nella descrizione archiviata,
     // prova le frasi complete più corte, mantenendo sempre il filtro stretto.
@@ -963,10 +1079,29 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         await _selectPr03Object(selected);
       } else if (widget.apiCode == 'OBJECT_MASTER') {
         await _selectPr11Object(selected);
+      } else if (widget.apiCode == 'EXPLORE_RECORDS') {
+        await _selectHistoryObject(selected);
       } else {
         await _selectPr02Object(selected);
       }
     }
+  }
+
+  Future<void> _selectHistoryObject(Map<String, dynamic> item) async {
+    final id=int.tryParse(item['codice_oggetto']?.toString()??'');
+    if(id==null||id<=0)throw Exception('Il risultato non contiene un codice oggetto valido.');
+    _code.text=id.toString();
+    final response=await _ValoraRuntimeApi.call('object_history',{'session_id':_sessionId,'codice_oggetto':id});
+    final result=response['result'];
+    if(result is! Map)throw Exception('Risposta dello storico non valida.');
+    final history=Map<String,dynamic>.from(result);
+    final object=history['scheda_corrente']; final events=history['eventi_storici'];
+    setState((){
+      _currentObject=object is Map?Map<String,dynamic>.from(object):Map<String,dynamic>.from(item);
+      _rows=events is List?events:[];
+      _search.text=(_currentObject?['descrizione_oggetto']??_currentObject?['descrizione']??'').toString();
+      _output='Storico in sola lettura · ${history['numero_eventi']??_rows.length} eventi.';
+    });
   }
 
   Future<void> _selectPr11Object(Map<String, dynamic> item) async {
@@ -2177,9 +2312,25 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ),
           ],
         ],
-        if (!_isWrite && isHistory)
-          _field(_code, 'Codice oggetto *', type: TextInputType.number),
-        if (!_isWrite && isMaster)
+        if (!_isWrite && isHistory) ...[
+          SegmentedButton<bool>(segments:const [
+            ButtonSegment<bool>(value:false,label:Text('Parziale')),
+            ButtonSegment<bool>(value:true,label:Text('Esatta'))],
+            selected:{_exactSearchMode},onSelectionChanged:(v)=>setState(()=>_exactSearchMode=v.first)),
+          const SizedBox(height:8),
+          TextField(controller:_search,textInputAction:TextInputAction.search,
+            onSubmitted:(_)=>_run(_searchPr02Objects),
+            decoration:InputDecoration(labelText:'Descrizione oggetto',
+              hintText:'Inserisci una descrizione completa o parziale',
+              suffixIcon:IconButton(tooltip:'Cerca oggetto',onPressed:_loading?null:()=>_run(_searchPr02Objects),
+                icon:Icon(Icons.search,color:sectionColor)))),
+        ],
+        if (!_isWrite && isMaster) ...[
+          SegmentedButton<bool>(segments:const [
+            ButtonSegment<bool>(value:false,label:Text('Parziale')),
+            ButtonSegment<bool>(value:true,label:Text('Esatta'))],
+            selected:{_exactSearchMode},onSelectionChanged:(v)=>setState(()=>_exactSearchMode=v.first)),
+          const SizedBox(height:8),
           TextField(
             controller: _search,
             focusNode: _pr11SearchFocusNode,
@@ -2213,6 +2364,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ),
             ),
           ),
+        ],
         if (!_isWrite && isAvailableList)
           const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: Colors.white70))),
         if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
