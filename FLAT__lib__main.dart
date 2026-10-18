@@ -2839,8 +2839,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _condition = 'USATO';
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
+        _metadataCategory = 'SELEZIONA CATEGORIA';
+        _metadataSourceUrl = null;
+        _metadataSearchExecuted = false;
         _lastMetadataQuery = '';
-        _metadataResult = 'Inserisci la descrizione e poi esci dal campo per preparare la ricerca metadati.';
+        _metadataResult = 'Inserisci la descrizione, seleziona la categoria e avvia la ricerca metadati.';
         _output = 'Pronto per il prossimo oggetto.';
       });
       // Aspetta che il dialogo sia chiuso e il modulo sia ridisegnato prima di
