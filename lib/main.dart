@@ -1518,8 +1518,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
     if (!mounted) return;
     if (candidates.isEmpty) {
+      final errors = result['errori_fonti'] is List
+          ? (result['errori_fonti'] as List).map((e) => e.toString()).toList()
+          : <String>[];
+      final diagnostics = result['diagnostica'] is Map
+          ? Map<String, dynamic>.from(result['diagnostica'] as Map)
+          : <String, dynamic>{};
+      final queryDiagnostics = diagnostics['query'] is List
+          ? (diagnostics['query'] as List).whereType<Map>().map((e) {
+              final q = (e['query'] ?? '').toString();
+              final count = e['risultati_grezzi'] ?? 0;
+              final error = (e['errore'] ?? '').toString();
+              return '- $q: $count risultati${error.isEmpty ? '' : ' · $error'}';
+            }).join('\\n')
+          : '';
+      final sourceCount = diagnostics['fonti_database_caricate'] ?? 0;
+      final rawCount = diagnostics['risultati_grezzi_unici'] ?? 0;
+      final codeCount = diagnostics['dopo_filtro_codice'] ?? 0;
+      final relevanceCount = diagnostics['dopo_filtro_pertinenza'] ?? 0;
       setState(() {
-        _metadataResult = 'PR-12 ha eseguito la ricerca online ma non ha restituito risultati leggibili. Puoi riprovare o compilare i metadati manualmente.';
+        _metadataResult = 'PR-12 ha completato la ricerca ma non ha trovato candidati verificabili.\\n'
+            'Fonti configurate: $sourceCount · risultati grezzi: $rawCount · dopo filtro codice: $codeCount · dopo filtro pertinenza: $relevanceCount'
+            '${queryDiagnostics.isEmpty ? '' : '\\n\\nDettaglio query:\\n$queryDiagnostics'}'
+            '${errors.isEmpty ? '' : '\\n\\nProblemi delle fonti:\\n${errors.take(8).join('\\n')}'}'
+            '\\n\\nPuoi correggere la descrizione e riprovare oppure compilare i campi manualmente. Nessun dato è stato salvato.';
         _output = _metadataResult;
       });
       return;
