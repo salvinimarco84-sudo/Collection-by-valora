@@ -676,6 +676,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
   String _lastMetadataQuery = '';
+  String _metadataCategory = 'COLLEZIONABILE';
   String? _metadataSourceUrl;
   bool _metadataSearchExecuted = false;
   String _metadataResult = 'La ricerca dei metadati partirà quando esci dal campo Descrizione oggetto.';
@@ -1523,7 +1524,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       'pr-12-web-search-test',
       body: {
         'descrizione': description,
-        'categoria': _inferMetadataCategory(description),
+        'categoria': widget.apiCode == 'PR-01' ? _metadataCategory : _inferMetadataCategory(description),
       },
     );
     final data = response.data;
@@ -2329,6 +2330,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 SelectableText(_metadataResult, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                 const SizedBox(height: 6),
                 Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+                const SizedBox(height: 10),
+                _dropdown('Categoria oggetto *', _metadataCategory, const ['LEGO','FUMETTI','DVD_BLURAY','MYTH_CLOTH','ACTION_FIGURE','DIECAST','GIOCATTOLO','CARTE_COLLEZIONABILI','COLLEZIONABILE'], (v) => setState(() { _metadataCategory = v!; _lastMetadataQuery = ''; })),
                 const SizedBox(height: 10),
                 _field(_producer, 'Produttore (facoltativo)'),
                 _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
