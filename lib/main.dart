@@ -2716,26 +2716,39 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final qty = int.tryParse(_quantity.text.trim());
     if (qty == null || qty < 1) throw Exception('La quantità deve essere un numero intero maggiore di zero.');
 
+    final unitPriceLabel = _unitPrice.text.trim().isEmpty
+        ? 'Non indicato'
+        : '${_unitPrice.text.trim()} €';
+    final totalValueLabel = _totalValue.text.trim().isEmpty
+        ? 'Non indicato'
+        : '${_totalValue.text.trim()} €';
+    final marketValueLabel = _marketValue.text.trim().isEmpty
+        ? 'Non indicato'
+        : '${_marketValue.text.trim()} €';
+    final notesLabel = _notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim();
+
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Conferma inserimento oggetto'),
-        content: SingleChildScrollView(child: Text(
-          'Descrizione: ${_description.text.trim()}\n'
-          'Produttore: ${_producer.text.trim()}\\n'
-          'Linea / serie: ${_line.text.trim()}\\n'
-          'Famiglia / categoria: ${_family.text.trim()}\\n'
-          'Condizione: $_condition\n'
-          'Completezza: $_completeness\n'
-          'Destinazione: $_destination\n'
-          'Quantità: ${_quantity.text.trim()}\n'
-          'Prezzo unitario: ${_unitPrice.text.trim().isEmpty ? 'Non indicato' : _unitPrice.text.trim() + ' €'}\n'
-          'Valore totale: ${_totalValue.text.trim().isEmpty ? 'Non indicato' : _totalValue.text.trim() + ' €'}\n'
-          'Valore di mercato stimato: ${_marketValue.text.trim().isEmpty ? 'Non indicato' : _marketValue.text.trim() + ' €'}\n'
-          'Note: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}\n\n'
-          'Confermi il salvataggio di questo oggetto nel database TEST?'
-        )),
+        title: const Text('Conferma inserimento oggetto'),
+        content: SingleChildScrollView(
+          child: Text(
+            'Descrizione: ${_description.text.trim()}\\n'
+            'Produttore: ${_producer.text.trim()}\\n'
+            'Linea / serie: ${_line.text.trim()}\\n'
+            'Famiglia / categoria: ${_family.text.trim()}\\n'
+            'Condizione: $_condition\\n'
+            'Completezza: $_completeness\\n'
+            'Destinazione: $_destination\\n'
+            'Quantità: ${_quantity.text.trim()}\\n'
+            'Prezzo unitario: $unitPriceLabel\\n'
+            'Valore totale: $totalValueLabel\\n'
+            'Valore di mercato stimato: $marketValueLabel\\n'
+            'Note: $notesLabel\\n\\n'
+            'Confermi il salvataggio di questo oggetto nel database TEST?',
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('CONFERMA E SALVA')),
