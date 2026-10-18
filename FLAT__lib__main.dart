@@ -680,7 +680,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     try {
       await action();
     } catch (e) {
-      if (mounted) setState(() => _output = 'ERRORE: $e');
+      if (mounted) {
+        setState(() => _output = 'ERRORE: $e');
+        if (widget.apiCode == 'OBJECT_MASTER') {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ricerca non riuscita: $e'), duration: const Duration(seconds: 5)),
+          );
+        }
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -816,7 +823,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9àèéìòù]+'), ' ')
         .trim()
-        .replaceAll(RegExp(r'\\s+'), ' ');
+        .replaceAll(RegExp(r'\s+'), ' ');
 
     Future<List<Map<String, dynamic>>> searchPhrase(String phrase) async {
       final response = await Supabase.instance.client.schema('collection').rpc(
@@ -844,7 +851,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // oggetti LEGO quando si cerca una descrizione precisa). Restringiamo
     // sempre i risultati alla frase richiesta prima di mostrarli.
     final normalizedQuery = normalize(query);
-    final tokens = query.split(RegExp(r'\\s+')).where((t) => t.trim().isNotEmpty).toList();
+    final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toList();
     List<Map<String, dynamic>> results = await searchPhrase(query);
 
     bool matchesPhrase(Map<String, dynamic> item, String phrase) {
@@ -893,7 +900,21 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           : 'Trovati ' + results.length.toString() + ' risultati pertinenti. Seleziona il record.';
     });
 
-    if (results.isEmpty || !mounted) return;
+    if (!mounted) return;
+    if (results.isEmpty) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: cardColor,
+          title: Text('NESSUN RISULTATO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          content: Text('Non ho trovato oggetti per “' + query + '”. Prova con una parte più breve della descrizione o con il codice oggetto.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('OK')),
+          ],
+        ),
+      );
+      return;
+    }
     final selected = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: true,
@@ -2110,10 +2131,26 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 _run(_searchPr02Objects);
               }
             },
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Descrizione oggetto',
               hintText: 'Inserisci la descrizione completa o una parte',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                tooltip: 'Cerca oggetto',
+                onPressed: _loading ? null : () {
+                  FocusScope.of(context).unfocus();
+                  final query = _search.text.trim();
+                  if (query.length >= 2) {
+                    _lastPr11SearchQuery = query;
+                    _run(_searchPr02Objects);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Inserisci almeno 2 caratteri per cercare.')),
+                    );
+                  }
+                },
+                icon: Icon(Icons.search, color: sectionColor),
+              ),
             ),
           ),
         if (!_isWrite && isAvailableList)
