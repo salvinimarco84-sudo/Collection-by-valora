@@ -329,6 +329,16 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
 };
 
+Color sectionColorForApiCode(String apiCode) {
+  for (final section in dashboardSections) {
+    final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
+    if (procedures.any((procedure) => procedure.apiCode == apiCode)) {
+      return section.color;
+    }
+  }
+  return goldColor;
+}
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
@@ -535,6 +545,7 @@ class ObjectRuntimePage extends StatefulWidget {
 }
 
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
+  Color get sectionColor => sectionColorForApiCode(widget.apiCode);
   final _search = TextEditingController();
   final _description = TextEditingController();
   final _notes = TextEditingController();
@@ -874,7 +885,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
         title: Text('RISULTATI RICERCA (' + results.length.toString() + ')',
-          style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
         content: SizedBox(
           width: 560,
           child: ConstrainedBox(
@@ -888,7 +899,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     subtitle: Text('Stato: ' + (item['stato'] ?? 'Non indicato').toString() +
                       ' · Quantità: ' + (item['quantita'] ?? 'Non indicata').toString() +
                       ' · Prezzo unitario: € ' + (item['valore_oggetto'] ?? 'Non indicato').toString()),
-                    trailing: const Icon(Icons.chevron_right, color: goldColor),
+                    trailing: Icon(Icons.chevron_right, color: sectionColor),
                     onTap: () => Navigator.of(dialogContext).pop(item),
                   ),
                 )).toList(),
@@ -898,7 +909,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('ANNULLA')),
+            child: Text('ANNULLA')),
         ],
       ),
     );
@@ -972,11 +983,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
-        title: const Text('CONFERMA CHIUSURA'),
+        title: Text('CONFERMA CHIUSURA'),
         content: Text('Oggetto: $id · $description\nMotivo: $reason\nNote: ${notes.isEmpty ? "Nessuna" : notes}\n\nConfermi questa chiusura?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('CONFERMA')),
         ],
       ),
     );
@@ -995,11 +1006,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
-        title: const Text('ALTRO OGGETTO?'),
+        title: Text('ALTRO OGGETTO?'),
         content: Text('Vuoi chiudere un altro oggetto?\n\nOggetti confermati: ${_pr03PendingClosures.length}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, SALVA')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, CERCA ALTRO')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('NO, SALVA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('SÌ, CERCA ALTRO')),
         ],
       ),
     );
@@ -1031,11 +1042,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
-        title: const Text('RIEPILOGO FINALE'),
+        title: Text('RIEPILOGO FINALE'),
         content: SingleChildScrollView(child: Text('Saranno salvate queste chiusure:\n\n$summary\n\nConfermi il salvataggio?')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SALVA TUTTO')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('SALVA TUTTO')),
         ],
       ),
     );
@@ -1139,7 +1150,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('METADATI DEL PRODOTTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          Text('METADATI DEL PRODOTTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
@@ -1149,8 +1160,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               clipBehavior: Clip.antiAlias,
               child: hasImage
                   ? Image.network(imageUrl, fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 36))
-                  : const Icon(Icons.image_outlined, color: Colors.white38, size: 36),
+                      errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 36))
+                  : Icon(Icons.image_outlined, color: Colors.white38, size: 36),
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1162,7 +1173,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ])),
           ]),
           const SizedBox(height: 8),
-          const Text('Metadati informativi, non modificabili da questa scheda.',
+          Text('Metadati informativi, non modificabili da questa scheda.',
             style: TextStyle(color: Colors.white54, fontSize: 11)),
         ]),
       ),
@@ -1172,9 +1183,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Widget _metadataValue(String label, String value) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(label, style: const TextStyle(color: goldColor, fontSize: 11, fontWeight: FontWeight.w600)),
+      Text(label, style: TextStyle(color: sectionColor, fontSize: 11, fontWeight: FontWeight.w600)),
       const SizedBox(height: 2),
-      Text(value, style: const TextStyle(color: Colors.white, fontSize: 13)),
+      Text(value, style: TextStyle(color: Colors.white, fontSize: 13)),
     ],
   );
 
@@ -1195,19 +1206,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('DATI TECNICI · SOLA LETTURA',
-            style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          Text('DATI TECNICI · SOLA LETTURA',
+            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          SelectableText(_metadataResult, style: TextStyle(color: Colors.white70, fontSize: 12)),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _loading ? null : () => _run(_prepareMetadata),
-            icon: const Icon(Icons.travel_explore),
-            label: const Text('RICHIAMA METADATI PR-12'),
+            icon: Icon(Icons.travel_explore),
+            label: Text('RICHIAMA METADATI PR-12'),
           ),
-          const Divider(height: 24),
+          Divider(height: 24),
           if (technicalEntries.isEmpty)
-            const Text('Nessun altro dato tecnico presente nel record.',
+            Text('Nessun altro dato tecnico presente nel record.',
               style: TextStyle(color: Colors.white60))
           else
             ...technicalEntries.map((entry) => _detailFieldCard(entry.key, entry.value)),
@@ -1223,7 +1234,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          Text(title, style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           if (oldValues) ...[
             _detailFieldCard('codice_oggetto', object['codice_oggetto']),
@@ -1342,7 +1353,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
-        title: const Text('PR-12 · RISULTATI RICERCA ONLINE'),
+        title: Text('PR-12 · RISULTATI RICERCA ONLINE'),
         content: SizedBox(
           width: 650,
           child: ConstrainedBox(
@@ -1360,7 +1371,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: candidates.length,
-                    separatorBuilder: (_, __) => const Divider(color: goldColor),
+                    separatorBuilder: (_, __) => Divider(color: sectionColor),
                     itemBuilder: (context, index) {
                       final item = candidates[index];
                       final title = (item['title'] ?? 'Risultato senza titolo').toString();
@@ -1375,8 +1386,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         if (year.isNotEmpty) 'Anno di uscita: $year',
                       ];
                       return ListTile(
-                        leading: const Icon(Icons.language, color: goldColor),
-                        title: Text(title, style: const TextStyle(color: goldColor)),
+                        leading: Icon(Icons.language, color: sectionColor),
+                        title: Text(title, style: TextStyle(color: sectionColor)),
                         subtitle: Text(
                           '${metadataLines.isEmpty ? '' : '${metadataLines.join('\n')}\n'}${snippet.isEmpty ? url : snippet}\n$url',
                           maxLines: 7,
@@ -1395,7 +1406,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('ANNULLA'),
+            child: Text('ANNULLA'),
           ),
         ],
       ),
@@ -1426,7 +1437,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: cardColor,
-        title: const Text('PR-12 · VERIFICA FONTE'),
+        title: Text('PR-12 · VERIFICA FONTE'),
         content: SelectableText(
           '$title\n$url\n\n'
           '${(selected['produttore'] ?? '').toString().trim().isEmpty ? '' : 'Produttore: ${selected['produttore']}\n'}'
@@ -1437,15 +1448,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop('back'),
-            child: const Text('TORNA ALLA SCHEDA'),
+            child: Text('TORNA ALLA SCHEDA'),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop('open'),
-            child: const Text('MOSTRA COLLEGAMENTO'),
+            child: Text('MOSTRA COLLEGAMENTO'),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop('apply'),
-            child: const Text('USA METADATI'),
+            child: Text('USA METADATI'),
           ),
         ],
       ),
@@ -1474,12 +1485,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           backgroundColor: cardColor,
-          title: const Text('Apri la fonte nel browser'),
+          title: Text('Apri la fonte nel browser'),
           content: SelectableText(url),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('CHIUDI'),
+              child: Text('CHIUDI'),
             ),
           ],
         ),
@@ -1619,14 +1630,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(
-              color: goldColor, fontSize: 13, fontWeight: FontWeight.w600,
+            Text(label, style: TextStyle(
+              color: sectionColor, fontSize: 13, fontWeight: FontWeight.w600,
             )),
             const SizedBox(height: 5),
-            SelectableText(text, style: const TextStyle(fontSize: 15)),
+            SelectableText(text, style: TextStyle(fontSize: 15)),
             if (isUrl) ...[
               const SizedBox(height: 4),
-              const Text('Fonte esterna', style: TextStyle(color: Colors.white54, fontSize: 11)),
+              Text('Fonte esterna', style: TextStyle(color: Colors.white54, fontSize: 11)),
             ],
           ],
         ),
@@ -1691,10 +1702,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Icon(icon, color: goldColor, size: 19),
+              Icon(icon, color: sectionColor, size: 19),
               const SizedBox(width: 8),
-              Expanded(child: Text(title, style: const TextStyle(
-                color: goldColor, fontSize: 16, fontWeight: FontWeight.bold,
+              Expanded(child: Text(title, style: TextStyle(
+                color: sectionColor, fontSize: 16, fontWeight: FontWeight.bold,
               ))),
             ]),
             const SizedBox(height: 8),
@@ -1734,8 +1745,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('DATI TECNICI E DI SISTEMA',
-            style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text('DATI TECNICI E DI SISTEMA',
+            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 8),
           ...technical.map((e) => _detailFieldCard(e.key, e.value)),
         ]),
@@ -1760,7 +1771,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('CODICE OGGETTO $code',
-            style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             ClipRRect(
@@ -1786,8 +1797,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Widget _pr11SummaryValue(String label, String value) => Padding(
     padding: const EdgeInsets.only(bottom: 7),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.w600)),
-      Text(value, style: const TextStyle(color: Colors.white, fontSize: 14)),
+      Text(label, style: TextStyle(color: sectionColor, fontSize: 12, fontWeight: FontWeight.w600)),
+      Text(value, style: TextStyle(color: Colors.white, fontSize: 14)),
     ]),
   );
 
@@ -1833,16 +1844,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('CODICE $code', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+              Text('CODICE $code', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text(desc, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+              Text(desc, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
               const SizedBox(height: 6),
               Text('Destinazione: $destination'),
               Text('Condizione: $condition'),
               Text('Stato: $state'),
               Text('Valore: $value'),
             ])),
-            if (onTap != null) const Icon(Icons.chevron_right, color: goldColor),
+            if (onTap != null) Icon(Icons.chevron_right, color: sectionColor),
           ]),
         ),
       ),
@@ -1851,7 +1862,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Widget _imagePlaceholder() => Container(
     width: 88, height: 88, color: Colors.white10,
-    child: const Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 30),
+    child: Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 30),
   );
 
   Widget _historyCard(Map<String, dynamic> event) {
@@ -1859,7 +1870,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final type = _valueFor(event, ['tipo_evento', 'tipo', 'azione'], 'Evento');
     final detail = _valueFor(event, ['descrizione', 'dettaglio', 'note', 'motivazione'], 'Nessun dettaglio registrato');
     return Card(child: ListTile(
-      leading: const Icon(Icons.history, color: goldColor),
+      leading: Icon(Icons.history, color: sectionColor),
       title: Text(type),
       subtitle: Text('$date\n$detail'),
       isThreeLine: true,
@@ -1879,16 +1890,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
             child: Text('COLLECTION by VALORA · TEST\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
-              style: const TextStyle(color: goldColor)),
+              style: TextStyle(color: sectionColor)),
           )),
         if (_isWrite && code == 'PR-01') ...[
           Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('IDENTIFICAZIONE OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                Text('IDENTIFICAZIONE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: Colors.white70)),
+                Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: Colors.white70)),
                 const SizedBox(height: 8),
                 _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
               ]),
@@ -1899,15 +1910,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Row(children: [
-                  Icon(Icons.travel_explore, color: goldColor),
+                Row(children: [
+                  Icon(Icons.travel_explore, color: sectionColor),
                   SizedBox(width: 8),
-                  Expanded(child: Text('RICERCA METADATI', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+                  Expanded(child: Text('RICERCA METADATI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
                 ]),
                 const SizedBox(height: 8),
-                SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                SelectableText(_metadataResult, style: TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 6),
-                const Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: Colors.white54, fontSize: 11)),
                 const SizedBox(height: 10),
                 _field(_producer, 'Produttore (facoltativo)'),
                 _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
@@ -1920,7 +1931,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('DATI INSERIBILI', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                Text('DATI INSERIBILI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
                 _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
@@ -1948,9 +1959,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('VALORI DETERMINATI DA ALTRE PROCEDURE', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                Text('VALORI DETERMINATI DA ALTRE PROCEDURE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('Valore di mercato attuale (€)', style: TextStyle(color: Colors.white70)),
+                Text('Valore di mercato attuale (€)', style: TextStyle(color: Colors.white70)),
                 const SizedBox(height: 4),
                 TextField(
                   controller: _marketValue,
@@ -1963,7 +1974,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.', style: TextStyle(color: Colors.white54, fontSize: 11)),
               ]),
             ),
           ),
@@ -1972,7 +1983,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('RICERCA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+              Text('RICERCA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: _search,
@@ -1985,12 +1996,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   suffixIcon: IconButton(
                     tooltip: 'Cerca',
                     onPressed: _loading ? null : () => _run(_searchPr02Objects),
-                    icon: const Icon(Icons.search),
+                    icon: Icon(Icons.search),
                   ),
                 ),
               ),
               const SizedBox(height: 8),
-              const Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: Colors.white60, fontSize: 12)),
               if (_pr02SearchCompleted)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -1998,7 +2009,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     _pr02SearchResults.isEmpty
                       ? 'Nessun risultato trovato.'
                       : 'Risultati mostrati nella finestra sovrapposta: ' + _pr02SearchResults.length.toString(),
-                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                    style: TextStyle(color: Colors.white60, fontSize: 12),
                   ),
                 ),
             ]),
@@ -2014,22 +2025,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: !_showPr02TechnicalTab ? goldColor : cardColor,
+                        backgroundColor: !_showPr02TechnicalTab ? sectionColor : cardColor,
                         foregroundColor: !_showPr02TechnicalTab ? Colors.black : Colors.white,
                       ),
                       onPressed: () => setState(() => _showPr02TechnicalTab = false),
-                      child: const Text('SCHEDA OGGETTO'),
+                      child: Text('SCHEDA OGGETTO'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: _showPr02TechnicalTab ? goldColor : cardColor,
+                        backgroundColor: _showPr02TechnicalTab ? sectionColor : cardColor,
                         foregroundColor: _showPr02TechnicalTab ? Colors.black : Colors.white,
                       ),
                       onPressed: () => setState(() => _showPr02TechnicalTab = true),
-                      child: const Text('DATI TECNICI'),
+                      child: Text('DATI TECNICI'),
                     ),
                   ),
                 ]),
@@ -2051,22 +2062,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           _field(_search, 'Cerca oggetto per descrizione o codice'),
           FilledButton.icon(
             onPressed: _loading ? null : () => _run(_searchPr02Objects),
-            icon: const Icon(Icons.search),
-            label: const Text('CERCA E SELEZIONA OGGETTO'),
+            icon: Icon(Icons.search),
+            label: Text('CERCA E SELEZIONA OGGETTO'),
           ),
           if (_pr03PendingClosures.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text('Chiusure confermate in attesa: ${_pr03PendingClosures.length}',
-                style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+                style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
             ),
           if (_currentObject != null) ...[
             _dropdown('Motivo chiusura', _closeReason, const ['SMARRITO','DISTRUTTO','DATO VIA'], (v) => setState(() => _closeReason = v!)),
             _field(_notes, 'Note', lines: 2),
             FilledButton.icon(
               onPressed: _loading ? null : () => _run(_confirmPr03Closure),
-              icon: const Icon(Icons.verified_outlined),
-              label: const Text('CONFERMA CHIUSURA'),
+              icon: Icon(Icons.verified_outlined),
+              label: Text('CONFERMA CHIUSURA'),
             ),
           ],
         ],
@@ -2081,35 +2092,35 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (_isWrite && code == 'PR-01') ...[
           FilledButton.icon(
             onPressed: _loading ? null : () => _run(_confirmAndSaveNewObject),
-            icon: const Icon(Icons.save_outlined),
+            icon: Icon(Icons.save_outlined),
             label: Text(_loading ? 'SALVATAGGIO IN CORSO…' : 'CONFERMA E SALVA OGGETTO'),
           ),
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
-            icon: const Icon(Icons.lock_open), label: const Text('RILASCIA BLOCCO ARCHIVIO')),
+            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
         ] else if (_isWrite && code == 'PR-02') ...[
           FilledButton.icon(
             onPressed: _loading || _currentObject == null ? null : () => _run(_confirmPr02Changes),
-            icon: const Icon(Icons.verified_outlined),
-            label: const Text('CONFERMA DATI'),
+            icon: Icon(Icons.verified_outlined),
+            label: Text('CONFERMA DATI'),
           ),
         ] else if (_isWrite && code == 'PR-03') ...[
           const SizedBox.shrink(),
         ] else if (_isWrite) ...[
           FilledButton.icon(onPressed: _loading ? null : () => _run(_preview),
-            icon: const Icon(Icons.fact_check_outlined), label: const Text('1 · CONTROLLA DATI E ANTEPRIMA')),
+            icon: Icon(Icons.fact_check_outlined), label: Text('1 · CONTROLLA DATI E ANTEPRIMA')),
           const SizedBox(height: 8),
           OutlinedButton.icon(onPressed: _loading || _lastResult == null ? null : () => _run(_confirmData),
-            icon: const Icon(Icons.verified_outlined), label: const Text('2 · CONFERMO I DATI')),
+            icon: Icon(Icons.verified_outlined), label: Text('2 · CONFERMO I DATI')),
           const SizedBox(height: 8),
           FilledButton.icon(onPressed: _loading || !_dataConfirmed || !_finalReady ? null : () => _run(_save),
-            icon: const Icon(Icons.save_outlined), label: const Text('3 · CONFERMA DEFINITIVA E SALVA')),
+            icon: Icon(Icons.save_outlined), label: Text('3 · CONFERMA DEFINITIVA E SALVA')),
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
-            icon: const Icon(Icons.lock_open), label: const Text('RILASCIA BLOCCO ARCHIVIO')),
+            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
         ] else if (!isMaster)
           FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
-            icon: const Icon(Icons.search),
+            icon: Icon(Icons.search),
             label: Text(_loading ? 'RICERCA...' : isAvailableList
               ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
               : isHistory ? 'VISUALIZZA STORICO OGGETTO'
@@ -2119,7 +2130,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (isMaster) ...[
             Text(
               _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
-              style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 22),
+              style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
             ),
             const SizedBox(height: 12),
             Card(
@@ -2128,20 +2139,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 child: Row(children: [
                   Expanded(child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: !_showPr02TechnicalTab ? goldColor : cardColor,
+                      backgroundColor: !_showPr02TechnicalTab ? sectionColor : cardColor,
                       foregroundColor: !_showPr02TechnicalTab ? Colors.black : Colors.white,
                     ),
                     onPressed: () => setState(() => _showPr02TechnicalTab = false),
-                    child: const Text('SCHEDA OGGETTO'),
+                    child: Text('SCHEDA OGGETTO'),
                   )),
                   const SizedBox(width: 8),
                   Expanded(child: FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: _showPr02TechnicalTab ? goldColor : cardColor,
+                      backgroundColor: _showPr02TechnicalTab ? sectionColor : cardColor,
                       foregroundColor: _showPr02TechnicalTab ? Colors.black : Colors.white,
                     ),
                     onPressed: () => setState(() => _showPr02TechnicalTab = true),
-                    child: const Text('DATI TECNICI'),
+                    child: Text('DATI TECNICI'),
                   )),
                 ]),
               ),
@@ -2154,8 +2165,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('DATI DELL’OGGETTO',
-                      style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('DATI DELL’OGGETTO',
+                      style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
                     _masterDetails(_currentObject!),
                   ]),
@@ -2164,7 +2175,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ] else
               _pr11TechnicalDetails(_currentObject!),
           ] else ...[
-            const Text('SCHEDA OGGETTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
             _objectCard(_currentObject!),
             ..._currentObject!.entries
                 .where((e) => !const {
@@ -2178,7 +2189,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (_rows.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
-            style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
           ..._rows.map((r) {
             if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
             final item = Map<String, dynamic>.from(r);
@@ -2196,11 +2207,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ],
         if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster) ...[
           const SizedBox(height: 16),
-          const Text('ESITO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
             color: cardColor, borderRadius: BorderRadius.circular(12)),
-            child: SelectableText(_output, style: const TextStyle(fontSize: 13))),
+            child: SelectableText(_output, style: TextStyle(fontSize: 13))),
         ],
         if (isMaster) ...[
           const SizedBox(height: 20),
@@ -2208,13 +2219,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             width: double.infinity,
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                foregroundColor: goldColor,
-                side: const BorderSide(color: goldColor),
+                foregroundColor: sectionColor,
+                side: BorderSide(color: sectionColor),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-              icon: const Icon(Icons.close),
-              label: const Text('CHIUDI E TORNA AL MENU OGGETTO'),
+              icon: Icon(Icons.close),
+              label: Text('CHIUDI E TORNA AL MENU OGGETTO'),
             ),
           ),
         ],
@@ -2238,7 +2249,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Conferma inserimento oggetto'),
+        title: Text('Conferma inserimento oggetto'),
         content: SingleChildScrollView(child: Text(
           'Descrizione: ${_description.text.trim()}\n'
           'Produttore: ${_producer.text.trim()}\\n'
@@ -2255,8 +2266,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'Confermi il salvataggio di questo oggetto nel database TEST?'
         )),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA E SALVA')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('CONFERMA E SALVA')),
         ],
       ),
     );
@@ -2274,11 +2285,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Oggetto salvato'),
-        content: const Text('Vuoi inserire un altro oggetto?'),
+        title: Text('Oggetto salvato'),
+        content: Text('Vuoi inserire un altro oggetto?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, TORNA AL MENU')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, NUOVO OGGETTO')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('NO, TORNA AL MENU')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('SÌ, NUOVO OGGETTO')),
         ],
       ),
     );
@@ -2404,18 +2415,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Conferma modifiche oggetto'),
+        title: Text('Conferma modifiche oggetto'),
         content: SingleChildScrollView(
           child: SelectableText(_pr02ConfirmationText(item)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('ANNULLA'),
+            child: Text('ANNULLA'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('CONFERMA DATI'),
+            child: Text('CONFERMA DATI'),
           ),
         ],
       ),
@@ -2437,16 +2448,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Modifica confermata'),
-        content: const Text('Vuoi modificare un altro oggetto?'),
+        title: Text('Modifica confermata'),
+        content: Text('Vuoi modificare un altro oggetto?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('NO, SALVA E TERMINA'),
+            child: Text('NO, SALVA E TERMINA'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('SÌ, MODIFICA UN ALTRO'),
+            child: Text('SÌ, MODIFICA UN ALTRO'),
           ),
         ],
       ),
