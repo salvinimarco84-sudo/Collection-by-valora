@@ -33,7 +33,14 @@ class ValoraAppearance extends ChangeNotifier {
   bool whiteBackground = false;
   Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
   Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
-  Color get card => whiteBackground ? Colors.white : cardColor;
+  Color get card => whiteBackground ? ValoraAppearance.instance.textPrimary : cardColor;
+  Color get textPrimary => whiteBackground ? const Color(0xFF171717) : ValoraAppearance.instance.textPrimary;
+  Color get textSecondary => whiteBackground ? const Color(0xFF424242) : ValoraAppearance.instance.textSecondary;
+  Color get textMuted => whiteBackground ? const Color(0xFF555555) : ValoraAppearance.instance.textMuted;
+  Color get textSubtle => whiteBackground ? const Color(0xFF626262) : ValoraAppearance.instance.textSubtle;
+  Color get textFaint => whiteBackground ? const Color(0xFF666666) : ValoraAppearance.instance.textFaint;
+  Color get neutralOverlay => whiteBackground ? Colors.black.withValues(alpha: 0.06) : ValoraAppearance.instance.neutralOverlay;
+  Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : ValoraAppearance.instance.neutralOverlayStrong;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
     whiteBackground = p.getBool('valora_white_background') ?? false;
@@ -99,14 +106,25 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
-          brightness: Brightness.dark,
+          brightness: ValoraAppearance.instance.whiteBackground ? Brightness.light : Brightness.dark,
           scaffoldBackgroundColor: ValoraAppearance.instance.background,
-          colorScheme: ColorScheme.dark(
-            primary: goldColor,
-            secondary: goldColor,
-            surface: ValoraAppearance.instance.card,
-            error: Color(0xFFE35D5D),
-          ),
+          colorScheme: ValoraAppearance.instance.whiteBackground
+              ? ColorScheme.light(
+                  primary: goldColor,
+                  secondary: goldColor,
+                  surface: ValoraAppearance.instance.card,
+                  onSurface: ValoraAppearance.instance.textPrimary,
+                  onPrimary: Colors.black,
+                  onSecondary: Colors.black,
+                  error: Color(0xFFB3261E),
+                )
+              : ColorScheme.dark(
+                  primary: goldColor,
+                  secondary: goldColor,
+                  surface: ValoraAppearance.instance.card,
+                  onSurface: ValoraAppearance.instance.textPrimary,
+                  error: Color(0xFFE35D5D),
+                ),
           appBarTheme: AppBarTheme(
             backgroundColor: ValoraAppearance.instance.background,
             foregroundColor: goldColor,
@@ -156,7 +174,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
           child:Row(children:[
             Container(width:18,height:18,decoration:BoxDecoration(color:current,borderRadius:BorderRadius.circular(4))),
             const SizedBox(width:10),
-            Expanded(child:Text(section,style:TextStyle(color:a.whiteBackground?Colors.black87:Colors.white))),
+            Expanded(child:Text(section,style:TextStyle(color:a.whiteBackground?Colors.black87:ValoraAppearance.instance.textPrimary))),
             DropdownButton<int>(value:current.value,items:available.map((c)=>DropdownMenuItem<int>(
               value:c.value,child:Row(children:[
                 Container(width:20,height:20,decoration:BoxDecoration(color:c,borderRadius:BorderRadius.circular(4))),
@@ -496,7 +514,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 fontWeight: FontWeight.bold, letterSpacing: 2)),
           ),
           const Padding(padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Gestione della tua collezione', style: TextStyle(color: Colors.white60))),
+            child: Text('Gestione della tua collezione', style: TextStyle(color: ValoraAppearance.instance.textMuted))),
           Expanded(child: GridView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: dashboardSections.length,
@@ -526,7 +544,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           fontSize: 13, letterSpacing: 0.5)),
                       const SizedBox(height: 6),
                       Text(section.description, textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                        style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11)),
                     ]),
                   ),
                 ),
@@ -534,7 +552,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             },
           )),
           const Padding(padding: EdgeInsets.all(10), child: Text('COLLECTION by VALORA',
-            style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
+            style: TextStyle(color: ValoraAppearance.instance.textFaint, fontSize: 11, letterSpacing: 1))),
         ]);
       });
 
@@ -547,25 +565,25 @@ class _HomeDashboardState extends State<HomeDashboard> {
         color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
       const SizedBox(height: 6),
       Text(section.description, textAlign: TextAlign.center,
-        style: const TextStyle(color: Colors.white70)),
+        style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
       const SizedBox(height: 20),
       ...procedures.map((procedure) => Card(
         margin: const EdgeInsets.only(bottom: 10),
         child: ListTile(
           enabled: procedure.enabled,
           leading: CircleAvatar(
-            backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.18) : Colors.white10,
+            backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.18) : ValoraAppearance.instance.neutralOverlay,
             child: Icon(procedure.enabled
                 ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
                 : Icons.lock_outline,
-              color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : Colors.white38),
+              color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.textFaint),
           ),
           title: Text(procedure.title, style: TextStyle(fontWeight: FontWeight.w600,
-            color: procedure.enabled ? Colors.white : Colors.white38)),
+            color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
           subtitle: Text(procedure.description),
           isThreeLine: true,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
-            color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : Colors.white24),
+            color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
           onTap: procedure.enabled && procedure.apiCode != null
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
@@ -1322,8 +1340,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               clipBehavior: Clip.antiAlias,
               child: hasImage
                   ? Image.network(imageUrl, fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 36))
-                  : Icon(Icons.image_outlined, color: Colors.white38, size: 36),
+                      errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported_outlined, color: ValoraAppearance.instance.textFaint, size: 36))
+                  : Icon(Icons.image_outlined, color: ValoraAppearance.instance.textFaint, size: 36),
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1336,7 +1354,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ]),
           const SizedBox(height: 8),
           Text('Metadati informativi, non modificabili da questa scheda.',
-            style: TextStyle(color: Colors.white54, fontSize: 11)),
+            style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
         ]),
       ),
     );
@@ -1347,7 +1365,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     children: [
       Text(label, style: TextStyle(color: sectionColor, fontSize: 11, fontWeight: FontWeight.w600)),
       const SizedBox(height: 2),
-      Text(value, style: TextStyle(color: Colors.white, fontSize: 13)),
+      Text(value, style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 13)),
     ],
   );
 
@@ -1371,7 +1389,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Text('DATI TECNICI · SOLA LETTURA',
             style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          SelectableText(_metadataResult, style: TextStyle(color: Colors.white70, fontSize: 12)),
+          SelectableText(_metadataResult, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _loading ? null : () => _run(_prepareMetadata),
@@ -1381,7 +1399,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Divider(height: 24),
           if (technicalEntries.isEmpty)
             Text('Nessun altro dato tecnico presente nel record.',
-              style: TextStyle(color: Colors.white60))
+              style: TextStyle(color: ValoraAppearance.instance.textMuted))
           else
             ...technicalEntries.map((entry) => _detailFieldCard(entry.key, entry.value)),
         ]),
@@ -1862,7 +1880,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             SelectableText(text, style: TextStyle(fontSize: 15)),
             if (isUrl) ...[
               const SizedBox(height: 4),
-              Text('Fonte esterna', style: TextStyle(color: Colors.white54, fontSize: 11)),
+              Text('Fonte esterna', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
             ],
           ],
         ),
@@ -1963,7 +1981,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       return const Card(child: Padding(
         padding: EdgeInsets.all(16),
         child: Text('Nessun campo tecnico disponibile per questo oggetto.',
-          style: TextStyle(color: Colors.white70)),
+          style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
       ));
     }
     return Card(
@@ -2023,7 +2041,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     padding: const EdgeInsets.only(bottom: 7),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(label, style: TextStyle(color: sectionColor, fontSize: 12, fontWeight: FontWeight.w600)),
-      Text(value, style: TextStyle(color: Colors.white, fontSize: 14)),
+      Text(value, style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 14)),
     ]),
   );
 
@@ -2075,7 +2093,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: availableStyle ? sectionColor.withOpacity(0.35) : Colors.white10,
+          color: availableStyle ? sectionColor.withOpacity(0.35) : ValoraAppearance.instance.neutralOverlay,
         ),
       ),
       clipBehavior: Clip.antiAlias,
@@ -2115,7 +2133,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 Row(children: [
                   Icon(Icons.circle, size: 8, color: sectionColor),
                   const SizedBox(width: 6),
-                  Expanded(child: Text('Stato: $state', style: const TextStyle(color: Colors.white70, fontSize: 12))),
+                  Expanded(child: Text('Stato: $state', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
                 ]),
                 const SizedBox(height: 5),
                 Text(
@@ -2136,8 +2154,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Widget _imagePlaceholder({double size = 88}) => Container(
-    width: size, height: size, color: Colors.white10,
-    child: Icon(Icons.image_not_supported_outlined, color: Colors.white38, size: 30),
+    width: size, height: size, color: ValoraAppearance.instance.neutralOverlay,
+    child: Icon(Icons.image_not_supported_outlined, color: ValoraAppearance.instance.textFaint, size: 30),
   );
 
   Widget _historyCard(Map<String, dynamic> event) {
@@ -2183,7 +2201,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (reason.isNotEmpty) details.add(_historyDetailRow('Motivo', reason));
     if (note.isNotEmpty) details.add(_historyDetailRow('Note', note));
     if (details.isEmpty) {
-      details.add(Text('Nessun dettaglio registrato', style: TextStyle(color: Colors.white70)));
+      details.add(Text('Nessun dettaglio registrato', style: TextStyle(color: ValoraAppearance.instance.textSecondary)));
     }
     return Card(
       child: Padding(
@@ -2199,7 +2217,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.only(left: 34),
-              child: Text(date, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              child: Text(date, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -2223,7 +2241,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+        Text(label, style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
         const SizedBox(height: 1),
         Text(value, style: const TextStyle(fontSize: 15)),
       ],
@@ -2252,7 +2270,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('IDENTIFICAZIONE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: Colors.white70)),
+                Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                 const SizedBox(height: 8),
                 _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
               ]),
@@ -2269,9 +2287,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   Expanded(child: Text('RICERCA METADATI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
                 ]),
                 const SizedBox(height: 8),
-                SelectableText(_metadataResult, style: TextStyle(color: Colors.white70, fontSize: 12)),
+                SelectableText(_metadataResult, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                 const SizedBox(height: 6),
-                Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
                 const SizedBox(height: 10),
                 _field(_producer, 'Produttore (facoltativo)'),
                 _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
@@ -2314,7 +2332,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('VALORI DETERMINATI DA ALTRE PROCEDURE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text('Valore di mercato attuale (€)', style: TextStyle(color: Colors.white70)),
+                Text('Valore di mercato attuale (€)', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                 const SizedBox(height: 4),
                 TextField(
                   controller: _marketValue,
@@ -2327,7 +2345,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
               ]),
             ),
           ),
@@ -2354,7 +2372,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: Colors.white60, fontSize: 12)),
+              Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
               if (_pr02SearchCompleted)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -2362,7 +2380,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     _pr02SearchResults.isEmpty
                       ? 'Nessun risultato trovato.'
                       : 'Risultati mostrati nella finestra sovrapposta: ' + _pr02SearchResults.length.toString(),
-                    style: TextStyle(color: Colors.white60, fontSize: 12),
+                    style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12),
                   ),
                 ),
             ]),
@@ -2379,7 +2397,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     child: FilledButton(
                       style: FilledButton.styleFrom(
                         backgroundColor: !_showPr02TechnicalTab ? sectionColor : cardColor,
-                        foregroundColor: !_showPr02TechnicalTab ? Colors.black : Colors.white,
+                        foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                       ),
                       onPressed: () => setState(() => _showPr02TechnicalTab = false),
                       child: Text('SCHEDA OGGETTO'),
@@ -2390,7 +2408,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     child: FilledButton(
                       style: FilledButton.styleFrom(
                         backgroundColor: _showPr02TechnicalTab ? sectionColor : cardColor,
-                        foregroundColor: _showPr02TechnicalTab ? Colors.black : Colors.white,
+                        foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                       ),
                       onPressed: () => setState(() => _showPr02TechnicalTab = true),
                       child: Text('DATI TECNICI'),
@@ -2478,7 +2496,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ),
         ],
         if (!_isWrite && isAvailableList)
-          const Padding(padding: EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: Colors.white70))),
+          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
         if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
           _field(_search, 'Cerca'),
         if (_isWrite && code == 'PR-01') ...[
@@ -2532,7 +2550,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   Expanded(child: FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: !_showPr02TechnicalTab ? sectionColor : cardColor,
-                      foregroundColor: !_showPr02TechnicalTab ? Colors.black : Colors.white,
+                      foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                     ),
                     onPressed: () => setState(() => _showPr02TechnicalTab = false),
                     child: Text('SCHEDA OGGETTO'),
@@ -2541,7 +2559,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   Expanded(child: FilledButton(
                     style: FilledButton.styleFrom(
                       backgroundColor: _showPr02TechnicalTab ? sectionColor : cardColor,
-                      foregroundColor: _showPr02TechnicalTab ? Colors.black : Colors.white,
+                      foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                     ),
                     onPressed: () => setState(() => _showPr02TechnicalTab = true),
                     child: Text('DATI TECNICI'),
@@ -2611,10 +2629,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 )),
                 const SizedBox(height: 4),
                 Text('${_rows.length} ${_rows.length == 1 ? 'oggetto trovato' : 'oggetti trovati'}',
-                  style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 3),
                 const Text('Seleziona una scheda per vedere tutti i dettagli.',
-                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
               ])),
             ]),
           ),
@@ -2655,7 +2673,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 textAlign: TextAlign.center),
               const SizedBox(height: 6),
               const Text('Premi “Visualizza elenco oggetti disponibili” per caricare l’elenco.',
-                style: TextStyle(color: Colors.white70), textAlign: TextAlign.center),
+                style: TextStyle(color: ValoraAppearance.instance.textSecondary), textAlign: TextAlign.center),
             ]),
           ),
         ],
