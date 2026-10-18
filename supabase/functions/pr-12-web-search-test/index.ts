@@ -561,10 +561,20 @@ Deno.serve(async (req: Request) => {
     const configuredQueries = configured.queries.slice(0, 2);
     const targetedBaseQueries = baseQueries.filter(q => q.startsWith("site:"));
     const genericBaseQueries = baseQueries.filter(q => !q.startsWith("site:"));
+    // Ricerca generalista sempre presente: le fonti specialistiche aiutano,
+    // ma non devono mai occupare tutti gli slot né impedire di scoprire nuovi prodotti.
+    const broadQueries = [
+      '"' + description.replace(/["']/g, " ").replace(/\\s+/g, " ").trim() + '"',
+      description.replace(/["']/g, " ").replace(/\\s+/g, " ").trim() + ' collectible product manufacturer',
+      description.replace(/["']/g, " ").replace(/\\s+/g, " ").trim() + ' figure toy model item',
+      description.replace(/["']/g, " ").replace(/\\s+/g, " ").trim() + ' catalog database'
+    ];
     const queries = [...new Set([
       ...configuredQueries,
-      ...targetedBaseQueries,
+      ...targetedBaseQueries.slice(0, 5),
       ...genericBaseQueries,
+      ...broadQueries,
+      ...targetedBaseQueries.slice(5),
     ])].slice(0, 12);
     let searchResults: SearchResult[] = [];
     const diagnosticaQuery: Array<{ query: string; risultati_grezzi: number; errore?: string }> = [];
