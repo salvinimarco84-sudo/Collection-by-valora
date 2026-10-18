@@ -142,10 +142,11 @@ async function loadConfiguredSources(category: string, description: string): Pro
   const preferredCodes = new Set(activeRules.map(r => normalizeText(r.codice_fonte_preferita)).filter(Boolean));
   const categoryHints: Record<string,string[]> = {
     LEGO: ["lego", "brickset", "bricklink", "rebrickable"],
-    FUMETTI: ["fumett", "comic", "panini", "bonelli", "salda", "manga", "graphic novel"],
-    ACTION_FIGURE: ["figure", "action figure", "myth cloth", "saint seiya", "bandai", "tamashii", "toy", "giocattol", "transformer", "robot", "gundam"],
-    DIECAST: ["diecast", "maisto", "modellino", "motorbike", "moto", "auto"],
-    GIOCATTOLO: ["toy", "giocattol", "transformer", "robot", "figure", "kinder", "vintage"]
+    FUMETTI: ["fumett", "comic", "panini", "bonelli", "salda", "manga", "graphic novel", "dc", "marvel", "batman", "spider-man"],
+    ACTION_FIGURE: ["figure", "action figure", "myth cloth", "saint seiya", "bandai", "tamashii", "toy", "giocattol", "transformer", "robot", "gundam", "dragon ball", "hokuto", "naruto", "one piece", "star wars"],
+    DIECAST: ["diecast", "maisto", "modellino", "motorbike", "moto", "auto", "robotvintage"],
+    GIOCATTOLO: ["toy", "giocattol", "transformer", "robot", "figure", "kinder", "vintage", "sorpresine", "astrocollection", "collectingkinder", "toyvault"],
+    COLLEZIONABILE: ["collectible", "collectibles", "kinder", "sorpresine", "toy", "giocattol", "saint seiya", "myth cloth", "gundam", "gunpla", "diecast", "maisto", "fumett", "comic", "manga", "robot", "star wars", "transformer"]
   };
   const hints = categoryHints[category] ?? [];
   const matching = archive.filter(s => s.riutilizzabile !== false && s.url_principale && hostnameFromUrl(s.url_principale)).filter(s => {
@@ -380,7 +381,18 @@ Deno.serve(async (req: Request) => {
     }
 
     const baseQueries = makeQueries(category, description);
-    const queries = [...new Set([...baseQueries.slice(0, 5), ...configured.queries.slice(0, 3), ...baseQueries.slice(5)])].slice(0, 8);
+    // Le fonti già configurate nel database hanno priorità: prima le query site:
+    // specialistiche, poi le query mirate di franchise/categoria, infine il web generico.
+    // In precedenza le prime 5 query generiche potevano occupare il limite di 8 e
+    // tagliare fuori quasi tutte le fonti del database.
+    const configuredQueries = configured.queries.slice(0, 6);
+    const targetedBaseQueries = baseQueries.filter(q => q.startsWith("site:"));
+    const genericBaseQueries = baseQueries.filter(q => !q.startsWith("site:"));
+    const queries = [...new Set([
+      ...configuredQueries,
+      ...targetedBaseQueries,
+      ...genericBaseQueries,
+    ])].slice(0, 8);
     let searchResults: SearchResult[] = [];
     const diagnosticaQuery: Array<{ query: string; risultati_grezzi: number; errore?: string }> = [];
     // Fonti specialistiche dal database TEST prima delle query generiche.
