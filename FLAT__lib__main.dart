@@ -285,24 +285,25 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 112, height: 112,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle, color: cardColor,
-                        border: Border.all(color: goldColor, width: 2),
+                    Center(
+                      child: SizedBox(
+                        width: 228,
+                        height: 228,
+                        child: Image.asset(
+                          'assets/valora_logo.png',
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: cardColor,
+                              border: Border.all(color: goldColor, width: 2),
+                            ),
+                            child: const Icon(Icons.inventory_2_outlined,
+                                color: goldColor, size: 72),
+                          ),
+                        ),
                       ),
-                      child: const Icon(Icons.inventory_2_outlined,
-                          color: goldColor, size: 56),
                     ),
-                    const SizedBox(height: 24),
-                    const Text('COLLECTION', style: TextStyle(
-                      color: goldColor, fontSize: 28,
-                      fontWeight: FontWeight.bold, letterSpacing: 3,
-                    )),
-                    const SizedBox(height: 4),
-                    const Text('by VALORA', style: TextStyle(
-                      color: Colors.white70, fontSize: 16, letterSpacing: 2,
-                    )),
                     const SizedBox(height: 36),
                     TextField(
                       controller: emailController,
@@ -393,7 +394,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Chiudi oggetto', description: 'Registra la chiusura con motivazione.', apiCode: 'PR-03', readOnly: false),
     ProcedureEntry(title: 'Visualizza scheda', description: 'Mostra la scheda completa in formato leggibile.', apiCode: 'OBJECT_MASTER'),
     ProcedureEntry(title: 'Elenco oggetti disponibili', description: 'Mostra gli oggetti con stato DISPONIBILE.', apiCode: 'OBJECTS_AVAILABLE'),
-    ProcedureEntry(title: 'Esplora record', description: 'Mostra la cronologia del singolo oggetto selezionato.', apiCode: 'EXPLORE_RECORDS'),
+    ProcedureEntry(title: 'Storico oggetto', description: 'Mostra la cronologia del singolo oggetto selezionato.', apiCode: 'EXPLORE_RECORDS'),
   ],
   'ACQUISTI': [
     ProcedureEntry(title: 'Nuovo acquisto', description: 'Registra un nuovo acquisto.', apiCode: 'WRITE-PR-04', readOnly: false),
@@ -572,16 +573,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
       )),
       const SizedBox(height: 12),
-      const Card(child: Padding(padding: EdgeInsets.all(14), child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.info_outline, color: goldColor), SizedBox(width: 10),
-          Expanded(child: Text('Le procedure sono collocate nel sottomenu corretto. '
-            'Le API mostrate sono candidate e da collaudare. Le scritture restano protette: '
-            'nessun dato viene salvato da questa schermata.')),
-        ],
-      ))),
-      const SizedBox(height: 12),
       OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
         icon: const Icon(Icons.dashboard_outlined), label: const Text('TORNA ALLA DASHBOARD')),
     ]);
@@ -592,14 +583,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
       title: Text(procedure.title),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(procedure.description),
-        const SizedBox(height: 14),
-        if (procedure.apiCode != null) Text('Codice API candidato: ${procedure.apiCode}'),
-        const SizedBox(height: 10),
-        Text(procedure.readOnly ? 'Modalità prevista: consultazione / sola lettura.'
-          : 'Modalità prevista: scrittura, ancora non attivata.'),
-        const SizedBox(height: 10),
-        const Text('Il collegamento runtime sarà attivato dopo la verifica del contratto input '
-          'e dei passaggi di anteprima, conferma e verifica in ambiente TEST.'),
       ]),
       actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('CHIUDI'))],
     ));
@@ -2160,30 +2143,92 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Widget _historyCard(Map<String, dynamic> event) {
     final date = _valueFor(event, ['data_evento', 'data', 'created_at'], 'Data non indicata');
     final rawType = _valueFor(event, ['tipo_evento', 'tipo', 'azione'], 'Evento');
-    final reason = (event['motivo'] ?? event['motivazione'] ?? '').toString().trim();
+    final field = (event['campo_modificato'] ?? '').toString().trim();
     final previous = (event['valore_precedente'] ?? '').toString().trim();
     final next = (event['valore_nuovo'] ?? '').toString().trim();
+    final reason = (event['motivo'] ?? event['motivazione'] ?? '').toString().trim();
     final note = (event['note'] ?? event['descrizione'] ?? event['dettaglio'] ?? '').toString().trim();
     final isPr03Closure = rawType == 'CAMBIO_STATO' &&
         (reason == 'DISTRUTTO' || reason == 'SMARRITO' || reason == 'DATO VIA' ||
          next == 'DISTRUTTO' || next == 'PERSO' || next == 'USCITO');
     final type = isPr03Closure ? 'CHIUSURA OGGETTO · PR-03' : rawType;
-    final detailParts = <String>[];
-    if (previous.isNotEmpty || next.isNotEmpty) {
-      detailParts.add('Stato: ${previous.isEmpty ? 'non indicato' : previous} → ${next.isEmpty ? 'non indicato' : next}');
+    String fieldLabel(String value) {
+      const labels = <String, String>{
+        'quantita': 'Quantità',
+        'valore_oggetto': 'Valore oggetto',
+        'stato': 'Stato',
+        'descrizione_oggetto': 'Descrizione',
+        'condizione': 'Condizione',
+        'completezza': 'Completezza',
+        'destinazione': 'Destinazione',
+      };
+      return labels[value] ?? (value.isEmpty ? 'Campo modificato' : value.replaceAll('_', ' '));
     }
-    if (reason.isNotEmpty) detailParts.add('Motivo: $reason');
-    if (note.isNotEmpty) detailParts.add('Note: $note');
-    final detail = detailParts.isEmpty
-        ? _valueFor(event, ['descrizione', 'dettaglio', 'note', 'motivazione'], 'Nessun dettaglio registrato')
-        : detailParts.join('\\n');
-    return Card(child: ListTile(
-      leading: Icon(isPr03Closure ? Icons.logout : Icons.history, color: sectionColor),
-      title: Text(type),
-      subtitle: Text('$date\\n$detail'),
-      isThreeLine: true,
-    ));
+    final isStateChange = field == 'stato' || isPr03Closure;
+    final details = <Widget>[];
+    if (field.isNotEmpty && !isStateChange) {
+      details.add(_historyDetailRow('Campo', fieldLabel(field)));
+    }
+    if (previous.isNotEmpty || next.isNotEmpty) {
+      if (isStateChange) {
+        details.add(_historyDetailRow('Stato precedente', previous.isEmpty ? 'Non indicato' : previous));
+        details.add(_historyDetailRow('Stato finale', next.isEmpty ? 'Non indicato' : next));
+      } else if (previous.isNotEmpty && next.isNotEmpty) {
+        details.add(_historyDetailRow('Valore precedente', previous));
+        details.add(_historyDetailRow('Valore nuovo', next));
+      } else {
+        details.add(_historyDetailRow('Valore registrato', next.isEmpty ? previous : next));
+      }
+    }
+    if (reason.isNotEmpty) details.add(_historyDetailRow('Motivo', reason));
+    if (note.isNotEmpty) details.add(_historyDetailRow('Note', note));
+    if (details.isEmpty) {
+      details.add(Text('Nessun dettaglio registrato', style: TextStyle(color: Colors.white70)));
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(isPr03Closure ? Icons.logout : Icons.history, color: sectionColor),
+              const SizedBox(width: 10),
+              Expanded(child: Text(type, style: const TextStyle(fontWeight: FontWeight.w600))),
+            ]),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 34),
+              child: Text(date, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 34),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: details.map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: item,
+                )).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
+
+  Widget _historyDetailRow(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 2),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+        const SizedBox(height: 1),
+        Text(value, style: const TextStyle(fontSize: 15)),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
