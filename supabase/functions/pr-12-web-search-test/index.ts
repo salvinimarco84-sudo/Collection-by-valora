@@ -26,7 +26,16 @@ function sourcesFor(category: string, query: string): string[] {
   if (/fumett|comic|manga|panini|salda|bonelli|batman|hush/i.test(query) || category === "FUMETTI") return ["site:comics.org", "site:leagueofcomicgeeks.com", "site:panini.it", "site:panini.fr", "site:panini.de", "site:panini.es", "site:saldaPress.com"];
   if (/myth cloth|saint seiya|bandai|gundam|dragon ball|action figure|statua/i.test(query) || category === "ACTION_FIGURE") return ["site:tamashiiweb.com", "site:bandai.com", "site:myfigurecollection.net"];
   if (/maisto|die.cast|moto|motorbike|modellino/i.test(query)) return ["site:maisto.com", "site:diecast.org"];
-  if (/saint seiya|myth cloth/i.test(query)) return ["site:tamashiiweb.com", "site:myfigurecollection.net"];
+  if (/saint seiya|myth cloth|pegasus/i.test(query)) return [
+    "site:tamashiiweb.com",
+    "site:tamashiiweb.com Saint Cloth Myth Pegasus Seiya",
+    "site:myfigurecollection.net",
+    "site:myfigurecollection.net Saint Seiya Pegasus Seiya Myth Cloth",
+    "site:bandai.com Saint Cloth Myth Pegasus Seiya",
+    "site:mandarake.co.jp Saint Cloth Myth Pegasus Seiya",
+    "site:amiami.com Saint Cloth Myth Pegasus Seiya",
+    "site:anime-export.com Saint Cloth Myth Pegasus Seiya"
+  ];
   return [];
 }
 async function fetchText(url: string, timeout = 9000): Promise<string> {
@@ -304,6 +313,16 @@ function makeQueries(category: string, description: string): string[] {
       queries.push('site:transformers-universe.com "' + cleaned + '"');
       queries.push('site:transformerland.com "' + cleaned + '"');
       queries.push('site:hasbro.com "' + cleaned + '"');
+    }
+    // Per le action figure, aggiunge varianti inglesi comuni e fonti specialistiche.
+    // La ricerca non dipende soltanto dalla descrizione italiana digitata dall'utente.
+    if (/saint seiya|myth cloth|pegasus/i.test(cleaned)) {
+      queries.push('site:tamashiiweb.com "Saint Cloth Myth" Pegasus Seiya');
+      queries.push('site:myfigurecollection.net "Pegasus Seiya" "Myth Cloth"');
+      queries.push('site:bandai.com "Saint Cloth Myth" Pegasus');
+      queries.push('site:mandarake.co.jp "Saint Cloth Myth" Pegasus Seiya');
+      queries.push('"Saint Cloth Myth Pegasus Seiya" Bandai');
+      queries.push('"Saint Seiya Myth Cloth Pegasus" figure');
     }
     // Fallback less generic, preserving the product/character phrase.
     queries.push('"' + cleaned + '" collectible figure statue comic toy');
