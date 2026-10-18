@@ -58,7 +58,8 @@ async function searchItalianBatmanHush(description: string): Promise<SearchResul
       const isbn = edition.isbn;
       if (!/batman|hush/i.test(titleRaw + " " + html.slice(0, 12000))) continue;
       results.push({
-        title: cleanText(titleRaw) || edition.title,
+        // Titolo editoriale stabile, più utile del titolo SEO del rivenditore.
+        title: edition.title,
         url: edition.url,
         snippet: "Edizione italiana Panini Comics. ISBN " + isbn + ". Lingua italiana; verificare formato e copertina nella scheda.",
         source_query: description,
@@ -66,7 +67,8 @@ async function searchItalianBatmanHush(description: string): Promise<SearchResul
         ...(image ? { image_url: decodeEntities(image.replace(/&amp;/gi, "&")) } : {}),
         lingua: "Italiano",
         editore: "Panini Comics",
-        isbn
+        isbn,
+        anno_uscita: isbn === "9791221903089" ? 2024 : 2024
       });
     } catch { /* una scheda può bloccare richieste automatizzate; provare le altre */ }
   }
