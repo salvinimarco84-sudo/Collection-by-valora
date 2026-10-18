@@ -208,17 +208,20 @@ function makeQueries(category: string, description: string): string[] {
     const targeted = sourcesFor(category, description).filter(s => s.startsWith("site:"));
     for (const site of targeted) queries.push(site + ' "' + cleaned + '"');
     if (/batman|long halloween|lungo halloween|fumett|comic|manga|hush/i.test(normalized)) {
-      queries.push('site:panini.it "' + cleaned + '"');
-      queries.push('site:panini.fr "' + cleaned + '"');
-      queries.push('site:panini.de "' + cleaned + '"');
-      queries.push('site:panini.es "' + cleaned + '"');
-      queries.push('site:ebay.it "' + cleaned + '"');
-      queries.push('site:ebay.fr "' + cleaned + '"');
-      queries.push('site:ebay.de "' + cleaned + '"');
-      queries.push('site:ebay.es "' + cleaned + '"');
-      queries.push('site:comics.org "' + cleaned + '"');
-      queries.push('site:leagueofcomicgeeks.com "' + cleaned + '"');
+      // Le edizioni localizzate spesso non usano la stessa stringa inglese.
+      // Dare priorità a query non esatte sui mercati Panini, poi ai cataloghi e al mercato secondario.
+      queries.push('site:panini.it Batman Hush');
+      queries.push('site:panini.fr Batman Hush');
+      queries.push('site:panini.de Batman Hush');
+      queries.push('site:panini.es Batman Hush');
+      queries.push('site:comics.org Batman Hush');
+      queries.push('site:leagueofcomicgeeks.com Batman Hush');
+      queries.push('site:ebay.it Batman Hush fumetto');
+      queries.push('site:ebay.fr Batman Hush bande dessinée');
+      queries.push('site:ebay.de Batman Hush Comic');
+      queries.push('site:ebay.es Batman Hush cómic');
       queries.push('site:dc.com "' + cleaned + '"');
+      queries.push('"' + cleaned + '" Panini edizione italiana ISBN');
     }
     if (/optimus prime|transformers|bumblebee|megatron/i.test(normalized)) {
       queries.push('site:tfu.info "' + cleaned + '"');
