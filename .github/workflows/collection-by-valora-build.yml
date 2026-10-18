@@ -56,6 +56,9 @@ jobs:
             sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
           fi
 
+      - name: Install image tooling
+        run: python -m pip install Pillow
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -110,6 +113,9 @@ jobs:
           Remove-Item test/widget_test.dart -Force -ErrorAction SilentlyContinue
           Remove-Item widget_test.dart -Force -ErrorAction SilentlyContinue
           Remove-Item main.dart -Force -ErrorAction SilentlyContinue
+
+      - name: Install image tooling
+        run: python -m pip install Pillow
 
       - name: Install dependencies
         run: flutter pub get

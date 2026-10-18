@@ -531,7 +531,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               );
             },
           )),
-          const Padding(padding: EdgeInsets.all(10), child: Text('COLLECTION by VALORA · TEST',
+          const Padding(padding: EdgeInsets.all(10), child: Text('COLLECTION by VALORA',
             style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
         ]);
       });
@@ -560,9 +560,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ),
           title: Text(procedure.title, style: TextStyle(fontWeight: FontWeight.w600,
             color: procedure.enabled ? Colors.white : Colors.white38)),
-          subtitle: Text(procedure.enabled
-              ? '${procedure.description}${procedure.apiCode == null ? '' : '\nAPI candidata: ${procedure.apiCode}'}'
-              : '${procedure.description}\nIn attesa di un mapping runtime verificato'),
+          subtitle: Text(procedure.description),
           isThreeLine: true,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
             color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : Colors.white24),
@@ -2118,7 +2116,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (!isMaster)
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Text('COLLECTION by VALORA · TEST\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
+            child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
               style: TextStyle(color: sectionColor)),
           )),
         if (_isWrite && code == 'PR-01') ...[
