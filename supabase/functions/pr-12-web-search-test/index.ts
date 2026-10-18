@@ -50,11 +50,11 @@ async function searchItalianBatmanHush(description: string): Promise<SearchResul
   for (const edition of editions) {
     try {
       const html = await fetchText(edition.url, 6500);
-      const titleRaw = html.match(/<meta\\b[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1]
-        ?? html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1] ?? edition.title;
-      const image = html.match(/<meta\\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1]
-        ?? html.match(/<meta\\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1]
-        ?? html.match(/<meta\\b[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)?.[1];
+      const titleRaw = html.match(/<meta\b[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1]
+        ?? html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? edition.title;
+      const image = html.match(/<meta\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1]
+        ?? html.match(/<meta\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1]
+        ?? html.match(/<meta\b[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)?.[1];
       const isbn = edition.isbn;
       if (!/batman|hush/i.test(titleRaw + " " + html.slice(0, 12000))) continue;
       results.push({
