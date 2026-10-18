@@ -70,6 +70,45 @@ async function searchItalianBatmanHush(description: string): Promise<SearchResul
       });
     } catch { /* una scheda può bloccare richieste automatizzate; provare le altre */ }
   }
+  // Fallback copertina e data bibliografica tramite Google Books, cercando l'ISBN esatto.
+  // Evita di dipendere solo dai meta tag dei rivenditori, che possono bloccare il crawler.
+  for (const edition of editions) {
+    const existing = results.find(r => r.isbn === edition.isbn);
+    if (existing?.image_url) continue;
+    try {
+      const response = await fetch(
+        "https://www.googleapis.com/books/v1/volumes?q=isbn:" + encodeURIComponent(edition.isbn),
+        { headers: { "Accept": "application/json" }, signal: AbortSignal.timeout(6500) }
+      );
+      if (!response.ok) continue;
+      const data = await response.json();
+      const volume = Array.isArray(data?.items) ? data.items[0]?.volumeInfo : null;
+      if (!volume) continue;
+      const links = volume.imageLinks ?? {};
+      const imageUrl = String(links.thumbnail ?? links.smallThumbnail ?? "").replace(/^http:/i, "https:");
+      const publishedDate = String(volume.publishedDate ?? "");
+      const year = publishedDate.match(/\\b(19\\d{2}|20\\d{2})\\b/)?.[1];
+      const title = String(volume.title ?? edition.title);
+      if (existing) {
+        if (imageUrl) existing.image_url = imageUrl;
+        if (year) (existing as SearchResult & Record<string, unknown>).anno_uscita = Number(year);
+        if (volume.publisher) existing.editore = String(volume.publisher);
+      } else {
+        results.push({
+          title: title + " · Google Books",
+          url: edition.url,
+          snippet: "Edizione italiana identificata tramite ISBN " + edition.isbn + ".",
+          source_query: description,
+          motore: "GOOGLE_BOOKS_ISBN",
+          ...(imageUrl ? { image_url: imageUrl } : {}),
+          lingua: "Italiano",
+          editore: String(volume.publisher ?? "Panini Comics"),
+          isbn: edition.isbn,
+          ...(year ? { anno_uscita: Number(year) } : {}),
+        });
+      }
+    } catch { /* se Google Books non risponde, conserva i risultati già trovati */ }
+  }
   return results;
 }
 
