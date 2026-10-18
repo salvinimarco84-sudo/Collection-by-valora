@@ -2113,7 +2113,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             label: Text(_loading ? 'RICERCA...' : isAvailableList
               ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
               : isHistory ? 'VISUALIZZA STORICO OGGETTO'
-              : 'ESEGUI CONSULTAZIONE'),
+              : 'ESEGUI CONSULTAZIONE')),
         if (_currentObject != null && code != 'PR-02' && code != 'PR-03') ...[
           const SizedBox(height: 16),
           if (isMaster) ...[
