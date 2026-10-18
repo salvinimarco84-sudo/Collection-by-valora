@@ -348,8 +348,14 @@ function hasTopicEvidence(result: SearchResult, description: string): boolean {
   if (/optimus\s*prime|transformers|bumblebee|megatron/i.test(q)) {
     return /optimus|transformer|bumblebee|megatron|hasbro/i.test(title + " " + snippet);
   }
-  if (/batman|long halloween|lungo halloween/i.test(q)) {
-    return /batman|halloween/i.test(title + " " + snippet);
+  if (/batman|long halloween|lungo halloween|hush/i.test(q)) {
+    // Molti cataloghi indicizzano la serie nel percorso URL, mentre il titolo
+    // mostrato dal motore può essere abbreviato. Usa anche lo slug, ma richiedi
+    // evidenza del franchise/opera e non accettare pagine dizionario o irrilevanti.
+    const evidence = title + " " + snippet + " " + url;
+    if (/batman/i.test(q)) return /batman/i.test(evidence);
+    if (/hush/i.test(q)) { const trustedComicCatalog = /leagueofcomicgeeks\\.com|comics\\.org|comicvine\\.gamespot\\.com|dc\\.com|fandom\\.com/i.test(evidence); const comicContext = /comic|comics|graphic|issue|volume|dc comics|batman/i.test(title + " " + snippet); return /hush/i.test(evidence) || /batman/i.test(evidence) || (trustedComicCatalog && comicContext); }
+    return /halloween/i.test(evidence);
   }
   const tokens = relevanceTokens(description);
   return tokens.some(token => title.includes(token) || snippet.includes(token));
