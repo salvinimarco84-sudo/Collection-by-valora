@@ -353,8 +353,15 @@ function hasTopicEvidence(result: SearchResult, description: string): boolean {
     // mostrato dal motore può essere abbreviato. Usa anche lo slug, ma richiedi
     // evidenza del franchise/opera e non accettare pagine dizionario o irrilevanti.
     const evidence = title + " " + snippet + " " + url;
+    // Hush va controllato prima di Batman: la query contiene entrambe le parole,
+    // ma i titoli dei cataloghi possono riportare solo il titolo dell'arco narrativo.
+    if (/hush/i.test(q)) {
+      const host = hostnameFromUrl(result.url);
+      const trustedComicCatalog = /(^|\\.)((leagueofcomicgeeks\\.com)|(comics\\.org)|(comicvine\\.gamespot\\.com)|(dc\\.com)|(fandom\\.com))$/i.test(host);
+      const comicContext = /comic|comics|graphic|issue|volume|dc comics|batman|hush/i.test(title + " " + snippet + " " + url);
+      return /hush|batman/i.test(evidence) || (trustedComicCatalog && comicContext);
+    }
     if (/batman/i.test(q)) return /batman/i.test(evidence);
-    if (/hush/i.test(q)) { const trustedComicCatalog = /leagueofcomicgeeks\\.com|comics\\.org|comicvine\\.gamespot\\.com|dc\\.com|fandom\\.com/i.test(evidence); const comicContext = /comic|comics|graphic|issue|volume|dc comics|batman/i.test(title + " " + snippet); return /hush/i.test(evidence) || /batman/i.test(evidence) || (trustedComicCatalog && comicContext); }
     return /halloween/i.test(evidence);
   }
   const tokens = relevanceTokens(description);
