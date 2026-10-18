@@ -43,7 +43,8 @@ jobs:
           cp FLAT__lib__main.dart lib/main.dart
           cp FLAT__pubspec.yaml pubspec.yaml
           cp valora_logo.png assets/valora_logo.png
-          python -m pip install Pillow
+          python -m pip install --upgrade Pillow
+          python -m py_compile apply_valora_logo.py
           python apply_valora_logo.py
           rm -f test/widget_test.dart widget_test.dart main.dart
 
@@ -56,9 +57,6 @@ jobs:
           if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
             sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
           fi
-
-      - name: Install image tooling
-        run: python -m pip install Pillow
 
       - name: Install dependencies
         run: flutter pub get
@@ -109,7 +107,9 @@ jobs:
           Copy-Item FLAT__lib__main.dart lib/main.dart -Force
           Copy-Item FLAT__pubspec.yaml pubspec.yaml -Force
           Copy-Item valora_logo.png assets/valora_logo.png -Force
-          python -m pip install Pillow
+          python -m pip install --upgrade Pillow
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m py_compile apply_valora_logo.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python apply_valora_logo.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
