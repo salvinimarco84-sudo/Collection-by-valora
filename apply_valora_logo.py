@@ -44,10 +44,15 @@ new_login = """ClipOval(
                       ),
                     )"""
 
-if "Image.asset('valora_logo.png'" not in source and "Image.asset(\n                        'valora_logo.png'" not in source:
+# Controlla il logo specificamente nella schermata login: la presenza di
+# Image.asset in un'altra schermata non deve impedire questa sostituzione.
+login_logo_present = bool(re.search(
+    r"Image\\.asset\\s*\\(\\s*['\\\"]valora_logo\\.png['\\\"]",
+    source,
+))
+if not login_logo_present:
     source, count = login_pattern.subn(new_login, source, count=1)
     if count == 0:
-        # Non bloccare la build per una differenza grafica: il logo è facoltativo.
         print("AVVISO: blocco logo login non riconosciuto; mantengo l'icona attuale.")
 
 # Logo nell'AppBar, se il titolo atteso esiste. La mancata corrispondenza
