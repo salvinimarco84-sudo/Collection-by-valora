@@ -47,7 +47,7 @@ new_login = """ClipOval(
 # Controlla il logo specificamente nella schermata login: la presenza di
 # Image.asset in un'altra schermata non deve impedire questa sostituzione.
 login_logo_present = bool(re.search(
-    r"Image\\.asset\\s*\\(\\s*['\\\"]valora_logo\\.png['\\\"]",
+    r"Image\.asset\s*\(\s*['\"]valora_logo\.png['\"]",
     source,
 ))
 if not login_logo_present:
