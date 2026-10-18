@@ -33,14 +33,14 @@ class ValoraAppearance extends ChangeNotifier {
   bool whiteBackground = false;
   Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
   Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
-  Color get card => whiteBackground ? ValoraAppearance.instance.textPrimary : cardColor;
-  Color get textPrimary => whiteBackground ? const Color(0xFF171717) : ValoraAppearance.instance.textPrimary;
-  Color get textSecondary => whiteBackground ? const Color(0xFF424242) : ValoraAppearance.instance.textSecondary;
-  Color get textMuted => whiteBackground ? const Color(0xFF555555) : ValoraAppearance.instance.textMuted;
-  Color get textSubtle => whiteBackground ? const Color(0xFF626262) : ValoraAppearance.instance.textSubtle;
-  Color get textFaint => whiteBackground ? const Color(0xFF666666) : ValoraAppearance.instance.textFaint;
-  Color get neutralOverlay => whiteBackground ? Colors.black.withValues(alpha: 0.06) : ValoraAppearance.instance.neutralOverlay;
-  Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : ValoraAppearance.instance.neutralOverlayStrong;
+  Color get card => whiteBackground ? Colors.white : cardColor;
+  Color get textPrimary => whiteBackground ? const Color(0xFF171717) : Colors.white;
+  Color get textSecondary => whiteBackground ? const Color(0xFF424242) : Colors.white70;
+  Color get textMuted => whiteBackground ? const Color(0xFF555555) : Colors.white60;
+  Color get textSubtle => whiteBackground ? const Color(0xFF626262) : Colors.white54;
+  Color get textFaint => whiteBackground ? const Color(0xFF666666) : Colors.white38;
+  Color get neutralOverlay => whiteBackground ? Colors.black.withValues(alpha: 0.06) : Colors.white10;
+  Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
     whiteBackground = p.getBool('valora_white_background') ?? false;
@@ -513,7 +513,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               style: TextStyle(color: goldColor, fontSize: 20,
                 fontWeight: FontWeight.bold, letterSpacing: 2)),
           ),
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text('Gestione della tua collezione', style: TextStyle(color: ValoraAppearance.instance.textMuted))),
           Expanded(child: GridView.builder(
             padding: const EdgeInsets.all(16),
@@ -551,7 +551,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               );
             },
           )),
-          const Padding(padding: EdgeInsets.all(10), child: Text('COLLECTION by VALORA',
+          Padding(padding: const EdgeInsets.all(10), child: Text('COLLECTION by VALORA',
             style: TextStyle(color: ValoraAppearance.instance.textFaint, fontSize: 11, letterSpacing: 1))),
         ]);
       });
@@ -1978,10 +1978,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     };
     final technical = object.entries.where((e) => technicalKeys.contains(e.key)).toList();
     if (technical.isEmpty) {
-      return const Card(child: Padding(
+      return Card(child: const Padding(
         padding: EdgeInsets.all(16),
-        child: Text('Nessun campo tecnico disponibile per questo oggetto.',
-          style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+        child: Text('Nessun campo tecnico disponibile per questo oggetto.'),
       ));
     }
     return Card(
