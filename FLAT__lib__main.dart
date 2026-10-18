@@ -948,8 +948,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         .replaceAll(RegExp(r'\s+'), ' ');
 
     Future<List<Map<String, dynamic>>> searchPhrase(String phrase) async {
+      final searchRpc = (widget.apiCode == 'OBJECT_MASTER' || widget.apiCode == 'EXPLORE_RECORDS')
+          ? 'pr_11_ricerca_schede'
+          : 'pr_02_ricerca_oggetti';
       final response = await Supabase.instance.client.schema('collection').rpc(
-        'pr_02_ricerca_oggetti',
+        searchRpc,
         params: {'p_cerca': phrase},
       );
       dynamic payload = response;
