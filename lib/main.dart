@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
@@ -1679,21 +1680,53 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _output = _metadataResult;
       });
     } else if (sourceAction == 'open') {
-      // La selezione mostra l'URL senza scrivere dati nel database.
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          backgroundColor: cardColor,
-          title: Text('Apri la fonte nel browser'),
-          content: SelectableText(url),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text('CHIUDI'),
+      // Apri davvero la pagina scelta nel browser esterno; non limitarti a mostrare l'URL.
+      final uri = Uri.tryParse(url);
+      if (uri == null || !(uri.scheme == 'https' || uri.scheme == 'http') || uri.host.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _metadataResult = 'La fonte selezionata non contiene un collegamento web valido. Nessun dato è stato salvato.';
+            _output = _metadataResult;
+          });
+        }
+        return;
+      }
+      try {
+        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!launched && mounted) {
+          await showDialog<void>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              backgroundColor: cardColor,
+              title: Text('Collegamento non apribile'),
+              content: SelectableText(url),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text('CHIUDI'),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          await showDialog<void>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              backgroundColor: cardColor,
+              title: Text('Collegamento non apribile'),
+              content: SelectableText('$url\\n\\nDettaglio: $e'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text('CHIUDI'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
     }
   }
 
