@@ -676,7 +676,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
   String _lastMetadataQuery = '';
-  String _metadataCategory = 'COLLEZIONABILE';
+  String _metadataCategory = 'SELEZIONA CATEGORIA';
   String? _metadataSourceUrl;
   bool _metadataSearchExecuted = false;
   String _metadataResult = 'La ricerca dei metadati partirà quando esci dal campo Descrizione oggetto.';
@@ -756,7 +756,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   void _onDescriptionFocusChanged() {
     if (widget.apiCode != 'PR-01' || _descriptionFocus.hasFocus) return;
     final query = _description.text.trim();
-    if (query.length < 4 || query == _lastMetadataQuery || _loading) return;
+    if (_metadataCategory == 'SELEZIONA CATEGORIA' || query.length < 4 || query == _lastMetadataQuery || _loading) return;
     _run(() async {
       if (query != _description.text.trim()) return;
       setState(() {
@@ -1514,6 +1514,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<void> _prepareMetadata() async {
     final description = _description.text.trim();
     if (description.isEmpty) throw Exception('Inserisci almeno la descrizione.');
+    if (widget.apiCode == 'PR-01' && _metadataCategory == 'SELEZIONA CATEGORIA') {
+      throw Exception('Seleziona prima la categoria dell’oggetto per avviare PR-12.');
+    }
 
     setState(() {
       _metadataResult = 'PR-12: ricerca web pubblica in corso…';
@@ -2331,7 +2334,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 const SizedBox(height: 6),
                 Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
                 const SizedBox(height: 10),
-                _dropdown('Categoria oggetto *', _metadataCategory, const ['LEGO','FUMETTI','DVD_BLURAY','MYTH_CLOTH','ACTION_FIGURE','DIECAST','GIOCATTOLO','CARTE_COLLEZIONABILI','COLLEZIONABILE'], (v) => setState(() { _metadataCategory = v!; _lastMetadataQuery = ''; })),
+                _dropdown('Categoria oggetto *', _metadataCategory, const ['SELEZIONA CATEGORIA','LEGO','FUMETTI','DVD_BLURAY','MYTH_CLOTH','ACTION_FIGURE','DIECAST','GIOCATTOLO','CARTE_COLLEZIONABILI','COLLEZIONABILE'], (v) { setState(() { _metadataCategory = v!; _lastMetadataQuery = ''; }); if (_metadataCategory != 'SELEZIONA CATEGORIA' && _description.text.trim().length >= 4) { _run(_prepareMetadata); } }),
                 const SizedBox(height: 10),
                 _field(_producer, 'Produttore (facoltativo)'),
                 _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
