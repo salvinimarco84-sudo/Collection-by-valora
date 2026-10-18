@@ -786,6 +786,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final query = _search.text.trim();
     if (query.isEmpty) throw Exception('Inserisci una parola, parte della descrizione o un codice.');
 
+    String normalize(String value) => value
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9àèéìòù]+'), ' ')
+        .trim()
+        .replaceAll(RegExp(r'\\s+'), ' ');
+
     Future<List<Map<String, dynamic>>> searchPhrase(String phrase) async {
       final response = await Supabase.instance.client.schema('collection').rpc(
         'pr_02_ricerca_oggetti',
@@ -803,46 +809,62 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       return raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
     }
 
-    // Priorità assoluta alla frase completa. Se il marchio iniziale non è
-    // registrato nella descrizione (es. "LEGO 6660 ..."), prova le frasi
-    // complete rimuovendo progressivamente le parole iniziali. Appena trova
-    // corrispondenze, mostra solo quelle, senza unire risultati generici.
-    final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toList();
+    String descriptionOf(Map<String, dynamic> item) =>
+        (item['descrizione_oggetto'] ?? item['descrizione'] ?? item['nome'] ?? '').toString();
+    String codeOf(Map<String, dynamic> item) =>
+        (item['codice_oggetto'] ?? '').toString().trim();
+
+    // La RPC può restituire risultati troppo ampi (per esempio tutti gli
+    // oggetti LEGO quando si cerca una descrizione precisa). Restringiamo
+    // sempre i risultati alla frase richiesta prima di mostrarli.
+    final normalizedQuery = normalize(query);
+    final tokens = query.split(RegExp(r'\\s+')).where((t) => t.trim().isNotEmpty).toList();
     List<Map<String, dynamic>> results = await searchPhrase(query);
+
+    bool matchesPhrase(Map<String, dynamic> item, String phrase) {
+      final q = normalize(phrase);
+      if (q.isEmpty) return false;
+      return normalize(descriptionOf(item)).contains(q) || codeOf(item) == phrase.trim();
+    }
+
+    results = results.where((item) => matchesPhrase(item, query)).toList();
+
+    // Se il prefisso digitato non è presente nella descrizione archiviata,
+    // prova le frasi complete più corte, mantenendo sempre il filtro stretto.
     if (results.isEmpty && tokens.length > 1) {
       for (var startAt = 1; startAt < tokens.length; startAt++) {
         final candidate = tokens.skip(startAt).join(' ').trim();
         if (candidate.isEmpty) continue;
         final candidateResults = await searchPhrase(candidate);
-        if (candidateResults.isNotEmpty) {
-          results = candidateResults;
+        final narrowed = candidateResults.where((item) => matchesPhrase(item, candidate)).toList();
+        if (narrowed.isNotEmpty) {
+          results = narrowed;
           break;
         }
       }
     }
 
-    // Solo se nessuna frase completa (né una sua variante senza prefisso)
-    // corrisponde, ripiega sulla ricerca per singole parole.
-    if (results.isEmpty && tokens.length > 1) {
-      final byId = <String, Map<String, dynamic>>{};
-      for (final token in tokens) {
-        for (final item in await searchPhrase(token)) {
-          final id = item['codice_oggetto']?.toString();
-          if (id != null) byId.putIfAbsent(id, () => item);
-        }
-      }
-      results = byId.values.toList();
+    // La ricerca per singola parola è consentita solo per una query di una
+    // sola parola. Evita di unire risultati generici di ogni token, causa
+    // frequente di elenchi enormi e irrilevanti.
+    if (results.isEmpty && tokens.length == 1) {
+      results = (await searchPhrase(tokens.first))
+          .where((item) => matchesPhrase(item, tokens.first))
+          .toList();
     }
 
+    // Prima le descrizioni identiche, poi le corrispondenze parziali pertinenti.
+    final exact = results.where((item) => normalize(descriptionOf(item)) == normalizedQuery).toList();
+    if (exact.isNotEmpty) results = exact;
+
     results.sort((a, b) =>
-      (int.tryParse(a['codice_oggetto']?.toString() ?? '') ?? 0)
-        .compareTo(int.tryParse(b['codice_oggetto']?.toString() ?? '') ?? 0));
+      (int.tryParse(codeOf(a)) ?? 0).compareTo(int.tryParse(codeOf(b)) ?? 0));
     setState(() {
       _pr02SearchResults = results;
       _pr02SearchCompleted = true;
       _output = results.isEmpty
-          ? 'Nessun oggetto disponibile per: ' + query
-          : 'Trovati ' + results.length.toString() + ' risultati. Seleziona il record nella finestra di ricerca.';
+          ? 'Nessun oggetto corrispondente alla descrizione: ' + query
+          : 'Trovati ' + results.length.toString() + ' risultati pertinenti. Seleziona il record.';
     });
 
     if (results.isEmpty || !mounted) return;
@@ -862,8 +884,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 mainAxisSize: MainAxisSize.min,
                 children: results.map((item) => Card(
                   child: ListTile(
-                    title: Text((item['codice_oggetto'] ?? '').toString() + ' · ' +
-                      (item['descrizione_oggetto'] ?? '').toString()),
+                    title: Text(codeOf(item) + ' · ' + descriptionOf(item)),
                     subtitle: Text('Stato: ' + (item['stato'] ?? 'Non indicato').toString() +
                       ' · Quantità: ' + (item['quantita'] ?? 'Non indicata').toString() +
                       ' · Prezzo unitario: € ' + (item['valore_oggetto'] ?? 'Non indicato').toString()),
