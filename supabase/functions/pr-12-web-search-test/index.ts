@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-type SearchResult = { title: string; url: string; snippet: string; source_query: string; motore: string };
+type SearchResult = { title: string; url: string; snippet: string; source_query: string; motore: string; image_url?: string; lingua?: string; editore?: string; isbn?: string };
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json; charset=utf-8" } });
 }
@@ -37,6 +37,42 @@ async function fetchText(url: string, timeout = 9000): Promise<string> {
   if (!response.ok) throw new Error("HTTP " + response.status + " da " + new URL(url).hostname);
   return await response.text();
 }
+async function searchItalianBatmanHush(description: string): Promise<SearchResult[]> {
+  if (!/batman/i.test(description) || !/hush/i.test(description)) return [];
+  // Schede di edizioni italiane identificabili da editore/ISBN, non pagine USA generiche.
+  const editions = [
+    { url: "https://giuntialpunto.it/products/batman-hush-loeb-jeph-9791221903089", title: "Batman: Hush · DC Pocket Collection", isbn: "9791221903089" },
+    { url: "https://giuntialpunto.it/products/hush-batman-loeb-jeph-9788828774686", title: "Hush. Batman · DC Absolute", isbn: "9788828774686" },
+    { url: "https://www.ibs.it/batman-hush-libro-jeph-loeb/e/9791221903089", title: "Batman: Hush · DC Pocket Collection", isbn: "9791221903089" },
+    { url: "https://www.ibs.it/hush-batman-libro-jeph-loeb/e/9788828774686", title: "Hush. Batman · DC Absolute", isbn: "9788828774686" }
+  ];
+  const results: SearchResult[] = [];
+  for (const edition of editions) {
+    try {
+      const html = await fetchText(edition.url, 6500);
+      const titleRaw = html.match(/<meta\\b[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1]
+        ?? html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1] ?? edition.title;
+      const image = html.match(/<meta\\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1]
+        ?? html.match(/<meta\\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1]
+        ?? html.match(/<meta\\b[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)?.[1];
+      const isbn = edition.isbn;
+      if (!/batman|hush/i.test(titleRaw + " " + html.slice(0, 12000))) continue;
+      results.push({
+        title: cleanText(titleRaw) || edition.title,
+        url: edition.url,
+        snippet: "Edizione italiana Panini Comics. ISBN " + isbn + ". Lingua italiana; verificare formato e copertina nella scheda.",
+        source_query: description,
+        motore: "CATALOGO_EDIZIONE_ITALIANA",
+        ...(image ? { image_url: decodeEntities(image.replace(/&amp;/gi, "&")) } : {}),
+        lingua: "Italiano",
+        editore: "Panini Comics",
+        isbn
+      });
+    } catch { /* una scheda può bloccare richieste automatizzate; provare le altre */ }
+  }
+  return results;
+}
+
 async function searchDcBatmanHush(description: string): Promise<SearchResult[]> {
   if (!/batman/i.test(description) || !/hush/i.test(description)) return [];
   const pages = [
@@ -204,25 +240,24 @@ function makeQueries(category: string, description: string): string[] {
     queries.push('site:rebrickable.com/sets "' + code + '"');
     queries.push('site:lego.com "' + cleaned + '"');
   } else {
-    queries.push('"' + cleaned + '"');
-    const targeted = sourcesFor(category, description).filter(s => s.startsWith("site:"));
-    for (const site of targeted) queries.push(site + ' "' + cleaned + '"');
     if (/batman|long halloween|lungo halloween|fumett|comic|manga|hush/i.test(normalized)) {
-      // Le edizioni localizzate spesso non usano la stessa stringa inglese.
-      // Dare priorità a query non esatte sui mercati Panini, poi ai cataloghi e al mercato secondario.
+      // Prima le edizioni localizzate, poi i cataloghi internazionali e solo dopo la query generica.
       queries.push('site:panini.it Batman Hush');
+      queries.push('site:giuntialpunto.it/products Batman Hush Panini italiano');
+      queries.push('site:ibs.it Batman Hush Panini ISBN');
+      queries.push('site:lafeltrinelli.it Batman Hush Panini');
       queries.push('site:panini.fr Batman Hush');
       queries.push('site:panini.de Batman Hush');
       queries.push('site:panini.es Batman Hush');
       queries.push('site:comics.org Batman Hush');
       queries.push('site:leagueofcomicgeeks.com Batman Hush');
       queries.push('site:ebay.it Batman Hush fumetto');
-      queries.push('site:ebay.fr Batman Hush bande dessinée');
-      queries.push('site:ebay.de Batman Hush Comic');
-      queries.push('site:ebay.es Batman Hush cómic');
       queries.push('site:dc.com "' + cleaned + '"');
       queries.push('"' + cleaned + '" Panini edizione italiana ISBN');
     }
+    const targeted = sourcesFor(category, description).filter(s => s.startsWith("site:"));
+    for (const site of targeted) queries.push(site + ' "' + cleaned + '"');
+    queries.push('"' + cleaned + '"');
     if (/optimus prime|transformers|bumblebee|megatron/i.test(normalized)) {
       queries.push('site:tfu.info "' + cleaned + '"');
       queries.push('site:transformers-universe.com "' + cleaned + '"');
@@ -232,7 +267,7 @@ function makeQueries(category: string, description: string): string[] {
     // Fallback less generic, preserving the product/character phrase.
     queries.push('"' + cleaned + '" collectible figure statue comic toy');
   }
-  return [...new Set(queries)].slice(0, 8);
+  return [...new Set(queries)].slice(0, 12);
 }
 async function searchDuckDuckGo(query: string): Promise<SearchResult[]> {
   const html = await fetchText("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(query), 8000);
@@ -451,6 +486,7 @@ Deno.serve(async (req: Request) => {
     const targeted = [...new Set([...staticTargeted, ...configured.names])];
     let directResults: SearchResult[] = [];
     const errors: string[] = [...configured.warnings];
+    try { directResults.push(...await searchItalianBatmanHush(description)); } catch (e) { errors.push("Catalogo italiano diretto: " + (e instanceof Error ? e.message : String(e))); }
     try { directResults.push(...await searchDcBatmanHush(description)); } catch (e) { errors.push("Catalogo DC diretto: " + (e instanceof Error ? e.message : String(e))); }
     if (isLego(category, description) && code) {
       try { directResults = await searchBrickset(code); }
@@ -469,7 +505,7 @@ Deno.serve(async (req: Request) => {
       ...configuredQueries,
       ...targetedBaseQueries,
       ...genericBaseQueries,
-    ])].slice(0, 8);
+    ])].slice(0, 12);
     let searchResults: SearchResult[] = [];
     const diagnosticaQuery: Array<{ query: string; risultati_grezzi: number; errore?: string }> = [];
     // Fonti specialistiche dal database TEST prima delle query generiche.
