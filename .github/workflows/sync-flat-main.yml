@@ -1,0 +1,47 @@
+name: Sync Flutter main.dart from FLAT source
+
+on:
+  push:
+    branches:
+      - main
+      - fix/pr03-flusso-semplificato
+    paths:
+      - "FLAT__lib__main.dart"
+      - ".github/workflows/sync-flat-main.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-main:
+    name: Synchronize lib/main.dart
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy canonical source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p lib
+          cp FLAT__lib__main.dart lib/main.dart
+          cmp -s FLAT__lib__main.dart lib/main.dart
+
+      - name: Commit synchronization if needed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- lib/main.dart; then
+            echo "lib/main.dart is already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lib/main.dart
+          git commit -m "Sync lib/main.dart from FLAT source"
+          git push
