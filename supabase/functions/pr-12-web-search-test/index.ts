@@ -308,9 +308,9 @@ async function searchOne(query: string): Promise<SearchResult[]> {
   } catch (e) {
     errors.push(e instanceof Error ? e.message : String(e));
   }
-  // Fallback web senza dipendere da DuckDuckGo: i parser sono best-effort,
-  // la diagnostica distingue chiaramente provider non configurato e risultati vuoti.
-  for (const [name, search] of [["Google", searchGoogle], ["Bing RSS", searchBingRss]] as const) {
+  // Fallback multipli: DuckDuckGo era già implementato ma non veniva mai chiamato.
+  // Provarlo insieme a Google e Bing evita che il motore dipenda da parser che qui falliscono.
+  for (const [name, search] of [["DuckDuckGo", searchDuckDuckGo], ["Google", searchGoogle], ["Bing RSS", searchBingRss]] as const) {
     try {
       const results = await search(query);
       if (results.length) return results;
