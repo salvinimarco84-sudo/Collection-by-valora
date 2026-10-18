@@ -1579,6 +1579,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       final title = (item['title'] ?? 'Risultato senza titolo').toString();
                       final url = (item['url'] ?? '').toString();
                       final snippet = (item['snippet'] ?? '').toString();
+                      final imageUrl = (item['image_url'] ??
+                          item['immagine_url'] ??
+                          item['url_immagine'] ??
+                          item['thumbnail'] ??
+                          item['image'] ??
+                          '').toString().trim();
                       final producer = (item['produttore'] ?? '').toString().trim();
                       final productCode = (item['codice_prodotto'] ?? '').toString().trim();
                       final year = (item['anno_uscita'] ?? '').toString().trim();
@@ -1588,7 +1594,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         if (year.isNotEmpty) 'Anno di uscita: $year',
                       ];
                       return ListTile(
-                        leading: Icon(Icons.language, color: sectionColor),
+                        leading: SizedBox(
+                          width: 64,
+                          height: 88,
+                          child: imageUrl.startsWith('https://') || imageUrl.startsWith('http://')
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => Icon(Icons.language, color: sectionColor),
+                                  ),
+                                )
+                              : Icon(Icons.language, color: sectionColor),
+                        ),
                         title: Text(title, style: TextStyle(color: sectionColor)),
                         subtitle: Text(
                           '${metadataLines.isEmpty ? '' : '${metadataLines.join('\n')}\n'}${snippet.isEmpty ? url : snippet}\n$url',
