@@ -699,7 +699,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
   String _lastPr11SearchQuery = '';
-  bool _exactSearchMode = false;
 
   bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03'}.contains(widget.apiCode);
 
@@ -984,7 +983,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
 
     results = results.where((item) => matchesPhrase(item, query)).toList();
-    if (_exactSearchMode) results = results.where((item) => normalize(descriptionOf(item)) == normalizedQuery).toList();
 
     // Se il prefisso digitato non è presente nella descrizione archiviata,
     // prova le frasi complete più corte, mantenendo sempre il filtro stretto.
@@ -2373,11 +2371,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ],
         ],
         if (!_isWrite && isHistory) ...[
-          SegmentedButton<bool>(segments:const [
-            ButtonSegment<bool>(value:false,label:Text('Parziale')),
-            ButtonSegment<bool>(value:true,label:Text('Esatta'))],
-            selected:{_exactSearchMode},onSelectionChanged:(v)=>setState(()=>_exactSearchMode=v.first)),
-          const SizedBox(height:8),
           TextField(controller:_search,textInputAction:TextInputAction.search,
             onSubmitted:(_)=>_run(_searchPr02Objects),
             decoration:InputDecoration(labelText:'Descrizione oggetto',
@@ -2386,11 +2379,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 icon:Icon(Icons.search,color:sectionColor)))),
         ],
         if (!_isWrite && isMaster) ...[
-          SegmentedButton<bool>(segments:const [
-            ButtonSegment<bool>(value:false,label:Text('Parziale')),
-            ButtonSegment<bool>(value:true,label:Text('Esatta'))],
-            selected:{_exactSearchMode},onSelectionChanged:(v)=>setState(()=>_exactSearchMode=v.first)),
-          const SizedBox(height:8),
           TextField(
             controller: _search,
             focusNode: _pr11SearchFocusNode,
