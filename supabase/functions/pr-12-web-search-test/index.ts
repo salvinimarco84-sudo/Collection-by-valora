@@ -24,6 +24,15 @@ function sourcesFor(category: string, query: string): string[] {
   query = canonicalSearchText(query);
   // Le linee specifiche hanno precedenza sulle categorie generiche: Saint Seiya,
   // per esempio, è una action figure ma richiede prima i cataloghi Myth Cloth.
+  if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista/i.test(query) || category === "BEER") return [
+    "site:untappd.com", "site:beeradvocate.com", "site:ratebeer.com", "site:beermenus.com"
+  ];
+  if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(query) || category === "WINE") return [
+    "site:wine-searcher.com", "site:vivino.com", "site:cellartracker.com", "site:decanter.com", "site:winespectator.com", "site:liv-ex.com"
+  ];
+  if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai/i.test(query)) return [
+    "site:mattel.com", "site:hasbro.com", "site:hasbropulse.com", "site:takaratomy.co.jp", "site:playmobil.com", "site:schleich-s.com", "site:thetoysdb.org", "site:transformerland.com"
+  ];
   if (/saint seiya|myth cloth|pegasus|cavalieri dello zodiaco/i.test(query)) return [
     "site:tamashiiweb.com/item_brand/saintclothmyth",
     "site:tamashiiweb.com Saint Cloth Myth Pegasus Seiya",
@@ -314,7 +323,9 @@ async function loadConfiguredSources(category: string, description: string, user
       MUSIC: ["music", "vinyl", "vinile", "dischi", "dischi in vinile", "record collecting", "discografia"],
       NUMISMATICS: ["numismatics", "numismatica", "coins", "monete", "banknotes", "banconote", "medaglie", "exonumia"],
       TRADING_CARDS: ["trading cards", "cards", "carte collezionabili", "carte", "tcg", "figurine sportive"],
-      GIOCATTOLO: ["toys", "toy", "giocattoli", "giocattolo"],
+      BEER: ["beer", "birra", "birre", "birre da collezione", "birrifici"],
+      WINE: ["wine", "vino", "vini", "bottiglie pregiate", "fine wine", "vini da collezione"],
+      GIOCATTOLO: ["toys", "toy", "giocattoli", "giocattolo", "giocattoli da collezione"],
       COLLEZIONABILE: ["universale", "collectibles", "collectible", "collezionismo"]
     };
     const categoryTerms = categoryAliases[category] ?? [normalizedCategory];
@@ -533,6 +544,28 @@ function makeQueries(category: string, description: string): string[] {
       queries.push('site:theafdb.com "' + cleaned + '"');
       queries.push('site:collectibles.wiki "' + cleaned + '"');
     }
+    if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista/i.test(normalized) || category === "BEER") {
+      queries.push('site:untappd.com "' + cleaned + '"');
+      queries.push('site:beeradvocate.com "' + cleaned + '"');
+      queries.push('site:ratebeer.com "' + cleaned + '"');
+      queries.push('site:beermenus.com "' + cleaned + '"');
+    }
+    if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(normalized) || category === "WINE") {
+      queries.push('site:wine-searcher.com "' + cleaned + '"');
+      queries.push('site:vivino.com "' + cleaned + '"');
+      queries.push('site:cellartracker.com "' + cleaned + '"');
+      queries.push('site:decanter.com "' + cleaned + '"');
+      queries.push('site:winespectator.com "' + cleaned + '"');
+      queries.push('site:liv-ex.com "' + cleaned + '"');
+    }
+    if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai/i.test(normalized)) {
+      queries.push('site:mattel.com "' + cleaned + '"');
+      queries.push('site:hasbro.com "' + cleaned + '"');
+      queries.push('site:takaratomy.co.jp "' + cleaned + '"');
+      queries.push('site:playmobil.com "' + cleaned + '"');
+      queries.push('site:schleich-s.com "' + cleaned + '"');
+      queries.push('site:thetoysdb.org "' + cleaned + '"');
+    }
     if (/toy|giocattol|vintage|kinder|sorpresine|robot/i.test(normalized) || category === "GIOCATTOLO" || category === "COLLEZIONABILE") {
       queries.push('site:thetoysdb.org "' + cleaned + '"');
       queries.push('site:collectibles.wiki "' + cleaned + '"');
@@ -685,6 +718,9 @@ function classifyCandidate(result: SearchResult): string {
   if (/minifigure|minifig|bricklink|brickset|rebrickable|lego.com/i.test(text)) return "LEGO / MINIFIGURA";
   if (/transformer|optimus prime|hasbro|transformerland|tfu.info/i.test(text)) return "TRANSFORMERS / GIOCATTOLO";
   if (/model kit|gunpla|gundam|plastic model/i.test(text)) return "MODEL KIT";
+  if (/beer|birra|birrificio|brewery|brewpub|lambic|trappist/i.test(text)) return "BIRRA / BOTTIGLIA";
+  if (/wine|vino|vintage wine|fine wine|champagne|barolo|barbaresco|brunello|amarone|bordeaux|burgundy/i.test(text)) return "VINO / BOTTIGLIA";
+  if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai/i.test(text)) return "GIOCATTOLO / MARCHIO";
   if (/maisto|diecast|die-cast|scale model/i.test(text)) return "MODELLINO / DIE-CAST";
   return "ALTRO COLLEZIONABILE";
 }
@@ -700,6 +736,9 @@ function hasTopicEvidence(result: SearchResult, description: string, theme = "")
   if (/lego|minifig|brickheadz|technic|duplo/i.test(q)) return /lego|bricklink|rebrickable|minifig/i.test(evidence);
   if (/saint seiya|myth cloth|pegasus|cavalieri dello zodiaco/i.test(q)) return /saint seiya|saint cloth myth|pegasus seiya|cavalieri dello zodiaco/i.test(evidence);
   if (/walking dead/i.test(q)) return /walking dead|image comics|skybound/i.test(evidence);
+  if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista/i.test(q)) return /beer|birra|brewery|brewpub|untappd|beeradvocate|ratebeer|beermenus|birrificio/i.test(evidence);
+  if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(q)) return /wine|vino|vivino|cellartracker|wine-searcher|decanter|liv-ex|champagne|barolo|barbaresco|brunello|amarone/i.test(evidence);
+  if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai/i.test(q)) return /mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai|transformerland|thetoysdb/i.test(evidence);
   if (/fumett|comic|manga|panini|saldapress|bonelli|batman|marvel|dc comics/i.test(q)) {
     return /comic|fumett|manga|panini|saldapress|bonelli|batman|marvel|dc|walking dead|image comics/i.test(evidence);
   }
