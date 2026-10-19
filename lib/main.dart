@@ -699,7 +699,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             ]),
             _section('PREFERENZE GENERALI', Icons.settings_outlined, [
               DropdownButtonFormField<String>(
-                value: _market,
+                value: _markets.any((m) => m['nome_mercato'] == _market) ? _market : null,
                 decoration: _fieldDecoration('Mercato principale'),
                 items: _markets.map((m) => DropdownMenuItem<String>(value: m['nome_mercato'].toString(), child: Text(m['nome_mercato'].toString()))).toList(),
                 onChanged: (v) { if (v != null) setState(() => _market = v); },
