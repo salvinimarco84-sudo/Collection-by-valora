@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
+import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -1163,6 +1164,17 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       if (format == 'json') {
         bytes = utf8.encode(const JsonEncoder.withIndent('  ').convert(rows));
         ext = 'json';
+      } else if (format == 'xlsx') {
+        final workbook = Excel.createExcel();
+        final sheet = workbook['Catalogo'];
+        sheet.appendRow(_headers.map((h) => TextCellValue(h)).toList());
+        for (final row in rows) {
+          sheet.appendRow(_headers.map((h) => TextCellValue((row[h] ?? '').toString())).toList());
+        }
+        final encoded = workbook.encode();
+        if (encoded == null) throw Exception('Creazione file Excel non riuscita.');
+        bytes = encoded;
+        ext = 'xlsx';
       } else {
         final matrix = <List<dynamic>>[_headers];
         for (final row in rows) { matrix.add(_headers.map((h)=>row[h] ?? '').toList()); }
@@ -1188,6 +1200,20 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
+    if (name.endsWith('.xlsx')) {
+      final workbook = Excel.decodeBytes(file.bytes!);
+      if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
+      final table = workbook.tables.values.first.rows;
+      if (table.length < 2) throw Exception('Il foglio Excel è vuoto o non contiene righe dati.');
+      final headers = table.first.map((c) => (c?.value?.toString() ?? '').trim().toLowerCase()).toList();
+      return table.skip(1).where((r) => r.any((c) => (c?.value?.toString() ?? '').trim().isNotEmpty)).map((r) {
+        final row = <String, dynamic>{};
+        for (var i = 0; i < headers.length && i < r.length; i++) {
+          row[headers[i]] = r[i]?.value?.toString() ?? '';
+        }
+        return row;
+      }).toList();
+    }
     if (name.endsWith('.csv')) {
       final text = utf8.decode(file.bytes!).replaceFirst('\uFEFF','');
       final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
@@ -1199,13 +1225,13 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         return row;
       }).toList();
     }
-    throw Exception('Formato non supportato. Usa CSV o JSON.');
+    throw Exception('Formato non supportato. Usa XLSX, CSV o JSON.');
   }
 
   Future<void> _pickImport() async {
     setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
     try {
-      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['csv','json'],withData:true);
+      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
       final rows=await _parse(picked.files.first);
       final existing=await _catalog();
@@ -1282,7 +1308,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
     final color=ValoraAppearance.instance.colorFor('CATALOGO');
     return Scaffold(appBar:AppBar(title:Text(widget.importMode?'IMPORTA OGGETTI':'ESPORTA OGGETTI')),
       body:SafeArea(child:ListView(padding:const EdgeInsets.all(16),children:[
-        Text(widget.importMode?'Importa CSV o JSON. VALORA controlla i dati e mostra l’anteprima prima del salvataggio.':'Esporta il catalogo TEST in CSV o JSON.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
+        Text(widget.importMode?'Importa Excel, CSV o JSON. VALORA controlla i dati e mostra l’anteprima prima del salvataggio.':'Esporta il catalogo TEST in Excel, CSV o JSON.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
         const SizedBox(height:16),
         if(widget.importMode) ...[
           SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_pickImport,icon:const Icon(Icons.file_open),label:const Text('SELEZIONA FILE E ANALIZZA'))),
@@ -1300,6 +1326,8 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
             SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_confirmImport,icon:const Icon(Icons.save_alt),label:const Text('CONFERMA E IMPORTA NUOVI OGGETTI')))
           ]
         ] else ...[
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('xlsx'),icon:const Icon(Icons.table_view),label:const Text('ESPORTA EXCEL (.XLSX)'))),
+          const SizedBox(height:8),
           SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('csv'),icon:const Icon(Icons.description_outlined),label:const Text('ESPORTA CSV'))),
           const SizedBox(height:8),
           SizedBox(width:double.infinity,child:OutlinedButton.icon(onPressed:_busy?null:()=>_export('json'),icon:const Icon(Icons.data_object),label:const Text('ESPORTA JSON')))
