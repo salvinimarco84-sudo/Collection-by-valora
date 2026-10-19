@@ -24,10 +24,10 @@ function sourcesFor(category: string, query: string): string[] {
   query = canonicalSearchText(query);
   // Le linee specifiche hanno precedenza sulle categorie generiche: Saint Seiya,
   // per esempio, è una action figure ma richiede prima i cataloghi Myth Cloth.
-  if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista/i.test(query) || category === "BEER") return [
+  if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista/i.test(query) || /^(BEER|BIRRA|BIRRE|BIRRA_COLLEZIONE)$/.test(category)) return [
     "site:untappd.com", "site:beeradvocate.com", "site:ratebeer.com", "site:beermenus.com"
   ];
-  if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(query) || category === "WINE") return [
+  if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(query) || /^(WINE|VINO|VINI|BOTTIGLIE_VINO|VINO_COLLEZIONE)$/.test(category)) return [
     "site:wine-searcher.com", "site:vivino.com", "site:cellartracker.com", "site:decanter.com", "site:winespectator.com", "site:liv-ex.com"
   ];
   if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai/i.test(query)) return [
@@ -324,7 +324,11 @@ async function loadConfiguredSources(category: string, description: string, user
       NUMISMATICS: ["numismatics", "numismatica", "coins", "monete", "banknotes", "banconote", "medaglie", "exonumia"],
       TRADING_CARDS: ["trading cards", "cards", "carte collezionabili", "carte", "tcg", "figurine sportive"],
       BEER: ["beer", "birra", "birre", "birre da collezione", "birrifici"],
+      BIRRA: ["beer", "birra", "birre", "birre da collezione", "birrifici"],
+      BIRRE: ["beer", "birra", "birre", "birre da collezione", "birrifici"],
       WINE: ["wine", "vino", "vini", "bottiglie pregiate", "fine wine", "vini da collezione"],
+      VINO: ["wine", "vino", "vini", "bottiglie pregiate", "fine wine", "vini da collezione"],
+      BOTTIGLIE_VINO: ["wine", "vino", "vini", "bottiglie pregiate", "fine wine", "vini da collezione"],
       GIOCATTOLO: ["toys", "toy", "giocattoli", "giocattolo", "giocattoli da collezione"],
       COLLEZIONABILE: ["universale", "collectibles", "collectible", "collezionismo"]
     };
@@ -544,13 +548,13 @@ function makeQueries(category: string, description: string): string[] {
       queries.push('site:theafdb.com "' + cleaned + '"');
       queries.push('site:collectibles.wiki "' + cleaned + '"');
     }
-    if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista/i.test(normalized) || category === "BEER") {
+    if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista/i.test(normalized) || /^(BEER|BIRRA|BIRRE|BIRRA_COLLEZIONE)$/.test(category)) {
       queries.push('site:untappd.com "' + cleaned + '"');
       queries.push('site:beeradvocate.com "' + cleaned + '"');
       queries.push('site:ratebeer.com "' + cleaned + '"');
       queries.push('site:beermenus.com "' + cleaned + '"');
     }
-    if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(normalized) || category === "WINE") {
+    if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(normalized) || /^(WINE|VINO|VINI|BOTTIGLIE_VINO|VINO_COLLEZIONE)$/.test(category)) {
       queries.push('site:wine-searcher.com "' + cleaned + '"');
       queries.push('site:vivino.com "' + cleaned + '"');
       queries.push('site:cellartracker.com "' + cleaned + '"');
