@@ -402,8 +402,16 @@ async function loadConfiguredSources(category: string, description: string, user
     MUSIC: ["vinile", "vinyl", "record", "disco", "music", "discogs", "lp"],
     NUMISMATICS: ["moneta", "numismatic", "coin", "banknote", "banconota", "francobollo", "stamp"],
     TRADING_CARDS: ["trading card", "pokemon", "magic the gathering", "tcg", "sports card", "cardmarket", "tcgplayer"],
-    GIOCATTOLO: ["toy", "giocattol", "transformer", "robot", "figure", "kinder", "vintage", "sorpresine", "astrocollection", "collectingkinder", "toyvault"],
-    COLLEZIONABILE: ["collectible", "collectibles", "kinder", "sorpresine", "toy", "giocattol", "saint seiya", "myth cloth", "gundam", "gunpla", "diecast", "maisto", "fumett", "comic", "manga", "robot", "star wars", "transformer", "orologi", "orologio", "watch", "swatch", "rolex", "vinile", "vinyl", "numismatic", "coin", "francobollo", "trading card"]
+    BEER: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana"],
+    BIRRA: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana"],
+    BIRRE: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana"],
+    WINE: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
+    VINO: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
+    VINI: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
+    BOTTIGLIE_VINO: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
+    VINO_COLLEZIONE: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
+    GIOCATTOLO: ["toy", "giocattol", "transformer", "robot", "figure", "kinder", "vintage", "sorpresine", "astrocollection", "collectingkinder", "toyvault", "mattel", "hasbro", "takara", "playmobil", "schleich"],
+    COLLEZIONABILE: ["collectible", "collectibles", "kinder", "sorpresine", "toy", "giocattol", "saint seiya", "myth cloth", "gundam", "gunpla", "diecast", "maisto", "fumett", "comic", "manga", "robot", "star wars", "transformer", "orologi", "orologio", "watch", "swatch", "rolex", "vinile", "vinyl", "numismatic", "coin", "francobollo", "trading card", "beer", "birra", "wine", "vino"]
   };
   const hints = categoryHints[category] ?? [];
   const matching = archive.filter(s => s.riutilizzabile !== false && s.url_principale && hostnameFromUrl(s.url_principale) && !/brickset/i.test([s.codice_fonte,s.nome_fonte,s.url_principale].join(" "))).filter(s => {
