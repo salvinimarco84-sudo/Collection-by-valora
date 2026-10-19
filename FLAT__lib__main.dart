@@ -534,6 +534,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
     final note = TextEditingController(text: (source?['note'] ?? '').toString());
     var priority = int.tryParse((source?['priorita'] ?? 50).toString()) ?? 50;
     var type = (source?['tipo_fonte'] ?? 'specialistica').toString();
+    var trustLevel = (source?['attendibilita_dichiarata'] ?? 'da_verificare').toString();
     final canEdit = source == null || (source['origine_configurazione'] == 'utente' && source['proprietario_utente'] == user.id);
     if (!canEdit) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Le fonti di sistema sono protette. Puoi aggiungere una tua fonte specialistica.')));
@@ -564,6 +565,17 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
               ],
               onChanged: (v) { if (v != null) updateDialog(() => type = v); },
             ),
+            DropdownButtonFormField<String>(
+              value: trustLevel,
+              decoration: const InputDecoration(labelText: 'Attendibilità dichiarata (non verificata automaticamente)'),
+              items: const [
+                DropdownMenuItem(value: 'ufficiale', child: Text('Fonte ufficiale')),
+                DropdownMenuItem(value: 'alta', child: Text('Alta')),
+                DropdownMenuItem(value: 'media', child: Text('Media')),
+                DropdownMenuItem(value: 'da_verificare', child: Text('Da verificare')),
+              ],
+              onChanged: (v) { if (v != null) updateDialog(() => trustLevel = v); },
+            ),
             const SizedBox(height: 8),
             Row(children: [
               const Text('Priorità'),
@@ -591,7 +603,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
         'franchise': franchise.text.trim().isEmpty ? null : franchise.text.trim(),
         'note': note.text.trim().isEmpty ? null : note.text.trim(),
         'tipo_fonte': type, 'priorita': priority,
-        'attendibilita_dichiarata': 'da_verificare', 'stato_verifica': 'da_verificare',
+        'attendibilita_dichiarata': trustLevel, 'stato_verifica': 'da_verificare',
       };
       final table = Supabase.instance.client.schema('collection').from('registro_fonti');
       if (source == null) {
