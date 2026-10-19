@@ -1938,7 +1938,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           item['valore_oggetto'] = n;
         }
       }
-      if (item.length == 1 && _selectedImageBytes == null) throw Exception('Nessuna modifica rilevata.');
+      if (item.length == 1 && (_selectedImageBytes == null || _selectedImageName == null)) throw Exception('Nessuna modifica rilevata.');
       return {'oggetti': [item]};
     }
     if (widget.apiCode == 'PR-03') {
@@ -4092,6 +4092,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _condition = 'USATO';
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
+        _existingImageUrl = null;
+        _selectedImageBytes = null;
+        _selectedImageName = null;
+        _imageStatus = 'Nessuna immagine selezionata.';
         _metadataResult = 'La ricerca dei metadati è disponibile esclusivamente tramite PR-12.';
         _output = 'Pronto per il prossimo oggetto.';
       });
