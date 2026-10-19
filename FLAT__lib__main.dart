@@ -2552,15 +2552,67 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       });
       final raw = response.data;
       final finals = <Map<String, dynamic>>[];
-      if (raw is Map && raw['risultati_finali'] is List) finals.addAll((raw['risultati_finali'] as List).whereType<Map>().map((item) => Map<String, dynamic>.from(item)));
-      if (raw is String) {
-        for (final line in raw.split(RegExp(r'\r?\n'))) {
-          if (!line.startsWith('data:')) continue;
-          final payload = line.substring(5).trim(); if (payload.isEmpty) continue;
-          try { final event = Map<String, dynamic>.from(jsonDecode(payload) as Map); final result = event['risultato']; if ((event['tipo'] == 'oggetto_completato' || event['tipo'] == 'oggetto_errore') && result is Map) finals.add(Map<String, dynamic>.from(result)); } catch (_) {}
+
+      void addFinal(dynamic value) {
+        if (value is Map) {
+          final item = Map<String, dynamic>.from(value);
+          final nested = item['risultati_finali'];
+          if (nested is List) {
+            for (final entry in nested) {
+              if (entry is Map) finals.add(Map<String, dynamic>.from(entry));
+            }
+          }
+          final result = item['risultato'];
+          if ((item['tipo'] == 'oggetto_completato' || item['tipo'] == 'oggetto_errore') && result is Map) {
+            finals.add(Map<String, dynamic>.from(result));
+          }
+          final wrapped = item['data'] ?? item['result'];
+          if (wrapped is Map) addFinal(wrapped);
+          if (wrapped is List) {
+            for (final entry in wrapped) {
+              if (entry is Map) addFinal(entry);
+            }
+          }
+        } else if (value is List) {
+          for (final entry in value) {
+            addFinal(entry);
+          }
         }
       }
-      if (finals.isEmpty) throw Exception('Il motore non ha restituito risultati leggibili.');
+
+      if (raw is Map || raw is List) {
+        addFinal(raw);
+      } else if (raw is String) {
+        final normalized = raw.replaceFirst(RegExp(r'^\\uFEFF'), '').trim();
+        try {
+          addFinal(jsonDecode(normalized));
+        } catch (_) {
+          for (final line in normalized.split(RegExp(r'\\r?\\n'))) {
+            final trimmed = line.trimLeft();
+            if (!trimmed.startsWith('data:')) continue;
+            final payload = trimmed.substring(5).trim();
+            if (payload.isEmpty || payload == '[DONE]') continue;
+            try {
+              addFinal(jsonDecode(payload));
+            } catch (_) {
+              // Ignore a malformed SSE frame while retaining valid frames.
+            }
+          }
+        }
+      }
+
+      final deduplicated = <String, Map<String, dynamic>>{};
+      for (final result in finals) {
+        final id = (result['oggetto_id'] ?? '').toString();
+        if (id.isNotEmpty) deduplicated[id] = result;
+      }
+      finals
+        ..clear()
+        ..addAll(deduplicated.values);
+      if (finals.isEmpty) {
+        final contentType = response.response.headers['content-type'] ?? 'sconosciuto';
+        throw Exception('Risposta PR-12 non riconosciuta (HTTP ${response.status}, Content-Type: $contentType, tipo dati: ${raw.runtimeType}). Nessun dato del catalogo modificato.');
+      }
       final byId = {for (final result in finals) (result['oggetto_id'] ?? '').toString(): result};
       final resolvedIds = <String>{};
       final unresolved = <Map<String, dynamic>>[];
