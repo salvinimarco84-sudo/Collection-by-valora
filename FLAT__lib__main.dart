@@ -2845,7 +2845,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ..clear()
         ..addAll(deduplicated.values);
       if (finals.isEmpty) {
-        final preview = raw is String ? raw.substring(0, raw.length.clamp(0, 240)) : raw.toString().substring(0, raw.toString().length.clamp(0, 240));
+        final rawText = raw.toString();
+        final preview = rawText.substring(0, rawText.length < 240 ? rawText.length : 240);
         throw Exception('Risposta PR-12 senza risultati interpretabili (HTTP ${response.status}, tipo ${raw.runtimeType}). Anteprima: $preview. Nessun dato del catalogo modificato.');
       }
       final byId = {for (final result in finals) (result['oggetto_id'] ?? '').toString(): result};
