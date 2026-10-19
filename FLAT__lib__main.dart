@@ -445,6 +445,8 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report spese', description: 'Consulta il riepilogo delle spese.', enabled: false),
   ],
   'VALUTAZIONI': [
+    ProcedureEntry(title: 'VALORA', description: 'Avvia direttamente l’applicazione VALORA per la valutazione specialistica dell’oggetto.', apiCode: 'LAUNCH-VALORA'),
+    ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Avvia direttamente il riepilogo del valore degli oggetti della collezione.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
     ProcedureEntry(title: 'Valuta oggetto', description: 'Prepara la consultazione per la valutazione di un oggetto.', apiCode: 'READ-VALUATION-PREPARE'),
     ProcedureEntry(title: 'Valuta più oggetti', description: 'Prepara la valutazione di più oggetti.', apiCode: 'READ-VALUATION-PREPARE'),
     ProcedureEntry(title: 'Opportunità di acquisto', description: 'Individua opportunità di acquisto.', enabled: false),
@@ -1511,42 +1513,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ),
           Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text('Gestione della tua collezione', style: TextStyle(color: ValoraAppearance.instance.textMuted))),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: LayoutBuilder(builder: (context, shortcutConstraints) {
-              final stacked = shortcutConstraints.maxWidth < 520;
-              final valoraButton = _dashboardShortcut(
-                title: 'VALORA',
-                description: 'Servizio di valutazione: analizza un oggetto e prepara i risultati senza modificare automaticamente il catalogo.',
-                icon: Icons.auto_awesome,
-                color: const Color(0xFF8556C7),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const ValoraServicePage(),
-                )),
-              );
-              final collectionButton = _dashboardShortcut(
-                title: 'VALORE COLLEZIONE',
-                description: 'Consulta le funzioni per stimare e riepilogare il valore degli oggetti della collezione.',
-                icon: Icons.query_stats,
-                color: const Color(0xFF39875B),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => const CollectionValuePage(),
-                )),
-              );
-              if (stacked) {
-                return Column(children: [
-                  valoraButton,
-                  const SizedBox(height: 8),
-                  collectionButton,
-                ]);
-              }
-              return Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Expanded(child: valoraButton),
-                const SizedBox(width: 10),
-                Expanded(child: collectionButton),
-              ]);
-            }),
-          ),
           Expanded(child: GridView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: dashboardSections.length,
@@ -1668,7 +1634,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
                   : procedure.apiCode == 'USER-SALES-PLATFORMS'
                       ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
-                      : procedure.apiCode != null
+                      : procedure.apiCode == 'LAUNCH-VALORA'
+                          ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
+                          : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
+                              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
+                              : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
                       : null,
