@@ -286,7 +286,7 @@ function canonicalSearchText(value: string): string {
 function hostnameFromUrl(value: string): string {
   try { return new URL(value).hostname.replace(/^www\./i, ""); } catch { return ""; }
 }
-async function loadConfiguredSources(category: string, description: string, userId?: string): Promise<{ sources: ConfiguredSource[]; franchiseRules: FranchiseRule[]; queries: string[]; names: string[]; warnings: string[] }> {
+async function loadConfiguredSources(category: string, description: string, userId?: string, theme = ""): Promise<{ sources: ConfiguredSource[]; franchiseRules: FranchiseRule[]; queries: string[]; names: string[]; warnings: string[] }> {
   const warnings: string[] = [];
   let archive: ConfiguredSource[] = [];
   let rules: FranchiseRule[] = [];
@@ -297,7 +297,7 @@ async function loadConfiguredSources(category: string, description: string, user
   try {
     const registry = await readConfigTable<RegistrySource>("registro_fonti", "id,nome,url_base,ambito,categoria,marchio_editore,franchise,mercato,tipo_fonte,priorita,attendibilita_dichiarata,stato_verifica,attiva,origine_configurazione,proprietario_utente,condivisa");
     const normalizedCategory = normalizeText(category);
-    const normalizedDescription = normalizeText(description);
+    const normalizedDescription = normalizeText(description + " " + theme);
     const relevant = registry.filter(s => (s.origine_configurazione === "sistema" || s.condivisa === true || (!!userId && s.proprietario_utente === userId)) && s.attiva !== false && s.url_base && hostnameFromUrl(s.url_base) &&
       !/brickset/i.test([s.nome,s.url_base].join(" ")) &&
       (s.mercato === "globale" || s.mercato === "Italia" || normalizedDescription.includes(normalizeText(s.mercato ?? "__none__")) || normalizedCategory.includes(normalizeText(s.categoria ?? "__none__")) ||
@@ -319,7 +319,7 @@ async function loadConfiguredSources(category: string, description: string, user
   } catch (e) { warnings.push("Registro fonti estendibile: " + (e instanceof Error ? e.message : String(e))); }
   try { rules = await readConfigTable<FranchiseRule>("regole_ricerca_franchise", "franchise,alias_ricerca,codice_fonte_preferita,priorita,attiva"); }
   catch (e) { warnings.push("Regole franchise: " + (e instanceof Error ? e.message : String(e))); }
-  const text = normalizeText(description + " " + category);
+  const text = normalizeText(description + " " + category + " " + theme);
   const activeRules = rules.filter(r => r.attiva !== false && (r.alias_ricerca ?? []).some(alias => {
     const a = normalizeText(alias).trim(); return a.length >= 3 && text.includes(a);
   })).sort((a,b) => (a.priorita ?? 99) - (b.priorita ?? 99));
@@ -340,7 +340,7 @@ async function loadConfiguredSources(category: string, description: string, user
   const matching = archive.filter(s => s.riutilizzabile !== false && s.url_principale && hostnameFromUrl(s.url_principale) && !/brickset/i.test([s.codice_fonte,s.nome_fonte,s.url_principale].join(" "))).filter(s => {
     // Evita fonti di categorie estranee.
     const host = hostnameFromUrl(s.url_principale ?? "");
-    if (category === "LEGO" && !hasCrossCategoryTheme(description) && !/lego\.com|bricklink\.com|rebrickable\.com/i.test(host)) return false;
+    if (category === "LEGO" && !hasCrossCategoryTheme(description, theme) && !/lego\.com|bricklink\.com|rebrickable\.com/i.test(host)) return false;
     if (/saint seiya|myth cloth|pegasus|cavalieri dello zodiaco/i.test(description) &&
         !/tamashiiweb\.com|bandai\.com|myfigurecollection\.net|mandarake\.co\.jp|amiami\.com|anime-export\.com/i.test(host)) return false;
     const haystack = normalizeText([s.codice_fonte,s.nome_fonte,s.produttore,s.linea_prodotto,s.famiglia_prodotto].join(" "));
@@ -364,8 +364,10 @@ async function loadConfiguredSources(category: string, description: string, user
   return { sources: unique, franchiseRules: activeRules, queries: unique.slice(0,8).map(s => "site:" + hostnameFromUrl(s.url_principale ?? "") + " " + description), names: unique.map(s => s.nome_fonte ?? s.codice_fonte ?? hostnameFromUrl(s.url_principale ?? "")), warnings };
 }
 
-function thematicFranchiseQueries(description: string): string[] {
-  const q = normalizeText(canonicalSearchText(description));
+function thematicFranchiseQueries(description: string, theme = ""): string[] {
+  const researchText = (description + " " + theme).trim();
+  const cleanItem = description.replace(/[\"']/g, " ").trim();
+  const q = normalizeText(canonicalSearchText(researchText));
   const out: string[] = [];
   // Il franchise è un asse di ricerca indipendente dalla categoria merceologica.
   // Esempio: Star Wars può essere LEGO, prop, poster, soundtrack, statua o abbigliamento.
@@ -413,8 +415,8 @@ function thematicFranchiseQueries(description: string): string[] {
   for (const theme of themes) if (theme.re.test(q)) out.push(...theme.queries);
   return [...new Set(out)];
 }
-function hasCrossCategoryTheme(description: string): boolean {
-  return thematicFranchiseQueries(description).length > 0;
+function hasCrossCategoryTheme(description: string, theme = ""): boolean {
+  return thematicFranchiseQueries(description, theme).length > 0;
 }
 
 function makeQueries(category: string, description: string): string[] {
@@ -632,13 +634,13 @@ function classifyCandidate(result: SearchResult): string {
   if (/maisto|diecast|die-cast|scale model/i.test(text)) return "MODELLINO / DIE-CAST";
   return "ALTRO COLLEZIONABILE";
 }
-function hasTopicEvidence(result: SearchResult, description: string): boolean {
+function hasTopicEvidence(result: SearchResult, description: string, theme = ""): boolean {
   const title = normalizeText(result.title);
   const snippet = normalizeText(result.snippet);
   const url = normalizeText(result.url);
   const evidence = title + " " + snippet + " " + url;
   if (/dictionary|definition|speedtest|fast\.com|internet speed|company portal|download pending/i.test(evidence)) return false;
-  const q = normalizeText(canonicalSearchText(description));
+  const q = normalizeText(canonicalSearchText(description + " " + theme));
   if (/gundam|gunpla/i.test(q)) return /gundam|gunpla|bandai hobby/i.test(evidence);
   if (/transformers|optimus prime|bumblebee|megatron|hasbro/i.test(q)) return /transformer|optimus|bumblebee|megatron|hasbro/i.test(evidence);
   if (/lego|minifig|brickheadz|technic|duplo/i.test(q)) return /lego|bricklink|rebrickable|minifig/i.test(evidence);
@@ -650,12 +652,12 @@ function hasTopicEvidence(result: SearchResult, description: string): boolean {
   const tokens = q.split(/[^a-z0-9]+/).filter(t => t.length >= 4 && !/^(test|cbv|oggetto|serie|completa|edizione|film|studio|master|grade|version|dello|della|the|from|with|and|for|edition|product|collectible|catalog|database)$/.test(t) && !/^\d+$/.test(t));
   return tokens.some(t => title.includes(t) || snippet.includes(t));
 }
-function rankRelevantResults(results: SearchResult[], category: string, description: string): SearchResult[] {
+function rankRelevantResults(results: SearchResult[], category: string, description: string, theme = ""): SearchResult[] {
   return results.map((result, index) => ({
     result, index, score: relevanceScore(result, category, description),
     family: classifyCandidate(result)
   }))
-    .filter(item => item.family !== "NON PERTINENTE" && hasTopicEvidence(item.result, description))
+    .filter(item => item.family !== "NON PERTINENTE" && hasTopicEvidence(item.result, description, theme))
     .sort((a,b) => b.score - a.score || a.index - b.index)
     .map(item => Object.assign(item.result, {
       tipologia_candidata: item.family,
@@ -695,10 +697,11 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const description = String(body.descrizione ?? body.query ?? "").trim().slice(0, 240);
     const category = String(body.categoria ?? "").trim().toUpperCase().slice(0, 40);
+    const theme = String(body.tema ?? body.franchise ?? body.franchise_tema ?? "").trim().slice(0, 120);
     if (description.length < 2) return json({ ok: false, error: "Inserire una descrizione di almeno 2 caratteri." }, 400);
     const code = codeFrom(description);
-    const configured = await loadConfiguredSources(category, description, authenticatedUserId(req));
-    const staticTargeted = sourcesFor(category, description);
+    const configured = await loadConfiguredSources(category, description, authenticatedUserId(req), theme);
+    const staticTargeted = sourcesFor(category, description + " " + theme);
     const targeted = [...new Set([...staticTargeted, ...configured.names])];
     let directResults: SearchResult[] = [];
     const errors: string[] = [...configured.warnings];
@@ -706,7 +709,7 @@ Deno.serve(async (req: Request) => {
     const cleanDescription = description.replace(/["']/g, " ").replace(/\s+/g, " ").trim();
     // Le fonti configurate dagli utenti vengono interrogate prima delle query generiche.
     // Limite per lotto per evitare costi/tempi incontrollati; le priorità arrivano dal registro.
-    const queries = [...new Set([...configured.queries, ...thematicFranchiseQueries(cleanDescription), ...makeQueries(category, cleanDescription)])].slice(0, 20);
+    const queries = [...new Set([...configured.queries, ...thematicFranchiseQueries(cleanDescription, theme), ...makeQueries(category, cleanDescription)])].slice(0, 20);
     let searchResults: SearchResult[] = [];
     const diagnosticaQuery: Array<{ query: string; risultati_grezzi: number; errore?: string }> = [];
     // Fonti specialistiche dal database TEST prima delle query generiche.
@@ -730,7 +733,7 @@ Deno.serve(async (req: Request) => {
     const conteggioGrezzi = all.length;
     const dopoCodice = filterForExactCode(all, category, description);
     const conteggioDopoCodice = dopoCodice.length;
-    let results = rankRelevantResults(dopoCodice, category, description);
+    let results = rankRelevantResults(dopoCodice, category, description, theme);
     const conteggioDopoPertinenza = results.length;
     results = enrichMetadata(results, category, description);
     // Nessun filtro per dominio: i candidati possono provenire da qualsiasi sito.
@@ -738,7 +741,7 @@ Deno.serve(async (req: Request) => {
 
     if (!results.length) return json({
       ok: true, procedura: "PR-12", modalita: "RICERCA_CATALOGO_E_WEB",
-      descrizione: description, categoria: category || "NON_CLASSIFICATA",
+      descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null,
       risultati: [], numero_risultati: 0, ricerca_esterna_eseguita: true, metadati_confermati: false,
       avviso: "Nessuna corrispondenza verificabile trovata per il codice esatto. Nessun risultato generico non pertinente è stato mostrato.",
       errori_fonti: errors, fonti_specializzate: targeted,
@@ -750,7 +753,7 @@ Deno.serve(async (req: Request) => {
     });
     return json({
       ok: true, procedura: "PR-12", modalita: "RICERCA_CATALOGO_E_WEB",
-      descrizione: description, categoria: category || "NON_CLASSIFICATA",
+      descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null,
       risultati: results.slice(0, 15), numero_risultati: Math.min(results.length, 15),
       ricerca_esterna_eseguita: true, metadati_confermati: false,
       motori_utilizzati: [...new Set(results.map(r => r.motore))],
