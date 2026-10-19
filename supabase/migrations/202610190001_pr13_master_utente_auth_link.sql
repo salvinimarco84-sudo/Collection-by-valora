@@ -1,4 +1,4 @@
--- PR-13 GESTIONE UTENTE
+-- BLOCCO UTENTE: collegamento profilo e autenticazione
 -- Migration proposal for Supabase TEST only.
 -- Review and apply only to project eeiekkflpnkummxtvljy after validation.
 -- Never apply to production (bufwceckrmbocctarthj).
