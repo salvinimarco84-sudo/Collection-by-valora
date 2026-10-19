@@ -87,6 +87,28 @@ create policy master_utente_update_own
 grant select, insert, update on collection.master_utente to authenticated;
 grant select on collection.mercati to authenticated;
 
+-- Allow an authenticated user to check only their own allowlist row.
+alter table collection.app_authorized_users enable row level security;
+drop policy if exists app_authorized_users_select_own on collection.app_authorized_users;
+create policy app_authorized_users_select_own
+  on collection.app_authorized_users
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+-- Market catalogue is readable only by active, allowlisted accounts.
+drop policy if exists mercati_select_authorized on collection.mercati;
+create policy mercati_select_authorized
+  on collection.mercati
+  for select to authenticated
+  using (
+    exists (
+      select 1 from collection.app_authorized_users a
+      where a.user_id = (select auth.uid()) and a.attivo = true
+    )
+  );
+grant select on collection.app_authorized_users to authenticated;
+
+
 commit;
 
 -- Acceptance tests required before enabling profile persistence:
