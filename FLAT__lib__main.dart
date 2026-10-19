@@ -457,6 +457,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
   'RICERCHE': [
     ProcedureEntry(title: 'Ricerca oggetti', description: 'Cerca gli oggetti nel catalogo.', apiCode: 'READ-EXPLORE-RECORDS'),
+    ProcedureEntry(title: 'PR-12 · Ricerca metadati', description: 'Cerca fonti e candidati per un oggetto, senza salvare automaticamente i dati.', apiCode: 'PR-12', readOnly: true),
     ProcedureEntry(title: 'Ricerca #DEMONOFLU', description: 'Ricerca inserzioni associate a #DEMONOFLU.', enabled: false),
   ],
   'CONTROLLO': [
@@ -1417,7 +1418,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
     }
     if (widget.apiCode == 'PR-01') {
-      _descriptionFocus.addListener(_onDescriptionFocusChanged);
       _quantity.addListener(_recalculateTotal);
       _unitPrice.addListener(_recalculateTotal);
     }
@@ -1457,28 +1457,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final totalCents = (unitPrice * 100 * quantity).round();
     final total = (totalCents / 100).toStringAsFixed(2);
     if (_totalValue.text != total) _totalValue.text = total;
-  }
-
-  void _onDescriptionFocusChanged() {
-    if (widget.apiCode != 'PR-01' || _descriptionFocus.hasFocus) return;
-    final query = _description.text.trim();
-    if (query.length < 4 || query == _lastMetadataQuery || _loading) return;
-    _run(() async {
-      if (query != _description.text.trim()) return;
-      setState(() {
-        _metadataResult = 'RICERCA METADATI IN CORSO…';
-        _output = 'Ricerca metadati in corso…';
-      });
-      try {
-        await _prepareMetadata();
-        if (mounted && query == _description.text.trim()) {
-          setState(() => _lastMetadataQuery = query);
-        }
-      } catch (e) {
-        if (mounted) setState(() => _metadataResult = 'Ricerca metadati non riuscita: $e');
-        rethrow;
-      }
-    });
   }
 
   Future<void> _releaseOwnedLockSilently() async {
@@ -3064,6 +3042,67 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
     final isHistory = code == 'EXPLORE_RECORDS';
     final isMaster = code == 'OBJECT_MASTER';
+
+    if (code == 'PR-12') {
+      return Scaffold(
+        appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI')),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('RICERCA MULTI-FONTE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('Inserisci la descrizione dell’oggetto e avvia la ricerca. I candidati vengono mostrati per la verifica; nessun dato viene salvato automaticamente.'),
+                    const SizedBox(height: 14),
+                    _field(_description, 'Descrizione oggetto da cercare', lines: 2),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _loading ? null : () => _run(_prepareMetadata),
+                        icon: _loading
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.travel_explore),
+                        label: Text(_loading ? 'RICERCA IN CORSO…' : 'AVVIA RICERCA PR-12'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('STATO DELLA RICERCA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    SelectableText(_metadataResult),
+                    if (_producer.text.isNotEmpty || _line.text.isNotEmpty || _family.text.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      Text('METADATI SELEZIONATI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      _field(_producer, 'Produttore selezionato'),
+                      _field(_line, 'Anno di uscita selezionato'),
+                      _field(_family, 'Codice prodotto selezionato'),
+                      const Text('I dati sono solo in questa schermata. Per inserirli nel record, torna a PR-01 e lancia PR-12 dalla relativa maschera.'),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
       body: ListView(padding: const EdgeInsets.all(16), children: [
@@ -3099,7 +3138,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 const SizedBox(height: 8),
                 SelectableText(_metadataResult, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                 const SizedBox(height: 6),
-                Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+                Text('La ricerca non parte automaticamente. Avviala con PR-12 e verifica i risultati prima di applicare i metadati.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _loading ? null : () => _run(_prepareMetadata),
+                    icon: const Icon(Icons.travel_explore),
+                    label: const Text('AVVIA PR-12 · RICERCA METADATI'),
+                  ),
+                ),
                 const SizedBox(height: 10),
                 _field(_producer, 'Produttore (facoltativo)'),
                 _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
