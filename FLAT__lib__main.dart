@@ -1313,6 +1313,100 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 }
 
+class CollectionValuePage extends StatefulWidget {
+  const CollectionValuePage({super.key});
+  @override
+  State<CollectionValuePage> createState() => _CollectionValuePageState();
+}
+
+class _CollectionValuePageState extends State<CollectionValuePage> {
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _rows = [];
+  @override
+  void initState() { super.initState(); _load(); }
+
+  double? _num(dynamic value) => value == null ? null :
+      value is num ? value.toDouble() : double.tryParse(value.toString());
+
+  String _eur(double value) => '€ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await Supabase.instance.client.schema('collection')
+          .from('master_oggetti')
+          .select('codice_oggetto,descrizione_oggetto,stato,quantita,valore_oggetto,valore_mercato')
+          .eq('destinazione', 'COLLEZIONE')
+          .neq('archiviato_test', true)
+          .order('descrizione_oggetto');
+      final rows = (data as List).map((e) => Map<String,dynamic>.from(e as Map))
+          .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
+              .contains((r['stato'] ?? '').toString().toUpperCase())).toList();
+      if (!mounted) return;
+      setState(() { _rows = rows; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = 'Impossibile leggere il catalogo: $e'; _loading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var market = 0.0, manual = 0.0;
+    var units = 0, missing = 0;
+    for (final r in _rows) {
+      final q = (r['quantita'] as num?)?.toInt() ?? 1;
+      units += q;
+      final m = _num(r['valore_mercato']);
+      final v = _num(r['valore_oggetto']);
+      if (m == null) { missing++; } else { market += m * q; }
+      if (v != null) manual += v * q;
+    }
+    Widget metric(String label, String value, IconData icon, Color color) => Card(
+      child: ListTile(leading: Icon(icon, color: color), title: Text(label),
+        subtitle: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18))),
+    );
+    return Scaffold(
+      appBar: AppBar(title: const Text('VALORE COLLEZIONE'),
+        actions: [IconButton(tooltip: 'Aggiorna', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))]),
+      body: _loading ? const Center(child: CircularProgressIndicator()) :
+        _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(
+          mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 12), FilledButton(onPressed: _load, child: const Text('Riprova'))])))
+        : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
+          const Text('RIEPILOGO DEL PATRIMONIO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const SizedBox(height: 6),
+          const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.'),
+          const SizedBox(height: 12),
+          metric('Valore di mercato noto', _eur(market), Icons.trending_up, const Color(0xFF39875B)),
+          metric('Valore manuale registrato', _eur(manual), Icons.edit_note, const Color(0xFF568DAD)),
+          metric('Oggetti e unità', '${_rows.length} record · $units unità', Icons.inventory_2_outlined, const Color(0xFF8556C7)),
+          metric('Oggetti senza stima di mercato', '$missing', Icons.hourglass_empty, const Color(0xFFE17D35)),
+          const SizedBox(height: 12),
+          const Text('DETTAGLIO OGGETTI', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const SizedBox(height: 6),
+          if (_rows.isEmpty) const Card(child: ListTile(title: Text('Nessun oggetto destinato alla collezione.'))),
+          ..._rows.map((r) {
+            final q = (r['quantita'] as num?)?.toInt() ?? 1;
+            final m = _num(r['valore_mercato']);
+            final v = _num(r['valore_oggetto']);
+            final label = m != null ? 'Mercato: ${_eur(m*q)}' :
+                v != null ? 'Valore manuale: ${_eur(v*q)}' : 'Stima di mercato non disponibile';
+            return Card(child: ListTile(
+              title: Text((r['descrizione_oggetto'] ?? 'Oggetto senza descrizione').toString()),
+              subtitle: Text('ID ${r['codice_oggetto']} · Quantità $q\n$label'),
+              isThreeLine: true,
+            ));
+          }),
+          const SizedBox(height: 10),
+          Text('Le stime automatiche e l’aggiornamento mensile saranno collegati al motore di valutazione in un passaggio separato, dopo il collaudo.',
+            style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+        ])),
+    );
+  }
+}
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
@@ -1380,8 +1474,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 description: 'Consulta le funzioni per stimare e riepilogare il valore degli oggetti della collezione.',
                 icon: Icons.query_stats,
                 color: const Color(0xFF39875B),
-                onTap: () => setState(() => selectedSection =
-                    dashboardSections.firstWhere((s) => s.title == 'VALUTAZIONI')),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const CollectionValuePage(),
+                )),
               );
               if (stacked) {
                 return Column(children: [
