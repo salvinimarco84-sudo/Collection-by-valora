@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
+import 'package:csv/csv.dart';
+import 'package:excel/excel.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -413,6 +417,9 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Visualizza scheda', description: 'Mostra la scheda completa in formato leggibile.', apiCode: 'OBJECT_MASTER'),
     ProcedureEntry(title: 'Elenco oggetti disponibili', description: 'Mostra gli oggetti con stato DISPONIBILE.', apiCode: 'OBJECTS_AVAILABLE'),
     ProcedureEntry(title: 'Storico oggetto', description: 'Mostra la cronologia del singolo oggetto selezionato.', apiCode: 'EXPLORE_RECORDS'),
+
+    ProcedureEntry(title: 'Importa oggetti', description: 'Importa record da CSV o JSON con anteprima e controllo duplicati.', apiCode: 'OBJECT-IMPORT'),
+    ProcedureEntry(title: 'Esporta oggetti', description: 'Esporta il catalogo in CSV o JSON.', apiCode: 'OBJECT-EXPORT'),
   ],
   'ACQUISTI': [
     ProcedureEntry(title: 'Nuovo acquisto', description: 'Registra un nuovo acquisto.', apiCode: 'WRITE-PR-04', readOnly: false),
@@ -468,6 +475,305 @@ Color sectionColorForApiCode(String apiCode) {
   return goldColor;
 }
 
+
+class UserProfilePage extends StatefulWidget {
+  const UserProfilePage({super.key});
+  @override
+  State<UserProfilePage> createState() => _UserProfilePageState();
+}
+
+class _UserProfilePageState extends State<UserProfilePage> {
+  final _name = TextEditingController();
+  final _assistant = TextEditingController(text: 'Demon');
+  final _newPassword = TextEditingController();
+  final _confirmPassword = TextEditingController();
+  final _emailController = TextEditingController();
+  String _market = 'Italia';
+  List<Map<String, dynamic>> _markets = [];
+  bool _profileLoaded = false;
+  String _currency = 'EUR - Euro (€)';
+  String _language = 'Italiano';
+  String _dateFormat = 'GG/MM/AAAA';
+  bool _showNewPassword = false;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = Supabase.instance.client.auth.currentUser;
+    _name.text = (user?.userMetadata?['display_name'] ?? user?.userMetadata?['name'] ?? '').toString();
+    _emailController.text = user?.email ?? 'Email non disponibile';
+    _loadProfile();
+  }
+
+  Future<bool> _loadProfile() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return false;
+    try {
+      final markets = await client.schema('collection').from('mercati')
+          .select('codice_mercato,nome_mercato').order('codice_mercato');
+      final rows = await client.schema('collection').from('master_utente')
+          .select().eq('auth_user_id', user.id).limit(1);
+      if (!mounted) return false;
+      setState(() {
+        _markets = List<Map<String, dynamic>>.from(markets);
+        if (rows.isNotEmpty) {
+          final row = Map<String, dynamic>.from(rows.first);
+          _name.text = (row['nome_utente'] ?? '').toString();
+          _assistant.text = (row['nome_assistente'] ?? 'Demon').toString();
+          _currency = _currencyFor((row['valuta_predefinita'] ?? 'EUR').toString());
+          _language = _languageFor((row['lingua_interfaccia'] ?? 'it').toString());
+          _dateFormat = (row['formato_data'] ?? 'GG/MM/AAAA').toString();
+          final market = _markets.where((m) => m['codice_mercato'] == row['mercato_nazionale_principale']).toList();
+          if (market.isNotEmpty) _market = market.first['nome_mercato'].toString();
+        }
+        if (_markets.isNotEmpty && !_markets.any((m) => m['nome_mercato'] == _market)) {
+          _market = _markets.first['nome_mercato'].toString();
+        }
+        _profileLoaded = true;
+      });
+      return true;
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossibile caricare il profilo dal database TEST: $e')));
+      return false;
+    }
+  }
+
+  String _currencyFor(String code) => const {'EUR':'EUR - Euro (€)','USD':'USD - Dollaro USA (\$)','GBP':'GBP - Sterlina (£)'}[code] ?? 'EUR - Euro (€)';
+  String _languageFor(String code) => const {'it':'Italiano','en':'English','es':'Español','fr':'Français'}[code] ?? 'Italiano';
+
+  Future<void> _saveProfile() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per salvare il profilo.')));
+      return;
+    }
+    if (!_profileLoaded || _markets.isEmpty || _name.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa il nome e verifica il catalogo mercati prima di salvare.')));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final market = _markets.firstWhere((m) => m['nome_mercato'] == _market);
+      final existing = await client.schema('collection').from('master_utente')
+          .select('codice_utente').eq('auth_user_id', user.id).limit(1);
+      final values = <String, dynamic>{
+        'auth_user_id': user.id,
+        'nome_utente': _name.text.trim(),
+        'mercato_nazionale_principale': market['codice_mercato'],
+        'valuta_predefinita': _currency.substring(0, 3),
+        'lingua_interfaccia': const {'Italiano':'it','English':'en','Español':'es','Français':'fr'}[_language] ?? 'it',
+        'formato_data': _dateFormat,
+        'nome_assistente': _assistant.text.trim().isEmpty ? null : _assistant.text.trim(),
+        'stato_utente': 'ATTIVO',
+      };
+      if (existing.isEmpty) {
+        await client.schema('collection').from('master_utente').insert(values);
+      } else {
+        await client.schema('collection').from('master_utente').update(values).eq('auth_user_id', user.id);
+      }
+      final reloaded = await _loadProfile();
+      if (!reloaded) {
+        throw StateError('Il salvataggio è stato inviato, ma la rilettura di conferma non è riuscita.');
+      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profilo salvato e verificato rileggendolo dal database TEST.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito. Verifica autorizzazione e policy TEST. Dettaglio: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _assistant.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    final password = _newPassword.text;
+    if (password.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La nuova password deve contenere almeno 8 caratteri.')),
+      );
+      return;
+    }
+    if (password != _confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le due password non coincidono.')),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(UserAttributes(password: password));
+      _newPassword.clear();
+      _confirmPassword.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password aggiornata correttamente.')),
+        );
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossibile aggiornare la password: ' + e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Errore durante l’aggiornamento della password.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Widget _section(String title, IconData icon, List<Widget> children) => Card(
+    color: ValoraAppearance.instance.card,
+    margin: const EdgeInsets.only(bottom: 14),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(icon, color: Colors.blueAccent),
+          const SizedBox(width: 10),
+          Text(title, style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 14),
+        ...children,
+      ]),
+    ),
+  );
+
+  InputDecoration _fieldDecoration(String label, {Widget? suffixIcon, String? helper}) =>
+      InputDecoration(labelText: label, helperText: helper, suffixIcon: suffixIcon);
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final created = user?.createdAt;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profilo utente'),
+        leading: IconButton(
+          tooltip: 'Torna alla dashboard',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SafeArea(
+        child: LayoutBuilder(builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 760;
+          final content = <Widget>[
+            _section('INFORMAZIONI UTENTE', Icons.person_outline, [
+              Center(child: Container(
+                width: 76, height: 76,
+                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: goldColor, width: 2)),
+                child: const Icon(Icons.person, color: goldColor, size: 42),
+              )),
+              const SizedBox(height: 12),
+              TextField(controller: _name, decoration: _fieldDecoration('Nome utente')),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _emailController,
+                readOnly: true,
+                decoration: _fieldDecoration('Email', suffixIcon: const Icon(Icons.lock_outline),
+                  helper: 'Gestita dal sistema di autenticazione'),
+              ),
+              const SizedBox(height: 12),
+              TextField(controller: _newPassword, obscureText: !_showNewPassword,
+                decoration: _fieldDecoration('Nuova password',
+                  suffixIcon: IconButton(
+                    tooltip: _showNewPassword ? 'Nascondi password' : 'Mostra password',
+                    onPressed: () => setState(() => _showNewPassword = !_showNewPassword),
+                    icon: Icon(_showNewPassword ? Icons.visibility_off : Icons.visibility),
+                  ),
+                  helper: 'Almeno 8 caratteri')),
+              const SizedBox(height: 12),
+              TextField(controller: _confirmPassword, obscureText: !_showNewPassword,
+                decoration: _fieldDecoration('Conferma nuova password')),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                onPressed: _busy ? null : _changePassword,
+                icon: const Icon(Icons.lock_reset),
+                label: Text(_busy ? 'AGGIORNAMENTO...' : 'CAMBIA PASSWORD'),
+              )),
+              const SizedBox(height: 12),
+              TextField(controller: _assistant, decoration: _fieldDecoration('Nome assistente')),
+            ]),
+            _section('PREFERENZE GENERALI', Icons.settings_outlined, [
+              DropdownButtonFormField<String>(
+                value: _markets.any((m) => m['nome_mercato'] == _market) ? _market : null,
+                decoration: _fieldDecoration('Mercato principale'),
+                items: _markets.map((m) => DropdownMenuItem<String>(value: m['nome_mercato'].toString(), child: Text(m['nome_mercato'].toString()))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _market = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _currency,
+                decoration: _fieldDecoration('Valuta predefinita'),
+                items: const ['EUR - Euro (€)', 'USD - Dollaro USA (\$)', 'GBP - Sterlina (£)'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _currency = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _language,
+                decoration: _fieldDecoration('Lingua interfaccia'),
+                items: const ['Italiano', 'English', 'Español', 'Français'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _language = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _dateFormat,
+                decoration: _fieldDecoration('Formato data'),
+                items: const ['GG/MM/AAAA', 'AAAA-MM-GG', 'MM/GG/AAAA'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _dateFormat = v); },
+              ),
+            ]),
+            _section('STATO ACCOUNT', Icons.info_outline, [
+              const ListTile(contentPadding: EdgeInsets.zero, title: Text('Stato'), trailing: Chip(label: Text('Autenticato'))),
+              ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data creazione account'), subtitle: Text(created ?? 'Non disponibile')),
+            ]),
+            Card(
+              color: ValoraAppearance.instance.card,
+              child: const Padding(
+                padding: EdgeInsets.all(14),
+                child: Text('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.'),
+              ),
+            ),
+          ];
+          return ListView(
+            padding: const EdgeInsets.all(14),
+            children: [
+              Center(child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: wide ? 900 : 560),
+                child: Column(children: [
+                  ...content,
+                  SizedBox(width: double.infinity, child: FilledButton.icon(
+                    onPressed: _busy ? null : _saveProfile,
+                    icon: const Icon(Icons.save_outlined),
+                    label: Text(_busy ? 'SALVATAGGIO...' : 'SALVA MODIFICHE'),
+                  )),
+                ]),
+              )),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+}
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
@@ -494,6 +800,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             fontWeight: FontWeight.bold, letterSpacing: 1,
           )),
           actions: [
+            IconButton(tooltip: 'Profilo utente', onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserProfilePage()));
+            }, icon: const Icon(Icons.account_circle_outlined)),
             IconButton(tooltip: 'Personalizza interfaccia', onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppearanceSettingsPage()));
             }, icon: const Icon(Icons.palette_outlined)),
@@ -584,10 +893,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
           isThreeLine: true,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
             color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
-          onTap: procedure.enabled && procedure.apiCode != null
-              ? () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
-              : null,
+          onTap: !procedure.enabled
+              ? null
+              : procedure.title == 'Ricerca oggetti'
+                  ? () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const CategoryObjectSearchPage()))
+                  : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
+                      ? () => Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
+                      : procedure.apiCode != null
+                      ? () => Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
+                      : null,
         ),
       )),
       const SizedBox(height: 12),
@@ -645,6 +962,395 @@ class _ValoraRuntimeApi {
     }
     if (map['result'] is Map) return Map<String, dynamic>.from(map['result']);
     throw Exception('Il runtime non ha restituito un risultato strutturato.');
+  }
+}
+
+class CategoryObjectSearchPage extends StatefulWidget {
+  const CategoryObjectSearchPage({super.key});
+
+  @override
+  State<CategoryObjectSearchPage> createState() => _CategoryObjectSearchPageState();
+}
+
+class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
+  final TextEditingController _query = TextEditingController();
+  bool _loading = false;
+  String _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
+  List<Map<String, dynamic>> _results = [];
+
+  String _description(Map<String, dynamic> row) =>
+      (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString();
+
+  String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
+
+  Future<void> _search() async {
+    final query = _query.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _results = [];
+        _message = 'Scrivi una categoria o una dicitura da cercare.';
+      });
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _results = [];
+      _message = 'Ricerca nel catalogo in corso…';
+    });
+    try {
+      final response = await Supabase.instance.client.schema('collection').rpc(
+        'pr_11_ricerca_schede',
+        params: {'p_cerca': query},
+      );
+      dynamic payload = response;
+      if (payload is List && payload.length == 1 && payload.first is Map) {
+        payload = payload.first;
+      }
+      if (payload is! Map || payload['oggetti'] is! List) {
+        throw Exception('Il catalogo non ha restituito un elenco di oggetti valido.');
+      }
+      final normalizedQuery = query.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
+      final rows = (payload['oggetti'] as List)
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .where((row) => _description(row).toLowerCase().contains(normalizedQuery))
+          .toList()
+        ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
+
+      final allResponse = await Supabase.instance.client.schema('collection').rpc(
+        'pr_11_ricerca_schede',
+        params: {'p_cerca': null},
+      );
+      dynamic allPayload = allResponse;
+      if (allPayload is List && allPayload.length == 1 && allPayload.first is Map) {
+        allPayload = allPayload.first;
+      }
+      if (allPayload is! Map || allPayload['oggetti'] is! List) {
+        throw Exception('Impossibile calcolare il totale della collezione.');
+      }
+      final total = (allPayload['oggetti'] as List).length;
+      final percentage = total == 0 ? 0.0 : rows.length * 100 / total;
+      if (!mounted) return;
+      setState(() {
+        _results = rows;
+        _message = rows.isEmpty
+            ? 'Nessun record contiene “$query”. Prova una dicitura più breve.'
+            : 'Trovati ${rows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _results = [];
+        _message = 'Ricerca non riuscita: $e';
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _openRecord(Map<String, dynamic> row) async {
+    final code = int.tryParse(_code(row));
+    if (code == null || code <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Il risultato non contiene un codice oggetto valido.')),
+      );
+      return;
+    }
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ObjectRuntimePage(
+        title: 'Scheda oggetto',
+        apiCode: 'OBJECT_MASTER',
+        initialObjectCode: code,
+      ),
+    ));
+  }
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ValoraAppearance.instance.colorFor('RICERCHE');
+    return Scaffold(
+      appBar: AppBar(title: const Text('RICERCA OGGETTI PER CATEGORIA')),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              'Cerca nel catalogo esistente per categoria o dicitura. Esempio: TRANSFORMERS.',
+              style: TextStyle(color: ValoraAppearance.instance.textSecondary),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _query,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _search(),
+              decoration: InputDecoration(
+                labelText: 'Categoria o dicitura',
+                hintText: 'TRANSFORMERS',
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  tooltip: 'Cancella ricerca',
+                  onPressed: () {
+                    _query.clear();
+                    setState(() {
+                      _results = [];
+                      _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
+                    });
+                  },
+                  icon: const Icon(Icons.clear),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _loading ? null : _search,
+                icon: _loading
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.search),
+                label: Text(_loading ? 'RICERCA IN CORSO…' : 'CERCA NEL CATALOGO'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(_message, style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+            const SizedBox(height: 8),
+            ..._results.map((row) => Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: color.withValues(alpha: 0.16),
+                  child: Icon(Icons.inventory_2_outlined, color: color),
+                ),
+                title: Text(_description(row), maxLines: 3, overflow: TextOverflow.ellipsis),
+                subtitle: Text('Codice oggetto: ${_code(row)}'),
+                trailing: Icon(Icons.chevron_right, color: color),
+                onTap: () => _openRecord(row),
+              ),
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class ObjectTransferPage extends StatefulWidget {
+  const ObjectTransferPage({super.key, required this.importMode});
+  final bool importMode;
+  @override
+  State<ObjectTransferPage> createState() => _ObjectTransferPageState();
+}
+
+class _ObjectTransferPageState extends State<ObjectTransferPage> {
+  bool _busy = false;
+  String _status = 'Pronto. Ambiente TEST.';
+  List<Map<String, dynamic>> _rows = [];
+  final Set<int> _duplicates = {};
+  final Set<int> _invalid = {};
+  static const _headers = ['codice_oggetto','descrizione_oggetto','condizione','completezza','destinazione','stato','quantita','valore_oggetto','valuta_valore','totale_calcolato'];
+
+  String _norm(dynamic value) => (value ?? '').toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+  Future<List<Map<String,dynamic>>> _catalog() async {
+    final result = await Supabase.instance.client.schema('collection').rpc('pr_11_ricerca_schede', params: {'p_cerca': null});
+    dynamic data = result;
+    if (data is List && data.length == 1 && data.first is Map) data = data.first;
+    if (data is! Map || data['oggetti'] is! List) throw Exception('Risposta catalogo non valida.');
+    return (data['oggetti'] as List).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
+  }
+
+  Future<void> _export(String format) async {
+    setState(() { _busy = true; _status = 'Lettura catalogo TEST…'; });
+    try {
+      final rows = await _catalog();
+      if (rows.isEmpty) throw Exception('Nessun record da esportare.');
+      final stamp = DateTime.now().toIso8601String().replaceAll(':','-').split('.').first;
+      late List<int> bytes;
+      late String ext;
+      if (format == 'json') {
+        bytes = utf8.encode(const JsonEncoder.withIndent('  ').convert(rows));
+        ext = 'json';
+      } else if (format == 'xlsx') {
+        final workbook = Excel.createExcel();
+        final sheet = workbook['Catalogo'];
+        sheet.appendRow(_headers.map((h) => TextCellValue(h)).toList());
+        for (final row in rows) {
+          sheet.appendRow(_headers.map((h) => TextCellValue((row[h] ?? '').toString())).toList());
+        }
+        final encoded = workbook.encode();
+        if (encoded == null) throw Exception('Creazione file Excel non riuscita.');
+        bytes = encoded;
+        ext = 'xlsx';
+      } else {
+        final matrix = <List<dynamic>>[_headers];
+        for (final row in rows) { matrix.add(_headers.map((h)=>row[h] ?? '').toList()); }
+        bytes = utf8.encode('\uFEFF' + const ListToCsvConverter().convert(matrix));
+        ext = 'csv';
+      }
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Esporta catalogo TEST',
+        fileName: 'VALORA_catalogo_' + stamp + '.' + ext,
+        bytes: Uint8List.fromList(bytes));
+      if (mounted) setState(() => _status = path == null ? 'Esportazione annullata.' : 'Esportati ' + rows.length.toString() + ' record. File: ' + path);
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Esportazione non riuscita: ' + e.toString());
+    } finally { if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
+    if (file.bytes == null) throw Exception('Impossibile leggere il file selezionato.');
+    final name = file.name.toLowerCase();
+    if (name.endsWith('.json')) {
+      final data = jsonDecode(utf8.decode(file.bytes!));
+      final list = data is Map ? (data['oggetti'] ?? data['objects'] ?? data['data']) : data;
+      if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
+      return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
+    }
+    if (name.endsWith('.xlsx')) {
+      final workbook = Excel.decodeBytes(file.bytes!);
+      if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
+      final table = workbook.tables.values.first.rows;
+      if (table.length < 2) throw Exception('Il foglio Excel è vuoto o non contiene righe dati.');
+      final headers = table.first.map((c) => (c?.value?.toString() ?? '').trim().toLowerCase()).toList();
+      return table.skip(1).where((r) => r.any((c) => (c?.value?.toString() ?? '').trim().isNotEmpty)).map((r) {
+        final row = <String, dynamic>{};
+        for (var i = 0; i < headers.length && i < r.length; i++) {
+          row[headers[i]] = r[i]?.value?.toString() ?? '';
+        }
+        return row;
+      }).toList();
+    }
+    if (name.endsWith('.csv')) {
+      final text = utf8.decode(file.bytes!).replaceFirst('\uFEFF','');
+      final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
+      if (table.length < 2) throw Exception('CSV vuoto o senza righe dati.');
+      final headers = table.first.map((e)=>e.toString().trim().toLowerCase()).toList();
+      return table.skip(1).where((r)=>r.any((v)=>v.toString().trim().isNotEmpty)).map((r) {
+        final row=<String,dynamic>{};
+        for (var i=0;i<headers.length && i<r.length;i++) { row[headers[i]]=r[i]; }
+        return row;
+      }).toList();
+    }
+    throw Exception('Formato non supportato. Usa XLSX, CSV o JSON.');
+  }
+
+  Future<void> _pickImport() async {
+    setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
+    try {
+      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true);
+      if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
+      final rows=await _parse(picked.files.first);
+      final existing=await _catalog();
+      final descriptions=existing.map((e)=>_norm(e['descrizione_oggetto'])).toSet();
+      final codes=existing.map((e)=>_norm(e['codice_oggetto'])).toSet();
+      for(var i=0;i<rows.length;i++) {
+        final desc=_norm(rows[i]['descrizione_oggetto'] ?? rows[i]['descrizione'] ?? rows[i]['nome']);
+        final code=_norm(rows[i]['codice_oggetto']);
+        if(desc.isEmpty) _invalid.add(i);
+        else if(descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
+          rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
+      }
+      if(mounted)setState(() { _rows=rows; _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Nessun record salvato.'; });
+    } catch(e) { if(mounted)setState(()=>_status='Importazione non riuscita: '+e.toString()); }
+    finally { if(mounted)setState(()=>_busy=false); }
+  }
+
+  String _enumValue(dynamic value, List<String> allowed, String fallback) {
+    final v=(value ?? '').toString().trim().toUpperCase();
+    return allowed.contains(v) ? v : fallback;
+  }
+
+  Future<void> _confirmImport() async {
+    final eligible=<Map<String,dynamic>>[];
+    for(var i=0;i<_rows.length;i++) { if(!_invalid.contains(i)&&!_duplicates.contains(i)) eligible.add(_rows[i]); }
+    if(eligible.isEmpty) { setState(()=>_status='Non ci sono record validi da importare.'); return; }
+    final ok=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
+      title:const Text('CONFERMA IMPORTAZIONE'),
+      content:Text('Saranno creati ' + eligible.length.toString() + ' nuovi oggetti in TEST. I possibili duplicati e le righe senza descrizione saranno esclusi. I codici saranno assegnati dal database. I record esistenti non saranno aggiornati. Procedere?'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('IMPORTA'))]));
+    if(ok!=true || !mounted)return;
+    setState(()=>_busy=true);
+    var saved=0; var failed=0; final errors=<String>[];
+    try {
+      for(final row in eligible) {
+        final description=(row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
+        final qty=int.tryParse((row['quantita'] ?? '1').toString()) ?? 1;
+        final valueText=(row['valore_oggetto'] ?? '').toString().trim().replaceAll(',','.');
+        final value=valueText.isEmpty?null:double.tryParse(valueText);
+        final yearText=(row['anno_uscita'] ?? '').toString().trim();
+        final year=yearText.isEmpty?null:int.tryParse(yearText);
+        final payload={'oggetti':[{
+          'descrizione':description,
+          'produttore':(row['produttore'] ?? '').toString().trim().isEmpty?null:row['produttore'].toString().trim(),
+          'anno_uscita':year,
+          'codice_prodotto':(row['codice_prodotto'] ?? '').toString().trim().isEmpty?null:row['codice_prodotto'].toString().trim(),
+          'condizione':_enumValue(row['condizione'],const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'],'USATO'),
+          'completezza':_enumValue(row['completezza'],const ['SIGILLATO','COMPLETO','INCOMPLETO'],'COMPLETO'),
+          'destinazione':_enumValue(row['destinazione'],const ['COLLEZIONE','RIVENDITA','ALTRO'],'COLLEZIONE'),
+          'quantita':qty<1?1:qty,
+          if(value!=null&&value>=0)'valore_oggetto':value,
+          'note':(row['note'] ?? '').toString().trim().isEmpty?null:row['note'].toString().trim()
+        }]};
+        final session=_uuid.v4();
+        try {
+          final lock=await _ValoraRuntimeApi.call('acquire_lock',{'session_id':session});
+          final lockResult=lock['result'];
+          if(lockResult is! Map || lockResult['acquisito']!=true) throw Exception('Blocco archivio non acquisito.');
+          await _ValoraRuntimeApi.procedure('PR-01','preview',payload,sessionId:session);
+          final review=Map<String,dynamic>.from(payload)..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=false;
+          await _ValoraRuntimeApi.procedure('PR-01','review',review,sessionId:session);
+          final save=Map<String,dynamic>.from(payload)..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=true;
+          final result=await _ValoraRuntimeApi.procedure('PR-01','save',save,sessionId:session,requestId:_uuid.v4());
+          if(result['scrittura_eseguita']!=true) throw Exception('Scrittura non confermata dal runtime.');
+          saved++;
+        } catch(e) { failed++; errors.add(description+': '+e.toString()); }
+      }
+      if(mounted)setState(()=>_status='Importazione conclusa. Salvati: '+saved.toString()+'. Errori: '+failed.toString()+(errors.isEmpty?'':'\n'+errors.take(5).join('\n')));
+    } finally { if(mounted)setState(()=>_busy=false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color=ValoraAppearance.instance.colorFor('CATALOGO');
+    return Scaffold(appBar:AppBar(title:Text(widget.importMode?'IMPORTA OGGETTI':'ESPORTA OGGETTI')),
+      body:SafeArea(child:ListView(padding:const EdgeInsets.all(16),children:[
+        Text(widget.importMode?'Importa Excel, CSV o JSON. VALORA controlla i dati e mostra l’anteprima prima del salvataggio.':'Esporta il catalogo TEST in Excel, CSV o JSON.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
+        const SizedBox(height:16),
+        if(widget.importMode) ...[
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_pickImport,icon:const Icon(Icons.file_open),label:const Text('SELEZIONA FILE E ANALIZZA'))),
+          if(_rows.isNotEmpty) ...[
+            const SizedBox(height:10),
+            Text('Anteprima record: '+_rows.length.toString(),style:TextStyle(color:color,fontWeight:FontWeight.bold)),
+            ..._rows.take(50).toList().asMap().entries.map((entry){
+              final i=entry.key;final row=entry.value;
+              final desc=(row['descrizione_oggetto']??row['descrizione']??row['nome']??'').toString();
+              final warning=_invalid.contains(i)||_duplicates.contains(i);
+              final label=_invalid.contains(i)?'Escluso: manca la descrizione':_duplicates.contains(i)?'Possibile duplicato, escluso':'Pronto per l’importazione';
+              return Card(child:ListTile(leading:Icon(warning?Icons.warning_amber:Icons.inventory_2_outlined,color:warning?Colors.orange:color),title:Text(desc.isEmpty?'Riga '+(i+2).toString():desc,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text(label)));
+            }),
+            if(_rows.length>50)Text('Mostrate le prime 50 righe su '+_rows.length.toString()),
+            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_confirmImport,icon:const Icon(Icons.save_alt),label:const Text('CONFERMA E IMPORTA NUOVI OGGETTI')))
+          ]
+        ] else ...[
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('xlsx'),icon:const Icon(Icons.table_view),label:const Text('ESPORTA EXCEL (.XLSX)'))),
+          const SizedBox(height:8),
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('csv'),icon:const Icon(Icons.description_outlined),label:const Text('ESPORTA CSV'))),
+          const SizedBox(height:8),
+          SizedBox(width:double.infinity,child:OutlinedButton.icon(onPressed:_busy?null:()=>_export('json'),icon:const Icon(Icons.data_object),label:const Text('ESPORTA JSON')))
+        ],
+        if(_busy)const Padding(padding:EdgeInsets.all(16),child:Center(child:CircularProgressIndicator())),
+        const SizedBox(height:16),
+        Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
+        Text('Database TEST. L’importazione crea nuovi record e non aggiorna quelli esistenti.',style:TextStyle(color:ValoraAppearance.instance.textMuted,fontSize:12))
+      ])));
   }
 }
 
@@ -2478,7 +3184,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               suffixIcon:IconButton(tooltip:'Cerca oggetto',onPressed:_loading?null:()=>_run(_searchPr02Objects),
                 icon:Icon(Icons.search,color:sectionColor)))),
         ],
-        if (!_isWrite && isMaster) ...[
+        if (!_isWrite && isMaster && widget.initialObjectCode == null) ...[
           TextField(
             controller: _search,
             focusNode: _pr11SearchFocusNode,
