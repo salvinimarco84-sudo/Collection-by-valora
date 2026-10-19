@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:csv/csv.dart';
 import 'package:excel/excel.dart' as xlsx;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
