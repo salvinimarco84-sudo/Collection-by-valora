@@ -424,7 +424,6 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   'ACQUISTI': [
     ProcedureEntry(title: 'Nuovo acquisto', description: 'Registra un nuovo acquisto.', apiCode: 'WRITE-PR-04', readOnly: false),
     ProcedureEntry(title: 'Modifica acquisto', description: 'Modifica un acquisto esistente.', apiCode: 'WRITE-PR-05', readOnly: false),
-    ProcedureEntry(title: 'Elenco acquisti', description: 'Consulta gli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
     ProcedureEntry(title: 'Acquisti comparati', description: 'Confronta gli acquisti.', enabled: false),
   ],
   'VENDITE': [
@@ -434,7 +433,6 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Chiudi inserzione', description: 'Chiude un’inserzione attiva.', enabled: false, readOnly: false),
     ProcedureEntry(title: 'Vendita multipla Vinted', description: 'Registra una vendita multipla.', enabled: false, readOnly: false),
     ProcedureEntry(title: 'Inserzioni attive', description: 'Consulta le inserzioni attive.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
-    ProcedureEntry(title: 'Report vendite', description: 'Consulta il riepilogo delle vendite.', apiCode: 'REPORT-SALES'),
   ],
   'REPORT': [
     ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta le entrate derivate dalle vendite e le uscite derivate dagli acquisti.', apiCode: 'REPORT-CASH'),
@@ -2128,6 +2126,51 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final FocusNode _pr11SearchFocusNode = FocusNode();
   String _lastPr11SearchQuery = '';
 
+  String _reportPeriodMode = 'month';
+  DateTime _reportStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime _reportEnd = DateTime.now();
+  bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES'}.contains(widget.apiCode);
+
+  String _dateLabel(DateTime date) => '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+  Map<String, dynamic> _reportDateArguments() {
+    final now = DateTime.now();
+    late DateTime from;
+    late DateTime to;
+    if (_reportPeriodMode == 'year') {
+      from = DateTime(now.year, 1, 1);
+      to = DateTime(now.year, now.month, now.day);
+    } else if (_reportPeriodMode == 'month') {
+      from = DateTime(now.year, now.month, 1);
+      to = DateTime(now.year, now.month, now.day);
+    } else {
+      from = DateTime(_reportStart.year, _reportStart.month, _reportStart.day);
+      to = DateTime(_reportEnd.year, _reportEnd.month, _reportEnd.day);
+    }
+    if (from.isAfter(to)) throw Exception('La data iniziale non può essere successiva alla data finale.');
+    String iso(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    return {'data_da': iso(from), 'data_a': iso(to), '_periodo_descrizione': '${_dateLabel(from)} – ${_dateLabel(to)}'};
+  }
+
+  Future<void> _pickReportDate({required bool isStart}) async {
+    final picked = await showDatePicker(
+      context: context, initialDate: isStart ? _reportStart : _reportEnd,
+      firstDate: DateTime(2000), lastDate: DateTime(2100),
+      helpText: isStart ? 'Scegli la data iniziale' : 'Scegli la data finale',
+      cancelText: 'ANNULLA', confirmText: 'CONFERMA',
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (isStart) {
+        _reportStart = picked;
+        if (_reportStart.isAfter(_reportEnd)) _reportEnd = picked;
+      } else {
+        _reportEnd = picked;
+        if (_reportEnd.isBefore(_reportStart)) _reportStart = picked;
+      }
+    });
+  }
+
   bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03'}.contains(widget.apiCode);
 
   @override
@@ -3365,14 +3408,44 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       return;
     }
 
-    final args = widget.apiCode == 'OBJECT_MASTER'
-      ? {'codice_oggetto': int.tryParse(_code.text.trim())}
-      : {'cerca': _search.text.trim(), 'limite': 100, 'offset': 0};
+    final periodArgs = _isPeriodReport ? _reportDateArguments() : <String, dynamic>{};
+    final args = _isPeriodReport
+      ? <String, dynamic>{'data_da': periodArgs['data_da'], 'data_a': periodArgs['data_a'], 'limite': 100, 'offset': 0}
+      : widget.apiCode == 'OBJECT_MASTER'
+        ? {'codice_oggetto': int.tryParse(_code.text.trim())}
+        : {'cerca': _search.text.trim(), 'limite': 100, 'offset': 0};
     final response = await _ValoraRuntimeApi.call('consultation', {
       'session_id': _sessionId, 'consultation_code': widget.apiCode, 'arguments': args,
     });
     final result = response['result'];
-    dynamic data = result is Map ? result['risultato'] : result;
+    dynamic data = result is Map ? (result['risultato'] ?? result) : result;
+    if (_isPeriodReport && data is Map) {
+      final report = Map<String, dynamic>.from(data);
+      final recordList = report['record'];
+      final list = recordList is List ? recordList : <dynamic>[];
+      final periodLabel = '${periodArgs['data_da']} – ${periodArgs['data_a']}';
+      final totalKeys = ['totale_venduto', 'totale_acquisti', 'somma_importi_movimenti', 'totale'];
+      final countKeys = ['numero_vendite', 'numero_acquisti', 'numero_movimenti'];
+      String? firstKey(List<String> keys) {
+        for (final key in keys) { if (report.containsKey(key)) return key; }
+        return null;
+      }
+      final totalKey = firstKey(totalKeys);
+      final countKey = firstKey(countKeys);
+      final summary = [
+        'Periodo: $periodLabel',
+        if (countKey != null) 'Operazioni: ${report[countKey]}',
+        if (totalKey != null) 'Totale: ${report[totalKey]}',
+        if (widget.apiCode == 'REPORT-CASH' && report['riepilogo_per_tipo'] != null)
+          'Riepilogo per tipo: ${_pretty(report['riepilogo_per_tipo'])}',
+      ].join('\\n');
+      setState(() {
+        _rows = list;
+        _output = '$summary\\n\\n${_pretty(report)}';
+        _currentObject = null;
+      });
+      return;
+    }
     final list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
     setState(() {
       _rows = list;
@@ -4260,7 +4333,35 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ],
         if (!_isWrite && isAvailableList)
           Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
-        if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
+        if (_isPeriodReport) ...[
+          Card(child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('PERIODO DEL REPORT', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Mese corrente'),
+                value: 'month', groupValue: _reportPeriodMode, onChanged: (v) => setState(() => _reportPeriodMode = v!)),
+              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Anno corrente'),
+                value: 'year', groupValue: _reportPeriodMode, onChanged: (v) => setState(() => _reportPeriodMode = v!)),
+              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Intervallo personalizzato'),
+                value: 'custom', groupValue: _reportPeriodMode, onChanged: (v) => setState(() => _reportPeriodMode = v!)),
+              if (_reportPeriodMode == 'custom') ...[
+                Row(children: [
+                  Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : () => _pickReportDate(isStart: true),
+                    icon: const Icon(Icons.calendar_today_outlined), label: Text('Dal ${_dateLabel(_reportStart)}'))),
+                  const SizedBox(width: 8),
+                  Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : () => _pickReportDate(isStart: false),
+                    icon: const Icon(Icons.event_outlined), label: Text('Al ${_dateLabel(_reportEnd)}'))),
+                ]),
+              ],
+              const SizedBox(height: 4),
+              Text('Le date selezionate vengono applicate alla query del database.',
+                style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+            ]),
+          )),
+          const SizedBox(height: 10),
+        ],
+        if (!_isWrite && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
           _field(_search, 'Cerca'),
         if (_isWrite && code == 'PR-01') ...[
           FilledButton.icon(
@@ -4410,6 +4511,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
             final item = Map<String, dynamic>.from(r);
             if (isHistory) return _historyCard(item);
+            if (_isPeriodReport) {
+              final dateValue = item['data_vendita'] ?? item['data_acquisto'] ?? item['data'] ?? item['data_inizio_vendita'] ?? 'Data non indicata';
+              final description = item['descrizione_oggetto'] ?? item['descrizione'] ?? item['tipologia'] ?? item['tipo_movimento'] ?? 'Operazione';
+              final amount = item['importo_vendita'] ?? item['importo_totale_acquisto'] ?? item['importo'] ?? item['prezzo_di_vendita'];
+              return Card(child: ListTile(
+                leading: Icon(Icons.receipt_long_outlined, color: sectionColor),
+                title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
+                trailing: amount == null ? null : Text('${amount.toString()} ${item['valuta'] ?? 'EUR'}'),
+                onTap: () => showDialog<void>(context: context, builder: (context) => AlertDialog(
+                  title: const Text('Dettaglio operazione'),
+                  content: SingleChildScrollView(child: SelectableText(_pretty(item))),
+                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CHIUDI'))],
+                )),
+              ));
+            }
             return _objectCard(item, availableStyle: isAvailableList, onTap: isAvailableList
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(
