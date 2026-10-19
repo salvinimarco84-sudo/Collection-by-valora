@@ -59,6 +59,17 @@ Flusso:
 - I motori vengono implementati e collaudati prima delle form finali; le interfacce chiamano contratti stabili e non duplicano logica di ricerca.
 - Ogni modifica viene collaudata su TEST. Nessun rilascio in produzione o modifica della versione stabile senza verifiche.
 
+
+## Informativa abbonamento nella registrazione (RM9)
+
+Requisito UI da implementare nella schermata/form di registrazione identificata come RM9:
+- Inserire in fondo al modulo un pulsante sempre visibile, con etichetta chiara come **ABBONAMENTO E FUNZIONI PREMIUM**.
+- Il pulsante apre una pagina o finestra informativa completa, non una dicitura abbreviata, che spiega che **VALORA (PR-19) e VALORE COLLEZIONE (PR-18) sono servizi premium soggetti a un abbonamento a pagamento**.
+- Chiarire che PR-12 ricerca metadati non è soggetto a questo abbonamento e che VALUTA ACQUISTO (PR-20) è una funzione distinta che non richiama il motore premium VALORA.
+- L'informativa deve essere raggiungibile dal modulo senza completare la registrazione e rimanere facilmente accessibile.
+- Non confondere l'informativa con l'accettazione contrattuale: eventuali checkbox/consensi e condizioni legali devono essere definiti separatamente.
+- Prima di modificare la UI, individuare il vero form RM9: nella versione del file Flutter esaminata è presente una schermata di accesso (`LoginPage`), ma non è stata identificata una schermata di registrazione RM9. Non aggiungere il pulsante alla schermata di accesso al posto del modulo corretto senza confermare il target.
+
 ## Stato
 
 Questo documento fissa l'architettura desiderata e la numerazione delle procedure; non dichiara i motori completi. L'endpoint TEST `collection-market-value-test` è attualmente un preflight in sola lettura; non è ancora un motore di valutazione di mercato operativo. La numerazione PR-18/19/20 deve essere allineata nei cataloghi runtime e nelle voci UI prima di attivare le procedure.
