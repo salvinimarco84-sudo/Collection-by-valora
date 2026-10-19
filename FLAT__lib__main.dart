@@ -2485,8 +2485,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final v = description.toLowerCase();
     if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(v)) return 'LEGO';
     if (RegExp(r'fumett|comic|manga|panini|salda|bonelli|graphic novel|isbn').hasMatch(v)) return 'FUMETTI';
+    if (RegExp(r'orolog|watch|swatch|rolex|omega|seiko|casio|tissot|longines|tag heuer|cartier').hasMatch(v)) return 'WATCHES';
+    if (RegExp(r'vinile|vinyl|disco|record|lp|musicassett|music tape').hasMatch(v)) return 'MUSIC';
+    if (RegExp(r'moneta|monete|numismatic|coin|banconot|banknote|francoboll|stamp collection').hasMatch(v)) return 'NUMISMATICS';
+    if (RegExp(r'carta collezionabile|trading card|pokemon card|magic the gathering|tcg|sports card').hasMatch(v)) return 'TRADING_CARDS';
     if (RegExp(r'myth cloth|saint seiya|bandai|gundam|gunpla|dragon ball|action figure|statua|transformers|optimus prime|bumblebee|megatron|star wars|naruto|one piece').hasMatch(v)) return 'ACTION_FIGURE';
-    if (RegExp(r'maisto|die.?cast|modellino|motorbike|motocicletta|modellismo|auto in scala').hasMatch(v)) return 'DIECAST';
+    if (RegExp(r'maisto|die.?cast|modellino|motorbike|motocicletta|modellismo|auto in scala|hot wheels|matchbox').hasMatch(v)) return 'DIECAST';
     return 'COLLEZIONABILE';
   }
   Future<void> _consult() async {
