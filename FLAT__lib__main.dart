@@ -3424,7 +3424,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final recordList = report['record'];
       final list = recordList is List ? recordList : <dynamic>[];
       final periodLabel = '${periodArgs['data_da']} – ${periodArgs['data_a']}';
-      final totalKeys = ['totale_venduto', 'totale_acquisti', 'somma_importi_movimenti', 'totale'];
+      final totalKeys = ['totale_venduto', 'totale_acquisti', 'totale'];
       final countKeys = ['numero_vendite', 'numero_acquisti', 'numero_movimenti'];
       String? firstKey(List<String> keys) {
         for (final key in keys) { if (report.containsKey(key)) return key; }
@@ -3436,6 +3436,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         'Periodo: $periodLabel',
         if (countKey != null) 'Operazioni: ${report[countKey]}',
         if (totalKey != null) 'Totale: ${report[totalKey]}',
+        if (widget.apiCode == 'REPORT-CASH') 'Entrate vendite: ${report['entrate_vendite'] ?? 0}',
+        if (widget.apiCode == 'REPORT-CASH') 'Uscite acquisti: ${report['uscite_acquisti'] ?? 0}',
         if (widget.apiCode == 'REPORT-CASH' && report['riepilogo_per_tipo'] != null)
           'Riepilogo per tipo: ${_pretty(report['riepilogo_per_tipo'])}',
       ].join('\\n');
