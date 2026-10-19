@@ -2690,10 +2690,23 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _pr12AiBatchStatus = 'Catalogo aggiornato. La coda di ricerca è pronta.';
     });
     try {
+      // Escludi i record sintetici archiviati prima di preparare qualsiasi lotto PR-12.
+      // Se la lettura del flag fallisce, l'analisi fallisce in sicurezza e non avvia ricerche.
+      final archivedRows = await Supabase.instance.client
+          .schema('collection')
+          .from('master_oggetti')
+          .select('codice_oggetto')
+          .eq('archiviato_test', true);
+      final archivedTestIds = archivedRows
+          .map((row) => (row['codice_oggetto'] ?? '').toString())
+          .where((id) => id.isNotEmpty)
+          .toSet();
+
       final incomplete = <Map<String, dynamic>>[];
       const pageSize = 500;
       var offset = 0;
       var totalRead = 0;
+      var archivedSkipped = 0;
       while (true) {
         final response = await _ValoraRuntimeApi.call('pr12_catalog_page', {
           'session_id': _sessionId,
@@ -2708,6 +2721,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         );
         totalRead += page.length;
         for (final row in page) {
+          final recordId = (row['codice_oggetto'] ?? '').toString();
+          if (archivedTestIds.contains(recordId)) {
+            archivedSkipped++;
+            continue;
+          }
           final producer = (row['produttore'] ?? '').toString().trim();
           final year = row['anno_uscita'];
           final productCode = (row['codice_prodotto'] ?? '').toString().trim();
@@ -2719,7 +2737,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (!mounted) return;
       setState(() {
         _pr12IncompleteRecords = incomplete;
-        _metadataResult = 'Analisi completata: letti $totalRead record; ${incomplete.length} con almeno un metadato mancante. Nessun dato modificato.';
+        _metadataResult = 'Analisi completata: letti $totalRead record; esclusi $archivedSkipped record di test archiviati; ${incomplete.length} record reali con almeno un metadato mancante. Nessun dato modificato.';
         _output = _metadataResult;
       });
     } catch (e) {
