@@ -2237,7 +2237,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }
       if (finals.isEmpty) throw Exception('Il motore non ha restituito risultati leggibili.');
       if (!mounted) return;
-      setState(() { _pr12AiResults = [..._pr12AiResults, ...finals]; _pr12NextBatchOffset += batch.length; _pr12AiBatchStatus = 'Lotto completato: ${finals.where((r) => r['ok'] == true).length} riusciti, ${finals.where((r) => r['ok'] != true).length} errori. Avanzamento: $_pr12NextBatchOffset/${_pr12IncompleteRecords.length}. Nessun dato salvato.'; });
+      setState(() { _pr12AiResults = [..._pr12AiResults, ...finals]; _pr12NextBatchOffset += batch.length; _pr12AiBatchStatus = 'Lotto elaborato: ${finals.where((r) => r['ok'] == true && ((r['numero_risultati'] as num?) ?? 0) > 0).length} con risultati, ${finals.where((r) => r['ok'] == true && ((r['numero_risultati'] as num?) ?? 0) == 0).length} senza corrispondenze, ${finals.where((r) => r['ok'] != true).length} errori tecnici. Avanzamento: $_pr12NextBatchOffset/${_pr12IncompleteRecords.length}. Nessun dato salvato.'; });
     } catch (e) { if (mounted) setState(() => _pr12AiBatchStatus = 'Ricerca non completata: $e'); }
     finally { if (mounted) setState(() => _pr12AiBatchRunning = false); }
   }
@@ -2793,7 +2793,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         final candidateList = candidates is List ? candidates : const [];
                         return Card(child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text('#${result['oggetto_id'] ?? ''} · ${result['descrizione'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(result['ok'] == true ? '${result['numero_risultati'] ?? candidateList.length} risultati trovati' : 'Errore: ${result['error'] ?? 'ricerca non riuscita'}'),
+                          Text(result['ok'] != true ? 'Errore tecnico: ${result['error'] ?? 'ricerca non riuscita'}' : (((result['numero_risultati'] as num?) ?? candidateList.length) == 0 ? 'Nessuna corrispondenza pertinente trovata' : '${result['numero_risultati'] ?? candidateList.length} risultati candidati, da verificare')),
                           ...candidateList.take(5).map((candidate) {
                             final item = candidate is Map ? Map<String, dynamic>.from(candidate) : <String, dynamic>{};
                             return ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text((item['title'] ?? 'Fonte senza titolo').toString()), subtitle: Text('${item['snippet'] ?? ''}\n${item['url'] ?? ''}'));
