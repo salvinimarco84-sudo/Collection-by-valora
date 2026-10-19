@@ -676,7 +676,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
-  String _lastMetadataQuery = '';
   String? _metadataSourceUrl;
   bool _metadataSearchExecuted = false;
   String _metadataResult = 'La ricerca dei metadati partirà quando esci dal campo Descrizione oggetto.';
@@ -2801,7 +2800,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _condition = 'USATO';
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
-        _lastMetadataQuery = '';
         _metadataResult = 'Inserisci la descrizione e poi esci dal campo per preparare la ricerca metadati.';
         _output = 'Pronto per il prossimo oggetto.';
       });
