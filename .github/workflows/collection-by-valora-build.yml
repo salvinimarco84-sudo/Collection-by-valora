@@ -48,6 +48,29 @@ jobs:
           # Recreate platform scaffolding to avoid stale native plugin registrants.
           rm -rf android
           flutter create . --platforms=android --project-name collection_by_valora
+          # The resolved Android lifecycle plugin requires compileSdk 36.
+          # Set compileSdk only; keep targetSdk and minSdk unchanged.
+          python - <<'PY'
+          from pathlib import Path
+          gradle_kts = Path("android/app/build.gradle.kts")
+          gradle_groovy = Path("android/app/build.gradle")
+          if gradle_kts.exists():
+              p = gradle_kts
+              content = p.read_text()
+              old = "compileSdk = flutter.compileSdkVersion"
+              new = "compileSdk = 36"
+          elif gradle_groovy.exists():
+              p = gradle_groovy
+              content = p.read_text()
+              old = "compileSdkVersion flutter.compileSdkVersion"
+              new = "compileSdkVersion 36"
+          else:
+              raise SystemExit("Android app Gradle file not found")
+          if old not in content:
+              raise SystemExit(f"Expected compileSdk declaration not found in {p}")
+          p.write_text(content.replace(old, new, 1))
+          print(f"Set Android compileSdk to 36 in {p}")
+          PY
           cp FLAT__lib__main.dart lib/main.dart
           cp FLAT__pubspec.yaml pubspec.yaml
           cp valora_logo.png assets/valora_logo.png
