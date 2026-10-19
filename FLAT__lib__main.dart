@@ -1313,6 +1313,60 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 }
 
+class ValoraServicePage extends StatelessWidget {
+  const ValoraServicePage({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('VALORA')),
+    body: ListView(padding: const EdgeInsets.all(18), children: [
+      Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF8556C7).withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF8556C7)),
+        ),
+        child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.auto_awesome, color: Color(0xFF8556C7), size: 38),
+          SizedBox(height: 12),
+          Text('SERVIZIO VALORA', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
+          SizedBox(height: 8),
+          Text('Valutazione specialistica di un oggetto da collezione, preparazione delle inserzioni per le piattaforme selezionate e report finale.'),
+        ]),
+      ),
+      const SizedBox(height: 16),
+      const ListTile(
+        leading: Icon(Icons.looks_one_outlined),
+        title: Text('1. Selezione dell’oggetto'),
+        subtitle: Text('Individuazione dell’oggetto da sottoporre a VALORA.'),
+      ),
+      const ListTile(
+        leading: Icon(Icons.travel_explore),
+        title: Text('2. Ricerca e valutazione'),
+        subtitle: Text('Analisi delle fonti pertinenti e confronto dei dati di mercato.'),
+      ),
+      const ListTile(
+        leading: Icon(Icons.sell_outlined),
+        title: Text('3. Inserzioni e report'),
+        subtitle: Text('Preparazione dei contenuti per le piattaforme abilitate e del report PDF.'),
+      ),
+      const SizedBox(height: 12),
+      Card(child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Icon(Icons.info_outline, color: Color(0xFFE17D35)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(
+            'Il motore completo PR-14 non è ancora attivo in questa build. Questa schermata è dedicata esclusivamente a VALORA; non avvia ricerche generiche, non modifica il catalogo e non dichiara valutazioni concluse.',
+            style: TextStyle(color: ValoraAppearance.instance.textSecondary),
+          )),
+        ]),
+      )),
+    ]),
+  );
+}
+
 class CollectionValuePage extends StatefulWidget {
   const CollectionValuePage({super.key});
   @override
@@ -1466,8 +1520,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 description: 'Servizio di valutazione: analizza un oggetto e prepara i risultati senza modificare automaticamente il catalogo.',
                 icon: Icons.auto_awesome,
                 color: const Color(0xFF8556C7),
-                onTap: () => setState(() => selectedSection =
-                    dashboardSections.firstWhere((s) => s.title == 'RICERCHE')),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const ValoraServicePage(),
+                )),
               );
               final collectionButton = _dashboardShortcut(
                 title: 'VALORE COLLEZIONE',
