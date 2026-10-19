@@ -21,6 +21,7 @@ type QueueItem = {
   id: string;
   descrizione: string;
   categoria?: string;
+  tema?: string;
 };
 type RankedCandidate = { url: string; confidence: number; reason: string };
 
@@ -47,8 +48,9 @@ function validItem(value: unknown): QueueItem | null {
   const id = String(v.id ?? "").trim().slice(0, 80);
   const descrizione = String(v.descrizione ?? "").trim().slice(0, 240);
   const categoria = String(v.categoria ?? "").trim().toUpperCase().slice(0, 40);
+  const tema = String(v.tema ?? v.franchise ?? v.franchise_tema ?? "").trim().slice(0, 120);
   if (!id || descrizione.length < 2) return null;
-  return { id, descrizione, ...(categoria ? { categoria } : {}) };
+  return { id, descrizione, ...(categoria ? { categoria } : {}), ...(tema ? { tema } : {}) };
 }
 
 function providerConfig(mode: AiMode): { key: string; model: string } | null {
@@ -103,6 +105,7 @@ async function rankCandidates(
           content: JSON.stringify({
             descrizione: item.descrizione,
             categoria: item.categoria ?? "",
+            tema: item.tema ?? "",
             allowed_urls: allowedUrls,
             candidates: candidates.map(c => ({
               title: String(c.title ?? "").slice(0, 300),
@@ -184,7 +187,7 @@ Deno.serve(async (req: Request) => {
                 "Content-Type": "application/json",
               },
               signal: AbortSignal.timeout(35000),
-              body: JSON.stringify({ descrizione: item.descrizione, categoria: item.categoria ?? "" }),
+              body: JSON.stringify({ descrizione: item.descrizione, categoria: item.categoria ?? "", tema: item.tema ?? "" }),
             });
             const searchPayload = await searchResponse.json().catch(() => ({}));
             if (!searchResponse.ok || searchPayload?.ok === false) {
@@ -196,6 +199,7 @@ Deno.serve(async (req: Request) => {
               oggetto_id: item.id,
               descrizione: item.descrizione,
               categoria: item.categoria ?? "NON_CLASSIFICATA",
+              tema: item.tema ?? null,
               numero_risultati: ranked.candidates.length,
               risultati: ranked.candidates,
               ranking_ia: ranked.ranking ?? [],
