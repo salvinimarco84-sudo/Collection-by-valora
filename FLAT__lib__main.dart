@@ -3281,11 +3281,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Widget _pr11HeaderCard(Map<String, dynamic> item) {
     final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
-    final imageUrl = _valueFor(item, [
-      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
-      'immagine_principale', 'url_foto', 'foto', 'immagine',
-      'image', 'imageUrl', 'photo_url', 'main_image_url',
-    ], '');
     final destination = _valueFor(item, ['destinazione'], 'Non indicata');
     final condition = _valueFor(item, ['condizione'], 'Non indicata');
     final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
