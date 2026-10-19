@@ -2165,6 +2165,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _metadataResult = 'PR-12: analisi del catalogo in corso…';
       _output = _metadataResult;
       _pr12IncompleteRecords = [];
+      _pr12AiResults = [];
+      _pr12UnresolvedRecords = [];
+      _pr12SelectedCandidates.clear();
+      _pr12NextBatchOffset = 0;
+      _pr12AiBatchStatus = 'Catalogo aggiornato. La coda di ricerca è pronta.';
     });
     try {
       final incomplete = <Map<String, dynamic>>[];
