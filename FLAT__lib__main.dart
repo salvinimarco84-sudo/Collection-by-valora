@@ -1417,7 +1417,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
     }
     if (widget.apiCode == 'PR-01') {
-      _descriptionFocus.addListener(_onDescriptionFocusChanged);
       _quantity.addListener(_recalculateTotal);
       _unitPrice.addListener(_recalculateTotal);
     }
@@ -1459,28 +1458,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_totalValue.text != total) _totalValue.text = total;
   }
 
-  void _onDescriptionFocusChanged() {
-    if (widget.apiCode != 'PR-01' || _descriptionFocus.hasFocus) return;
-    final query = _description.text.trim();
-    if (query.length < 4 || query == _lastMetadataQuery || _loading) return;
-    _run(() async {
-      if (query != _description.text.trim()) return;
-      setState(() {
-        _metadataResult = 'RICERCA METADATI IN CORSO…';
-        _output = 'Ricerca metadati in corso…';
-      });
-      try {
-        await _prepareMetadata();
-        if (mounted && query == _description.text.trim()) {
-          setState(() => _lastMetadataQuery = query);
-        }
-      } catch (e) {
-        if (mounted) setState(() => _metadataResult = 'Ricerca metadati non riuscita: $e');
-        rethrow;
-      }
-    });
-  }
-
   Future<void> _releaseOwnedLockSilently() async {
     try {
       await _ValoraRuntimeApi.call('release_lock', {'session_id': _sessionId});
@@ -1494,7 +1471,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
-    _descriptionFocus.removeListener(_onDescriptionFocusChanged);
     _pr11SearchFocusNode.removeListener(_onPr11SearchFocusChanged);
     _pr11SearchFocusNode.dispose();
     _descriptionFocus.dispose();
@@ -1998,17 +1974,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _showPr02TechnicalTab = false;
     await _loadObject();
     if (!mounted || _currentObject == null) return;
-    final hasMetadata = ['produttore', 'anno_uscita', 'codice_prodotto', 'fonte_dati_prodotto']
-        .any((key) => (_currentObject?[key]?.toString().trim().isNotEmpty ?? false));
-    if (!hasMetadata) {
-      setState(() {
-        _metadataResult = 'Metadati assenti. Avvio della ricerca tramite PR-12…';
-        _output = _metadataResult;
-      });
-      await _prepareMetadata();
-    } else {
-      setState(() => _metadataResult = 'Metadati già presenti. Ricerca automatica PR-12 non necessaria.');
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
     });
@@ -2096,13 +2061,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Text('DATI TECNICI · SOLA LETTURA',
             style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          SelectableText(_metadataResult, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _loading ? null : () => _run(_prepareMetadata),
-            icon: Icon(Icons.travel_explore),
-            label: Text('RICHIAMA METADATI'),
-          ),
           Divider(height: 24),
           if (technicalEntries.isEmpty)
             Text('Nessun altro dato tecnico presente nel record.',
@@ -3091,15 +3049,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Icon(Icons.travel_explore, color: sectionColor),
-                  SizedBox(width: 8),
-                  Expanded(child: Text('RICERCA METADATI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
-                ]),
-                const SizedBox(height: 8),
-                SelectableText(_metadataResult, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
-                const SizedBox(height: 6),
-                Text('Fonte, titolo e metadati restituiti dalla ricerca vengono mostrati insieme. Verifica le informazioni prima di applicarle.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+                Text('DATI IDENTIFICATIVI · INSERIMENTO MANUALE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 _field(_producer, 'Produttore (facoltativo)'),
                 _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
@@ -3605,7 +3555,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
         _lastMetadataQuery = '';
-        _metadataResult = 'Inserisci la descrizione e poi esci dal campo per preparare la ricerca metadati.';
+        _metadataResult = 'La ricerca metadati è disponibile esclusivamente tramite PR-12.';
         _output = 'Pronto per il prossimo oggetto.';
       });
       // Aspetta che il dialogo sia chiuso e il modulo sia ridisegnato prima di
