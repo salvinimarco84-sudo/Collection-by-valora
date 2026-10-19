@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:csv/csv.dart';
 import 'package:excel/excel.dart' as xlsx;
 import 'package:flutter/material.dart';
@@ -1697,6 +1698,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _producer = TextEditingController();
   final _line = TextEditingController();
   final _family = TextEditingController();
+  Uint8List? _selectedImageBytes;
+  String? _selectedImageName;
+  String _imageAcquisition = 'CARICAMENTO_FILE';
+  String? _existingImageUrl;
+  String _imageStatus = 'Nessuna immagine selezionata.';
+  final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
 
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
@@ -1931,7 +1938,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           item['valore_oggetto'] = n;
         }
       }
-      if (item.length == 1) throw Exception('Nessuna modifica rilevata.');
+      if (item.length == 1 && _selectedImageBytes == null) throw Exception('Nessuna modifica rilevata.');
       return {'oggetti': [item]};
     }
     if (widget.apiCode == 'PR-03') {
@@ -2433,10 +2440,144 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _field(_quantity, 'Quantità', type: TextInputType.number),
             _field(_value, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
             _field(_notes, 'Note', lines: 2),
+            const SizedBox(height: 8),
+            _imageField(),
           ],
         ]),
       ),
     );
+  }
+
+  Future<void> _pickImageFile() async {
+    try {
+      final picked = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false, withData: true);
+      if (picked == null || picked.files.isEmpty) return;
+      final file = picked.files.single;
+      final bytes = file.bytes;
+      if (bytes == null || bytes.isEmpty) throw Exception('Il file selezionato non contiene dati leggibili.');
+      if (bytes.length > 10 * 1024 * 1024) throw Exception('L’immagine supera il limite di 10 MB.');
+      setState(() {
+        _selectedImageBytes = bytes; _selectedImageName = file.name;
+        _imageAcquisition = 'CARICAMENTO_FILE';
+        _imageStatus = 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _imageStatus = 'Caricamento immagine non riuscito: $e');
+    }
+  }
+
+  Future<void> _captureImage() async {
+    try {
+      final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (bytes.isEmpty) throw Exception('La fotocamera non ha restituito un’immagine valida.');
+      if (bytes.length > 10 * 1024 * 1024) throw Exception('La foto supera il limite di 10 MB.');
+      setState(() {
+        _selectedImageBytes = bytes; _selectedImageName = picked.name.isNotEmpty ? picked.name : 'foto_valora.jpg';
+        _imageAcquisition = 'FOTOCAMERA'; _imageStatus = 'Foto pronta. Verrà associata dopo il salvataggio.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _imageStatus = 'Scatto foto non riuscito: $e');
+    }
+  }
+
+  Widget _imageField() {
+    final hasSelected = _selectedImageBytes != null;
+    return Card(child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('IMMAGINE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        Text('Facoltativa. Scatta una foto oppure carica un file immagine. Dimensione massima: 10 MB.',
+          style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+        const SizedBox(height: 10),
+        if (hasSelected)
+          ClipRRect(borderRadius: BorderRadius.circular(10),
+            child: Image.memory(_selectedImageBytes!, height: 190, width: double.infinity, fit: BoxFit.contain))
+        else if (_existingImageUrl != null && _existingImageUrl!.startsWith('http'))
+          ClipRRect(borderRadius: BorderRadius.circular(10),
+            child: Image.network(_existingImageUrl!, height: 190, width: double.infinity, fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => _imagePlaceholder(size: 120)))
+        else
+          Container(height: 100, width: double.infinity, alignment: Alignment.center,
+            decoration: BoxDecoration(color: ValoraAppearance.instance.neutralOverlay, borderRadius: BorderRadius.circular(10)),
+            child: Icon(Icons.add_a_photo_outlined, size: 34, color: ValoraAppearance.instance.textFaint)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          if (defaultTargetPlatform == TargetPlatform.android)
+            OutlinedButton.icon(onPressed: _loading ? null : _captureImage,
+              icon: const Icon(Icons.camera_alt_outlined), label: const Text('SCATTA FOTO')),
+          OutlinedButton.icon(onPressed: _loading ? null : _pickImageFile,
+            icon: const Icon(Icons.folder_open_outlined), label: const Text('CARICA IMMAGINE')),
+          if (hasSelected)
+            TextButton.icon(onPressed: _loading ? null : () => setState(() {
+              _selectedImageBytes = null; _selectedImageName = null; _imageStatus = 'Selezione immagine rimossa.';
+            }), icon: const Icon(Icons.delete_outline), label: const Text('RIMUOVI')),
+        ]),
+        const SizedBox(height: 4),
+        Text(_imageStatus, style: TextStyle(
+          color: _imageStatus.startsWith('Caricamento') || _imageStatus.startsWith('Scatto')
+            ? Colors.orangeAccent : ValoraAppearance.instance.textSecondary,
+          fontSize: 12)),
+      ]),
+    ));
+  }
+
+  Future<String> _uploadAndRegisterImage({
+    required int objectId, required Uint8List bytes, required String fileName,
+    required String acquisition, required String procedure,
+  }) async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    final session = client.auth.currentSession;
+    if (user == null || session == null) throw Exception('Sessione non valida per caricare l’immagine.');
+    if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Immagine vuota o superiore a 10 MB.');
+    final safeName = fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
+    final extRaw = safeName.contains('.') ? safeName.split('.').last.toLowerCase() : 'jpg';
+    final ext = const ['jpg','jpeg','png','webp','heic','heif'].contains(extRaw) ? extRaw : 'jpg';
+    final mime = switch (ext) {
+      'png' => 'image/png', 'webp' => 'image/webp', 'heic' => 'image/heic',
+      'heif' => 'image/heif', _ => 'image/jpeg',
+    };
+    final path = '${user.id}/$objectId/${_uuid.v4()}.$ext';
+    await client.storage.from('pr01-foto-temporanee').uploadBinary(
+      path, bytes, fileOptions: FileOptions(contentType: mime, upsert: false));
+    final response = await client.functions.invoke(
+      'collection-object-images-test',
+      headers: {'Authorization': 'Bearer ${session.accessToken}'},
+      body: {'action':'register','codice_oggetto':objectId,'path':path,'file_name':safeName,
+        'modalita_acquisizione':acquisition,'procedura_origine':procedure},
+    );
+    if (response.status < 200 || response.status >= 300 || response.data is! Map) {
+      throw Exception('Registrazione immagine non confermata: ${response.data}');
+    }
+    final data = Map<String, dynamic>.from(response.data as Map);
+    if (data['ok'] != true) throw Exception(data['error'] ?? 'Registrazione immagine non confermata.');
+    final signedUrl = (data['signed_url'] ?? '').toString();
+    if (signedUrl.isEmpty) throw Exception('Immagine registrata ma anteprima non disponibile.');
+    return signedUrl;
+  }
+
+  Future<void> _loadExistingImage(int objectId) async {
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) return;
+      final response = await Supabase.instance.client.functions.invoke(
+        'collection-object-images-test',
+        headers: {'Authorization': 'Bearer ${session.accessToken}'},
+        body: {'action':'get','codice_oggetto':objectId},
+      );
+      if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
+      final data = Map<String, dynamic>.from(response.data as Map);
+      if (!mounted) return;
+      setState(() {
+        _existingImageUrl = (data['signed_url'] ?? '').toString().trim().isEmpty ? null : data['signed_url'].toString();
+        if (_existingImageUrl != null && _selectedImageBytes == null) _imageStatus = 'Immagine già associata all’oggetto.';
+      });
+    } catch (_) {
+      // L'assenza di una foto non deve impedire di aprire la scheda.
+    }
   }
 
   Future<void> _loadObject() async {
@@ -2476,7 +2617,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final d = txt(['destinazione'], _destination);
       if (const ['COLLEZIONE','RIVENDITA','ALTRO'].contains(d)) _destination = d;
       _output = 'Scheda corrente caricata dal database. I campi sono in sola lettura fino alla conferma della procedura.';
+      _existingImageUrl = null; _selectedImageBytes = null; _selectedImageName = null;
+      _imageStatus = 'Verifica immagine associata…';
     });
+    if (widget.apiCode == 'PR-02') await _loadExistingImage(id);
   }
 
   Future<void> _loadIncompleteMetadataCatalog() async {
@@ -3426,6 +3570,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                 const SizedBox(height: 8),
                 _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
+                const SizedBox(height: 10),
+                _imageField(),
               ]),
             ),
           ),
@@ -4069,6 +4215,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _pr02PendingChanges.removeWhere((e) =>
       e['codice_oggetto']?.toString() == item['codice_oggetto']?.toString());
     _pr02PendingChanges.add(Map<String, dynamic>.from(item));
+    if (_selectedImageBytes != null && _selectedImageName != null) {
+      _pr02PendingImages[item['codice_oggetto'].toString()] = {
+        'bytes': Uint8List.fromList(_selectedImageBytes!), 'name': _selectedImageName!, 'acquisition': _imageAcquisition,
+      };
+    }
 
     if (_lockHeld) await _releaseLock();
     if (!mounted) return;
@@ -4114,6 +4265,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _dataConfirmed = false;
         _finalReady = false;
         _showPr02TechnicalTab = false;
+        _selectedImageBytes = null; _selectedImageName = null; _existingImageUrl = null;
+        _imageStatus = 'Nessuna immagine selezionata.';
         _output = 'PR-02 pronta per una nuova ricerca.';
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -4140,8 +4293,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         'altra_operazione': false,
         'conferma_finale': true,
       };
-      await _acquireLock();
+      final pendingImage = _pr02PendingImages[item['codice_oggetto'].toString()];
+      if (item.length > 1) await _acquireLock();
       try {
+        if (item.length > 1) {
         final preview = await _ValoraRuntimeApi.procedure(
           'PR-02', 'preview', payload, sessionId: _sessionId);
         if (preview['errore'] != null) {
@@ -4158,6 +4313,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           setState(() => _lockHeld = false);
         } else {
           throw Exception('Salvataggio eseguito ma rilascio del blocco non confermato.');
+        }
+        }
+        if (pendingImage != null) {
+          final signedUrl = await _uploadAndRegisterImage(
+            objectId: int.parse(item['codice_oggetto'].toString()), bytes: pendingImage['bytes'] as Uint8List,
+            fileName: pendingImage['name'] as String, acquisition: pendingImage['acquisition'] as String, procedure: 'PR-02');
+          _pr02PendingImages.remove(item['codice_oggetto'].toString());
+          if (_loadedObjectId == int.tryParse(item['codice_oggetto'].toString()) && mounted) {
+            setState(() { _existingImageUrl = signedUrl; _imageStatus = 'Immagine associata e verificata.'; });
+          }
         }
       } catch (_) {
         if (_lockHeld) {
@@ -4189,6 +4354,23 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
     }
     if (widget.apiCode == 'PR-01') {
+      final savedRows = result['risultati'];
+      final savedRow = savedRows is List && savedRows.isNotEmpty && savedRows.first is Map
+        ? Map<String, dynamic>.from(savedRows.first as Map) : <String, dynamic>{};
+      final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
+      if (_selectedImageBytes != null && _selectedImageName != null && savedId != null) {
+        try {
+          final signedUrl = await _uploadAndRegisterImage(
+            objectId: savedId, bytes: Uint8List.fromList(_selectedImageBytes!), fileName: _selectedImageName!,
+            acquisition: _imageAcquisition, procedure: 'PR-01');
+          if (mounted) setState(() {
+            _existingImageUrl = signedUrl; _selectedImageBytes = null; _selectedImageName = null;
+            _imageStatus = 'Immagine caricata e associata all’oggetto #$savedId.';
+          });
+        } catch (e) {
+          if (mounted) setState(() => _imageStatus = 'Oggetto #$savedId salvato, ma immagine non associata: $e. Puoi riprovare da PR-02.');
+        }
+      }
       _description.clear(); _producer.clear(); _line.clear(); _family.clear();
       _notes.clear(); _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear();
     }
