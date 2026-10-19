@@ -1399,6 +1399,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Map<String, dynamic>? _currentObject;
   List<Map<String, dynamic>> _pr02SearchResults = [];
   List<Map<String, dynamic>> _pr12IncompleteRecords = [];
+  int _pr12NextBatchOffset = 0;
+  bool _pr12AiBatchRunning = false;
+  String _pr12AiBatchStatus = 'Ricerca multi-fonte non ancora avviata.';
+  List<Map<String, dynamic>> _pr12AiResults = [];
   bool _showPr02TechnicalTab = false;
   bool _pr02SearchCompleted = false;
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
@@ -2203,6 +2207,46 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
+  Future<void> _runPr12AiBatch() async {
+    if (_pr12IncompleteRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Prima esegui ANALIZZA CATALOGO.'); return; }
+    if (_pr12NextBatchOffset >= _pr12IncompleteRecords.length) { setState(() => _pr12AiBatchStatus = 'Tutti i record della coda sono stati inviati alla ricerca.'); return; }
+    setState(() { _pr12AiBatchRunning = true; _pr12AiBatchStatus = 'Ricerca multi-fonte in corso…'; });
+    try {
+      final batch = _pr12IncompleteRecords.skip(_pr12NextBatchOffset).take(10).toList();
+      final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
+        'modalita_ia': 'TEST',
+        'oggetti': batch.map((row) => {'id': (row['codice_oggetto'] ?? '').toString(), 'descrizione': (row['descrizione_oggetto'] ?? '').toString(), 'categoria': _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString())}).toList(),
+      });
+      final raw = response.data;
+      final events = <Map<String, dynamic>>[];
+      if (raw is String) {
+        for (final line in raw.split(RegExp(r'\r?\n'))) {
+          if (!line.startsWith('data:')) continue;
+          final payload = line.substring(5).trim();
+          if (payload.isEmpty) continue;
+          try { events.add(Map<String, dynamic>.from(jsonDecode(payload) as Map)); } catch (_) {}
+        }
+      } else if (raw is Map) { events.add(Map<String, dynamic>.from(raw)); }
+      final finals = <Map<String, dynamic>>[];
+      for (final event in events) {
+        if (event['tipo'] == 'oggetto_completato' || event['tipo'] == 'oggetto_errore') { final result = event['risultato']; if (result is Map) finals.add(Map<String, dynamic>.from(result)); }
+        if (event['tipo'] == 'errore_coda') throw Exception(event['error'] ?? 'Errore nella coda di ricerca.');
+      }
+      if (finals.isEmpty) throw Exception('Il motore non ha restituito risultati leggibili.');
+      if (!mounted) return;
+      setState(() { _pr12AiResults = [..._pr12AiResults, ...finals]; _pr12NextBatchOffset += batch.length; _pr12AiBatchStatus = 'Lotto completato: ${finals.where((r) => r['ok'] == true).length} riusciti, ${finals.where((r) => r['ok'] != true).length} errori. Avanzamento: $_pr12NextBatchOffset/${_pr12IncompleteRecords.length}. Nessun dato salvato.'; });
+    } catch (e) { if (mounted) setState(() => _pr12AiBatchStatus = 'Ricerca non completata: $e'); }
+    finally { if (mounted) setState(() => _pr12AiBatchRunning = false); }
+  }
+
+  String _pr12CategoryFromDescription(String description) {
+    final v = description.toLowerCase();
+    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(v)) return 'LEGO';
+    if (RegExp(r'fumett|comic|manga|panini|salda|bonelli|graphic novel|isbn').hasMatch(v)) return 'FUMETTI';
+    if (RegExp(r'myth cloth|saint seiya|bandai|gundam|gunpla|dragon ball|action figure|statua|transformers|optimus prime|bumblebee|megatron|star wars|naruto|one piece').hasMatch(v)) return 'ACTION_FIGURE';
+    if (RegExp(r'maisto|die.?cast|modellino|motorbike|motocicletta|modellismo|auto in scala').hasMatch(v)) return 'DIECAST';
+    return 'COLLEZIONABILE';
+  }
   Future<void> _consult() async {
     if (widget.apiCode == 'EXPLORE_RECORDS') {
       final id = int.tryParse(_code.text.trim());
@@ -2730,6 +2774,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     ),
                     const SizedBox(height: 8),
                     Text('Record incompleti: ${_pr12IncompleteRecords.length}', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                    const SizedBox(height: 12),
+                    SizedBox(width: double.infinity, child: FilledButton.icon(
+                      onPressed: _loading || _pr12AiBatchRunning ? null : _runPr12AiBatch,
+                      icon: _pr12AiBatchRunning ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
+                      label: Text(_pr12AiBatchRunning ? 'RICERCA IN CORSO…' : 'AVVIA RICERCA MULTI-FONTE · LOTTO DA 10'),
+                    )),
+                    const SizedBox(height: 8),
+                    SelectableText(_pr12AiBatchStatus),
+                    if (_pr12AiResults.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text('RISULTATI RICERCA (${_pr12AiResults.length})', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      ..._pr12AiResults.map((result) {
+                        final candidates = result['risultati'];
+                        final candidateList = candidates is List ? candidates : const [];
+                        return Card(child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('#${result['oggetto_id'] ?? ''} · ${result['descrizione'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(result['ok'] == true ? '${result['numero_risultati'] ?? candidateList.length} risultati trovati' : 'Errore: ${result['error'] ?? 'ricerca non riuscita'}'),
+                          ...candidateList.take(5).map((candidate) {
+                            final item = candidate is Map ? Map<String, dynamic>.from(candidate) : <String, dynamic>{};
+                            return ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text((item['title'] ?? 'Fonte senza titolo').toString()), subtitle: Text('${item['snippet'] ?? ''}\n${item['url'] ?? ''}'));
+                          }),
+                        ])));
+                      }),
+                    ],
                     if (_pr12IncompleteRecords.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       ..._pr12IncompleteRecords.take(30).map((row) {
