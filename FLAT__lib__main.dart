@@ -544,20 +544,32 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
 
   Future<void> _loadQueue() async {
     if (_loading || _running) return;
-    setState(() { _loading = true; _error = null; _status = 'Lettura catalogo TEST…'; _results.clear(); _offset = 0; });
+    setState(() { _loading = true; _error = null; _status = 'Preparazione coda protetta PR-12…'; _results.clear(); _offset = 0; });
     try {
-      final data = await Supabase.instance.client.schema('collection').from('master_oggetti')
-        .select('codice_oggetto,descrizione_oggetto,produttore,anno_uscita,codice_prodotto,archiviato_test')
-        .order('codice_oggetto', ascending: true).limit(2000);
-      final rows = (data as List).whereType<Map>().map((v) => Map<String, dynamic>.from(v)).where((v) {
-        if (v['archiviato_test'] == true) return false;
-        final p = (v['produttore'] ?? '').toString().trim();
-        final c = (v['codice_prodotto'] ?? '').toString().trim();
-        return p.isEmpty || c.isEmpty || v['anno_uscita'] == null;
-      }).where((v) => (v['descrizione_oggetto'] ?? '').toString().trim().length >= 2).toList();
-      if (mounted) setState(() { _queue = rows; _status = 'Trovati ${rows.length} oggetti incompleti. Database invariato.'; });
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
+      final response = await http.post(Uri.parse('$supabaseUrl/functions/v1/pr-12-engine-test'),
+        headers: {'apikey': publishableKey, 'Authorization': 'Bearer ${session.accessToken}', 'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode({'azione': 'PREPARA_CODA'})).timeout(const Duration(seconds: 25));
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300 || decoded is! Map || decoded['ok'] != true) {
+        final message = decoded is Map ? (decoded['error'] ?? 'Risposta non valida').toString() : 'Risposta non valida';
+        throw Exception('Preparazione coda HTTP ${response.statusCode}: $message');
+      }
+      final raw = decoded['oggetti'];
+      final rows = raw is List ? raw.whereType<Map>().map((v) => <String, dynamic>{
+        'codice_oggetto': v['id'],
+        'descrizione_oggetto': v['descrizione'],
+        'produttore': v['produttore'],
+        'anno_uscita': v['anno_uscita'],
+        'codice_prodotto': v['codice_prodotto'],
+      }).toList() : <Map<String, dynamic>>[];
+      if (mounted) setState(() {
+        _queue = rows;
+        _status = 'Catalogo letto: ${decoded['totale_catalogo_letto'] ?? 'n/d'} record; ${decoded['totale_incompleti'] ?? rows.length} incompleti. Nessun dato modificato.';
+      });
     } catch (e) {
-      if (mounted) setState(() { _error = '$e'; _status = 'Lettura catalogo non riuscita.'; });
+      if (mounted) setState(() { _error = '$e'; _status = 'Impossibile preparare la coda PR-12.'; });
     } finally { if (mounted) setState(() => _loading = false); }
   }
 
