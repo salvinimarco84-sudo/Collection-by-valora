@@ -22,6 +22,7 @@ type QueueItem = {
   descrizione: string;
   categoria?: string;
   tema?: string;
+  mercato?: string;
 };
 type RankedCandidate = { url: string; confidence: number; reason: string };
 
@@ -49,8 +50,9 @@ function validItem(value: unknown): QueueItem | null {
   const descrizione = String(v.descrizione ?? "").trim().slice(0, 240);
   const categoria = String(v.categoria ?? "").trim().toUpperCase().slice(0, 40);
   const tema = String(v.tema ?? v.franchise ?? v.franchise_tema ?? "").trim().slice(0, 120);
+  const mercato = String(v.mercato ?? v.market ?? "Italia").trim().slice(0, 40) || "Italia";
   if (!id || descrizione.length < 2) return null;
-  return { id, descrizione, ...(categoria ? { categoria } : {}), ...(tema ? { tema } : {}) };
+  return { id, descrizione, ...(categoria ? { categoria } : {}), ...(tema ? { tema } : {}), mercato };
 }
 
 function providerConfig(mode: AiMode): { key: string; model: string } | null {
@@ -106,6 +108,7 @@ async function rankCandidates(
             descrizione: item.descrizione,
             categoria: item.categoria ?? "",
             tema: item.tema ?? "",
+            mercato: item.mercato ?? "Italia",
             allowed_urls: allowedUrls,
             candidates: candidates.map(c => ({
               title: String(c.title ?? "").slice(0, 300),
@@ -187,7 +190,7 @@ Deno.serve(async (req: Request) => {
                 "Content-Type": "application/json",
               },
               signal: AbortSignal.timeout(35000),
-              body: JSON.stringify({ descrizione: item.descrizione, categoria: item.categoria ?? "", tema: item.tema ?? "" }),
+              body: JSON.stringify({ descrizione: item.descrizione, categoria: item.categoria ?? "", tema: item.tema ?? "", mercato: item.mercato ?? "Italia" }),
             });
             const searchPayload = await searchResponse.json().catch(() => ({}));
             if (!searchResponse.ok || searchPayload?.ok === false) {
