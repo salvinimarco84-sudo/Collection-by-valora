@@ -709,7 +709,19 @@ Deno.serve(async (req: Request) => {
     const cleanDescription = description.replace(/["']/g, " ").replace(/\s+/g, " ").trim();
     // Le fonti configurate dagli utenti vengono interrogate prima delle query generiche.
     // Limite per lotto per evitare costi/tempi incontrollati; le priorità arrivano dal registro.
-    const queries = [...new Set([...configured.queries, ...thematicFranchiseQueries(cleanDescription, theme), ...makeQueries(category, cleanDescription)])].slice(0, 20);
+    const franchiseQueries = thematicFranchiseQueries(cleanDescription, theme);
+    const categoryQueries = makeQueries(category, cleanDescription);
+    // Riserva sempre spazio al franchise e alla categoria: un registro molto ricco
+    // non deve espellere tutte le ricerche tematiche dal limite massimo di 20 query.
+    const prioritizedQueries = [
+      ...configured.queries.slice(0, 8),
+      ...franchiseQueries.slice(0, 6),
+      ...categoryQueries.slice(0, 6),
+      ...configured.queries.slice(8),
+      ...franchiseQueries.slice(6),
+      ...categoryQueries.slice(6),
+    ];
+    const queries = [...new Set(prioritizedQueries)].slice(0, 20);
     let searchResults: SearchResult[] = [];
     const diagnosticaQuery: Array<{ query: string; risultati_grezzi: number; errore?: string }> = [];
     // Fonti specialistiche dal database TEST prima delle query generiche.
