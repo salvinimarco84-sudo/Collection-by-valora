@@ -456,6 +456,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   'RICERCHE': [
     ProcedureEntry(title: 'Ricerca oggetti', description: 'Cerca gli oggetti nel catalogo.', apiCode: 'READ-EXPLORE-RECORDS'),
     ProcedureEntry(title: 'PR-12 · Ricerca metadati', description: 'Cerca fonti e candidati per un oggetto, senza salvare automaticamente i dati.', apiCode: 'PR-12', readOnly: true),
+    ProcedureEntry(title: 'REGISTRO FONTI · Gestisci cataloghi e siti', description: 'Consulta le fonti iniziali e aggiungi fonti specialistiche della tua nicchia collezionistica.', apiCode: 'SOURCE-REGISTRY', readOnly: false),
     ProcedureEntry(title: 'Ricerca #DEMONOFLU', description: 'Ricerca inserzioni associate a #DEMONOFLU.', enabled: false),
   ],
   'CONTROLLO': [
@@ -475,6 +476,200 @@ Color sectionColorForApiCode(String apiCode) {
   return goldColor;
 }
 
+
+class SourceRegistryPage extends StatefulWidget {
+  const SourceRegistryPage({super.key});
+  @override
+  State<SourceRegistryPage> createState() => _SourceRegistryPageState();
+}
+
+class _SourceRegistryPageState extends State<SourceRegistryPage> {
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _sources = [];
+  final _search = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final rows = await Supabase.instance.client.schema('collection')
+          .from('registro_fonti').select()
+          .order('priorita', ascending: true).order('nome');
+      if (!mounted) return;
+      setState(() {
+        _sources = (rows as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  Future<void> _editSource([Map<String, dynamic>? source]) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per aggiungere fonti personali. Le fonti di sistema restano consultabili.')));
+      return;
+    }
+    final formKey = GlobalKey<FormState>();
+    final name = TextEditingController(text: (source?['nome'] ?? '').toString());
+    final url = TextEditingController(text: (source?['url_base'] ?? '').toString());
+    final category = TextEditingController(text: (source?['categoria'] ?? 'universale').toString());
+    final market = TextEditingController(text: (source?['mercato'] ?? 'globale').toString());
+    final maker = TextEditingController(text: (source?['marchio_editore'] ?? '').toString());
+    final franchise = TextEditingController(text: (source?['franchise'] ?? '').toString());
+    final note = TextEditingController(text: (source?['note'] ?? '').toString());
+    var priority = int.tryParse((source?['priorita'] ?? 50).toString()) ?? 50;
+    var type = (source?['tipo_fonte'] ?? 'specialistica').toString();
+    final canEdit = source == null || (source['origine_configurazione'] == 'utente' && source['proprietario_utente'] == user.id);
+    if (!canEdit) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Le fonti di sistema sono protette. Puoi aggiungere una tua fonte specialistica.')));
+      return;
+    }
+    final accepted = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(
+      builder: (ctx, updateDialog) => AlertDialog(
+        title: Text(source == null ? 'AGGIUNGI FONTE SPECIALISTICA' : 'MODIFICA FONTE PERSONALE'),
+        content: SizedBox(width: 520, child: SingleChildScrollView(child: Form(
+          key: formKey,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextFormField(controller: name, decoration: const InputDecoration(labelText: 'Nome della fonte'), validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo obbligatorio' : null),
+            TextFormField(controller: url, decoration: const InputDecoration(labelText: 'URL del sito'), keyboardType: TextInputType.url, validator: (v) { final u = Uri.tryParse((v ?? '').trim()); return u == null || !{'http','https'}.contains(u.scheme) || u.host.isEmpty ? 'Inserisci un URL http/https valido' : null; }),
+            TextFormField(controller: category, decoration: const InputDecoration(labelText: 'Categoria (es. orologi, LEGO, fumetti)')),
+            TextFormField(controller: market, decoration: const InputDecoration(labelText: 'Mercato (es. Italia, Giappone, globale)')),
+            TextFormField(controller: maker, decoration: const InputDecoration(labelText: 'Marchio / editore (facoltativo)')),
+            TextFormField(controller: franchise, decoration: const InputDecoration(labelText: 'Linea / nicchia (facoltativo)')),
+            DropdownButtonFormField<String>(
+              value: type,
+              decoration: const InputDecoration(labelText: 'Tipo di fonte'),
+              items: const [
+                DropdownMenuItem(value: 'ufficiale', child: Text('Ufficiale')),
+                DropdownMenuItem(value: 'specialistica', child: Text('Specialistica')),
+                DropdownMenuItem(value: 'bibliografica', child: Text('Bibliografica')),
+                DropdownMenuItem(value: 'comunita', child: Text('Comunità')),
+                DropdownMenuItem(value: 'mercato', child: Text('Mercato')),
+                DropdownMenuItem(value: 'personale', child: Text('Personale')),
+              ],
+              onChanged: (v) { if (v != null) updateDialog(() => type = v); },
+            ),
+            const SizedBox(height: 8),
+            Row(children: [
+              const Text('Priorità'),
+              Expanded(child: Slider(value: priority.toDouble(), min: 1, max: 100, divisions: 99, label: '$priority', onChanged: (v) => updateDialog(() => priority = v.round()))),
+              Text('$priority'),
+            ]),
+            TextFormField(controller: note, decoration: const InputDecoration(labelText: 'Note / cosa verifica questa fonte')),
+            const SizedBox(height: 8),
+            Text('La fonte verrà salvata come “da verificare”. Inserirla non significa che ogni dato trovato sia automaticamente attendibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+          ]),
+        ))),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () { if (formKey.currentState?.validate() == true) Navigator.pop(ctx, true); }, child: const Text('SALVA FONTE')),
+        ],
+      ),
+    ));
+    if (accepted != true) return;
+    try {
+      final data = <String, dynamic>{
+        'nome': name.text.trim(), 'url_base': url.text.trim(),
+        'categoria': category.text.trim().isEmpty ? 'universale' : category.text.trim(),
+        'mercato': market.text.trim().isEmpty ? 'globale' : market.text.trim(),
+        'marchio_editore': maker.text.trim().isEmpty ? null : maker.text.trim(),
+        'franchise': franchise.text.trim().isEmpty ? null : franchise.text.trim(),
+        'note': note.text.trim().isEmpty ? null : note.text.trim(),
+        'tipo_fonte': type, 'priorita': priority,
+        'attendibilita_dichiarata': 'da_verificare', 'stato_verifica': 'da_verificare',
+      };
+      final table = Supabase.instance.client.schema('collection').from('registro_fonti');
+      if (source == null) {
+        data.addAll({'origine_configurazione': 'utente', 'proprietario_utente': user.id, 'condivisa': false});
+        await table.insert(data);
+      } else {
+        await table.update(data).eq('id', source['id']).eq('proprietario_utente', user.id);
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fonte salvata. Stato: da verificare.')));
+      await _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito: $e')));
+    }
+    name.dispose(); url.dispose(); category.dispose(); market.dispose(); maker.dispose(); franchise.dispose(); note.dispose();
+  }
+
+  Future<void> _toggleActive(Map<String, dynamic> source) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || source['origine_configurazione'] != 'utente' || source['proprietario_utente'] != user.id) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Puoi disattivare soltanto le tue fonti personali.')));
+      return;
+    }
+    try {
+      await Supabase.instance.client.schema('collection').from('registro_fonti')
+          .update({'attiva': !(source['attiva'] == true)})
+          .eq('id', source['id']).eq('proprietario_utente', user.id);
+      await _load();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Modifica non riuscita: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _search.text.trim().toLowerCase();
+    final visible = _sources.where((s) => query.isEmpty || ['nome','categoria','marchio_editore','franchise','mercato','url_base'].any((k) => (s[k] ?? '').toString().toLowerCase().contains(query))).toList();
+    return Scaffold(
+      appBar: AppBar(title: const Text('REGISTRO FONTI'), actions: [
+        IconButton(tooltip: 'Aggiorna', onPressed: _load, icon: const Icon(Icons.refresh)),
+        IconButton(tooltip: 'Aggiungi fonte', onPressed: () => _editSource(), icon: const Icon(Icons.add_link)),
+      ]),
+      floatingActionButton: FloatingActionButton.extended(onPressed: () => _editSource(), icon: const Icon(Icons.add), label: const Text('AGGIUNGI FONTE')),
+      body: _loading ? const Center(child: CircularProgressIndicator()) : _error != null
+        ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.info_outline, size: 42), const SizedBox(height: 12),
+            const Text('Registro non ancora disponibile'), const SizedBox(height: 8),
+            SelectableText(_error!), const SizedBox(height: 12),
+            FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('RIPROVA')),
+          ])))
+        : Column(children: [
+            Padding(padding: const EdgeInsets.all(12), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Cerca fonte, marchio, categoria o mercato', border: OutlineInputBorder())),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), child: Text('${visible.length} fonti · le fonti personali sono modificabili; quelle di sistema sono protette. Le fonti iniziali sono da verificare prima di usarle come prova definitiva.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
+            Expanded(child: ListView.builder(padding: const EdgeInsets.fromLTRB(12, 4, 12, 90), itemCount: visible.length, itemBuilder: (context, i) {
+              final s = visible[i];
+              final own = s['origine_configurazione'] == 'utente' && s['proprietario_utente'] == Supabase.instance.client.auth.currentUser?.id;
+              final active = s['attiva'] == true;
+              final title = (s['nome'] ?? 'Fonte senza nome').toString();
+              final meta = ['${s['categoria'] ?? 'universale'}', '${s['mercato'] ?? 'globale'}', if ((s['marchio_editore'] ?? '').toString().isNotEmpty) s['marchio_editore'].toString(), if ((s['franchise'] ?? '').toString().isNotEmpty) s['franchise'].toString()].join(' · ');
+              return Card(child: ListTile(
+                leading: Icon(active ? Icons.travel_explore : Icons.pause_circle_outline, color: active ? ValoraAppearance.instance.colorFor('RICERCHE') : ValoraAppearance.instance.textFaint),
+                title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(meta), SelectableText((s['url_base'] ?? '').toString(), style: const TextStyle(fontSize: 12)),
+                  Text('Priorità ${s['priorita'] ?? 50} · ${s['tipo_fonte'] ?? 'specialistica'} · ${s['stato_verifica'] ?? 'da_verificare'} · ${s['origine_configurazione'] ?? 'utente'}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11)),
+                  if ((s['note'] ?? '').toString().isNotEmpty) Text(s['note'].toString()),
+                ]),
+                isThreeLine: true,
+                trailing: own ? PopupMenuButton<String>(onSelected: (v) { if (v == 'edit') _editSource(s); if (v == 'toggle') _toggleActive(s); }, itemBuilder: (_) => [
+                  const PopupMenuItem(value: 'edit', child: Text('Modifica')),
+                  PopupMenuItem(value: 'toggle', child: Text(active ? 'Disattiva' : 'Riattiva')),
+                ]) : const Icon(Icons.verified_user_outlined),
+              ));
+            })),
+          ]),
+    );
+  }
+}
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -901,7 +1096,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
-                      : procedure.apiCode != null
+                      : procedure.apiCode == 'SOURCE-REGISTRY'
+                  ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
+                  : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
                       : null,
