@@ -588,7 +588,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
           'categoria': _category((v['descrizione_oggetto'] ?? '').toString()),
         }).toList()})).timeout(const Duration(minutes: 5));
       if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw Exception('HTTP ${response.statusCode}: ${response.body.substring(0, response.body.length.clamp(0, 500))}');
+        throw Exception('HTTP ${response.statusCode}: ${response.body.substring(0, response.body.length.clamp(0, 500).toInt())}');
       }
       final events = <Map<String, dynamic>>[];
       for (final line in const LineSplitter().convert(response.body)) {
@@ -598,7 +598,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
       final finals = events.where((v) => v['tipo'] == 'coda_completata').toList();
       if (finals.isEmpty) {
         final errors = events.where((v) => v['tipo'] == 'oggetto_errore').map((v) => (v['risultato'] as Map?)?['error']?.toString() ?? 'errore').take(3).join('; ');
-        throw Exception('Evento finale PR-12 assente. ${errors.isEmpty ? response.body.substring(0, response.body.length.clamp(0, 500)) : errors}');
+        throw Exception('Evento finale PR-12 assente. ${errors.isEmpty ? response.body.substring(0, response.body.length.clamp(0, 500).toInt()) : errors}');
       }
       final rawResults = finals.last['risultati_finali'];
       final batchResults = rawResults is List ? rawResults.whereType<Map>().map((v) => Map<String, dynamic>.from(v)).toList() : <Map<String, dynamic>>[];
