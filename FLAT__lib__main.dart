@@ -468,6 +468,298 @@ Color sectionColorForApiCode(String apiCode) {
   return goldColor;
 }
 
+
+class UserProfilePage extends StatefulWidget {
+  const UserProfilePage({super.key});
+  @override
+  State<UserProfilePage> createState() => _UserProfilePageState();
+}
+
+class _UserProfilePageState extends State<UserProfilePage> {
+  final _name = TextEditingController();
+  final _assistant = TextEditingController(text: 'Demon');
+  final _newPassword = TextEditingController();
+  final _confirmPassword = TextEditingController();
+  String _market = 'Italia';
+  List<Map<String, dynamic>> _markets = [];
+  bool _profileLoaded = false;
+  String _currency = 'EUR - Euro (€)';
+  String _language = 'Italiano';
+  String _dateFormat = 'GG/MM/AAAA';
+  bool _showNewPassword = false;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = Supabase.instance.client.auth.currentUser;
+    _name.text = (user?.userMetadata?['display_name'] ?? user?.userMetadata?['name'] ?? '').toString();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final markets = await client.schema('collection').from('mercati')
+          .select('codice_mercato,nome_mercato').order('codice_mercato');
+      final rows = await client.schema('collection').from('master_utente')
+          .select().eq('auth_user_id', user.id).limit(1);
+      if (!mounted) return;
+      setState(() {
+        _markets = List<Map<String, dynamic>>.from(markets);
+        if (rows.isNotEmpty) {
+          final row = Map<String, dynamic>.from(rows.first);
+          _name.text = (row['nome_utente'] ?? '').toString();
+          _assistant.text = (row['nome_assistente'] ?? 'Demon').toString();
+          _currency = _currencyFor((row['valuta_predefinita'] ?? 'EUR').toString());
+          _language = _languageFor((row['lingua_interfaccia'] ?? 'it').toString());
+          _dateFormat = (row['formato_data'] ?? 'GG/MM/AAAA').toString();
+          final market = _markets.where((m) => m['codice_mercato'] == row['mercato_nazionale_principale']).toList();
+          if (market.isNotEmpty) _market = market.first['nome_mercato'].toString();
+        }
+        if (_markets.isNotEmpty && !_markets.any((m) => m['nome_mercato'] == _market)) {
+          _market = _markets.first['nome_mercato'].toString();
+        }
+        _profileLoaded = true;
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossibile caricare il profilo dal database TEST: $e')));
+    }
+  }
+
+  String _currencyFor(String code) => const {'EUR':'EUR - Euro (€)','USD':'USD - Dollaro USA (\$)','GBP':'GBP - Sterlina (£)'}[code] ?? 'EUR - Euro (€)';
+  String _languageFor(String code) => const {'it':'Italiano','en':'English','es':'Español','fr':'Français'}[code] ?? 'Italiano';
+
+  Future<void> _saveProfile() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per salvare il profilo.')));
+      return;
+    }
+    if (!_profileLoaded || _markets.isEmpty || _name.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa il nome e verifica il catalogo mercati prima di salvare.')));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final market = _markets.firstWhere((m) => m['nome_mercato'] == _market);
+      final existing = await client.schema('collection').from('master_utente')
+          .select('codice_utente').eq('auth_user_id', user.id).limit(1);
+      final values = <String, dynamic>{
+        'auth_user_id': user.id,
+        'nome_utente': _name.text.trim(),
+        'mercato_nazionale_principale': market['codice_mercato'],
+        'valuta_predefinita': _currency.substring(0, 3),
+        'lingua_interfaccia': const {'Italiano':'it','English':'en','Español':'es','Français':'fr'}[_language] ?? 'it',
+        'formato_data': _dateFormat,
+        'nome_assistente': _assistant.text.trim().isEmpty ? null : _assistant.text.trim(),
+        'stato_utente': 'ATTIVO',
+      };
+      if (existing.isEmpty) {
+        await client.schema('collection').from('master_utente').insert(values);
+      } else {
+        await client.schema('collection').from('master_utente').update(values).eq('auth_user_id', user.id);
+      }
+      await _loadProfile();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profilo salvato e riletto dal database TEST.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito. Verifica autorizzazione e policy TEST. Dettaglio: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _assistant.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    final password = _newPassword.text;
+    if (password.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La nuova password deve contenere almeno 8 caratteri.')),
+      );
+      return;
+    }
+    if (password != _confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le due password non coincidono.')),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(UserAttributes(password: password));
+      _newPassword.clear();
+      _confirmPassword.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password aggiornata correttamente.')),
+        );
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossibile aggiornare la password: ' + e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Errore durante l’aggiornamento della password.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Widget _section(String title, IconData icon, List<Widget> children) => Card(
+    color: ValoraAppearance.instance.card,
+    margin: const EdgeInsets.only(bottom: 14),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(icon, color: Colors.blueAccent),
+          const SizedBox(width: 10),
+          Text(title, style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 14),
+        ...children,
+      ]),
+    ),
+  );
+
+  InputDecoration _fieldDecoration(String label, {Widget? suffixIcon, String? helper}) =>
+      InputDecoration(labelText: label, helperText: helper, suffixIcon: suffixIcon);
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final email = user?.email ?? 'Email non disponibile';
+    final created = user?.createdAt;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profilo utente'),
+        leading: IconButton(
+          tooltip: 'Torna alla dashboard',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SafeArea(
+        child: LayoutBuilder(builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 760;
+          final content = <Widget>[
+            _section('INFORMAZIONI UTENTE', Icons.person_outline, [
+              Center(child: Container(
+                width: 76, height: 76,
+                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: goldColor, width: 2)),
+                child: const Icon(Icons.person, color: goldColor, size: 42),
+              )),
+              const SizedBox(height: 12),
+              TextField(controller: _name, decoration: _fieldDecoration('Nome utente')),
+              const SizedBox(height: 12),
+              TextField(
+                controller: TextEditingController(text: email),
+                readOnly: true,
+                decoration: _fieldDecoration('Email', suffixIcon: const Icon(Icons.lock_outline),
+                  helper: 'Gestita dal sistema di autenticazione'),
+              ),
+              const SizedBox(height: 12),
+              TextField(controller: _newPassword, obscureText: !_showNewPassword,
+                decoration: _fieldDecoration('Nuova password',
+                  suffixIcon: IconButton(
+                    tooltip: _showNewPassword ? 'Nascondi password' : 'Mostra password',
+                    onPressed: () => setState(() => _showNewPassword = !_showNewPassword),
+                    icon: Icon(_showNewPassword ? Icons.visibility_off : Icons.visibility),
+                  ),
+                  helper: 'Almeno 8 caratteri')),
+              const SizedBox(height: 12),
+              TextField(controller: _confirmPassword, obscureText: !_showNewPassword,
+                decoration: _fieldDecoration('Conferma nuova password')),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                onPressed: _busy ? null : _changePassword,
+                icon: const Icon(Icons.lock_reset),
+                label: Text(_busy ? 'AGGIORNAMENTO...' : 'CAMBIA PASSWORD'),
+              )),
+              const SizedBox(height: 12),
+              TextField(controller: _assistant, decoration: _fieldDecoration('Nome assistente')),
+            ]),
+            _section('PREFERENZE GENERALI', Icons.settings_outlined, [
+              DropdownButtonFormField<String>(
+                value: _markets.any((m) => m['nome_mercato'] == _market) ? _market : null,
+                decoration: _fieldDecoration('Mercato principale'),
+                items: _markets.map((m) => DropdownMenuItem<String>(value: m['nome_mercato'].toString(), child: Text(m['nome_mercato'].toString()))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _market = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _currency,
+                decoration: _fieldDecoration('Valuta predefinita'),
+                items: const ['EUR - Euro (€)', 'USD - Dollaro USA (\$)', 'GBP - Sterlina (£)'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _currency = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _language,
+                decoration: _fieldDecoration('Lingua interfaccia'),
+                items: const ['Italiano', 'English', 'Español', 'Français'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _language = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _dateFormat,
+                decoration: _fieldDecoration('Formato data'),
+                items: const ['GG/MM/AAAA', 'AAAA-MM-GG', 'MM/GG/AAAA'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _dateFormat = v); },
+              ),
+            ]),
+            _section('STATO ACCOUNT', Icons.info_outline, [
+              const ListTile(contentPadding: EdgeInsets.zero, title: Text('Stato'), trailing: Chip(label: Text('Autenticato'))),
+              ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data creazione account'), subtitle: Text(created ?? 'Non disponibile')),
+            ]),
+            Card(
+              color: ValoraAppearance.instance.card,
+              child: const Padding(
+                padding: EdgeInsets.all(14),
+                child: Text('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.'),
+              ),
+            ),
+          ];
+          return ListView(
+            padding: const EdgeInsets.all(14),
+            children: [
+              Center(child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: wide ? 900 : 560),
+                child: Column(children: [
+                  ...content,
+                  SizedBox(width: double.infinity, child: FilledButton.icon(
+                    onPressed: _busy ? null : _saveProfile,
+                    icon: const Icon(Icons.save_outlined),
+                    label: Text(_busy ? 'SALVATAGGIO...' : 'SALVA MODIFICHE'),
+                  )),
+                ]),
+              )),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+}
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
@@ -494,6 +786,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             fontWeight: FontWeight.bold, letterSpacing: 1,
           )),
           actions: [
+            IconButton(tooltip: 'Profilo utente', onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserProfilePage()));
+            }, icon: const Icon(Icons.account_circle_outlined)),
             IconButton(tooltip: 'Personalizza interfaccia', onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppearanceSettingsPage()));
             }, icon: const Icon(Icons.palette_outlined)),
@@ -1291,37 +1586,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _showPr02TechnicalTab = false;
     await _loadObject();
     if (!mounted || _currentObject == null) return;
-
-    // La descrizione deve provenire dal record riletto dal database, non dalla query digitata.
-    final selectedDescription = (_currentObject?['descrizione_oggetto']
-        ?? _currentObject?['descrizione']
-        ?? item['descrizione_oggetto']
-        ?? item['descrizione']
-        ?? '').toString().trim();
-    if (selectedDescription.isNotEmpty) {
-      _description.value = TextEditingValue(
-        text: selectedDescription,
-        selection: const TextSelection.collapsed(offset: 0),
-      );
-    }
-
-    // La sola presenza della fonte non significa che i metadati siano completi.
-    // Se manca anche uno dei campi identificativi, prova PR-12 automaticamente.
-    const requiredMetadata = ['produttore', 'anno_uscita', 'codice_prodotto'];
-    final missingMetadata = requiredMetadata.where((key) =>
-      (_currentObject?[key]?.toString().trim().isEmpty ?? true)).toList();
-    if (missingMetadata.isNotEmpty) {
+    final hasMetadata = ['produttore', 'anno_uscita', 'codice_prodotto', 'fonte_dati_prodotto']
+        .any((key) => (_currentObject?[key]?.toString().trim().isNotEmpty ?? false));
+    if (!hasMetadata) {
       setState(() {
-        _metadataResult = 'Oggetto ' + id.toString() +
-            ' selezionato. Descrizione caricata. Metadati incompleti (' +
-            missingMetadata.join(', ') + '): avvio della ricerca PR-12…';
+        _metadataResult = 'Metadati assenti. Avvio della ricerca tramite PR-12…';
         _output = _metadataResult;
       });
       await _prepareMetadata();
     } else {
-      setState(() => _metadataResult =
-          'Oggetto ' + id.toString() +
-          ' selezionato. Descrizione caricata. Metadati identificativi già presenti.');
+      setState(() => _metadataResult = 'Metadati già presenti. Ricerca automatica PR-12 non necessaria.');
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
