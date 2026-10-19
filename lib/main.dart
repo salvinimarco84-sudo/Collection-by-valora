@@ -468,6 +468,221 @@ Color sectionColorForApiCode(String apiCode) {
   return goldColor;
 }
 
+
+class UserProfilePage extends StatefulWidget {
+  const UserProfilePage({super.key});
+  @override
+  State<UserProfilePage> createState() => _UserProfilePageState();
+}
+
+class _UserProfilePageState extends State<UserProfilePage> {
+  final _name = TextEditingController();
+  final _assistant = TextEditingController(text: 'Demon');
+  final _newPassword = TextEditingController();
+  final _confirmPassword = TextEditingController();
+  String _market = 'Italia';
+  String _currency = 'EUR - Euro (€)';
+  String _language = 'Italiano';
+  String _dateFormat = 'GG/MM/AAAA';
+  bool _showNewPassword = false;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = Supabase.instance.client.auth.currentUser;
+    _name.text = (user?.userMetadata?['display_name'] ?? user?.userMetadata?['name'] ?? '').toString();
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _assistant.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    final password = _newPassword.text;
+    if (password.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La nuova password deve contenere almeno 8 caratteri.')),
+      );
+      return;
+    }
+    if (password != _confirmPassword.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Le due password non coincidono.')),
+      );
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await Supabase.instance.client.auth.updateUser(UserAttributes(password: password));
+      _newPassword.clear();
+      _confirmPassword.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Password aggiornata correttamente.')),
+        );
+      }
+    } on AuthException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossibile aggiornare la password: ' + e.message)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Errore durante l’aggiornamento della password.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Widget _section(String title, IconData icon, List<Widget> children) => Card(
+    color: ValoraAppearance.instance.card,
+    margin: const EdgeInsets.only(bottom: 14),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(icon, color: Colors.blueAccent),
+          const SizedBox(width: 10),
+          Text(title, style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 14),
+        ...children,
+      ]),
+    ),
+  );
+
+  InputDecoration _fieldDecoration(String label, {Widget? suffixIcon, String? helper}) =>
+      InputDecoration(labelText: label, helperText: helper, suffixIcon: suffixIcon);
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final email = user?.email ?? 'Email non disponibile';
+    final created = user?.createdAt;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profilo utente'),
+        leading: IconButton(
+          tooltip: 'Torna alla dashboard',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SafeArea(
+        child: LayoutBuilder(builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 760;
+          final content = <Widget>[
+            _section('INFORMAZIONI UTENTE', Icons.person_outline, [
+              Center(child: Container(
+                width: 76, height: 76,
+                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: goldColor, width: 2)),
+                child: const Icon(Icons.person, color: goldColor, size: 42),
+              )),
+              const SizedBox(height: 12),
+              TextField(controller: _name, decoration: _fieldDecoration('Nome utente')),
+              const SizedBox(height: 12),
+              TextField(
+                controller: TextEditingController(text: email),
+                readOnly: true,
+                decoration: _fieldDecoration('Email', suffixIcon: const Icon(Icons.lock_outline),
+                  helper: 'Gestita dal sistema di autenticazione'),
+              ),
+              const SizedBox(height: 12),
+              TextField(controller: _newPassword, obscureText: !_showNewPassword,
+                decoration: _fieldDecoration('Nuova password',
+                  suffixIcon: IconButton(
+                    tooltip: _showNewPassword ? 'Nascondi password' : 'Mostra password',
+                    onPressed: () => setState(() => _showNewPassword = !_showNewPassword),
+                    icon: Icon(_showNewPassword ? Icons.visibility_off : Icons.visibility),
+                  ),
+                  helper: 'Almeno 8 caratteri')),
+              const SizedBox(height: 12),
+              TextField(controller: _confirmPassword, obscureText: !_showNewPassword,
+                decoration: _fieldDecoration('Conferma nuova password')),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                onPressed: _busy ? null : _changePassword,
+                icon: const Icon(Icons.lock_reset),
+                label: Text(_busy ? 'AGGIORNAMENTO...' : 'CAMBIA PASSWORD'),
+              )),
+              const SizedBox(height: 12),
+              TextField(controller: _assistant, decoration: _fieldDecoration('Nome assistente')),
+            ]),
+            _section('PREFERENZE GENERALI', Icons.settings_outlined, [
+              DropdownButtonFormField<String>(
+                value: _market,
+                decoration: _fieldDecoration('Mercato principale'),
+                items: const ['Italia', 'Europa', 'Mondo'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _market = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _currency,
+                decoration: _fieldDecoration('Valuta predefinita'),
+                items: const ['EUR - Euro (€)', 'USD - Dollaro USA (\$)', 'GBP - Sterlina (£)'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _currency = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _language,
+                decoration: _fieldDecoration('Lingua interfaccia'),
+                items: const ['Italiano', 'English', 'Español', 'Français'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _language = v); },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _dateFormat,
+                decoration: _fieldDecoration('Formato data'),
+                items: const ['GG/MM/AAAA', 'AAAA-MM-GG', 'MM/GG/AAAA'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                onChanged: (v) { if (v != null) setState(() => _dateFormat = v); },
+              ),
+            ]),
+            _section('STATO ACCOUNT', Icons.info_outline, [
+              const ListTile(contentPadding: EdgeInsets.zero, title: Text('Stato'), trailing: Chip(label: Text('Autenticato'))),
+              ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data creazione account'), subtitle: Text(created ?? 'Non disponibile')),
+            ]),
+            Card(
+              color: ValoraAppearance.instance.card,
+              child: const Padding(
+                padding: EdgeInsets.all(14),
+                child: Text('La modifica della password usa Supabase Auth. Il salvataggio del profilo e delle preferenze sarà collegato a master_utente dopo aver completato l’associazione sicura con l’account autenticato.'),
+              ),
+            ),
+          ];
+          return ListView(
+            padding: const EdgeInsets.all(14),
+            children: [
+              Center(child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: wide ? 900 : 560),
+                child: Column(children: [
+                  ...content,
+                  SizedBox(width: double.infinity, child: FilledButton.icon(
+                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Preferenze non ancora salvate: il collegamento sicuro a master_utente è in preparazione.')),
+                    ),
+                    icon: const Icon(Icons.save_outlined),
+                    label: const Text('SALVA MODIFICHE'),
+                  )),
+                ]),
+              )),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+}
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
@@ -494,6 +709,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             fontWeight: FontWeight.bold, letterSpacing: 1,
           )),
           actions: [
+            IconButton(tooltip: 'Profilo utente', onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserProfilePage()));
+            }, icon: const Icon(Icons.account_circle_outlined)),
             IconButton(tooltip: 'Personalizza interfaccia', onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppearanceSettingsPage()));
             }, icon: const Icon(Icons.palette_outlined)),
