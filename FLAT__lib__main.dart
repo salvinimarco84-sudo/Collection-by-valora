@@ -654,7 +654,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
-    final email = user?.email ?? 'Email non disponibile';
     final created = user?.createdAt;
     return Scaffold(
       appBar: AppBar(
