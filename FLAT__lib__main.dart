@@ -587,7 +587,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
           onTap: procedure.enabled && procedure.apiCode != null
               ? () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
+                    builder: (_) => procedure.apiCode == 'PR-12'
+                        ? const Pr12MetadataPage()
+                        : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
               : null,
         ),
       )),
@@ -646,6 +648,170 @@ class _ValoraRuntimeApi {
     }
     if (map['result'] is Map) return Map<String, dynamic>.from(map['result']);
     throw Exception('Il runtime non ha restituito un risultato strutturato.');
+  }
+}
+
+class Pr12MetadataPage extends StatefulWidget {
+  const Pr12MetadataPage({super.key});
+  @override
+  State<Pr12MetadataPage> createState() => _Pr12MetadataPageState();
+}
+
+class _Pr12MetadataPageState extends State<Pr12MetadataPage> {
+  final _query = TextEditingController();
+  bool _loading = false;
+  String _status = 'Inserisci una descrizione per avviare la ricerca.';
+  List<Map<String, dynamic>> _results = [];
+  Map<String, dynamic>? _selected;
+  String _category = 'AUTO';
+
+  @override
+  void dispose() { _query.dispose(); super.dispose(); }
+
+  String _inferCategory(String value) {
+    final v = value.toLowerCase();
+    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(v)) return 'LEGO';
+    if (RegExp(r'fumett|comic|manga|panini|salda|bonelli|isbn').hasMatch(v)) return 'FUMETTI';
+    if (RegExp(r'myth cloth|saint seiya|bandai|gundam|gunpla|dragon ball|action figure|statua|transformers|star wars|naruto|one piece|mazinger|grendizer').hasMatch(v)) return 'ACTION_FIGURE';
+    if (RegExp(r'maisto|die.?cast|modellino|motorbike|motocicletta|modellismo|auto in scala').hasMatch(v)) return 'DIECAST';
+    if (RegExp(r'kinder|sorpresine|giocattolo vintage|toy vintage').hasMatch(v)) return 'GIOCATTOLO';
+    return 'COLLEZIONABILE';
+  }
+
+  Future<void> _searchMetadata() async {
+    final query = _query.text.trim();
+    if (query.isEmpty) { setState(() => _status = 'Inserisci una descrizione prima di cercare.'); return; }
+    setState(() { _loading = true; _selected = null; _results = []; _status = 'Ricerca metadati in corso…'; });
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'pr-12-web-search-test',
+        body: {'descrizione': query, 'categoria': _category == 'AUTO' ? _inferCategory(query) : _category},
+      );
+      final raw = response.data;
+      if (raw is! Map) throw Exception('Risposta non valida dal servizio di ricerca.');
+      final data = Map<String, dynamic>.from(raw);
+      if (data['ok'] != true) throw Exception((data['error'] ?? 'Ricerca non riuscita').toString());
+      final rawList = data['risultati'];
+      final candidates = rawList is List ? rawList.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : <Map<String, dynamic>>[];
+      if (!mounted) return;
+      setState(() { _results = candidates; _status = candidates.isEmpty ? 'Nessun candidato verificabile. Modifica la descrizione e riprova.' : 'Ricerca completata: ' + candidates.length.toString() + ' candidati.'; });
+      if (candidates.isNotEmpty) await _chooseCandidate(candidates);
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Ricerca non completata: ' + e.toString());
+    } finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  Future<void> _chooseCandidate(List<Map<String, dynamic>> candidates) async {
+    final selected = await showDialog<Map<String, dynamic>>(
+      context: context, barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: ValoraAppearance.instance.card,
+        title: const Text('PR-12 · SCEGLI L’EDIZIONE'),
+        content: SizedBox(width: 680, height: 460, child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('La ricerca non modifica il catalogo. Seleziona il risultato più pertinente.'),
+            const SizedBox(height: 10),
+            Expanded(child: ListView.separated(
+              itemCount: candidates.length, separatorBuilder: (_, __) => const Divider(),
+              itemBuilder: (context, index) {
+                final item = candidates[index];
+                final title = (item['title'] ?? 'Risultato senza titolo').toString();
+                final url = (item['url'] ?? '').toString();
+                final snippet = (item['snippet'] ?? '').toString();
+                final image = (item['image_url'] ?? item['immagine_url'] ?? item['url_immagine'] ?? item['thumbnail'] ?? '').toString();
+                final producer = (item['produttore'] ?? item['editore'] ?? '').toString();
+                final code = (item['codice_prodotto'] ?? item['isbn'] ?? '').toString();
+                final year = (item['anno_uscita'] ?? item['anno_pubblicazione'] ?? '').toString();
+                return ListTile(
+                  leading: SizedBox(width: 54, height: 70, child: image.startsWith('http')
+                    ? Image.network(image, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined))
+                    : const Icon(Icons.language)),
+                  title: Text(title, style: TextStyle(color: ValoraAppearance.instance.colorFor('RICERCHE'))),
+                  subtitle: Text([if (producer.isNotEmpty) 'Produttore/Editore: ' + producer, if (code.isNotEmpty) 'Codice: ' + code, if (year.isNotEmpty) 'Anno: ' + year, if (snippet.isNotEmpty) snippet, url].join('\n'), maxLines: 6, overflow: TextOverflow.ellipsis),
+                  onTap: () => Navigator.of(dialogContext).pop(item),
+                );
+              },
+            )),
+          ],
+        )),
+        actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('ANNULLA'))],
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      _selected = selected;
+      _status = selected == null ? 'Selezione annullata. Nessun dato salvato o modificato.' : 'Fonte selezionata per verifica. Nessun dato è stato salvato nel catalogo.';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = _selected;
+    final color = ValoraAppearance.instance.colorFor('RICERCHE');
+    String val(Map<String, dynamic> data, List<String> keys) {
+      for (final key in keys) { final v = data[key]?.toString().trim() ?? ''; if (v.isNotEmpty) return v; }
+      return 'Non disponibile';
+    }
+    return Scaffold(
+      appBar: AppBar(title: const Text('PR-12 · Ricerca metadati')),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [Icon(Icons.travel_explore, color: color, size: 28), const SizedBox(width: 10), Expanded(child: Text('RICERCA AUTONOMA', style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 17)))]),
+          const SizedBox(height: 8),
+          const Text('Procedura indipendente da PR-01 e PR-02. Cerca una descrizione e verifica la fonte prima di qualsiasi eventuale aggiornamento.'),
+          const SizedBox(height: 14),
+          TextField(controller: _query, minLines: 1, maxLines: 3, decoration: const InputDecoration(labelText: 'Descrizione / nome / codice prodotto', hintText: 'Es. LEGO 76111 Batman Brother Eye Takedown', border: OutlineInputBorder()), onSubmitted: (_) { if (!_loading) _searchMetadata(); }),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _category, decoration: const InputDecoration(labelText: 'Categoria', border: OutlineInputBorder()),
+            items: const [
+              DropdownMenuItem(value: 'AUTO', child: Text('Rilevamento automatico')),
+              DropdownMenuItem(value: 'LEGO', child: Text('LEGO')),
+              DropdownMenuItem(value: 'FUMETTI', child: Text('Fumetti / manga')),
+              DropdownMenuItem(value: 'ACTION_FIGURE', child: Text('Action figure / statue')),
+              DropdownMenuItem(value: 'DIECAST', child: Text('Die-cast / modellismo')),
+              DropdownMenuItem(value: 'GIOCATTOLO', child: Text('Giocattoli')),
+              DropdownMenuItem(value: 'COLLEZIONABILE', child: Text('Altri collezionabili')),
+            ],
+            onChanged: _loading ? null : (v) { if (v != null) setState(() => _category = v); },
+          ),
+          const SizedBox(height: 12),
+          SizedBox(width: double.infinity, child: FilledButton.icon(
+            onPressed: _loading ? null : _searchMetadata,
+            icon: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.search),
+            label: Text(_loading ? 'RICERCA IN CORSO…' : 'AVVIA RICERCA'),
+          )),
+        ]))),
+        const SizedBox(height: 12),
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('STATO DELLA RICERCA', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8), SelectableText(_status),
+          if (_results.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text('Candidati trovati: ' + _results.length.toString(), style: TextStyle(color: color, fontWeight: FontWeight.w600))),
+        ]))),
+        if (selected != null) ...[
+          const SizedBox(height: 12),
+          Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('FONTE SELEZIONATA · DA VERIFICARE', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(val(selected, ['title']), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            SelectableText('Produttore/Editore: ' + val(selected, ['produttore', 'editore']) + '\nAnno: ' + val(selected, ['anno_uscita', 'anno_pubblicazione']) + '\nCodice: ' + val(selected, ['codice_prodotto', 'isbn']) + '\nFonte: ' + val(selected, ['url']) + '\n\n' + val(selected, ['snippet'])),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(onPressed: () async {
+              final uri = Uri.tryParse(val(selected, ['url']));
+              if (uri == null || !(uri.scheme == 'https' || uri.scheme == 'http') || uri.host.isEmpty) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La fonte non contiene un URL valido.')));
+                return;
+              }
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }, icon: const Icon(Icons.open_in_new), label: const Text('APRI LA FONTE')),
+            const SizedBox(height: 6),
+            const Text('Questa prima fase è consultiva: non aggiorna il record. Coda degli oggetti incompleti e trasferimento controllato saranno collegati al runtime dopo la verifica del contratto di scrittura.', style: TextStyle(fontSize: 12)),
+            TextButton.icon(onPressed: () => setState(() => _selected = null), icon: const Icon(Icons.clear), label: const Text('RIMUOVI SELEZIONE')),
+          ]))),
+        ],
+      ]),
+    );
   }
 }
 
