@@ -686,7 +686,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
-  String _lastMetadataQuery = '';
   String? _metadataSourceUrl;
   bool _metadataSearchExecuted = false;
   String _metadataResult = 'PR-01 resta manuale. Per cercare metadati usa PR-12 nella sezione RICERCHE.';
@@ -738,28 +737,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final totalCents = (unitPrice * 100 * quantity).round();
     final total = (totalCents / 100).toStringAsFixed(2);
     if (_totalValue.text != total) _totalValue.text = total;
-  }
-
-  void _onDescriptionFocusChanged() {
-    if (widget.apiCode != 'PR-01' || _descriptionFocus.hasFocus) return;
-    final query = _description.text.trim();
-    if (query.length < 4 || query == _lastMetadataQuery || _loading) return;
-    _run(() async {
-      if (query != _description.text.trim()) return;
-      setState(() {
-        _metadataResult = 'RICERCA METADATI IN CORSO…';
-        _output = 'Ricerca metadati in corso…';
-      });
-      try {
-        await _prepareMetadata();
-        if (mounted && query == _description.text.trim()) {
-          setState(() => _lastMetadataQuery = query);
-        }
-      } catch (e) {
-        if (mounted) setState(() => _metadataResult = 'Ricerca metadati non riuscita: $e');
-        rethrow;
-      }
-    });
   }
 
   Future<void> _releaseOwnedLockSilently() async {
@@ -1218,234 +1195,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (const ['COLLEZIONE','RIVENDITA','ALTRO'].contains(d)) _destination = d;
       _output = 'Scheda corrente caricata dal database. I campi sono in sola lettura fino alla conferma della procedura.';
     });
-  }
-
-  Future<void> _prepareMetadata() async {
-    final description = _description.text.trim();
-    if (description.isEmpty) throw Exception('Inserisci almeno la descrizione.');
-
-    setState(() {
-      _metadataResult = 'PR-12: ricerca web pubblica in corso…';
-      _output = _metadataResult;
-    });
-
-    final response = await Supabase.instance.client.functions.invoke(
-      'pr-12-web-search-test',
-      body: {
-        'descrizione': description,
-        'categoria': _inferMetadataCategory(description),
-      },
-    );
-    final data = response.data;
-    if (data is! Map) {
-      throw Exception('PR-12 ha restituito una risposta non valida.');
-    }
-    final result = Map<String, dynamic>.from(data);
-    if (result['ok'] != true) {
-      throw Exception((result['error'] ?? 'Ricerca web non riuscita').toString());
-    }
-    _metadataSearchExecuted = true;
-    final rawResults = result['risultati'];
-    final candidates = rawResults is List
-        ? rawResults.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
-        : <Map<String, dynamic>>[];
-
-    if (!mounted) return;
-    if (candidates.isEmpty) {
-      final warning = (result['avviso'] ?? '').toString().trim();
-      final errors = result['errori_fonti'] is List
-          ? (result['errori_fonti'] as List).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).take(5).join('\n')
-          : '';
-      final diagnostics = result['diagnostica'] is Map
-          ? Map<String, dynamic>.from(result['diagnostica'] as Map)
-          : <String, dynamic>{};
-      final queryDiagnostics = diagnostics['query'] is List
-          ? (diagnostics['query'] as List).whereType<Map>().take(6).map((q) {
-              final query = (q['query'] ?? '').toString();
-              final count = (q['risultati_grezzi'] ?? 0).toString();
-              final error = (q['errore'] ?? '').toString();
-              return error.isEmpty ? '• $query: $count risultati grezzi' : '• $query: ERRORE $error';
-            }).join('\n')
-          : '';
-      final details = <String>[
-        'PR-12: ricerca completata, zero candidati utilizzabili.',
-        if (warning.isNotEmpty) warning,
-        'Risultati grezzi: ' + (diagnostics['risultati_grezzi_unici'] ?? 'n/d').toString() +
-            '; dopo controllo codice: ' + (diagnostics['dopo_filtro_codice'] ?? 'n/d').toString() +
-            '; dopo controllo pertinenza: ' + (diagnostics['dopo_filtro_pertinenza'] ?? 'n/d').toString() + '.',
-        if (queryDiagnostics.isNotEmpty) 'Dettaglio query:\n' + queryDiagnostics,
-        if (errors.isNotEmpty) 'Errori fonti (primi 5):\n' + errors,
-        'Nessun metadato è stato salvato. Puoi riprovare o completare i campi manualmente.',
-      ];
-      setState(() {
-        _metadataResult = details.join('\n\n');
-        _output = _metadataResult;
-      });
-      return;
-    }
-
-    final selected = await showDialog<Map<String, dynamic>>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
-        title: const Text('PR-12 · RISULTATI RICERCA ONLINE'),
-        content: SizedBox(
-          width: 650,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 520),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Descrizione: $description\n'
-                  'Risultati trovati: ${candidates.length}. Seleziona un risultato per esaminarne la fonte. '
-                  'La selezione non salva automaticamente metadati.',
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: candidates.length,
-                    separatorBuilder: (_, __) => const Divider(color: goldColor),
-                    itemBuilder: (context, index) {
-                      final item = candidates[index];
-                      final title = (item['title'] ?? 'Risultato senza titolo').toString();
-                      final url = (item['url'] ?? '').toString();
-                      final snippet = (item['snippet'] ?? '').toString();
-                      final producer = (item['produttore'] ?? '').toString().trim();
-                      final productCode = (item['codice_prodotto'] ?? '').toString().trim();
-                      final year = (item['anno_uscita'] ?? '').toString().trim();
-                      final metadataLines = <String>[
-                        if (producer.isNotEmpty) 'Produttore: $producer',
-                        if (productCode.isNotEmpty) 'Codice prodotto: $productCode',
-                        if (year.isNotEmpty) 'Anno di uscita: $year',
-                      ];
-                      return ListTile(
-                        leading: const Icon(Icons.language, color: goldColor),
-                        title: Text(title, style: const TextStyle(color: goldColor)),
-                        subtitle: Text(
-                          '${metadataLines.isEmpty ? '' : '${metadataLines.join('\n')}\n'}${snippet.isEmpty ? url : snippet}\n$url',
-                          maxLines: 7,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        isThreeLine: true,
-                        onTap: () => Navigator.of(dialogContext).pop(item),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('ANNULLA'),
-          ),
-        ],
-      ),
-    );
-
-    if (!mounted) return;
-    if (selected == null) {
-      setState(() {
-        _metadataResult = 'Ricerca annullata. I dati già inseriti sono rimasti invariati.';
-        _output = _metadataResult;
-      });
-      return;
-    }
-
-    final url = (selected['url'] ?? '').toString().trim();
-    final title = (selected['title'] ?? '').toString().trim();
-    final snippet = (selected['snippet'] ?? '').toString();
-    setState(() {
-      _metadataResult = 'Fonte selezionata: $title\n$url\n\n'
-          '${snippet.isEmpty ? '' : '$snippet\n\n'}'
-          'Verifica la pagina selezionata. Produttore, anno di uscita e codice prodotto '
-          'non vengono dedotti automaticamente dal titolo di un risultato: inserisci soltanto '
-          'i valori confermati consultando la fonte.';
-      _output = _metadataResult;
-    });
-
-    final sourceAction = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: cardColor,
-        title: const Text('PR-12 · VERIFICA FONTE'),
-        content: SelectableText(
-          '$title\n$url\n\n'
-          '${(selected['produttore'] ?? '').toString().trim().isEmpty ? '' : 'Produttore: ${selected['produttore']}\n'}'
-          '${(selected['codice_prodotto'] ?? '').toString().trim().isEmpty ? '' : 'Codice prodotto: ${selected['codice_prodotto']}\n'}'
-          '${(selected['anno_uscita'] ?? '').toString().trim().isEmpty ? '' : 'Anno di uscita: ${selected['anno_uscita']}\n'}'
-          '\n$snippet',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop('back'),
-            child: const Text('TORNA ALLA SCHEDA'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop('open'),
-            child: const Text('MOSTRA COLLEGAMENTO'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop('apply'),
-            child: const Text('USA METADATI'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted) return;
-    if (sourceAction == 'apply') {
-      final producer = (selected['produttore'] ?? '').toString().trim();
-      final productCode = (selected['codice_prodotto'] ?? '').toString().trim();
-      final year = (selected['anno_uscita'] ?? '').toString().trim();
-      setState(() {
-        // La conferma accetta il titolo del risultato anche se la fonte non
-        // restituisce tutti i campi strutturati; i campi assenti restano manuali.
-        if (title.isNotEmpty) _description.text = title;
-        if (producer.isNotEmpty) _producer.text = producer;
-        if (productCode.isNotEmpty) _family.text = productCode;
-        if (year.isNotEmpty && int.tryParse(year) != null) _line.text = year;
-        _metadataSourceUrl = url.isNotEmpty ? url : null;
-        _metadataResult = (producer.isEmpty && productCode.isEmpty && year.isEmpty)
-            ? 'Titolo e fonte applicati su tua conferma. La fonte non ha restituito metadati strutturati: completa i campi manualmente. Stato: DA_VERIFICARE. Nessun dato è stato salvato nel database.'
-            : 'Metadati applicati alla maschera PR-01 su tua conferma. Descrizione aggiornata al titolo selezionato. Fonte registrata; stato: DA_VERIFICARE. Nessun dato è stato salvato nel database.';
-        _output = _metadataResult;
-      });
-    } else if (sourceAction == 'open') {
-      // La selezione mostra l'URL senza scrivere dati nel database.
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          backgroundColor: cardColor,
-          title: const Text('Apri la fonte nel browser'),
-          content: SelectableText(url),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('CHIUDI'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  String _inferMetadataCategory(String description) {
-    final value = description.toLowerCase();
-    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(value)) {
-      return 'LEGO';
-    }
-    if (RegExp(r'fumett|comic|manga|panini|salda|bonelli').hasMatch(value)) {
-      return 'FUMETTI';
-    }
-    if (RegExp(r'myth cloth|saint seiya|bandai|gundam|dragon ball|action figure|statua').hasMatch(value)) {
-      return 'ACTION_FIGURE';
-    }
-    return 'COLLEZIONABILE';
   }
 
   Future<void> _consult() async {
@@ -2106,7 +1855,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _condition = 'USATO';
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
-        _lastMetadataQuery = '';
         _metadataResult = 'PR-01 resta manuale. Per la ricerca metadati usa PR-12 nella sezione RICERCHE.';
         _output = 'Pronto per il prossimo oggetto.';
       });
