@@ -886,10 +886,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
           isThreeLine: true,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
             color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
-          onTap: procedure.enabled && procedure.apiCode != null
-              ? () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
-              : null,
+          onTap: !procedure.enabled
+              ? null
+              : procedure.title == 'Ricerca oggetti'
+                  ? () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const CategoryObjectSearchPage()))
+                  : procedure.apiCode != null
+                      ? () => Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
+                      : null,
         ),
       )),
       const SizedBox(height: 12),
@@ -947,6 +952,168 @@ class _ValoraRuntimeApi {
     }
     if (map['result'] is Map) return Map<String, dynamic>.from(map['result']);
     throw Exception('Il runtime non ha restituito un risultato strutturato.');
+  }
+}
+
+class CategoryObjectSearchPage extends StatefulWidget {
+  const CategoryObjectSearchPage({super.key});
+
+  @override
+  State<CategoryObjectSearchPage> createState() => _CategoryObjectSearchPageState();
+}
+
+class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
+  final TextEditingController _query = TextEditingController();
+  bool _loading = false;
+  String _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
+  List<Map<String, dynamic>> _results = [];
+
+  String _description(Map<String, dynamic> row) =>
+      (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString();
+
+  String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
+
+  Future<void> _search() async {
+    final query = _query.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _results = [];
+        _message = 'Scrivi una categoria o una dicitura da cercare.';
+      });
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _results = [];
+      _message = 'Ricerca nel catalogo in corso…';
+    });
+    try {
+      final response = await Supabase.instance.client.schema('collection').rpc(
+        'pr_11_ricerca_schede',
+        params: {'p_cerca': query},
+      );
+      dynamic payload = response;
+      if (payload is List && payload.length == 1 && payload.first is Map) {
+        payload = payload.first;
+      }
+      if (payload is! Map || payload['oggetti'] is! List) {
+        throw Exception('Il catalogo non ha restituito un elenco di oggetti valido.');
+      }
+      final normalizedQuery = query.toLowerCase().trim().replaceAll(RegExp(r'\\s+'), ' ');
+      final rows = (payload['oggetti'] as List)
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .where((row) => _description(row).toLowerCase().contains(normalizedQuery))
+          .toList()
+        ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
+      if (!mounted) return;
+      setState(() {
+        _results = rows;
+        _message = rows.isEmpty
+            ? 'Nessun record contiene “$query”. Prova una dicitura più breve.'
+            : 'Trovati ${rows.length} record. Seleziona una scheda per aprire il dettaglio completo.';
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _results = [];
+        _message = 'Ricerca non riuscita: $e';
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _openRecord(Map<String, dynamic> row) async {
+    final code = int.tryParse(_code(row));
+    if (code == null || code <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Il risultato non contiene un codice oggetto valido.')),
+      );
+      return;
+    }
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ObjectRuntimePage(
+        title: 'Scheda oggetto',
+        apiCode: 'OBJECT_MASTER',
+        initialObjectCode: code,
+      ),
+    ));
+  }
+
+  @override
+  void dispose() {
+    _query.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ValoraAppearance.instance.colorFor('RICERCHE');
+    return Scaffold(
+      appBar: AppBar(title: const Text('RICERCA OGGETTI PER CATEGORIA')),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text(
+              'Cerca nel catalogo esistente per categoria o dicitura. Esempio: TRANSFORMERS.',
+              style: TextStyle(color: ValoraAppearance.instance.textSecondary),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _query,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _search(),
+              decoration: InputDecoration(
+                labelText: 'Categoria o dicitura',
+                hintText: 'TRANSFORMERS',
+                prefixIcon: const Icon(Icons.search),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  tooltip: 'Cancella ricerca',
+                  onPressed: () {
+                    _query.clear();
+                    setState(() {
+                      _results = [];
+                      _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
+                    });
+                  },
+                  icon: const Icon(Icons.clear),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _loading ? null : _search,
+                icon: _loading
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.search),
+                label: Text(_loading ? 'RICERCA IN CORSO…' : 'CERCA NEL CATALOGO'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(_message, style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+            const SizedBox(height: 8),
+            ..._results.map((row) => Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: color.withValues(alpha: 0.16),
+                  child: Icon(Icons.inventory_2_outlined, color: color),
+                ),
+                title: Text(_description(row), maxLines: 3, overflow: TextOverflow.ellipsis),
+                subtitle: Text('Codice oggetto: ${_code(row)}'),
+                trailing: Icon(Icons.chevron_right, color: color),
+                onTap: () => _openRecord(row),
+              ),
+            )),
+          ],
+        ),
+      ),
+    );
   }
 }
 
