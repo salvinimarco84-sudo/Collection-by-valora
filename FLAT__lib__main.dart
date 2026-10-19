@@ -1554,46 +1554,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ]);
       });
 
-  Widget _dashboardShortcut({
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) => Card(
-    color: ValoraAppearance.instance.card,
-    margin: EdgeInsets.zero,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(14),
-      side: BorderSide(color: color.withValues(alpha: 0.8), width: 1.2),
-    ),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(11),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, letterSpacing: 0.4)),
-            const SizedBox(height: 5),
-            Text(description, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11)),
-          ])),
-          Icon(Icons.chevron_right, color: color),
-        ]),
-      ),
-    ),
-  );
-
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
