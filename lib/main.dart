@@ -999,7 +999,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       if (payload is! Map || payload['oggetti'] is! List) {
         throw Exception('Il catalogo non ha restituito un elenco di oggetti valido.');
       }
-      final normalizedQuery = query.toLowerCase().trim().replaceAll(RegExp(r'\\s+'), ' ');
+      final normalizedQuery = query.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
       final rows = (payload['oggetti'] as List)
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
