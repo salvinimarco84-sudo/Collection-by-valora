@@ -3298,22 +3298,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Text('CODICE OGGETTO $code',
             style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: imageUrl.startsWith('http')
-                ? Image.network(imageUrl, width: 112, height: 112, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _imagePlaceholder())
-                : _imagePlaceholder(),
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _pr11SummaryValue('Destinazione', destination),
-              _pr11SummaryValue('Condizione', condition),
-              _pr11SummaryValue('Stato', state),
-              _pr11SummaryValue('Valore registrato', value),
-            ])),
-          ]),
+          _pr11SummaryValue('Destinazione', destination),
+          _pr11SummaryValue('Condizione', condition),
+          _pr11SummaryValue('Stato', state),
+          _pr11SummaryValue('Valore registrato', value),
         ]),
       ),
     );
