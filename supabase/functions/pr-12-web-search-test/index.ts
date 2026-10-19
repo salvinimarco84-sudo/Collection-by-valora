@@ -311,9 +311,9 @@ async function loadConfiguredSources(category: string, description: string, user
       ACTION_FIGURE: ["action figure", "figure", "figurines", "statue", "statue da collezione"],
       DIECAST: ["diecast", "modellismo", "modellini", "scale models", "model vehicles"],
       WATCHES: ["watches", "watch", "orologi", "orologeria"],
-      MUSIC: ["music", "vinyl", "vinile", "dischi", "record collecting"],
-      NUMISMATICS: ["numismatics", "coins", "monete", "banknotes", "banconote"],
-      TRADING_CARDS: ["trading cards", "cards", "carte collezionabili", "tcg"],
+      MUSIC: ["music", "vinyl", "vinile", "dischi", "dischi in vinile", "record collecting", "discografia"],
+      NUMISMATICS: ["numismatics", "numismatica", "coins", "monete", "banknotes", "banconote", "medaglie", "exonumia"],
+      TRADING_CARDS: ["trading cards", "cards", "carte collezionabili", "carte", "tcg", "figurine sportive"],
       GIOCATTOLO: ["toys", "toy", "giocattoli", "giocattolo"],
       COLLEZIONABILE: ["universale", "collectibles", "collectible", "collezionismo"]
     };
