@@ -3319,6 +3319,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       void addFinal(dynamic value) {
         if (value is Map) {
           final item = Map<String, dynamic>.from(value);
+          // Accetta sia il contratto streaming (oggetto_completato/coda_completata)
+          // sia la risposta JSON diretta dell'engine. In entrambi i casi l'ID
+          // dell'oggetto deve essere presente per evitare risultati scollegati.
+          if (item['oggetto_id'] != null && (item['risultati'] is List || item['ok'] == false)) {
+            finals.add(item);
+          }
           final nested = item['risultati_finali'];
           if (nested is List) {
             for (final entry in nested) {
