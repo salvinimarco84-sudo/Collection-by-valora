@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
+import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -413,6 +416,9 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Visualizza scheda', description: 'Mostra la scheda completa in formato leggibile.', apiCode: 'OBJECT_MASTER'),
     ProcedureEntry(title: 'Elenco oggetti disponibili', description: 'Mostra gli oggetti con stato DISPONIBILE.', apiCode: 'OBJECTS_AVAILABLE'),
     ProcedureEntry(title: 'Storico oggetto', description: 'Mostra la cronologia del singolo oggetto selezionato.', apiCode: 'EXPLORE_RECORDS'),
+
+    ProcedureEntry(title: 'Importa oggetti', description: 'Importa record da CSV o JSON con anteprima e controllo duplicati.', apiCode: 'OBJECT-IMPORT'),
+    ProcedureEntry(title: 'Esporta oggetti', description: 'Esporta il catalogo in CSV o JSON.', apiCode: 'OBJECT-EXPORT'),
   ],
   'ACQUISTI': [
     ProcedureEntry(title: 'Nuovo acquisto', description: 'Registra un nuovo acquisto.', apiCode: 'WRITE-PR-04', readOnly: false),
@@ -891,7 +897,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
               : procedure.title == 'Ricerca oggetti'
                   ? () => Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => const CategoryObjectSearchPage()))
-                  : procedure.apiCode != null
+                  : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
+                      ? () => Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
+                      : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
                       : null,
@@ -1114,6 +1123,192 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
         ),
       ),
     );
+  }
+}
+
+
+class ObjectTransferPage extends StatefulWidget {
+  const ObjectTransferPage({super.key, required this.importMode});
+  final bool importMode;
+  @override
+  State<ObjectTransferPage> createState() => _ObjectTransferPageState();
+}
+
+class _ObjectTransferPageState extends State<ObjectTransferPage> {
+  bool _busy = false;
+  String _status = 'Pronto. Ambiente TEST.';
+  List<Map<String, dynamic>> _rows = [];
+  final Set<int> _duplicates = {};
+  final Set<int> _invalid = {};
+  static const _headers = ['codice_oggetto','descrizione_oggetto','condizione','completezza','destinazione','stato','quantita','valore_oggetto','valuta_valore','totale_calcolato'];
+
+  String _norm(dynamic value) => (value ?? '').toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+  Future<List<Map<String,dynamic>>> _catalog() async {
+    final result = await Supabase.instance.client.schema('collection').rpc('pr_11_ricerca_schede', params: {'p_cerca': null});
+    dynamic data = result;
+    if (data is List && data.length == 1 && data.first is Map) data = data.first;
+    if (data is! Map || data['oggetti'] is! List) throw Exception('Risposta catalogo non valida.');
+    return (data['oggetti'] as List).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
+  }
+
+  Future<void> _export(String format) async {
+    setState(() { _busy = true; _status = 'Lettura catalogo TEST…'; });
+    try {
+      final rows = await _catalog();
+      if (rows.isEmpty) throw Exception('Nessun record da esportare.');
+      final stamp = DateTime.now().toIso8601String().replaceAll(':','-').split('.').first;
+      late List<int> bytes;
+      late String ext;
+      if (format == 'json') {
+        bytes = utf8.encode(const JsonEncoder.withIndent('  ').convert(rows));
+        ext = 'json';
+      } else {
+        final matrix = <List<dynamic>>[_headers];
+        for (final row in rows) { matrix.add(_headers.map((h)=>row[h] ?? '').toList()); }
+        bytes = utf8.encode('\uFEFF' + const ListToCsvConverter().convert(matrix));
+        ext = 'csv';
+      }
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Esporta catalogo TEST',
+        fileName: 'VALORA_catalogo_' + stamp + '.' + ext,
+        bytes: Uint8List.fromList(bytes));
+      if (mounted) setState(() => _status = path == null ? 'Esportazione annullata.' : 'Esportati ' + rows.length.toString() + ' record. File: ' + path);
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Esportazione non riuscita: ' + e.toString());
+    } finally { if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
+    if (file.bytes == null) throw Exception('Impossibile leggere il file selezionato.');
+    final name = file.name.toLowerCase();
+    if (name.endsWith('.json')) {
+      final data = jsonDecode(utf8.decode(file.bytes!));
+      final list = data is Map ? (data['oggetti'] ?? data['objects'] ?? data['data']) : data;
+      if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
+      return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
+    }
+    if (name.endsWith('.csv')) {
+      final text = utf8.decode(file.bytes!).replaceFirst('\uFEFF','');
+      final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
+      if (table.length < 2) throw Exception('CSV vuoto o senza righe dati.');
+      final headers = table.first.map((e)=>e.toString().trim().toLowerCase()).toList();
+      return table.skip(1).where((r)=>r.any((v)=>v.toString().trim().isNotEmpty)).map((r) {
+        final row=<String,dynamic>{};
+        for (var i=0;i<headers.length && i<r.length;i++) { row[headers[i]]=r[i]; }
+        return row;
+      }).toList();
+    }
+    throw Exception('Formato non supportato. Usa CSV o JSON.');
+  }
+
+  Future<void> _pickImport() async {
+    setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
+    try {
+      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['csv','json'],withData:true);
+      if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
+      final rows=await _parse(picked.files.first);
+      final existing=await _catalog();
+      final descriptions=existing.map((e)=>_norm(e['descrizione_oggetto'])).toSet();
+      final codes=existing.map((e)=>_norm(e['codice_oggetto'])).toSet();
+      for(var i=0;i<rows.length;i++) {
+        final desc=_norm(rows[i]['descrizione_oggetto'] ?? rows[i]['descrizione'] ?? rows[i]['nome']);
+        final code=_norm(rows[i]['codice_oggetto']);
+        if(desc.isEmpty) _invalid.add(i);
+        else if(descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
+          rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
+      }
+      if(mounted)setState(() { _rows=rows; _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Nessun record salvato.'; });
+    } catch(e) { if(mounted)setState(()=>_status='Importazione non riuscita: '+e.toString()); }
+    finally { if(mounted)setState(()=>_busy=false); }
+  }
+
+  String _enumValue(dynamic value, List<String> allowed, String fallback) {
+    final v=(value ?? '').toString().trim().toUpperCase();
+    return allowed.contains(v) ? v : fallback;
+  }
+
+  Future<void> _confirmImport() async {
+    final eligible=<Map<String,dynamic>>[];
+    for(var i=0;i<_rows.length;i++) { if(!_invalid.contains(i)&&!_duplicates.contains(i)) eligible.add(_rows[i]); }
+    if(eligible.isEmpty) { setState(()=>_status='Non ci sono record validi da importare.'); return; }
+    final ok=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
+      title:const Text('CONFERMA IMPORTAZIONE'),
+      content:Text('Saranno creati ' + eligible.length.toString() + ' nuovi oggetti in TEST. I possibili duplicati e le righe senza descrizione saranno esclusi. I codici saranno assegnati dal database. I record esistenti non saranno aggiornati. Procedere?'),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('IMPORTA'))]));
+    if(ok!=true || !mounted)return;
+    setState(()=>_busy=true);
+    var saved=0; var failed=0; final errors=<String>[];
+    try {
+      for(final row in eligible) {
+        final description=(row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
+        final qty=int.tryParse((row['quantita'] ?? '1').toString()) ?? 1;
+        final valueText=(row['valore_oggetto'] ?? '').toString().trim().replaceAll(',','.');
+        final value=valueText.isEmpty?null:double.tryParse(valueText);
+        final yearText=(row['anno_uscita'] ?? '').toString().trim();
+        final year=yearText.isEmpty?null:int.tryParse(yearText);
+        final payload={'oggetti':[{
+          'descrizione':description,
+          'produttore':(row['produttore'] ?? '').toString().trim().isEmpty?null:row['produttore'].toString().trim(),
+          'anno_uscita':year,
+          'codice_prodotto':(row['codice_prodotto'] ?? '').toString().trim().isEmpty?null:row['codice_prodotto'].toString().trim(),
+          'condizione':_enumValue(row['condizione'],const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'],'USATO'),
+          'completezza':_enumValue(row['completezza'],const ['SIGILLATO','COMPLETO','INCOMPLETO'],'COMPLETO'),
+          'destinazione':_enumValue(row['destinazione'],const ['COLLEZIONE','RIVENDITA','ALTRO'],'COLLEZIONE'),
+          'quantita':qty<1?1:qty,
+          if(value!=null&&value>=0)'valore_oggetto':value,
+          'note':(row['note'] ?? '').toString().trim().isEmpty?null:row['note'].toString().trim()
+        }]};
+        final session=_uuid.v4();
+        try {
+          final lock=await _ValoraRuntimeApi.call('acquire_lock',{'session_id':session});
+          final lockResult=lock['result'];
+          if(lockResult is! Map || lockResult['acquisito']!=true) throw Exception('Blocco archivio non acquisito.');
+          await _ValoraRuntimeApi.procedure('PR-01','preview',payload,sessionId:session);
+          final review=Map<String,dynamic>.from(payload)..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=false;
+          await _ValoraRuntimeApi.procedure('PR-01','review',review,sessionId:session);
+          final save=Map<String,dynamic>.from(payload)..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=true;
+          final result=await _ValoraRuntimeApi.procedure('PR-01','save',save,sessionId:session,requestId:_uuid.v4());
+          if(result['scrittura_eseguita']!=true) throw Exception('Scrittura non confermata dal runtime.');
+          saved++;
+        } catch(e) { failed++; errors.add(description+': '+e.toString()); }
+      }
+      if(mounted)setState(()=>_status='Importazione conclusa. Salvati: '+saved.toString()+'. Errori: '+failed.toString()+(errors.isEmpty?'':'\n'+errors.take(5).join('\n')));
+    } finally { if(mounted)setState(()=>_busy=false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color=ValoraAppearance.instance.colorFor('CATALOGO');
+    return Scaffold(appBar:AppBar(title:Text(widget.importMode?'IMPORTA OGGETTI':'ESPORTA OGGETTI')),
+      body:SafeArea(child:ListView(padding:const EdgeInsets.all(16),children:[
+        Text(widget.importMode?'Importa CSV o JSON. VALORA controlla i dati e mostra l’anteprima prima del salvataggio.':'Esporta il catalogo TEST in CSV o JSON.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
+        const SizedBox(height:16),
+        if(widget.importMode) ...[
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_pickImport,icon:const Icon(Icons.file_open),label:const Text('SELEZIONA FILE E ANALIZZA'))),
+          if(_rows.isNotEmpty) ...[
+            const SizedBox(height:10),
+            Text('Anteprima record: '+_rows.length.toString(),style:TextStyle(color:color,fontWeight:FontWeight.bold)),
+            ..._rows.take(50).toList().asMap().entries.map((entry){
+              final i=entry.key;final row=entry.value;
+              final desc=(row['descrizione_oggetto']??row['descrizione']??row['nome']??'').toString();
+              final warning=_invalid.contains(i)||_duplicates.contains(i);
+              final label=_invalid.contains(i)?'Escluso: manca la descrizione':_duplicates.contains(i)?'Possibile duplicato, escluso':'Pronto per l’importazione';
+              return Card(child:ListTile(leading:Icon(warning?Icons.warning_amber:Icons.inventory_2_outlined,color:warning?Colors.orange:color),title:Text(desc.isEmpty?'Riga '+(i+2).toString():desc,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text(label)));
+            }),
+            if(_rows.length>50)Text('Mostrate le prime 50 righe su '+_rows.length.toString()),
+            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_confirmImport,icon:const Icon(Icons.save_alt),label:const Text('CONFERMA E IMPORTA NUOVI OGGETTI')))
+          ]
+        ] else ...[
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('csv'),icon:const Icon(Icons.description_outlined),label:const Text('ESPORTA CSV'))),
+          const SizedBox(height:8),
+          SizedBox(width:double.infinity,child:OutlinedButton.icon(onPressed:_busy?null:()=>_export('json'),icon:const Icon(Icons.data_object),label:const Text('ESPORTA JSON')))
+        ],
+        if(_busy)const Padding(padding:EdgeInsets.all(16),child:Center(child:CircularProgressIndicator())),
+        const SizedBox(height:16),
+        Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
+        Text('Database TEST. L’importazione crea nuovi record e non aggiorna quelli esistenti.',style:TextStyle(color:ValoraAppearance.instance.textMuted,fontSize:12))
+      ])));
   }
 }
 
