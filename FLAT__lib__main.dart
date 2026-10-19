@@ -1400,6 +1400,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<dynamic> _rows = [];
   Map<String, dynamic>? _currentObject;
   List<Map<String, dynamic>> _pr02SearchResults = [];
+  List<Map<String, dynamic>> _pr12IncompleteRecords = [];
   bool _showPr02TechnicalTab = false;
   bool _pr02SearchCompleted = false;
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
