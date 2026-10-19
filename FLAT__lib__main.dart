@@ -2454,6 +2454,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (picked == null || picked.files.isEmpty) return;
       final file = picked.files.single;
       final bytes = file.bytes;
+      final extension = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
+      if (!const ['jpg','jpeg','png','webp','heic','heif'].contains(extension)) {
+        throw Exception('Formato non supportato. Usa JPG, PNG, WEBP, HEIC o HEIF.');
+      }
       if (bytes == null || bytes.isEmpty) throw Exception('Il file selezionato non contiene dati leggibili.');
       if (bytes.length > 10 * 1024 * 1024) throw Exception('L’immagine supera il limite di 10 MB.');
       setState(() {
@@ -2535,7 +2539,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Immagine vuota o superiore a 10 MB.');
     final safeName = fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
     final extRaw = safeName.contains('.') ? safeName.split('.').last.toLowerCase() : 'jpg';
-    final ext = const ['jpg','jpeg','png','webp','heic','heif'].contains(extRaw) ? extRaw : 'jpg';
+    if (!const ['jpg','jpeg','png','webp','heic','heif'].contains(extRaw)) {
+      throw Exception('Formato non supportato. Usa JPG, PNG, WEBP, HEIC o HEIF.');
+    }
+    final ext = extRaw;
     final mime = switch (ext) {
       'png' => 'image/png', 'webp' => 'image/webp', 'heic' => 'image/heic',
       'heif' => 'image/heif', _ => 'image/jpeg',
@@ -4368,7 +4375,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _imageStatus = 'Immagine caricata e associata all’oggetto #$savedId.';
           });
         } catch (e) {
-          if (mounted) setState(() => _imageStatus = 'Oggetto #$savedId salvato, ma immagine non associata: $e. Puoi riprovare da PR-02.');
+          if (mounted) setState(() {
+            _selectedImageBytes = null; _selectedImageName = null;
+            _imageStatus = 'Oggetto #$savedId salvato, ma immagine non associata: $e. Puoi riprovare caricandola da PR-02.';
+          });
         }
       }
       _description.clear(); _producer.clear(); _line.clear(); _family.clear();
