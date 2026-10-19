@@ -2529,6 +2529,49 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     ));
   }
 
+  Widget _readOnlyImageCard() {
+    final imageUrl = _existingImageUrl;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('IMMAGINE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 10),
+          if (imageUrl != null && imageUrl.startsWith('http'))
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                imageUrl,
+                width: double.infinity,
+                height: 240,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, progress) => progress == null
+                  ? child
+                  : SizedBox(height: 180, child: Center(child: CircularProgressIndicator(value: progress.expectedTotalBytes == null ? null : progress.cumulativeBytesLoaded / progress.expectedTotalBytes!))),
+                errorBuilder: (_, __, ___) => Column(children: [
+                  Icon(Icons.broken_image_outlined, size: 42, color: ValoraAppearance.instance.textFaint),
+                  const SizedBox(height: 6),
+                  Text('Immagine registrata, ma anteprima non disponibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                ]),
+              ),
+            )
+          else
+            Row(children: [
+              Icon(Icons.image_outlined, size: 30, color: ValoraAppearance.instance.textFaint),
+              const SizedBox(width: 10),
+              Expanded(child: Text(
+                _imageStatus == 'Verifica immagine associata…' ? 'Caricamento immagine…' :
+                _imageStatus == 'Immagine già associata all’oggetto.' ? 'Immagine associata, ma URL non disponibile.' :
+                'Nessuna immagine associata a questo oggetto.',
+                style: TextStyle(color: ValoraAppearance.instance.textSecondary),
+              )),
+            ]),
+        ]),
+      ),
+    );
+  }
+
   Future<String> _uploadAndRegisterImage({
     required int objectId, required Uint8List bytes, required String fileName,
     required String acquisition, required String procedure,
@@ -2578,13 +2621,17 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       );
       if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
       final data = Map<String, dynamic>.from(response.data as Map);
-      if (!mounted) return;
+      if (!mounted || _loadedObjectId != objectId) return;
       setState(() {
         _existingImageUrl = (data['signed_url'] ?? '').toString().trim().isEmpty ? null : data['signed_url'].toString();
-        if (_existingImageUrl != null && _selectedImageBytes == null) _imageStatus = 'Immagine già associata all’oggetto.';
+        _imageStatus = _existingImageUrl != null ? 'Immagine già associata all’oggetto.' : 'Nessuna immagine associata a questo oggetto.';
       });
-    } catch (_) {
-      // L'assenza di una foto non deve impedire di aprire la scheda.
+    } catch (e) {
+      if (!mounted || _loadedObjectId != objectId) return;
+      setState(() {
+        _existingImageUrl = null;
+        _imageStatus = 'Impossibile recuperare l’immagine: $e';
+      });
     }
   }
 
@@ -2628,7 +2675,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _existingImageUrl = null; _selectedImageBytes = null; _selectedImageName = null;
       _imageStatus = 'Verifica immagine associata…';
     });
-    if (widget.apiCode == 'PR-02') await _loadExistingImage(id);
+    if (widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER') await _loadExistingImage(id);
   }
 
   Future<void> _loadIncompleteMetadataCatalog() async {
@@ -3869,6 +3916,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             const SizedBox(height: 8),
             if (!_showPr02TechnicalTab) ...[
               _pr11HeaderCard(_currentObject!),
+              _readOnlyImageCard(),
               Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Padding(
