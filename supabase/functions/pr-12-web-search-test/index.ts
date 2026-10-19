@@ -668,7 +668,7 @@ function rankRelevantResults(results: SearchResult[], category: string, descript
   return results.map((result) => {
     const item = result as SearchResult & Record<string, unknown>;
     if (isLego(category, description) && code) {
-      const year = result.snippet.match(/(?:release(?:d)?(?: date| year)?|year released|data di uscita|anno di uscita|date de sortie)\\s*[:\\-]?\\s*(19\\d{2}|20\\d{2})/i)?.[1] ?? "";
+      const year = result.snippet.match(/(?:release(?:d)?(?: date| year)?|year released|data di uscita|anno di uscita|date de sortie)\s*[:\-]?\s*(19\d{2}|20\d{2})/i)?.[1] ?? "";
       item.produttore = "LEGO";
       item.codice_prodotto = code;
       if (year) item.anno_uscita = Number(year);
