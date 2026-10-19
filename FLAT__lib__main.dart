@@ -605,7 +605,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
       if (mounted) setState(() {
         _results.addAll(batchResults); _offset += batch.length;
         final good = batchResults.where((v) => v['ok'] == true).length;
-        _status = 'Lotto concluso: $good riusciti, ${batchResults.length - good} errori. Avanzamento \$_offset/${_queue.length}. Database invariato.';
+        _status = 'Lotto concluso: $good riusciti, ${batchResults.length - good} errori. Avanzamento $_offset/${_queue.length}. Database invariato.';
       });
     } catch (e) {
       if (mounted) setState(() { _error = '$e'; _status = 'Lotto interrotto. Puoi riprovare.'; });
@@ -628,10 +628,10 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
         const SizedBox(height: 8),
         OutlinedButton.icon(onPressed: _running || _loading || _queue.isEmpty || _offset >= _queue.length ? null : _runBatch,
           icon: _running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-          label: Text(_running ? 'RICERCA IN CORSO…' : 'ELABORA PROSSIMO LOTTO (\$remaining)')),
+          label: Text(_running ? 'RICERCA IN CORSO…' : 'ELABORA PROSSIMO LOTTO ($remaining)')),
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('STATO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text(_status),
-          if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: \$_offset · lotti: ${(_queue.length / 10).ceil()}'),
+          if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: $_offset · lotti: ${(_queue.length / 10).ceil()}'),
           if (_error != null) SelectableText(_error!, style: const TextStyle(color: Color(0xFFE35D5D))),
         ]))),
         if (_queue.isNotEmpty) ...[
