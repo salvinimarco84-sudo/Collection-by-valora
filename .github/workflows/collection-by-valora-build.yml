@@ -1,3 +1,4 @@
+# Re-trigger validation after enabling PR builds.
 name: COLLECTION by VALORA Build
 
 on:
