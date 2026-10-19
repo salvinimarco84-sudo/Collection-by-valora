@@ -1184,7 +1184,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         final sheet = workbook['Catalogo'];
         sheet.appendRow(_headers.map((h) => xlsx.TextCellValue(h)).toList());
         for (final row in rows) {
-          sheet.appendRow(_headers.map((h) => TextCellValue((row[h] ?? '').toString())).toList());
+          sheet.appendRow(_headers.map((h) => xlsx.TextCellValue((row[h] ?? '').toString())).toList());
         }
         final encoded = workbook.encode();
         if (encoded == null) throw Exception('Creazione file Excel non riuscita.');
