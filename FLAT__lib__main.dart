@@ -689,7 +689,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _lastMetadataQuery = '';
   String? _metadataSourceUrl;
   bool _metadataSearchExecuted = false;
-  String _metadataResult = 'La ricerca dei metadati partirà quando esci dal campo Descrizione oggetto.';
+  String _metadataResult = 'PR-01 resta manuale. Per cercare metadati usa PR-12 nella sezione RICERCHE.';
   bool _loading = false;
   bool _lockHeld = false;
   bool _dataConfirmed = false;
@@ -1027,15 +1027,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (!mounted || _currentObject == null) return;
     final hasMetadata = ['produttore', 'anno_uscita', 'codice_prodotto', 'fonte_dati_prodotto']
         .any((key) => (_currentObject?[key]?.toString().trim().isNotEmpty ?? false));
-    if (!hasMetadata) {
-      setState(() {
-        _metadataResult = 'Metadati assenti. Avvio della ricerca tramite PR-12…';
-        _output = _metadataResult;
-      });
-      await _prepareMetadata();
-    } else {
-      setState(() => _metadataResult = 'Metadati già presenti. Ricerca automatica PR-12 non necessaria.');
-    }
+    setState(() {
+      _metadataResult = hasMetadata
+          ? 'Metadati presenti. Per una nuova verifica usa la procedura autonoma PR-12 nella sezione RICERCHE.'
+          : 'Metadati incompleti. Avvia PR-12 dalla sezione RICERCHE. La scheda non avvia ricerche automatiche.';
+      _output = _metadataResult;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
     });
@@ -1126,9 +1123,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           SelectableText(_metadataResult, style: const TextStyle(color: Colors.white70, fontSize: 12)),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: _loading ? null : () => _run(_prepareMetadata),
+            onPressed: _loading ? null : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr12BatchPage())),
             icon: const Icon(Icons.travel_explore),
-            label: const Text('RICHIAMA METADATI PR-12'),
+            label: const Text('APRI PROCEDURA PR-12'),
           ),
           const Divider(height: 24),
           if (technicalEntries.isEmpty)
@@ -2110,7 +2107,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
         _lastMetadataQuery = '';
-        _metadataResult = 'Inserisci la descrizione e poi esci dal campo per preparare la ricerca metadati.';
+        _metadataResult = 'PR-01 resta manuale. Per la ricerca metadati usa PR-12 nella sezione RICERCHE.';
         _output = 'Pronto per il prossimo oggetto.';
       });
       // Aspetta che il dialogo sia chiuso e il modulo sia ridisegnato prima di
