@@ -245,6 +245,7 @@ async function searchDcBatmanHush(description: string): Promise<SearchResult[]> 
 
 type ConfiguredSource = { codice_fonte?: string; nome_fonte?: string; url_principale?: string; tipo_fonte?: string; ambito_ricerca?: string; produttore?: string; linea_prodotto?: string; famiglia_prodotto?: string; priorita_metadati?: number; stato_affidabilita?: string; riutilizzabile?: boolean };
 type RegistrySource = { id?: string; nome?: string; url_base?: string; ambito?: string; categoria?: string; marchio_editore?: string; franchise?: string; mercato?: string; tipo_fonte?: string; priorita?: number; attendibilita_dichiarata?: string; stato_verifica?: string; attiva?: boolean; origine_configurazione?: string; proprietario_utente?: string; condivisa?: boolean };
+type RegistryScope = { fonte_id?: string; categoria?: string; marchio_editore?: string; franchise?: string; mercato?: string; priorita_override?: number | null; note?: string };
 type FranchiseRule = { franchise?: string; alias_ricerca?: string[]; codice_fonte_preferita?: string; priorita?: number; attiva?: boolean };
 function supabaseConfig() {
   const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
@@ -296,6 +297,11 @@ async function loadConfiguredSources(category: string, description: string, user
   // Le fonti personali vengono lette ma non promosse automaticamente a "verificate".
   try {
     const registry = await readConfigTable<RegistrySource>("registro_fonti", "id,nome,url_base,ambito,categoria,marchio_editore,franchise,mercato,tipo_fonte,priorita,attendibilita_dichiarata,stato_verifica,attiva,origine_configurazione,proprietario_utente,condivisa");
+    // Una singola fonte può servire più categorie/mercati tramite ambiti separati.
+    // Se la tabella degli ambiti non è disponibile, il registro principale resta utilizzabile.
+    let scopes: RegistryScope[] = [];
+    try { scopes = await readConfigTable<RegistryScope>("registro_fonti_ambiti", "fonte_id,categoria,marchio_editore,franchise,mercato,priorita_override,note"); }
+    catch (e) { warnings.push("Ambiti specifici delle fonti: " + (e instanceof Error ? e.message : String(e))); }
     const normalizedCategory = normalizeText(category);
     const normalizedDescription = normalizeText(description + " " + theme);
     const normalizedMarket = normalizeText(market || "Italia");
@@ -312,33 +318,57 @@ async function loadConfiguredSources(category: string, description: string, user
       COLLEZIONABILE: ["universale", "collectibles", "collectible", "collezionismo"]
     };
     const categoryTerms = categoryAliases[category] ?? [normalizedCategory];
-    const relevant = registry.filter(s => {
-      const visible = (s.origine_configurazione === "sistema" || s.condivisa === true || (!!userId && s.proprietario_utente === userId));
-      const sourceMarket = normalizeText(s.mercato || "globale");
-      const marketMatch = sourceMarket === "globale" || sourceMarket === normalizedMarket ||
+    const marketMatches = (value: string | undefined) => {
+      const sourceMarket = normalizeText(value || "globale");
+      return sourceMarket === "globale" || sourceMarket === normalizedMarket ||
         (normalizedMarket === "italia" && sourceMarket === "europa");
-      const sourceCategory = normalizeText(s.categoria || "");
-      const categoryMatch = !sourceCategory || sourceCategory === "universale" ||
+    };
+    const categoryMatches = (value: string | undefined) => {
+      const sourceCategory = normalizeText(value || "");
+      return !sourceCategory || sourceCategory === "universale" ||
         categoryTerms.some(term => term.length >= 3 && (sourceCategory.includes(normalizeText(term)) || normalizeText(term).includes(sourceCategory)));
-      const themeMatch = !!normalizeText(s.franchise || "") && normalizedDescription.includes(normalizeText(s.franchise || ""));
-      const makerMatch = !!normalizeText(s.marchio_editore || "") && normalizedDescription.includes(normalizeText(s.marchio_editore || ""));
-      return visible && s.attiva !== false && !!s.url_base && !!hostnameFromUrl(s.url_base) &&
-        !/brickset/i.test([s.nome,s.url_base].join(" ")) && marketMatch &&
-        (categoryMatch || themeMatch || makerMatch);
+    };
+    const textMatches = (value: string | undefined) => {
+      const term = normalizeText(value || "").trim();
+      return !!term && normalizedDescription.includes(term);
+    };
+    const relevant: Array<{ source: RegistrySource; scope?: RegistryScope }> = [];
+    for (const source of registry) {
+      const visible = source.origine_configurazione === "sistema" || source.condivisa === true ||
+        (!!userId && source.proprietario_utente === userId);
+      if (!visible || source.attiva === false || !source.url_base || !hostnameFromUrl(source.url_base) ||
+          /brickset/i.test([source.nome, source.url_base].join(" "))) continue;
+      const sourceScopes = scopes.filter(scope => scope.fonte_id === source.id);
+      if (sourceScopes.length) {
+        const matchedScopes = sourceScopes.filter(scope =>
+          marketMatches(scope.mercato) &&
+          (categoryMatches(scope.categoria) || textMatches(scope.franchise) || textMatches(scope.marchio_editore))
+        );
+        for (const scope of matchedScopes) relevant.push({ source, scope });
+      } else if (marketMatches(source.mercato) &&
+          (categoryMatches(source.categoria) || textMatches(source.franchise) || textMatches(source.marchio_editore))) {
+        relevant.push({ source });
+      }
+    }
+    const mapped: ConfiguredSource[] = relevant.map(({ source: s, scope }) => {
+      const effectiveCategory = scope?.categoria ?? s.categoria;
+      const effectiveMaker = scope?.marchio_editore ?? s.marchio_editore;
+      const effectiveFranchise = scope?.franchise ?? s.franchise;
+      const effectiveMarket = scope?.mercato ?? s.mercato;
+      return {
+        codice_fonte: "REGISTRY:" + String(s.id ?? s.nome ?? "") + (scope ? ":" + String(scope.categoria ?? "ambito") + ":" + String(effectiveMarket ?? "globale") : ""),
+        nome_fonte: s.nome,
+        url_principale: s.url_base,
+        tipo_fonte: s.tipo_fonte,
+        ambito_ricerca: [s.ambito, effectiveMarket, s.stato_verifica, scope?.note].filter(Boolean).join(" · "),
+        produttore: effectiveMaker,
+        linea_prodotto: effectiveFranchise,
+        famiglia_prodotto: effectiveCategory,
+        priorita_metadati: scope?.priorita_override ?? s.priorita ?? 50,
+        stato_affidabilita: s.stato_verifica === "verificata" ? s.attendibilita_dichiarata : "da_verificare",
+        riutilizzabile: true,
+      };
     });
-    const mapped: ConfiguredSource[] = relevant.map(s => ({
-      codice_fonte: "REGISTRY:" + String(s.id ?? s.nome ?? ""),
-      nome_fonte: s.nome,
-      url_principale: s.url_base,
-      tipo_fonte: s.tipo_fonte,
-      ambito_ricerca: [s.ambito,s.mercato,s.stato_verifica].filter(Boolean).join(" · "),
-      produttore: s.marchio_editore,
-      linea_prodotto: s.franchise,
-      famiglia_prodotto: s.categoria,
-      priorita_metadati: s.priorita ?? 50,
-      stato_affidabilita: s.stato_verifica === "verificata" ? s.attendibilita_dichiarata : "da_verificare",
-      riutilizzabile: true,
-    }));
     archive = [...archive, ...mapped];
   } catch (e) { warnings.push("Registro fonti estendibile: " + (e instanceof Error ? e.message : String(e))); }
   try { rules = await readConfigTable<FranchiseRule>("regole_ricerca_franchise", "franchise,alias_ricerca,codice_fonte_preferita,priorita,attiva"); }
