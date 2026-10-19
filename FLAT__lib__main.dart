@@ -1379,6 +1379,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _producer = TextEditingController();
   final _line = TextEditingController();
   final _family = TextEditingController();
+  final _metadataSource = TextEditingController();
+  final _verificationStatus = TextEditingController(text: 'DA_VERIFICARE');
 
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
@@ -1476,7 +1478,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _descriptionFocus.dispose();
     _searchFocusNode.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
-    _quantity.dispose(); _unitPrice.dispose(); _totalValue.dispose(); _value.dispose(); _marketValue.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
+    _quantity.dispose(); _unitPrice.dispose(); _totalValue.dispose(); _value.dispose(); _marketValue.dispose(); _producer.dispose(); _line.dispose(); _family.dispose(); _metadataSource.dispose(); _verificationStatus.dispose();
     super.dispose();
   }
 
@@ -1589,10 +1591,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }
       if (_family.text.trim() != (_currentObject?['codice_prodotto'] ?? '').toString()) item['codice_prodotto'] = _family.text.trim().isEmpty ? null : _family.text.trim();
       final currentSource = (_currentObject?['fonte_dati_prodotto'] ?? '').toString().trim();
-      final proposedSource = (_metadataSourceUrl ?? '').trim();
-      if (proposedSource.isNotEmpty && proposedSource != currentSource) {
-        item['fonte_dati_prodotto'] = proposedSource;
-        item['stato_verifica_dati'] = 'DA_VERIFICARE';
+      final proposedSource = _metadataSource.text.trim();
+      if (proposedSource != currentSource) {
+        item['fonte_dati_prodotto'] = proposedSource.isEmpty ? null : proposedSource;
+      }
+      final currentVerification = (_currentObject?['stato_verifica_dati'] ?? 'DA_VERIFICARE').toString().trim();
+      final proposedVerification = _verificationStatus.text.trim();
+      if (proposedVerification != currentVerification) {
+        item['stato_verifica_dati'] = proposedVerification.isEmpty ? null : proposedVerification;
       }
       final currentValueRaw = _currentObject?['valore_oggetto'] ?? _currentObject?['valore'];
       final currentValueText = currentValueRaw == null ? '' : currentValueRaw.toString().trim();
@@ -2100,8 +2106,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _field(_producer, 'Produttore'),
             _field(_line, 'Anno di uscita', type: TextInputType.number),
             _field(_family, 'Codice prodotto'),
-            _detailFieldCard('fonte_dati_prodotto', _metadataSourceUrl ?? object['fonte_dati_prodotto']),
-            _detailFieldCard('stato_verifica_dati', object['stato_verifica_dati'] ?? 'DA_VERIFICARE'),
+            _field(_metadataSource, 'Fonte dei metadati / URL'),
+            _field(_verificationStatus, 'Stato verifica metadati'),
             _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
             _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
             _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
@@ -2144,6 +2150,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _producer.text = txt(['produttore']);
       _line.text = txt(['anno_uscita']);
       _family.text = txt(['codice_prodotto']);
+      _metadataSource.text = txt(['fonte_dati_prodotto']);
+      _verificationStatus.text = txt(['stato_verifica_dati'], 'DA_VERIFICARE');
       final c = txt(['condizione'], _condition);
       if (const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
       final cp = txt(['completezza'], _completeness);
@@ -3545,6 +3553,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _producer.clear();
         _line.clear();
         _family.clear();
+        _metadataSource.clear();
+        _verificationStatus.text = 'DA_VERIFICARE';
         _notes.clear();
         _quantity.text = '1';
         _unitPrice.clear();
