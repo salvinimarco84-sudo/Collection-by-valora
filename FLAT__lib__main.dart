@@ -480,6 +480,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final _assistant = TextEditingController(text: 'Demon');
   final _newPassword = TextEditingController();
   final _confirmPassword = TextEditingController();
+  final _emailController = TextEditingController();
   String _market = 'Italia';
   List<Map<String, dynamic>> _markets = [];
   bool _profileLoaded = false;
@@ -494,19 +495,20 @@ class _UserProfilePageState extends State<UserProfilePage> {
     super.initState();
     final user = Supabase.instance.client.auth.currentUser;
     _name.text = (user?.userMetadata?['display_name'] ?? user?.userMetadata?['name'] ?? '').toString();
+    _emailController.text = user?.email ?? 'Email non disponibile';
     _loadProfile();
   }
 
-  Future<void> _loadProfile() async {
+  Future<bool> _loadProfile() async {
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
-    if (user == null) return;
+    if (user == null) return false;
     try {
       final markets = await client.schema('collection').from('mercati')
           .select('codice_mercato,nome_mercato').order('codice_mercato');
       final rows = await client.schema('collection').from('master_utente')
           .select().eq('auth_user_id', user.id).limit(1);
-      if (!mounted) return;
+      if (!mounted) return false;
       setState(() {
         _markets = List<Map<String, dynamic>>.from(markets);
         if (rows.isNotEmpty) {
@@ -524,9 +526,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
         }
         _profileLoaded = true;
       });
+      return true;
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Impossibile caricare il profilo dal database TEST: $e')));
+      return false;
     }
   }
 
@@ -564,8 +568,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
       } else {
         await client.schema('collection').from('master_utente').update(values).eq('auth_user_id', user.id);
       }
-      await _loadProfile();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profilo salvato e riletto dal database TEST.')));
+      final reloaded = await _loadProfile();
+      if (!reloaded) {
+        throw StateError('Il salvataggio è stato inviato, ma la rilettura di conferma non è riuscita.');
+      }
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profilo salvato e verificato rileggendolo dal database TEST.')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito. Verifica autorizzazione e policy TEST. Dettaglio: $e')));
     } finally {
@@ -579,6 +586,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     _assistant.dispose();
     _newPassword.dispose();
     _confirmPassword.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -671,7 +679,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               TextField(controller: _name, decoration: _fieldDecoration('Nome utente')),
               const SizedBox(height: 12),
               TextField(
-                controller: TextEditingController(text: email),
+                controller: _emailController,
                 readOnly: true,
                 decoration: _fieldDecoration('Email', suffixIcon: const Icon(Icons.lock_outline),
                   helper: 'Gestita dal sistema di autenticazione'),
