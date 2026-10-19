@@ -24,14 +24,16 @@ function sourcesFor(category: string, query: string): string[] {
   query = canonicalSearchText(query);
   // Le linee specifiche hanno precedenza sulle categorie generiche: Saint Seiya,
   // per esempio, è una action figure ma richiede prima i cataloghi Myth Cloth.
-  if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista/i.test(query) || /^(BEER|BIRRA|BIRRE|BIRRA_COLLEZIONE)$/.test(category)) return [
-    "site:untappd.com", "site:beeradvocate.com", "site:ratebeer.com", "site:beermenus.com"
+  if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista|breweriana|lattine da collezione|boccali da collezione/i.test(query) || /^(BEER|BIRRA|BIRRE|BIRRA_COLLEZIONE)$/.test(category)) return [
+    "site:untappd.com", "site:beeradvocate.com", "site:ratebeer.com", "site:beermenus.com",
+    "site:bcca-usbc.com", "site:breweriana.com", "site:bcca.com"
   ];
   if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(query) || /^(WINE|VINO|VINI|BOTTIGLIE_VINO|VINO_COLLEZIONE)$/.test(category)) return [
     "site:wine-searcher.com", "site:vivino.com", "site:cellartracker.com", "site:decanter.com", "site:winespectator.com", "site:liv-ex.com"
   ];
-  if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai/i.test(query)) return [
-    "site:mattel.com", "site:hasbro.com", "site:hasbropulse.com", "site:takaratomy.co.jp", "site:playmobil.com", "site:schleich-s.com", "site:thetoysdb.org", "site:transformerland.com"
+  if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai|star wars|gi joe|kenner vintage|toy vault|toyvault/i.test(query)) return [
+    "site:mattel.com", "site:hasbro.com", "site:hasbropulse.com", "site:takaratomy.co.jp", "site:playmobil.com", "site:schleich-s.com",
+    "site:thetoysdb.org", "site:toyvault.app", "site:starwarsdatabase.com", "site:vintagetoy.co", "site:transformerland.com"
   ];
   if (/saint seiya|myth cloth|pegasus|cavalieri dello zodiaco/i.test(query)) return [
     "site:tamashiiweb.com/item_brand/saintclothmyth",
@@ -402,15 +404,15 @@ async function loadConfiguredSources(category: string, description: string, user
     MUSIC: ["vinile", "vinyl", "record", "disco", "music", "discogs", "lp"],
     NUMISMATICS: ["moneta", "numismatic", "coin", "banknote", "banconota", "francobollo", "stamp"],
     TRADING_CARDS: ["trading card", "pokemon", "magic the gathering", "tcg", "sports card", "cardmarket", "tcgplayer"],
-    BEER: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana"],
-    BIRRA: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana"],
-    BIRRE: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana"],
+    BEER: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana", "lattine", "boccali"],
+    BIRRA: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana", "lattine", "boccali"],
+    BIRRE: ["beer", "birra", "birre", "birrificio", "untappd", "beeradvocate", "bcca", "breweriana", "lattine", "boccali"],
     WINE: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
     VINO: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
     VINI: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
     BOTTIGLIE_VINO: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
     VINO_COLLEZIONE: ["wine", "vino", "vini", "bottiglia", "wine-searcher", "vivino", "cellartracker", "liv-ex", "decanter"],
-    GIOCATTOLO: ["toy", "giocattol", "transformer", "robot", "figure", "kinder", "vintage", "sorpresine", "astrocollection", "collectingkinder", "toyvault", "mattel", "hasbro", "takara", "playmobil", "schleich"],
+    GIOCATTOLO: ["toy", "giocattol", "transformer", "robot", "figure", "kinder", "vintage", "sorpresine", "astrocollection", "collectingkinder", "toyvault", "mattel", "hasbro", "takara", "playmobil", "schleich", "the toys database", "star wars database", "vintage toy catalog"],
     COLLEZIONABILE: ["collectible", "collectibles", "kinder", "sorpresine", "toy", "giocattol", "saint seiya", "myth cloth", "gundam", "gunpla", "diecast", "maisto", "fumett", "comic", "manga", "robot", "star wars", "transformer", "orologi", "orologio", "watch", "swatch", "rolex", "vinile", "vinyl", "numismatic", "coin", "francobollo", "trading card", "beer", "birra", "wine", "vino"]
   };
   const hints = categoryHints[category] ?? [];
@@ -561,6 +563,9 @@ function makeQueries(category: string, description: string): string[] {
       queries.push('site:beeradvocate.com "' + cleaned + '"');
       queries.push('site:ratebeer.com "' + cleaned + '"');
       queries.push('site:beermenus.com "' + cleaned + '"');
+      queries.push('site:bcca-usbc.com "' + cleaned + '"');
+      queries.push('site:breweriana.com "' + cleaned + '"');
+      queries.push('site:bcca.com "' + cleaned + '"');
     }
     if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(normalized) || /^(WINE|VINO|VINI|BOTTIGLIE_VINO|VINO_COLLEZIONE)$/.test(category)) {
       queries.push('site:wine-searcher.com "' + cleaned + '"');
@@ -577,6 +582,9 @@ function makeQueries(category: string, description: string): string[] {
       queries.push('site:playmobil.com "' + cleaned + '"');
       queries.push('site:schleich-s.com "' + cleaned + '"');
       queries.push('site:thetoysdb.org "' + cleaned + '"');
+      queries.push('site:toyvault.app "' + cleaned + '"');
+      queries.push('site:starwarsdatabase.com "' + cleaned + '"');
+      queries.push('site:vintagetoy.co "' + cleaned + '"');
     }
     if (/toy|giocattol|vintage|kinder|sorpresine|robot/i.test(normalized) || category === "GIOCATTOLO" || category === "COLLEZIONABILE") {
       queries.push('site:thetoysdb.org "' + cleaned + '"');
