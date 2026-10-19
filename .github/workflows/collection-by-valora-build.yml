@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - fix/pr03-flusso-semplificato
+      - feat/blocco-utente
 
 permissions:
   contents: read
