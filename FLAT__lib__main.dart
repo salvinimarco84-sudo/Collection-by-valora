@@ -2796,7 +2796,80 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                           Text(result['ok'] != true ? 'Errore tecnico: ${result['error'] ?? 'ricerca non riuscita'}' : (((result['numero_risultati'] as num?) ?? candidateList.length) == 0 ? 'Nessuna corrispondenza pertinente trovata' : '${result['numero_risultati'] ?? candidateList.length} risultati candidati, da verificare')),
                           ...candidateList.take(5).map((candidate) {
                             final item = candidate is Map ? Map<String, dynamic>.from(candidate) : <String, dynamic>{};
-                            return ListTile(dense: true, contentPadding: EdgeInsets.zero, title: Text((item['title'] ?? 'Fonte senza titolo').toString()), subtitle: Text('${item['snippet'] ?? ''}\n${item['url'] ?? ''}'));
+                            final imageUrl = (item['image_url'] ?? item['immagine'] ?? '').toString().trim();
+                            final title = (item['title'] ?? 'Titolo non disponibile').toString().trim();
+                            final snippet = (item['snippet'] ?? '').toString().trim();
+                            final url = (item['url'] ?? '').toString().trim();
+                            final maker = (item['produttore'] ?? item['editore'] ?? '').toString().trim();
+                            final year = (item['anno_uscita'] ?? item['anno'] ?? '').toString().trim();
+                            final productCode = (item['codice_prodotto'] ?? item['codice'] ?? item['isbn'] ?? '').toString().trim();
+                            final source = Uri.tryParse(url)?.host.replaceFirst(RegExp(r'^www\\.'), '') ?? '';
+                            return Container(
+                              margin: const EdgeInsets.only(top: 10),
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: ValoraAppearance.instance.neutralOverlayStrong),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  if (imageUrl.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          imageUrl, width: 92, height: 112, fit: BoxFit.contain,
+                                          errorBuilder: (context, error, stack) => Container(
+                                            width: 92, height: 112, alignment: Alignment.center,
+                                            color: ValoraAppearance.instance.neutralOverlay,
+                                            child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                              Icon(Icons.image_not_supported_outlined, size: 28),
+                                              SizedBox(height: 4),
+                                              Text('Immagine\nnon disponibile', textAlign: TextAlign.center, style: TextStyle(fontSize: 10)),
+                                            ]),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: Container(
+                                        width: 92, height: 112, alignment: Alignment.center,
+                                        decoration: BoxDecoration(color: ValoraAppearance.instance.neutralOverlay, borderRadius: BorderRadius.circular(8)),
+                                        child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                          Icon(Icons.image_search_outlined, size: 30),
+                                          SizedBox(height: 5),
+                                          Text('Nessuna\nimmagine', textAlign: TextAlign.center, style: TextStyle(fontSize: 11)),
+                                        ]),
+                                      ),
+                                    ),
+                                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                    const SizedBox(height: 6),
+                                    if (maker.isNotEmpty) Text('Produttore / editore: $maker'),
+                                    if (year.isNotEmpty) Text('Anno: $year'),
+                                    if (productCode.isNotEmpty) Text('Codice / ISBN: $productCode'),
+                                    Text('Fonte: ${source.isEmpty ? 'sito non identificato' : source}', style: TextStyle(color: sectionColor, fontSize: 12)),
+                                  ])),
+                                ]),
+                                if (snippet.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(snippet, maxLines: 5, overflow: TextOverflow.ellipsis),
+                                ],
+                                if (url.isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  SelectableText(url, style: TextStyle(color: sectionColor, fontSize: 12)),
+                                ],
+                                const SizedBox(height: 6),
+                                Row(children: [
+                                  const Icon(Icons.help_outline, size: 16),
+                                  const SizedBox(width: 5),
+                                  Expanded(child: Text('Candidato da verificare: non è ancora un’identificazione certa.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
+                                ]),
+                              ]),
+                            );
                           }),
                         ])));
                       }),
