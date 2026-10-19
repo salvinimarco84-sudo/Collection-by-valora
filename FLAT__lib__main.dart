@@ -2037,7 +2037,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _pr02SearchCompleted = false;
         _metadataSourceUrl = null;
         _metadataSearchExecuted = false;
-        _lastMetadataQuery = '';
         _metadataResult = 'Inserisci una parola o parte della descrizione per iniziare.';
         _lastResult = null;
         _dataConfirmed = false;
