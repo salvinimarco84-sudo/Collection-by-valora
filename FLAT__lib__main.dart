@@ -1541,7 +1541,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final response = await client.send(request).timeout(const Duration(seconds: 45));
       if (response.statusCode != 200) {
         final errorBody = await response.stream.bytesToString();
-        throw Exception('PR-12 Engine HTTP ${response.statusCode}: ${errorBody.take(500)}');
+        throw Exception('PR-12 Engine HTTP ${response.statusCode}: ${errorBody.length > 500 ? errorBody.substring(0, 500) : errorBody}');
       }
 
       Map<String, dynamic>? finalResult;
