@@ -734,7 +734,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               color: ValoraAppearance.instance.card,
               child: const Padding(
                 padding: EdgeInsets.all(14),
-                child: Text('La modifica della password usa Supabase Auth. Il salvataggio del profilo e delle preferenze sarà collegato a master_utente dopo aver completato l’associazione sicura con l’account autenticato.'),
+                child: Text('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.'),
               ),
             ),
           ];
