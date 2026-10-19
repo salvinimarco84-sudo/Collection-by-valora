@@ -1403,6 +1403,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   bool _pr12AiBatchRunning = false;
   String _pr12AiBatchStatus = 'Ricerca multi-fonte non ancora avviata.';
   List<Map<String, dynamic>> _pr12AiResults = [];
+  List<Map<String, dynamic>> _pr12UnresolvedRecords = [];
+  final Map<String, int> _pr12SelectedCandidates = {};
+  bool _pr12RetryRunning = false;
   bool _showPr02TechnicalTab = false;
   bool _pr02SearchCompleted = false;
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
@@ -2207,41 +2210,57 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
-  Future<void> _runPr12AiBatch() async {
+  Future<void> _runPr12AiBatch({bool retryUnresolved = false}) async {
     if (_pr12IncompleteRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Prima esegui ANALIZZA CATALOGO.'); return; }
-    if (_pr12NextBatchOffset >= _pr12IncompleteRecords.length) { setState(() => _pr12AiBatchStatus = 'Tutti i record della coda sono stati inviati alla ricerca.'); return; }
-    setState(() { _pr12AiBatchRunning = true; _pr12AiBatchStatus = 'Ricerca multi-fonte in corso…'; });
+    final List<Map<String, dynamic>> batch;
+    if (retryUnresolved) {
+      if (_pr12UnresolvedRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Non ci sono record da riprovare.'); return; }
+      batch = _pr12UnresolvedRecords.take(10).toList();
+    } else {
+      if (_pr12NextBatchOffset >= _pr12IncompleteRecords.length) { setState(() => _pr12AiBatchStatus = 'Prima passata completata. I record irrisolti restano disponibili per una nuova ricerca.'); return; }
+      batch = _pr12IncompleteRecords.skip(_pr12NextBatchOffset).take(10).toList();
+    }
+    setState(() { _pr12AiBatchRunning = true; _pr12RetryRunning = retryUnresolved; _pr12AiBatchStatus = retryUnresolved ? 'Nuovo tentativo sui record irrisolti…' : 'Ricerca multi-fonte del lotto in corso…'; });
     try {
-      final batch = _pr12IncompleteRecords.skip(_pr12NextBatchOffset).take(10).toList();
       final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
         'modalita_ia': 'TEST',
         'oggetti': batch.map((row) => {'id': (row['codice_oggetto'] ?? '').toString(), 'descrizione': (row['descrizione_oggetto'] ?? '').toString(), 'categoria': _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString())}).toList(),
       });
       final raw = response.data;
-      final events = <Map<String, dynamic>>[];
+      final finals = <Map<String, dynamic>>[];
+      if (raw is Map && raw['risultati_finali'] is List) finals.addAll((raw['risultati_finali'] as List).whereType<Map>().map((item) => Map<String, dynamic>.from(item)));
       if (raw is String) {
         for (final line in raw.split(RegExp(r'\r?\n'))) {
           if (!line.startsWith('data:')) continue;
-          final payload = line.substring(5).trim();
-          if (payload.isEmpty) continue;
-          try { events.add(Map<String, dynamic>.from(jsonDecode(payload) as Map)); } catch (_) {}
+          final payload = line.substring(5).trim(); if (payload.isEmpty) continue;
+          try { final event = Map<String, dynamic>.from(jsonDecode(payload) as Map); final result = event['risultato']; if ((event['tipo'] == 'oggetto_completato' || event['tipo'] == 'oggetto_errore') && result is Map) finals.add(Map<String, dynamic>.from(result)); } catch (_) {}
         }
-      } else if (raw is Map) { events.add(Map<String, dynamic>.from(raw)); }
-      final finals = <Map<String, dynamic>>[];
-      if (raw is Map && raw['risultati_finali'] is List) {
-        finals.addAll((raw['risultati_finali'] as List).whereType<Map>().map((item) => Map<String, dynamic>.from(item)));
-      }
-      for (final event in events) {
-        if (event['tipo'] == 'oggetto_completato' || event['tipo'] == 'oggetto_errore') { final result = event['risultato']; if (result is Map) finals.add(Map<String, dynamic>.from(result)); }
-        if (event['tipo'] == 'errore_coda') throw Exception(event['error'] ?? 'Errore nella coda di ricerca.');
       }
       if (finals.isEmpty) throw Exception('Il motore non ha restituito risultati leggibili.');
+      final byId = {for (final result in finals) (result['oggetto_id'] ?? '').toString(): result};
+      final resolvedIds = <String>{};
+      final unresolved = <Map<String, dynamic>>[];
+      for (final row in batch) {
+        final id = (row['codice_oggetto'] ?? '').toString();
+        final result = byId[id];
+        final count = result?['numero_risultati'] is num ? (result!['numero_risultati'] as num).toInt() : (result?['risultati'] is List ? (result!['risultati'] as List).length : 0);
+        if (result?['ok'] == true && count > 0) { resolvedIds.add(id); } else { unresolved.add(row); }
+      }
       if (!mounted) return;
-      setState(() { _pr12AiResults = [..._pr12AiResults, ...finals]; _pr12NextBatchOffset += batch.length; _pr12AiBatchStatus = 'Lotto elaborato: ${finals.where((r) => r['ok'] == true && ((r['numero_risultati'] as num?) ?? 0) > 0).length} con risultati, ${finals.where((r) => r['ok'] == true && ((r['numero_risultati'] as num?) ?? 0) == 0).length} senza corrispondenze, ${finals.where((r) => r['ok'] != true).length} errori tecnici. Avanzamento: $_pr12NextBatchOffset/${_pr12IncompleteRecords.length}. Nessun dato salvato.'; });
+      setState(() {
+        _pr12AiResults = [..._pr12AiResults.where((old) => !finals.any((fresh) => (fresh['oggetto_id'] ?? '').toString() == (old['oggetto_id'] ?? '').toString())), ...finals];
+        if (retryUnresolved) {
+          _pr12UnresolvedRecords = [..._pr12UnresolvedRecords.where((row) => !resolvedIds.contains((row['codice_oggetto'] ?? '').toString()) && !batch.any((b) => (b['codice_oggetto'] ?? '').toString() == (row['codice_oggetto'] ?? '').toString())), ...unresolved];
+        } else {
+          _pr12NextBatchOffset += batch.length;
+          _pr12UnresolvedRecords = [..._pr12UnresolvedRecords, ...unresolved.where((row) => !_pr12UnresolvedRecords.any((old) => old['codice_oggetto'] == row['codice_oggetto']))];
+        }
+        final good = finals.where((r) => r['ok'] == true && ((r['numero_risultati'] as num?) ?? ((r['risultati'] is List) ? (r['risultati'] as List).length : 0)) > 0).length;
+        _pr12AiBatchStatus = '${retryUnresolved ? 'Nuovo tentativo' : 'Lotto completato'}: $good con risultati pertinenti; ${batch.length - good} da approfondire. Prima passata: $_pr12NextBatchOffset/${_pr12IncompleteRecords.length}. Da riprovare: ${_pr12UnresolvedRecords.length}. Nessun dato salvato.';
+      });
     } catch (e) { if (mounted) setState(() => _pr12AiBatchStatus = 'Ricerca non completata: $e'); }
-    finally { if (mounted) setState(() => _pr12AiBatchRunning = false); }
+    finally { if (mounted) setState(() { _pr12AiBatchRunning = false; _pr12RetryRunning = false; }); }
   }
-
   String _pr12CategoryFromDescription(String description) {
     final v = description.toLowerCase();
     if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(v)) return 'LEGO';
