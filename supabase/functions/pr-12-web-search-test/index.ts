@@ -827,7 +827,7 @@ Deno.serve(async (req: Request) => {
     const configured = await loadConfiguredSources(category, description, authenticatedUserId(req), theme, market);
     const staticTargeted = sourcesFor(category, description + " " + theme);
     const targeted = [...new Set([...staticTargeted, ...configured.names])];
-    let directResults: SearchResult[] = [];
+    // Interroga prima i cataloghi ufficiali direttamente (LEGO/BrickLink/Rebrickable e Tamashii);\n    // le query web generiche restano un secondo livello e non sostituiscono il catalogo.\n    let directResults: SearchResult[] = await searchKnownCatalogs(category, description + " " + theme);
     const errors: string[] = [...configured.warnings];
     // Query mirate alla categoria e al franchise.
     const cleanDescription = description.replace(/["']/g, " ").replace(/\s+/g, " ").trim();
