@@ -2548,7 +2548,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     try {
       final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
         'modalita_ia': 'TEST',
-        'oggetti': batch.map((row) => {'id': (row['codice_oggetto'] ?? '').toString(), 'descrizione': (row['descrizione_oggetto'] ?? '').toString(), 'categoria': _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString()), 'tema': (row['tema'] ?? row['franchise'] ?? row['franchise_tema'] ?? row['linea_prodotto'] ?? '').toString().trim()}).toList(),
+        'oggetti': batch.map((row) => {'id': (row['codice_oggetto'] ?? '').toString(), 'descrizione': (row['descrizione_oggetto'] ?? '').toString(), 'categoria': _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString()), 'tema': (row['tema'] ?? row['franchise'] ?? row['franchise_tema'] ?? row['linea_prodotto'] ?? '').toString().trim(), 'mercato': (row['mercato'] ?? row['market'] ?? 'Italia').toString()}).toList(),
       });
       final raw = response.data;
       final finals = <Map<String, dynamic>>[];
@@ -2610,8 +2610,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ..clear()
         ..addAll(deduplicated.values);
       if (finals.isEmpty) {
-        final contentType = response.response.headers['content-type'] ?? 'sconosciuto';
-        throw Exception('Risposta PR-12 non riconosciuta (HTTP ${response.status}, Content-Type: $contentType, tipo dati: ${raw.runtimeType}). Nessun dato del catalogo modificato.');
+        throw Exception('Risposta PR-12 non riconosciuta (HTTP ${response.status}, tipo dati: ${raw.runtimeType}). Nessun dato del catalogo modificato.');
       }
       final byId = {for (final result in finals) (result['oggetto_id'] ?? '').toString(): result};
       final resolvedIds = <String>{};
