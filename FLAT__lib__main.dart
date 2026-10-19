@@ -436,13 +436,6 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Inserzioni attive', description: 'Consulta le inserzioni attive.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
     ProcedureEntry(title: 'Report vendite', description: 'Consulta il riepilogo delle vendite.', apiCode: 'REPORT-SALES'),
   ],
-  'FLUSSI': [
-    ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta i movimenti di cassa.', apiCode: 'REPORT-CASH'),
-    ProcedureEntry(title: 'Nuovo movimende abbonamento premium.', apiCode: 'LAUNCH-VALORA'),
-    ProcedureEntry(title: 'VALORE COLLEZIONE · PR-18', description: 'Valutazione complessiva della collezione, storico e report. Richiede abbonamento premium.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
-    ProcedureEntry(title: 'VALUTA ACQUISTO · PR-20', description: 'Analizza la convenienza di un’offerta partendo da una foto, uno screenshot, un link o prezzo e descrizione. Usa PR-12, non il motore premium VALORA.', enabled: false),
-
-  ],
   'REPORT': [
     ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta le entrate derivate dalle vendite e le uscite derivate dagli acquisti.', apiCode: 'REPORT-CASH'),
     ProcedureEntry(title: 'Report acquisti', description: 'Riepilogo degli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
