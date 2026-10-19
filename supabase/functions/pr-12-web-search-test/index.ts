@@ -28,8 +28,9 @@ function sourcesFor(category: string, query: string): string[] {
     "site:untappd.com", "site:beeradvocate.com", "site:ratebeer.com", "site:beermenus.com",
     "site:bcca-usbc.com", "site:breweriana.com", "site:bcca.com"
   ];
-  if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine/i.test(query) || /^(WINE|VINO|VINI|BOTTIGLIE_VINO|VINO_COLLEZIONE)$/.test(category)) return [
-    "site:wine-searcher.com", "site:vivino.com", "site:cellartracker.com", "site:decanter.com", "site:winespectator.com", "site:liv-ex.com"
+  if (/wine|vino|vini|bottiglia|bottiglie|annata|barolo|barbaresco|brunello|amarone|champagne|fine wine|idealwine|cultx/i.test(query) || /^(WINE|VINO|VINI|BOTTIGLIE_VINO|VINO_COLLEZIONE)$/.test(category)) return [
+    "site:wine-searcher.com", "site:vivino.com", "site:cellartracker.com", "site:decanter.com", "site:winespectator.com", "site:liv-ex.com",
+    "site:idealwine.com", "site:cultx.com", "site:ackerwines.com", "site:sothebys.com"
   ];
   if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai|star wars|gi joe|kenner vintage|toy vault|toyvault/i.test(query)) return [
     "site:mattel.com", "site:hasbro.com", "site:hasbropulse.com", "site:takaratomy.co.jp", "site:playmobil.com", "site:schleich-s.com",
@@ -319,8 +320,8 @@ async function loadConfiguredSources(category: string, description: string, user
     const categoryAliases: Record<string, string[]> = {
       LEGO: ["lego", "costruzioni", "building sets"],
       FUMETTI: ["fumetti", "comics", "comic books", "manga", "graphic novels"],
-      ACTION_FIGURE: ["action figure", "figure", "figurines", "statue", "statue da collezione"],
-      DIECAST: ["diecast", "modellismo", "modellini", "scale models", "model vehicles"],
+      ACTION_FIGURE: ["action figure", "action figures", "figure", "figurines", "statue", "statue da collezione", "giocattoli da collezione", "toys", "giocattoli", "bandai", "hasbro", "tamashii"],
+      DIECAST: ["diecast", "modellismo", "modellini", "scale models", "model vehicles", "giocattoli da collezione", "toys", "hot wheels", "matchbox", "maisto"],
       WATCHES: ["watches", "watch", "orologi", "orologeria"],
       MUSIC: ["music", "vinyl", "vinile", "dischi", "dischi in vinile", "record collecting", "discografia"],
       NUMISMATICS: ["numismatics", "numismatica", "coins", "monete", "banknotes", "banconote", "medaglie", "exonumia"],
@@ -398,8 +399,8 @@ async function loadConfiguredSources(category: string, description: string, user
   const categoryHints: Record<string,string[]> = {
     LEGO: ["lego", "bricklink", "rebrickable"],
     FUMETTI: ["fumett", "comic", "panini", "bonelli", "salda", "manga", "graphic novel", "dc", "marvel", "batman", "spider-man"],
-    ACTION_FIGURE: ["figure", "action figure", "myth cloth", "saint seiya", "bandai", "tamashii", "toy", "giocattol", "transformer", "robot", "gundam", "dragon ball", "hokuto", "naruto", "one piece", "star wars"],
-    DIECAST: ["diecast", "maisto", "modellino", "motorbike", "moto", "auto", "hot wheels", "matchbox", "robotvintage"],
+    ACTION_FIGURE: ["figure", "action figure", "myth cloth", "saint seiya", "bandai", "tamashii", "toy", "giocattol", "transformer", "robot", "gundam", "dragon ball", "hokuto", "naruto", "one piece", "star wars", "the toys database", "toyvault"],
+    DIECAST: ["diecast", "maisto", "modellino", "motorbike", "moto", "auto", "hot wheels", "matchbox", "robotvintage", "the toys database", "vintage toy catalog"],
     WATCHES: ["orologi", "orologio", "watch", "swatch", "rolex", "omega", "seiko", "casio", "tissot", "longines", "tag heuer", "cartier"],
     MUSIC: ["vinile", "vinyl", "record", "disco", "music", "discogs", "lp"],
     NUMISMATICS: ["moneta", "numismatic", "coin", "banknote", "banconota", "francobollo", "stamp"],
@@ -574,6 +575,10 @@ function makeQueries(category: string, description: string): string[] {
       queries.push('site:decanter.com "' + cleaned + '"');
       queries.push('site:winespectator.com "' + cleaned + '"');
       queries.push('site:liv-ex.com "' + cleaned + '"');
+      queries.push('site:idealwine.com "' + cleaned + '"');
+      queries.push('site:cultx.com "' + cleaned + '"');
+      queries.push('site:ackerwines.com "' + cleaned + '"');
+      queries.push('site:sothebys.com "' + cleaned + '"');
     }
     if (/mattel|barbie|hot wheels|matchbox|takara tomy|tomica|playmobil|schleich|fisher-price|kenner|hasbro|bandai/i.test(normalized)) {
       queries.push('site:mattel.com "' + cleaned + '"');
