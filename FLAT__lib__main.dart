@@ -2228,6 +2228,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         }
       } else if (raw is Map) { events.add(Map<String, dynamic>.from(raw)); }
       final finals = <Map<String, dynamic>>[];
+      if (raw is Map && raw['risultati_finali'] is List) {
+        finals.addAll((raw['risultati_finali'] as List).whereType<Map>().map((item) => Map<String, dynamic>.from(item)));
+      }
       for (final event in events) {
         if (event['tipo'] == 'oggetto_completato' || event['tipo'] == 'oggetto_errore') { final result = event['risultato']; if (result is Map) finals.add(Map<String, dynamic>.from(result)); }
         if (event['tipo'] == 'errore_coda') throw Exception(event['error'] ?? 'Errore nella coda di ricerca.');
