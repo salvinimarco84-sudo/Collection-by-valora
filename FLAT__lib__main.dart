@@ -2251,6 +2251,40 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
+  Future<void> _loadIncompleteMetadataCatalog() async {
+    setState(() {
+      _metadataResult = 'PR-12: analisi del catalogo in corso…';
+      _output = _metadataResult;
+    });
+    final client = Supabase.instance.client;
+    final incomplete = <Map<String, dynamic>>[];
+    const pageSize = 500;
+    var offset = 0;
+    while (true) {
+      final rows = await client.schema('collection').from('master_oggetti')
+          .select('codice_oggetto,descrizione_oggetto,produttore,anno_uscita,codice_prodotto')
+          .order('codice_oggetto')
+          .range(offset, offset + pageSize - 1);
+      final page = List<Map<String, dynamic>>.from(rows);
+      for (final row in page) {
+        final producer = (row['produttore'] ?? '').toString().trim();
+        final year = row['anno_uscita'];
+        final productCode = (row['codice_prodotto'] ?? '').toString().trim();
+        if (producer.isEmpty || year == null || productCode.isEmpty) {
+          incomplete.add(row);
+        }
+      }
+      if (page.length < pageSize) break;
+      offset += pageSize;
+    }
+    if (!mounted) return;
+    setState(() {
+      _pr12IncompleteRecords = incomplete;
+      _metadataResult = 'Analisi completata: ${incomplete.length} record con almeno un metadato mancante. Nessun dato modificato.';
+      _output = _metadataResult;
+    });
+  }
+
   Future<void> _prepareMetadata() async {
     final description = _description.text.trim();
     if (description.isEmpty) throw Exception('Inserisci almeno la descrizione.');
