@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -319,6 +320,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report mattutino', description: 'Riepilogo operativo del mattino.', enabled: false),
   ],
   'RICERCHE': [
+    ProcedureEntry(title: 'PR-12 · Ricerca metadati in lotti', description: 'Analizza fino a 10 oggetti incompleti per lotto, mostra fonti e risultati senza modificare il database.', apiCode: 'PR-12-BATCH'),
     ProcedureEntry(title: 'Ricerca oggetti', description: 'Cerca gli oggetti nel catalogo.', apiCode: 'READ-EXPLORE-RECORDS'),
     ProcedureEntry(title: 'Ricerca #DEMONOFLU', description: 'Ricerca inserzioni associate a #DEMONOFLU.', enabled: false),
   ],
@@ -444,7 +446,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             color: procedure.enabled ? section.color : Colors.white24),
           onTap: procedure.enabled && procedure.apiCode != null
               ? () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
+                    builder: (_) => procedure.apiCode == 'PR-12-BATCH'
+                        ? const Pr12BatchPage()
+                        : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
               : null,
         ),
       )),
@@ -524,6 +528,138 @@ class _ValoraRuntimeApi {
   }
 }
 
+
+class Pr12BatchPage extends StatefulWidget {
+  const Pr12BatchPage({super.key});
+  @override
+  State<Pr12BatchPage> createState() => _Pr12BatchPageState();
+}
+class _Pr12BatchPageState extends State<Pr12BatchPage> {
+  bool _loading = false, _running = false;
+  List<Map<String, dynamic>> _queue = [];
+  final List<Map<String, dynamic>> _results = [];
+  int _offset = 0;
+  String _status = 'Carica gli oggetti incompleti. Nessun dato verrà salvato.';
+  String? _error;
+
+  Future<void> _loadQueue() async {
+    if (_loading || _running) return;
+    setState(() { _loading = true; _error = null; _status = 'Lettura catalogo TEST…'; _results.clear(); _offset = 0; });
+    try {
+      final data = await Supabase.instance.client.schema('collection').from('master_oggetti')
+        .select('codice_oggetto,descrizione_oggetto,produttore,anno_uscita,codice_prodotto,archiviato_test')
+        .order('codice_oggetto', ascending: true).limit(2000);
+      final rows = (data as List).whereType<Map>().map((v) => Map<String, dynamic>.from(v)).where((v) {
+        if (v['archiviato_test'] == true) return false;
+        final p = (v['produttore'] ?? '').toString().trim();
+        final c = (v['codice_prodotto'] ?? '').toString().trim();
+        return p.isEmpty || c.isEmpty || v['anno_uscita'] == null;
+      }).where((v) => (v['descrizione_oggetto'] ?? '').toString().trim().length >= 2).toList();
+      if (mounted) setState(() { _queue = rows; _status = 'Trovati ${rows.length} oggetti incompleti. Database invariato.'; });
+    } catch (e) {
+      if (mounted) setState(() { _error = '$e'; _status = 'Lettura catalogo non riuscita.'; });
+    } finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  String _category(String d) {
+    final s = d.toLowerCase();
+    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(s)) return 'LEGO';
+    if (RegExp(r'fumett|comic|manga|panini|salda.?press|isbn').hasMatch(s)) return 'FUMETTI';
+    if (RegExp(r'myth cloth|saint seiya|cavalieri dello zodiaco|bandai|action figure|statua').hasMatch(s)) return 'ACTION_FIGURE';
+    if (RegExp(r'maisto|die.?cast|modellin|hot wheels|matchbox').hasMatch(s)) return 'DIECAST';
+    if (RegExp(r'birra|birre|beer|birrificio|breweriana').hasMatch(s)) return 'BEER';
+    if (RegExp(r'vino|vini|bottiglia|bottiglie|barolo|champagne|brunello').hasMatch(s)) return 'WINE';
+    return 'COLLEZIONABILE';
+  }
+
+  Future<void> _runBatch() async {
+    if (_running || _loading) return;
+    if (_queue.isEmpty || _offset >= _queue.length) { setState(() => _error = 'Carica la coda o tutti i lotti sono già stati elaborati.'); return; }
+    final batch = _queue.skip(_offset).take(10).toList();
+    setState(() { _running = true; _error = null; _status = 'PR-12 sta cercando fonti per ${batch.length} oggetti. Nessuna scrittura database.'; });
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
+      final response = await http.post(Uri.parse('$supabaseUrl/functions/v1/pr-12-engine-test'),
+        headers: {'apikey': publishableKey, 'Authorization': 'Bearer ${session.accessToken}', 'Content-Type': 'application/json', 'Accept': 'text/event-stream'},
+        body: jsonEncode({'modalita_ia': 'TEST', 'oggetti': batch.map((v) => {
+          'id': (v['codice_oggetto'] ?? '').toString(),
+          'descrizione': (v['descrizione_oggetto'] ?? '').toString(),
+          'categoria': _category((v['descrizione_oggetto'] ?? '').toString()),
+        }).toList()})).timeout(const Duration(minutes: 5));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('HTTP ${response.statusCode}: ${response.body.substring(0, response.body.length.clamp(0, 500))}');
+      }
+      final events = <Map<String, dynamic>>[];
+      for (final line in const LineSplitter().convert(response.body)) {
+        if (!line.startsWith('data:')) continue;
+        try { final v = jsonDecode(line.substring(5).trim()); if (v is Map) events.add(Map<String, dynamic>.from(v)); } catch (_) {}
+      }
+      final finals = events.where((v) => v['tipo'] == 'coda_completata').toList();
+      if (finals.isEmpty) {
+        final errors = events.where((v) => v['tipo'] == 'oggetto_errore').map((v) => (v['risultato'] as Map?)?['error']?.toString() ?? 'errore').take(3).join('; ');
+        throw Exception('Evento finale PR-12 assente. ${errors.isEmpty ? response.body.substring(0, response.body.length.clamp(0, 500)) : errors}');
+      }
+      final rawResults = finals.last['risultati_finali'];
+      final batchResults = rawResults is List ? rawResults.whereType<Map>().map((v) => Map<String, dynamic>.from(v)).toList() : <Map<String, dynamic>>[];
+      if (mounted) setState(() {
+        _results.addAll(batchResults); _offset += batch.length;
+        final good = batchResults.where((v) => v['ok'] == true).length;
+        _status = 'Lotto concluso: $good riusciti, ${batchResults.length - good} errori. Avanzamento \$_offset/${_queue.length}. Database invariato.';
+      });
+    } catch (e) {
+      if (mounted) setState(() { _error = '$e'; _status = 'Lotto interrotto. Puoi riprovare.'; });
+    } finally { if (mounted) setState(() => _running = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = (_queue.length - _offset).clamp(0, 10);
+    return Scaffold(appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI')),
+      body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
+        const Card(child: Padding(padding: EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('RICERCA MULTIPLA IN LOTTI', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8), Text('PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.'),
+        ]))),
+        const SizedBox(height: 8),
+        FilledButton.icon(onPressed: _loading || _running ? null : _loadQueue,
+          icon: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
+          label: const Text('CARICA OGGETTI INCOMPLETI')),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(onPressed: _running || _loading || _queue.isEmpty || _offset >= _queue.length ? null : _runBatch,
+          icon: _running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
+          label: Text(_running ? 'RICERCA IN CORSO…' : 'ELABORA PROSSIMO LOTTO (\$remaining)')),
+        Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('STATO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text(_status),
+          if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: \$_offset · lotti: ${(_queue.length / 10).ceil()}'),
+          if (_error != null) SelectableText(_error!, style: const TextStyle(color: Color(0xFFE35D5D))),
+        ]))),
+        if (_queue.isNotEmpty) ...[
+          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('PROSSIMO LOTTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+          ..._queue.skip(_offset).take(10).map((v) => ListTile(dense: true, leading: const Icon(Icons.inventory_2_outlined, color: goldColor),
+            title: Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString()),
+            subtitle: Text('ID ${v['codice_oggetto']} · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}'))),
+        ],
+        if (_results.isNotEmpty) ...[
+          const Padding(padding: EdgeInsets.only(top: 16, bottom: 4), child: Text('RISULTATI · SOLA LETTURA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+          ..._results.map((v) {
+            final candidates = v['risultati'] is List ? (v['risultati'] as List).whereType<Map>().toList() : <Map>[];
+            return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${v['oggetto_id'] ?? ''} · ${v['descrizione'] ?? ''}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(v['ok'] == true ? 'Candidati: ${candidates.length} · nessuna scrittura' : 'ERRORE: ${v['error'] ?? 'non specificato'}'),
+              ...candidates.take(4).map((c) => ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.link, color: goldColor),
+                title: Text((c['title'] ?? 'Risultato senza titolo').toString(), style: const TextStyle(fontSize: 13)),
+                subtitle: Text('${c['url'] ?? ''}\n${c['snippet'] ?? ''}', maxLines: 4, overflow: TextOverflow.ellipsis))),
+              if (v['diagnostica_ricerca'] is Map) SelectableText('Diagnostica: ${jsonEncode(v['diagnostica_ricerca'])}', style: const TextStyle(fontSize: 11, color: Colors.white54)),
+            ])));
+          }),
+        ],
+      ])));
+  }
+}
+
+
 class ObjectRuntimePage extends StatefulWidget {
   const ObjectRuntimePage({super.key, required this.title, required this.apiCode, this.initialObjectCode});
   final String title;
@@ -579,7 +715,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   void initState() {
     super.initState();
     if (widget.apiCode == 'PR-01') {
-      _descriptionFocus.addListener(_onDescriptionFocusChanged);
+      // PR-12 runs independently; PR-01 must not trigger a web search.
       _quantity.addListener(_recalculateTotal);
       _unitPrice.addListener(_recalculateTotal);
     }
@@ -639,7 +775,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
-    _descriptionFocus.removeListener(_onDescriptionFocusChanged);
     _descriptionFocus.dispose();
     _searchFocusNode.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
