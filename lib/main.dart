@@ -407,8 +407,8 @@ class ProcedureEntry {
 
 const Map<String, List<ProcedureEntry>> sectionProcedures = {
   'CATALOGO': [
-    ProcedureEntry(title: 'Nuovo oggetto', description: 'Crea un oggetto e prepara i metadati per la ricerca.', apiCode: 'PR-01', readOnly: false),
-    ProcedureEntry(title: 'Modifica oggetto', description: 'Carica la scheda completa prima di modificarla.', apiCode: 'PR-02', readOnly: false),
+    ProcedureEntry(title: 'Nuovo oggetto', description: 'Crea un oggetto; i metadati possono essere inseriti manualmente. Nessuna ricerca automatica.', apiCode: 'PR-01', readOnly: false),
+    ProcedureEntry(title: 'Modifica oggetto', description: 'Modifica anche manualmente i metadati; nessuna ricerca automatica.', apiCode: 'PR-02', readOnly: false),
     ProcedureEntry(title: 'Chiudi oggetto', description: 'Registra la chiusura con motivazione.', apiCode: 'PR-03', readOnly: false),
     ProcedureEntry(title: 'Visualizza scheda', description: 'Mostra la scheda completa in formato leggibile.', apiCode: 'OBJECT_MASTER'),
     ProcedureEntry(title: 'Elenco oggetti disponibili', description: 'Mostra gli oggetti con stato DISPONIBILE.', apiCode: 'OBJECTS_AVAILABLE'),
@@ -449,6 +449,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
   'RICERCHE': [
     ProcedureEntry(title: 'Ricerca oggetti', description: 'Cerca gli oggetti nel catalogo.', apiCode: 'READ-EXPLORE-RECORDS'),
+    ProcedureEntry(title: 'PR-12 · Ricerca metadati', description: 'Ricerca autonoma dei metadati mancanti, su richiesta. Non parte da PR-01 o PR-02.', apiCode: 'PR-12', readOnly: false),
     ProcedureEntry(title: 'Ricerca #DEMONOFLU', description: 'Ricerca inserzioni associate a #DEMONOFLU.', enabled: false),
   ],
   'CONTROLLO': [
@@ -710,7 +711,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
     }
     if (widget.apiCode == 'PR-01') {
-      _descriptionFocus.addListener(_onDescriptionFocusChanged);
       _quantity.addListener(_recalculateTotal);
       _unitPrice.addListener(_recalculateTotal);
     }
@@ -752,28 +752,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_totalValue.text != total) _totalValue.text = total;
   }
 
-  void _onDescriptionFocusChanged() {
-    if (widget.apiCode != 'PR-01' || _descriptionFocus.hasFocus) return;
-    final query = _description.text.trim();
-    if (query.length < 4 || query == _lastMetadataQuery || _loading) return;
-    _run(() async {
-      if (query != _description.text.trim()) return;
-      setState(() {
-        _metadataResult = 'RICERCA METADATI IN CORSO…';
-        _output = 'Ricerca metadati in corso…';
-      });
-      try {
-        await _prepareMetadata();
-        if (mounted && query == _description.text.trim()) {
-          setState(() => _lastMetadataQuery = query);
-        }
-      } catch (e) {
-        if (mounted) setState(() => _metadataResult = 'Ricerca metadati non riuscita: $e');
-        rethrow;
-      }
-    });
-  }
-
   Future<void> _releaseOwnedLockSilently() async {
     try {
       await _ValoraRuntimeApi.call('release_lock', {'session_id': _sessionId});
@@ -787,7 +765,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
-    _descriptionFocus.removeListener(_onDescriptionFocusChanged);
     _pr11SearchFocusNode.removeListener(_onPr11SearchFocusChanged);
     _pr11SearchFocusNode.dispose();
     _descriptionFocus.dispose();
@@ -1305,24 +1282,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       );
     }
 
-    // La sola presenza della fonte non significa che i metadati siano completi.
-    // Se manca anche uno dei campi identificativi, prova PR-12 automaticamente.
     const requiredMetadata = ['produttore', 'anno_uscita', 'codice_prodotto'];
     final missingMetadata = requiredMetadata.where((key) =>
       (_currentObject?[key]?.toString().trim().isEmpty ?? true)).toList();
-    if (missingMetadata.isNotEmpty) {
-      setState(() {
-        _metadataResult = 'Oggetto ' + id.toString() +
-            ' selezionato. Descrizione caricata. Metadati incompleti (' +
-            missingMetadata.join(', ') + '): avvio della ricerca PR-12…';
-        _output = _metadataResult;
-      });
-      await _prepareMetadata();
-    } else {
-      setState(() => _metadataResult =
-          'Oggetto ' + id.toString() +
-          ' selezionato. Descrizione caricata. Metadati identificativi già presenti.');
-    }
+    setState(() {
+      _metadataResult = missingMetadata.isEmpty
+          ? 'Oggetto $id selezionato. Descrizione caricata. Metadati identificativi presenti. Nessuna ricerca automatica avviata.'
+          : 'Oggetto $id selezionato. Descrizione caricata. Metadati mancanti: ${missingMetadata.join(', ')}. Per cercarli, avvia PR-12 dal menu RICERCHE.';
+      _output = _metadataResult;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
     });
