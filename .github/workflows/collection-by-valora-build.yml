@@ -1,4 +1,5 @@
 name: COLLECTION by VALORA Build
+# Triggered for the user-block validation branch.
 
 on:
   workflow_dispatch:
