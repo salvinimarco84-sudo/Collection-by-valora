@@ -445,12 +445,10 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report spese', description: 'Consulta il riepilogo delle spese.', enabled: false),
   ],
   'VALUTAZIONI': [
-    ProcedureEntry(title: 'VALORA', description: 'Avvia direttamente l’applicazione VALORA per la valutazione specialistica dell’oggetto.', apiCode: 'LAUNCH-VALORA'),
-    ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Avvia direttamente il riepilogo del valore degli oggetti della collezione.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
-    ProcedureEntry(title: 'Valuta oggetto', description: 'Prepara la consultazione per la valutazione di un oggetto.', apiCode: 'READ-VALUATION-PREPARE'),
-    ProcedureEntry(title: 'Valuta più oggetti', description: 'Prepara la valutazione di più oggetti.', apiCode: 'READ-VALUATION-PREPARE'),
-    ProcedureEntry(title: 'Opportunità di acquisto', description: 'Individua opportunità di acquisto.', enabled: false),
-    ProcedureEntry(title: 'Report opportunità', description: 'Consulta il report delle opportunità.', enabled: false),
+    ProcedureEntry(title: 'VALORA · PR-19', description: 'Valutazione specialistica del singolo oggetto e preparazione delle bozze di inserzione. Richiede abbonamento premium.', apiCode: 'LAUNCH-VALORA'),
+    ProcedureEntry(title: 'VALORE COLLEZIONE · PR-18', description: 'Valutazione complessiva della collezione, storico e report. Richiede abbonamento premium.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
+    ProcedureEntry(title: 'VALUTA ACQUISTO · PR-20', description: 'Analizza la convenienza di un’offerta partendo da una foto, uno screenshot, un link o prezzo e descrizione. Usa PR-12, non il motore premium VALORA.', enabled: false),
+
   ],
   'REPORT': [
     ProcedureEntry(title: 'Report acquisti', description: 'Riepilogo degli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
