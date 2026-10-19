@@ -1120,8 +1120,33 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
     if (!mounted) return;
     if (candidates.isEmpty) {
+      final warning = (result['avviso'] ?? '').toString().trim();
+      final errors = result['errori_fonti'] is List
+          ? (result['errori_fonti'] as List).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).take(5).join('\\n')
+          : '';
+      final diagnostics = result['diagnostica'] is Map
+          ? Map<String, dynamic>.from(result['diagnostica'] as Map)
+          : <String, dynamic>{};
+      final queryDiagnostics = diagnostics['query'] is List
+          ? (diagnostics['query'] as List).whereType<Map>().take(6).map((q) {
+              final query = (q['query'] ?? '').toString();
+              final count = (q['risultati_grezzi'] ?? 0).toString();
+              final error = (q['errore'] ?? '').toString();
+              return error.isEmpty ? '• $query: $count risultati grezzi' : '• $query: ERRORE $error';
+            }).join('\\n')
+          : '';
+      final details = <String>[
+        'PR-12: ricerca completata, zero candidati utilizzabili.',
+        if (warning.isNotEmpty) warning,
+        'Risultati grezzi: ' + (diagnostics['risultati_grezzi_unici'] ?? 'n/d').toString() +
+            '; dopo controllo codice: ' + (diagnostics['dopo_filtro_codice'] ?? 'n/d').toString() +
+            '; dopo controllo pertinenza: ' + (diagnostics['dopo_filtro_pertinenza'] ?? 'n/d').toString() + '.',
+        if (queryDiagnostics.isNotEmpty) 'Dettaglio query:\\n' + queryDiagnostics,
+        if (errors.isNotEmpty) 'Errori fonti (primi 5):\\n' + errors,
+        'Nessun metadato è stato salvato. Puoi riprovare o completare i campi manualmente.',
+      ];
       setState(() {
-        _metadataResult = 'PR-12 ha eseguito la ricerca online ma non ha restituito risultati leggibili. Puoi riprovare o compilare i metadati manualmente.';
+        _metadataResult = details.join('\\n\\n');
         _output = _metadataResult;
       });
       return;
