@@ -815,6 +815,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
   String _dateFormat = 'GG/MM/AAAA';
   bool _showNewPassword = false;
   bool _busy = false;
+  Uint8List? _profileImageBytes;
+  String? _profileImageName;
+  String? _profileImageUrl;
+  String? _profileImageStoragePath;
+  bool _removeProfileImage = false;
+  String _profileImageStatus = '';
 
   @override
   void initState() {
@@ -834,6 +840,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
           .select('codice_mercato,nome_mercato').order('codice_mercato');
       final rows = await client.schema('collection').from('master_utente')
           .select().eq('auth_user_id', user.id).limit(1);
+      String? profilePhotoUrl;
+      if (rows.isNotEmpty) {
+        final storedPhoto = (rows.first['foto_profilo'] ?? '').toString().trim();
+        if (storedPhoto.startsWith('http')) { profilePhotoUrl = storedPhoto; }
+        else if (storedPhoto.isNotEmpty) { try { profilePhotoUrl = await client.storage.from('valora-profili-test').createSignedUrl(storedPhoto, 3600); } catch (_) {} }
+      }
       if (!mounted) return false;
       setState(() {
         _markets = List<Map<String, dynamic>>.from(markets);
@@ -841,6 +853,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
           final row = Map<String, dynamic>.from(rows.first);
           _name.text = (row['nome_utente'] ?? '').toString();
           _assistant.text = (row['nome_assistente'] ?? 'Demon').toString();
+          _profileImageUrl = profilePhotoUrl;
+          _profileImageStoragePath = (row['foto_profilo'] ?? '').toString().trim().isEmpty ? null : row['foto_profilo'].toString().trim();
           _currency = _currencyFor((row['valuta_predefinita'] ?? 'EUR').toString());
           _language = _languageFor((row['lingua_interfaccia'] ?? 'it').toString());
           _dateFormat = (row['formato_data'] ?? 'GG/MM/AAAA').toString();
@@ -879,6 +893,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
       final market = _markets.firstWhere((m) => m['nome_mercato'] == _market);
       final existing = await client.schema('collection').from('master_utente')
           .select('codice_utente').eq('auth_user_id', user.id).limit(1);
+      String? profileImagePath = _profileImageStoragePath;
+      if (_profileImageBytes != null) {
+        final fileName = (_profileImageName ?? 'profilo.jpg').replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
+        final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'jpg';
+        final mime = switch (ext) { 'png' => 'image/png', 'webp' => 'image/webp', _ => 'image/jpeg' };
+        final path = '\${user.id}/profilo/\${_uuid.v4()}.$ext';
+        await client.storage.from('valora-profili-test').uploadBinary(path, _profileImageBytes!, fileOptions: FileOptions(contentType: mime, upsert: false));
+        profileImagePath = path;
+        _profileImageStoragePath = path;
+      }
+      if (_removeProfileImage) profileImagePath = null;
       final values = <String, dynamic>{
         'auth_user_id': user.id,
         'nome_utente': _name.text.trim(),
@@ -887,6 +912,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         'lingua_interfaccia': const {'Italiano':'it','English':'en','Español':'es','Français':'fr'}[_language] ?? 'it',
         'formato_data': _dateFormat,
         'nome_assistente': _assistant.text.trim().isEmpty ? null : _assistant.text.trim(),
+        'foto_profilo': profileImagePath,
         'stato_utente': 'ATTIVO',
       };
       if (existing.isEmpty) {
@@ -914,6 +940,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
     _confirmPassword.dispose();
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickProfileImage() async {
+    try {
+      final picked = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false, withData: true);
+      if (picked == null || picked.files.isEmpty) return;
+      final file = picked.files.single;
+      final ext = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
+      if (!const ['jpg','jpeg','png','webp'].contains(ext)) throw Exception('Usa un file JPG, PNG o WEBP.');
+      if (file.bytes == null || file.bytes!.isEmpty) throw Exception('Il file non contiene dati leggibili.');
+      if (file.bytes!.length > 5 * 1024 * 1024) throw Exception('La foto supera il limite di 5 MB.');
+      setState(() { _profileImageBytes = file.bytes; _profileImageName = file.name; _removeProfileImage = false; _profileImageStatus = 'Foto selezionata. Premi SALVA PROFILO per confermare.'; });
+    } catch (e) { if (mounted) setState(() => _profileImageStatus = 'Caricamento non riuscito: $e'); }
+  }
+
+  Future<void> _removeProfilePhoto() async {
+    setState(() { _profileImageBytes = null; _profileImageName = null; _profileImageUrl = null; _profileImageStoragePath = null; _removeProfileImage = true; _profileImageStatus = 'La foto verrà rimossa al salvataggio del profilo.'; });
   }
 
   Future<void> _changePassword() async {
@@ -995,11 +1038,23 @@ class _UserProfilePageState extends State<UserProfilePage> {
           final wide = constraints.maxWidth >= 760;
           final content = <Widget>[
             _section('INFORMAZIONI UTENTE', Icons.person_outline, [
-              Center(child: Container(
-                width: 76, height: 76,
-                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: goldColor, width: 2)),
-                child: const Icon(Icons.person, color: goldColor, size: 42),
-              )),
+              Center(child: Column(children: [
+                Container(width: 104, height: 104,
+                  decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: goldColor, width: 2)),
+                  clipBehavior: Clip.antiAlias,
+                  child: _profileImageBytes != null
+                    ? Image.memory(_profileImageBytes!, fit: BoxFit.cover)
+                    : (_profileImageUrl != null && _profileImageUrl!.startsWith('http')
+                        ? Image.network(_profileImageUrl!, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.person, color: goldColor, size: 54))
+                        : const Icon(Icons.person, color: goldColor, size: 54))),
+                const SizedBox(height: 8),
+                Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 6, children: [
+                  OutlinedButton.icon(onPressed: _busy ? null : _pickProfileImage, icon: const Icon(Icons.upload_file), label: const Text('CARICA FOTO')),
+                  if (_profileImageBytes != null || _profileImageUrl != null)
+                    TextButton.icon(onPressed: _busy ? null : _removeProfilePhoto, icon: const Icon(Icons.delete_outline), label: const Text('RIMUOVI FOTO')),
+                ]),
+                if (_profileImageStatus.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(_profileImageStatus, textAlign: TextAlign.center, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
+              ])),
               const SizedBox(height: 12),
               TextField(controller: _name, decoration: _fieldDecoration('Nome utente')),
               const SizedBox(height: 12),
@@ -3287,7 +3342,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Widget _objectCard(
     Map<String, dynamic> item, {
-    VoidCallback? onTap,    bool availableStyle = false,
+    VoidCallback? onTap, bool availableStyle = false, bool showImagePlaceholder = true,
   }) {
     final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
     final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
@@ -3329,14 +3384,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         child: Padding(
           padding: EdgeInsets.all(availableStyle ? 14 : 12),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: imageUrl.startsWith('http')
-                ? Image.network(imageUrl, width: imageSize, height: imageSize, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize))
-                : _imagePlaceholder(size: imageSize),
-            ),
-            const SizedBox(width: 12),
+            if (showImagePlaceholder) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: imageUrl.startsWith('http')
+                  ? Image.network(imageUrl, width: imageSize, height: imageSize, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize))
+                  : _imagePlaceholder(size: imageSize),
+              ),
+              const SizedBox(width: 12),
+            ],
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Expanded(child: Text(
@@ -3986,8 +4043,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ),
             const SizedBox(height: 8),
             if (!_showPr02TechnicalTab) ...[
-              _pr11HeaderCard(_currentObject!),
               _readOnlyImageCard(),
+              _pr11HeaderCard(_currentObject!),
               Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Padding(
@@ -4009,7 +4066,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ),
             const SizedBox(height: 12),
             Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
-            _objectCard(_currentObject!),
+            _objectCard(_currentObject!, showImagePlaceholder: false),
           ] else ...[
             Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
             _objectCard(_currentObject!),
