@@ -49,28 +49,8 @@ jobs:
           rm -rf android
           flutter create . --platforms=android --project-name collection_by_valora
           # The resolved Android lifecycle plugin requires compileSdk 36.
-          # Set compileSdk only; keep targetSdk and minSdk unchanged.
-          python - <<'PY'
-          from pathlib import Path
-          gradle_kts = Path("android/app/build.gradle.kts")
-          gradle_groovy = Path("android/app/build.gradle")
-          if gradle_kts.exists():
-              p = gradle_kts
-              content = p.read_text()
-              old = "compileSdk = flutter.compileSdkVersion"
-              new = "compileSdk = 36"
-          elif gradle_groovy.exists():
-              p = gradle_groovy
-              content = p.read_text()
-              old = "compileSdkVersion flutter.compileSdkVersion"
-              new = "compileSdkVersion 36"
-          else:
-              raise SystemExit("Android app Gradle file not found")
-          if old not in content:
-              raise SystemExit(f"Expected compileSdk declaration not found in {p}")
-          p.write_text(content.replace(old, new, 1))
-          print(f"Set Android compileSdk to 36 in {p}")
-          PY
+          # Change compileSdk only, preserving targetSdk and minSdk.
+          python -c "from pathlib import Path; import re; p=Path('android/app/build.gradle.kts') if Path('android/app/build.gradle.kts').exists() else Path('android/app/build.gradle'); s=p.read_text(); s2,n=re.subn(r'compileSdk(?:Version)?\\s*(?:=\\s*)?(?:flutter\\.compileSdkVersion|[0-9]+)', lambda m: m.group(0).split('=')[0] + ('= 36' if '=' in m.group(0) else ' 36') if 'compileSdk' in m.group(0) else m.group(0), s, count=1); print('Gradle file:',p); print('compileSdk declaration before:', [x for x in s.splitlines() if 'compileSdk' in x]); s2=re.sub(r'compileSdk\\s*=\\s*(?:flutter\\.compileSdkVersion|[0-9]+)', 'compileSdk = 36', s2, count=1); s2=re.sub(r'compileSdkVersion\\s+(?:flutter\\.compileSdkVersion|[0-9]+)', 'compileSdkVersion 36', s2, count=1); assert s2 != s, 'Could not update compileSdk declaration'; p.write_text(s2); print('compileSdk declaration after:', [x for x in s2.splitlines() if 'compileSdk' in x])"
           cp FLAT__lib__main.dart lib/main.dart
           cp FLAT__pubspec.yaml pubspec.yaml
           cp valora_logo.png assets/valora_logo.png
