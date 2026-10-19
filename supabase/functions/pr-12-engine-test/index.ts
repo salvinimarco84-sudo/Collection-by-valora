@@ -176,7 +176,7 @@ Deno.serve(async (req: Request) => {
   for (let index = 0; index < queue.length; index++) {
     const item = queue[index];
     try {
-      const searchResponse = await fetch(base.replace(/\\/$/, "") + "/functions/v1/pr-12-web-search-test", {
+      const searchResponse = await fetch(base.replace(/\/$/, "") + "/functions/v1/pr-12-web-search-test", {
         method: "POST",
         headers: {
           apikey: anonKey,
