@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
@@ -9,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
@@ -2190,29 +2188,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
 
-
-  String _inferMetadataCategory(String description) {
-    final value = description.toLowerCase();
-    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(value)) {
-      return 'LEGO';
-    }
-    if (RegExp(r'fumett|comic|manga|panini|salda|bonelli|graphic novel|isbn').hasMatch(value)) {
-      return 'FUMETTI';
-    }
-    if (RegExp(r'myth cloth|saint seiya|bandai|gundam|gunpla|dragon ball|action figure|statua|transformers|optimus prime|bumblebee|megatron|star wars|naruto|one piece|hokuto|mazinger|grendizer').hasMatch(value)) {
-      return 'ACTION_FIGURE';
-    }
-    if (RegExp(r'maisto|die.?cast|modellino|motorbike|motocicletta|modellismo|auto in scala').hasMatch(value)) {
-      return 'DIECAST';
-    }
-    if (RegExp(r'kinder|sorpresine|kinder surprise|kinder joy').hasMatch(value)) {
-      return 'GIOCATTOLO';
-    }
-    if (RegExp(r'robot vintage|robottoni|giocattolo vintage|toy vintage').hasMatch(value)) {
-      return 'GIOCATTOLO';
-    }
-    return 'COLLEZIONABILE';
-  }
 
   Future<void> _consult() async {
     if (widget.apiCode == 'EXPLORE_RECORDS') {
