@@ -1,7 +1,7 @@
 name: collection_by_valora
 description: App beta multipiattaforma COLLECTION by VALORA
 publish_to: none
-version: 0.3.1+16
+version: 0.3.2+18
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -18,6 +18,11 @@ dependencies:
   sqflite_common_ffi: ^2.3.4+4
   uuid: ^4.5.1
   shared_preferences: 2.3.5
+  url_launcher: ^6.3.1
+  file_picker: ^10.3.3
+  image_picker: ^1.1.2
+  csv: ^6.0.0
+  excel: ^4.0.6
 
 dependency_overrides:
   shared_preferences_android: 2.4.10

@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - feat/blocco-utente
+      - feature/pr12-engine-test-current
   pull_request:
     branches:
       - main
@@ -36,6 +37,9 @@ jobs:
           test -f valora_logo.png
           test -f apply_valora_logo.py
 
+      - name: Install Pillow for Android launcher icon
+        run: python -m pip install Pillow
+
       - name: Prepare clean Flutter Android project
         shell: bash
         run: |
@@ -44,6 +48,9 @@ jobs:
           # Recreate platform scaffolding to avoid stale native plugin registrants.
           rm -rf android
           flutter create . --platforms=android --project-name collection_by_valora
+          # The resolved Android lifecycle plugin requires compileSdk 36.
+          # Change compileSdk only, preserving targetSdk and minSdk.
+          python -c "from pathlib import Path; import re; p=Path('android/app/build.gradle.kts') if Path('android/app/build.gradle.kts').exists() else Path('android/app/build.gradle'); s=p.read_text(); print('Gradle file:',p); print('compileSdk before:', [x for x in s.splitlines() if 'compileSdk' in x]); s2,n=re.subn(r'compileSdk\\s*=\\s*(?:flutter\\.compileSdkVersion|[0-9]+)', 'compileSdk = 36', s, count=1); s2,n2=re.subn(r'compileSdkVersion\\s+(?:flutter\\.compileSdkVersion|[0-9]+)', 'compileSdkVersion 36', s2, count=1); assert n+n2 == 1, 'Could not update exactly one compileSdk declaration'; p.write_text(s2); print('compileSdk after:', [x for x in s2.splitlines() if 'compileSdk' in x])"
           cp FLAT__lib__main.dart lib/main.dart
           cp FLAT__pubspec.yaml pubspec.yaml
           cp valora_logo.png assets/valora_logo.png
@@ -96,6 +103,9 @@ jobs:
           foreach ($file in @("FLAT__lib__main.dart", "FLAT__pubspec.yaml", "valora_logo.png", "apply_valora_logo.py")) {
             if (-not (Test-Path $file)) { throw "File richiesto mancante: $file" }
           }
+
+      - name: Install Pillow for launcher icon script
+        run: python -m pip install Pillow
 
       - name: Prepare clean Flutter Windows project
         shell: pwsh
