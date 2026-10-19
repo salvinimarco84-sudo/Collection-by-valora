@@ -721,16 +721,21 @@ function rankRelevantResults(results: SearchResult[], category: string, descript
   const code = codeFrom(description);
   return results.map((result) => {
     const item = result as SearchResult & Record<string, unknown>;
+    // Conserva sempre i metadati espliciti estratti da cataloghi specifici
+    // (ad esempio ISBN/editore/anno da una scheda bibliografica).
+    // Non cancellare mai un valore più forte con null generati dal fallback.
+    const labelledYear = result.snippet.match(/(?:release(?:d)?(?: date| year)?|year released|publication year|published(?: on| in)?|data di uscita|anno di uscita|anno di pubblicazione|date de sortie)\s*[:\-]?\s*(19\d{2}|20\d{2})/i)?.[1];
     if (isLego(category, description) && code) {
-      const year = result.snippet.match(/(?:release(?:d)?(?: date| year)?|year released|data di uscita|anno di uscita|date de sortie)\s*[:\-]?\s*(19\d{2}|20\d{2})/i)?.[1] ?? "";
-      item.produttore = "LEGO";
-      item.codice_prodotto = code;
-      if (year) item.anno_uscita = Number(year);
+      item.produttore = item.produttore ?? "LEGO";
+      item.codice_prodotto = item.codice_prodotto ?? code;
+      if (labelledYear && item.anno_uscita == null) item.anno_uscita = Number(labelledYear);
     } else {
-      // Fuori dai set LEGO non inferire un codice da un numero qualsiasi nella descrizione:
-      // potrebbe essere anno, numero di volume o parte di un ISBN.
-      item.produttore = null;
-      item.codice_prodotto = null;
+      // Per categorie non LEGO non dedurre il codice da numeri generici:
+      // possono essere anno, volume, referenza parziale o parte di un ISBN.
+      // Mantieni però produttore/codice/ISBN/anno se forniti da un catalogo specifico.
+      if (item.produttore === undefined) item.produttore = null;
+      if (item.codice_prodotto === undefined) item.codice_prodotto = null;
+      if (labelledYear && item.anno_uscita == null) item.anno_uscita = Number(labelledYear);
     }
     return item;
   });
