@@ -301,7 +301,7 @@ async function loadConfiguredSources(category: string, description: string, user
     const relevant = registry.filter(s => (s.origine_configurazione === "sistema" || s.condivisa === true || (!!userId && s.proprietario_utente === userId)) && s.attiva !== false && s.url_base && hostnameFromUrl(s.url_base) &&
       !/brickset/i.test([s.nome,s.url_base].join(" ")) &&
       (s.mercato === "globale" || s.mercato === "Italia" || normalizedDescription.includes(normalizeText(s.mercato ?? "__none__")) || normalizedCategory.includes(normalizeText(s.categoria ?? "__none__")) ||
-       normalizeText(s.categoria ?? "").includes("universale") || normalizedDescription.includes(normalizeText(s.categoria ?? "__none__"))));
+       normalizeText(s.categoria ?? "").includes("universale") || normalizedDescription.includes(normalizeText(s.categoria ?? "__none__")) || normalizedDescription.includes(normalizeText(s.franchise ?? "__none__"))));
     const mapped: ConfiguredSource[] = relevant.map(s => ({
       codice_fonte: "REGISTRY:" + String(s.id ?? s.nome ?? ""),
       nome_fonte: s.nome,
@@ -668,7 +668,7 @@ function rankRelevantResults(results: SearchResult[], category: string, descript
   return results.map((result) => {
     const item = result as SearchResult & Record<string, unknown>;
     if (isLego(category, description) && code) {
-      const year = (result.snippet + " " + result.title).match(/\b(19\d{2}|20\d{2})\b/)?.[1] ?? "";
+      const year = result.snippet.match(/(?:release(?:d)?(?: date| year)?|year released|data di uscita|anno di uscita|date de sortie)\\s*[:\\-]?\\s*(19\\d{2}|20\\d{2})/i)?.[1] ?? "";
       item.produttore = "LEGO";
       item.codice_prodotto = code;
       if (year) item.anno_uscita = Number(year);
