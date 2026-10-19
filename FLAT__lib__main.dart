@@ -1472,7 +1472,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
-    _descriptionFocus.removeListener(_onDescriptionFocusChanged);
     _pr11SearchFocusNode.removeListener(_onPr11SearchFocusChanged);
     _pr11SearchFocusNode.dispose();
     _descriptionFocus.dispose();
