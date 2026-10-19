@@ -2826,7 +2826,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       label: Text(_pr12AiBatchRunning ? 'RICERCA IN CORSO…' : 'AVVIA RICERCA MULTI-FONTE · LOTTO DA 10'),
                     )),
                     const SizedBox(height: 8),
-                    SelectableText(_pr12AiBatchStatus),
+                    SelectableText(_pr12RetryRunning ? 'Nuovo tentativo sui record irrisolti in corso…' : _pr12AiBatchStatus),
                     if (_pr12UnresolvedRecords.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       Text('DA RIPROVARE: ${_pr12UnresolvedRecords.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
@@ -4339,7 +4339,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       label: Text(_pr12AiBatchRunning ? 'RICERCA IN CORSO…' : 'AVVIA RICERCA MULTI-FONTE · LOTTO DA 10'),
                     )),
                     const SizedBox(height: 8),
-                    SelectableText(_pr12AiBatchStatus),
+                    SelectableText(_pr12RetryRunning ? 'Nuovo tentativo sui record irrisolti in corso…' : _pr12AiBatchStatus),
                     if (_pr12UnresolvedRecords.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       Text('DA RIPROVARE: ${_pr12UnresolvedRecords.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
