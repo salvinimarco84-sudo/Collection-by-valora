@@ -1016,12 +1016,26 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
           .where((row) => _description(row).toLowerCase().contains(normalizedQuery))
           .toList()
         ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
+
+      final allResponse = await Supabase.instance.client.schema('collection').rpc(
+        'pr_11_ricerca_schede',
+        params: {'p_cerca': null},
+      );
+      dynamic allPayload = allResponse;
+      if (allPayload is List && allPayload.length == 1 && allPayload.first is Map) {
+        allPayload = allPayload.first;
+      }
+      if (allPayload is! Map || allPayload['oggetti'] is! List) {
+        throw Exception('Impossibile calcolare il totale della collezione.');
+      }
+      final total = (allPayload['oggetti'] as List).length;
+      final percentage = total == 0 ? 0.0 : rows.length * 100 / total;
       if (!mounted) return;
       setState(() {
         _results = rows;
         _message = rows.isEmpty
             ? 'Nessun record contiene “$query”. Prova una dicitura più breve.'
-            : 'Trovati ${rows.length} record. Seleziona una scheda per aprire il dettaglio completo.';
+            : 'Trovati ${rows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
       });
     } catch (e) {
       if (!mounted) return;
@@ -3170,7 +3184,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               suffixIcon:IconButton(tooltip:'Cerca oggetto',onPressed:_loading?null:()=>_run(_searchPr02Objects),
                 icon:Icon(Icons.search,color:sectionColor)))),
         ],
-        if (!_isWrite && isMaster) ...[
+        if (!_isWrite && isMaster && widget.initialObjectCode == null) ...[
           TextField(
             controller: _search,
             focusNode: _pr11SearchFocusNode,
