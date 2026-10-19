@@ -1539,15 +1539,41 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       final workbook = xlsx.Excel.decodeBytes(file.bytes!);
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
       final table = workbook.tables.values.first.rows;
-      if (table.length < 2) throw Exception('Il foglio Excel è vuoto o non contiene righe dati.');
-      final headers = table.first.map((c) => (c?.value?.toString() ?? '').trim().toLowerCase()).toList();
-      return table.skip(1).where((r) => r.any((c) => (c?.value?.toString() ?? '').trim().isNotEmpty)).map((r) {
-        final row = <String, dynamic>{};
-        for (var i = 0; i < headers.length && i < r.length; i++) {
-          row[headers[i]] = r[i]?.value?.toString() ?? '';
+      if (table.isEmpty) throw Exception('Il foglio Excel è vuoto o non contiene righe leggibili.');
+
+      // I file esportati da app esterne possono avere righe introduttive prima dell'intestazione.
+      // Cerca la riga che contiene un campo descrizione riconosciuto, invece di assumere la prima riga.
+      int headerIndex = -1;
+      List<String> headers = <String>[];
+      for (var rowIndex = 0; rowIndex < table.length; rowIndex++) {
+        final candidate = table[rowIndex]
+            .map((cell) => (cell?.value?.toString() ?? '').trim().toLowerCase())
+            .toList();
+        final hasDescription = candidate.any((h) =>
+            h == 'descrizione_oggetto' || h == 'descrizione' || h == 'nome');
+        if (hasDescription) {
+          headerIndex = rowIndex;
+          headers = candidate;
+          break;
         }
-        return row;
-      }).toList();
+      }
+      if (headerIndex < 0) {
+        throw Exception('Intestazione non trovata. Il foglio deve contenere una colonna descrizione_oggetto, descrizione o nome.');
+      }
+
+      final parsed = <Map<String, dynamic>>[];
+      for (final sourceRow in table.skip(headerIndex + 1)) {
+        if (!sourceRow.any((cell) => (cell?.value?.toString() ?? '').trim().isNotEmpty)) continue;
+        final row = <String, dynamic>{};
+        for (var i = 0; i < headers.length && i < sourceRow.length; i++) {
+          final header = headers[i];
+          if (header.isEmpty) continue;
+          row[header] = sourceRow[i]?.value?.toString() ?? '';
+        }
+        parsed.add(row);
+      }
+      if (parsed.isEmpty) throw Exception('Intestazione trovata, ma non ci sono righe oggetto da importare.');
+      return parsed;
     }
     if (name.endsWith('.csv')) {
       final text = utf8.decode(file.bytes!).replaceFirst('\uFEFF','');
