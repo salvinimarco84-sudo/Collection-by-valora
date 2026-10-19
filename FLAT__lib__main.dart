@@ -4067,7 +4067,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       _field(_producer, 'Produttore selezionato'),
                       _field(_line, 'Anno di uscita selezionato'),
                       _field(_family, 'Codice prodotto selezionato'),
-                      const Text('I dati sono solo in questa schermata. Per inserirli nel record, torna a PR-01 e lancia PR-12 dalla relativa maschera.'),
+                      const Text('I candidati qui sopra sono solo proposte. Il record viene aggiornato esclusivamente dopo aver selezionato un candidato e confermato l’operazione; gli altri campi già compilati vengono conservati.'),
                     ],
                   ],
                 ),
