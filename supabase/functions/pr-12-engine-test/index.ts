@@ -172,74 +172,71 @@ Deno.serve(async (req: Request) => {
   if (!base || !anonKey || !authorization) return json({ ok: false, error: "Contesto Supabase autenticato non disponibile." }, 500);
 
   const queueId = crypto.randomUUID();
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const emit = (event: Record<string, unknown>) => controller.enqueue(sse({ queue_id: queueId, modalita_ia: mode, ...event }));
-      const completed: Array<Record<string, unknown>> = [];
-      emit({ tipo: "coda_avviata", totale: queue.length, completati: 0, nessuna_scrittura_database: true });
-      try {
-        for (let index = 0; index < queue.length; index++) {
-          const item = queue[index];
-          emit({ tipo: "oggetto_in_elaborazione", indice: index + 1, totale: queue.length, oggetto_id: item.id, descrizione: item.descrizione });
-          try {
-            const searchResponse = await fetch(base.replace(/\/$/, "") + "/functions/v1/pr-12-web-search-test", {
-              method: "POST",
-              headers: {
-                apikey: anonKey,
-                Authorization: authorization,
-                "Content-Type": "application/json",
-              },
-              signal: AbortSignal.timeout(35000),
-              body: JSON.stringify({ descrizione: item.descrizione, categoria: item.categoria ?? "", tema: item.tema ?? "", mercato: item.mercato ?? "Italia" }),
-            });
-            const searchPayload = await searchResponse.json().catch(() => ({}));
-            if (!searchResponse.ok || searchPayload?.ok === false) {
-              throw new Error(String(searchPayload?.error ?? "Ricerca sorgente fallita: HTTP " + searchResponse.status).slice(0, 400));
-            }
-            const candidates = Array.isArray(searchPayload?.risultati) ? searchPayload.risultati as Candidate[] : [];
-            const ranked = await rankCandidates(mode, item, candidates);
-            const result = {
-              oggetto_id: item.id,
-              descrizione: item.descrizione,
-              categoria: item.categoria ?? "NON_CLASSIFICATA",
-              tema: item.tema ?? null,
-              numero_risultati: ranked.candidates.length,
-              risultati: ranked.candidates,
-              ranking_ia: ranked.ranking ?? [],
-              ...(ranked.warning ? { avviso_ia: ranked.warning } : {}),
-              diagnostica_ricerca: searchPayload?.diagnostica ?? null,
-              fonti_specializzate: searchPayload?.fonti_specializzate ?? [],
-              regole_franchise_applicate: searchPayload?.regole_franchise_applicate ?? [],
-              metadati_confermati: false,
-              scrittura_database: false,
-            };
-            completed.push({ ok: true, ...result });
-            emit({ tipo: "oggetto_completato", indice: index + 1, totale: queue.length, completati: completed.length, risultato: result });
-          } catch (error) {
-            const failure = { ok: false, oggetto_id: item.id, descrizione: item.descrizione, error: error instanceof Error ? error.message : String(error), risultati: [], metadati_confermati: false, scrittura_database: false };
-            completed.push(failure);
-            emit({ tipo: "oggetto_errore", indice: index + 1, totale: queue.length, completati: completed.length, risultato: failure });
-          }
-        }
-        emit({
-          tipo: "coda_completata",
-          totale: queue.length,
-          completati: completed.length,
-          riusciti: completed.filter(x => x.ok === true).length,
-          falliti: completed.filter(x => x.ok !== true).length,
-          risultati_finali: completed,
-          nessuna_scrittura_database: true,
-        });
-      } catch (error) {
-        emit({ tipo: "errore_coda", error: error instanceof Error ? error.message : String(error), risultati_parziali: completed, nessuna_scrittura_database: true });
-      } finally {
-        controller.close();
+  const completed: Array<Record<string, unknown>> = [];
+  for (let index = 0; index < queue.length; index++) {
+    const item = queue[index];
+    try {
+      const searchResponse = await fetch(base.replace(/\\/$/, "") + "/functions/v1/pr-12-web-search-test", {
+        method: "POST",
+        headers: {
+          apikey: anonKey,
+          Authorization: authorization,
+          "Content-Type": "application/json",
+        },
+        signal: AbortSignal.timeout(35000),
+        body: JSON.stringify({
+          descrizione: item.descrizione,
+          categoria: item.categoria ?? "",
+          tema: item.tema ?? "",
+          mercato: item.mercato ?? "Italia",
+        }),
+      });
+      const searchPayload = await searchResponse.json().catch(() => ({}));
+      if (!searchResponse.ok || searchPayload?.ok === false) {
+        throw new Error(String(searchPayload?.error ?? "Ricerca sorgente fallita: HTTP " + searchResponse.status).slice(0, 400));
       }
-    },
-  });
+      const candidates = Array.isArray(searchPayload?.risultati) ? searchPayload.risultati as Candidate[] : [];
+      const ranked = await rankCandidates(mode, item, candidates);
+      const result = {
+        oggetto_id: item.id,
+        descrizione: item.descrizione,
+        categoria: item.categoria ?? "NON_CLASSIFICATA",
+        tema: item.tema ?? null,
+        numero_risultati: ranked.candidates.length,
+        risultati: ranked.candidates,
+        ranking_ia: ranked.ranking ?? [],
+        ...(ranked.warning ? { avviso_ia: ranked.warning } : {}),
+        diagnostica_ricerca: searchPayload?.diagnostica ?? null,
+        fonti_specializzate: searchPayload?.fonti_specializzate ?? [],
+        regole_franchise_applicate: searchPayload?.regole_franchise_applicate ?? [],
+        metadati_confermati: false,
+        scrittura_database: false,
+      };
+      completed.push({ ok: true, ...result });
+    } catch (error) {
+      completed.push({
+        ok: false,
+        oggetto_id: item.id,
+        descrizione: item.descrizione,
+        error: error instanceof Error ? error.message : String(error),
+        risultati: [],
+        numero_risultati: 0,
+        metadati_confermati: false,
+        scrittura_database: false,
+      });
+    }
+  }
 
-  return new Response(stream, {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "text/event-stream; charset=utf-8", "Connection": "keep-alive" },
+  return json({
+    ok: true,
+    queue_id: queueId,
+    modalita_ia: mode,
+    tipo: "coda_completata",
+    totale: queue.length,
+    completati: completed.length,
+    riusciti: completed.filter(x => x.ok === true).length,
+    falliti: completed.filter(x => x.ok !== true).length,
+    risultati_finali: completed,
+    nessuna_scrittura_database: true,
   });
 });
