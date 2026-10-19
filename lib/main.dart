@@ -481,6 +481,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final _newPassword = TextEditingController();
   final _confirmPassword = TextEditingController();
   String _market = 'Italia';
+  List<Map<String, dynamic>> _markets = [];
+  bool _profileLoaded = false;
   String _currency = 'EUR - Euro (€)';
   String _language = 'Italiano';
   String _dateFormat = 'GG/MM/AAAA';
@@ -492,6 +494,83 @@ class _UserProfilePageState extends State<UserProfilePage> {
     super.initState();
     final user = Supabase.instance.client.auth.currentUser;
     _name.text = (user?.userMetadata?['display_name'] ?? user?.userMetadata?['name'] ?? '').toString();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final markets = await client.schema('collection').from('mercati')
+          .select('codice_mercato,nome_mercato').order('codice_mercato');
+      final rows = await client.schema('collection').from('master_utente')
+          .select().eq('auth_user_id', user.id).limit(1);
+      if (!mounted) return;
+      setState(() {
+        _markets = List<Map<String, dynamic>>.from(markets);
+        if (rows.isNotEmpty) {
+          final row = Map<String, dynamic>.from(rows.first);
+          _name.text = (row['nome_utente'] ?? '').toString();
+          _assistant.text = (row['nome_assistente'] ?? 'Demon').toString();
+          _currency = _currencyFor((row['valuta_predefinita'] ?? 'EUR').toString());
+          _language = _languageFor((row['lingua_interfaccia'] ?? 'it').toString());
+          _dateFormat = (row['formato_data'] ?? 'GG/MM/AAAA').toString();
+          final market = _markets.where((m) => m['codice_mercato'] == row['mercato_nazionale_principale']).toList();
+          if (market.isNotEmpty) _market = market.first['nome_mercato'].toString();
+        }
+        if (_markets.isNotEmpty && !_markets.any((m) => m['nome_mercato'] == _market)) {
+          _market = _markets.first['nome_mercato'].toString();
+        }
+        _profileLoaded = true;
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossibile caricare il profilo dal database TEST: $e')));
+    }
+  }
+
+  String _currencyFor(String code) => const {'EUR':'EUR - Euro (€)','USD':'USD - Dollaro USA (\$)','GBP':'GBP - Sterlina (£)'}[code] ?? 'EUR - Euro (€)';
+  String _languageFor(String code) => const {'it':'Italiano','en':'English','es':'Español','fr':'Français'}[code] ?? 'Italiano';
+
+  Future<void> _saveProfile() async {
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per salvare il profilo.')));
+      return;
+    }
+    if (!_profileLoaded || _markets.isEmpty || _name.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa il nome e verifica il catalogo mercati prima di salvare.')));
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final market = _markets.firstWhere((m) => m['nome_mercato'] == _market);
+      final existing = await client.schema('collection').from('master_utente')
+          .select('codice_utente').eq('auth_user_id', user.id).limit(1);
+      final values = <String, dynamic>{
+        'auth_user_id': user.id,
+        'nome_utente': _name.text.trim(),
+        'mercato_nazionale_principale': market['codice_mercato'],
+        'valuta_predefinita': _currency.substring(0, 3),
+        'lingua_interfaccia': const {'Italiano':'it','English':'en','Español':'es','Français':'fr'}[_language] ?? 'it',
+        'formato_data': _dateFormat,
+        'nome_assistente': _assistant.text.trim().isEmpty ? null : _assistant.text.trim(),
+        'stato_utente': 'ATTIVO',
+      };
+      if (existing.isEmpty) {
+        await client.schema('collection').from('master_utente').insert(values);
+      } else {
+        await client.schema('collection').from('master_utente').update(values).eq('auth_user_id', user.id);
+      }
+      await _loadProfile();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profilo salvato e riletto dal database TEST.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito. Verifica autorizzazione e policy TEST. Dettaglio: $e')));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -622,7 +701,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               DropdownButtonFormField<String>(
                 value: _market,
                 decoration: _fieldDecoration('Mercato principale'),
-                items: const ['Italia', 'Europa', 'Mondo'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                items: _markets.map((m) => DropdownMenuItem<String>(value: m['nome_mercato'].toString(), child: Text(m['nome_mercato'].toString()))).toList(),
                 onChanged: (v) { if (v != null) setState(() => _market = v); },
               ),
               const SizedBox(height: 12),
@@ -667,11 +746,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 child: Column(children: [
                   ...content,
                   SizedBox(width: double.infinity, child: FilledButton.icon(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Preferenze non ancora salvate: il collegamento sicuro a master_utente è in preparazione.')),
-                    ),
+                    onPressed: _busy ? null : _saveProfile,
                     icon: const Icon(Icons.save_outlined),
-                    label: const Text('SALVA MODIFICHE'),
+                    label: Text(_busy ? 'SALVATAGGIO...' : 'SALVA MODIFICHE'),
                   )),
                 ]),
               )),
