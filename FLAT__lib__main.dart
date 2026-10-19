@@ -22,7 +22,7 @@ class ValoraAppearance extends ChangeNotifier {
   static final instance = ValoraAppearance._();
   static const Map<String, Color> defaults = {
     'CATALOGO': Color(0xFF3978C5), 'ACQUISTI': Color(0xFF39875B),
-    'VENDITE': Color(0xFFC74444), 'FLUSSI': Color(0xFFD6A83F),
+    'VENDITE': Color(0xFFC74444),
     'VALUTAZIONI': Color(0xFF8556C7), 'REPORT': Color(0xFFE17D35),
     'RICERCHE': Color(0xFF568DAD), 'CONTROLLO': Color(0xFF777777),
   };
@@ -393,7 +393,6 @@ const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'CATALOGO', description: 'Consulta gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
   DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti', icon: Icons.shopping_cart_outlined, color: Color(0xFF39875B)),
   DashboardSection(title: 'VENDITE', description: 'Gestione vendite', icon: Icons.sell_outlined, color: Color(0xFFC74444)),
-  DashboardSection(title: 'FLUSSI', description: 'Movimenti e saldi', icon: Icons.account_balance_wallet_outlined, color: Color(0xFFD6A83F)),
   DashboardSection(title: 'VALUTAZIONI', description: 'Valore degli oggetti', icon: Icons.query_stats, color: Color(0xFF8556C7)),
   DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
   DashboardSection(title: 'RICERCHE', description: 'Cerca dati e fonti', icon: Icons.search, color: Color(0xFF568DAD)),
@@ -439,18 +438,13 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
   'FLUSSI': [
     ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta i movimenti di cassa.', apiCode: 'REPORT-CASH'),
-    ProcedureEntry(title: 'Nuovo movimento extra', description: 'Registra un movimento extra.', enabled: false, readOnly: false),
-    ProcedureEntry(title: 'Giroconto', description: 'Sposta fondi tra destinazioni.', enabled: false, readOnly: false),
-    ProcedureEntry(title: 'Mostra saldi', description: 'Consulta i saldi disponibili.', enabled: false),
-    ProcedureEntry(title: 'Report spese', description: 'Consulta il riepilogo delle spese.', enabled: false),
-  ],
-  'VALUTAZIONI': [
-    ProcedureEntry(title: 'VALORA · PR-19', description: 'Valutazione specialistica del singolo oggetto e preparazione delle bozze di inserzione. Richiede abbonamento premium.', apiCode: 'LAUNCH-VALORA'),
+    ProcedureEntry(title: 'Nuovo movimende abbonamento premium.', apiCode: 'LAUNCH-VALORA'),
     ProcedureEntry(title: 'VALORE COLLEZIONE · PR-18', description: 'Valutazione complessiva della collezione, storico e report. Richiede abbonamento premium.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
     ProcedureEntry(title: 'VALUTA ACQUISTO · PR-20', description: 'Analizza la convenienza di un’offerta partendo da una foto, uno screenshot, un link o prezzo e descrizione. Usa PR-12, non il motore premium VALORA.', enabled: false),
 
   ],
   'REPORT': [
+    ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta le entrate derivate dalle vendite e le uscite derivate dagli acquisti.', apiCode: 'REPORT-CASH'),
     ProcedureEntry(title: 'Report acquisti', description: 'Riepilogo degli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate.', apiCode: 'REPORT-SALES'),
     ProcedureEntry(title: 'Report mattutino', description: 'Riepilogo operativo del mattino.', enabled: false),
