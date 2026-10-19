@@ -2886,8 +2886,47 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                               decoration: BoxDecoration(border: Border.all(color: selected ? sectionColor : ValoraAppearance.instance.neutralOverlayStrong, width: selected ? 2 : 1), borderRadius: BorderRadius.circular(12), color: selected ? ValoraAppearance.instance.neutralOverlay : null),
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  if (imageUrl.isNotEmpty) Padding(padding: const EdgeInsets.only(right: 12), child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(imageUrl, width: 92, height: 112, fit: BoxFit.contain, errorBuilder: (context, error, stack) => Container(width: 92, height: 112, alignment: Alignment.center, color: ValoraAppearance.instance.neutralOverlay, child: const Icon(Icons.image_not_supported_outlined, size: 28))))
-                                  else Padding(padding: const EdgeInsets.only(right: 12), child: Container(width: 92, height: 112, alignment: Alignment.center, decoration: BoxDecoration(color: ValoraAppearance.instance.neutralOverlay, borderRadius: BorderRadius.circular(8)), child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.image_search_outlined, size: 30), SizedBox(height: 5), Text('Nessuna immagine', textAlign: TextAlign.center, style: TextStyle(fontSize: 11))]))),
+                                  if (imageUrl.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          imageUrl,
+                                          width: 92,
+                                          height: 112,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (context, error, stack) => Container(
+                                            width: 92,
+                                            height: 112,
+                                            alignment: Alignment.center,
+                                            color: ValoraAppearance.instance.neutralOverlay,
+                                            child: const Icon(Icons.image_not_supported_outlined, size: 28),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: Container(
+                                        width: 92,
+                                        height: 112,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: ValoraAppearance.instance.neutralOverlay,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.image_search_outlined, size: 30),
+                                            SizedBox(height: 5),
+                                            Text('Nessuna immagine', textAlign: TextAlign.center, style: TextStyle(fontSize: 11)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                     Row(children: [Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: selected ? sectionColor : null), const SizedBox(width: 5), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)))]),
                                     if (maker.isNotEmpty) Text('Produttore / editore: $maker'),
