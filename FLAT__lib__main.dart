@@ -2809,11 +2809,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (raw is Map || raw is List) {
         addFinal(raw);
       } else if (raw is String) {
-        final normalized = raw.replaceFirst(RegExp(r'^\\uFEFF'), '').trim();
+        final normalized = raw.replaceFirst(RegExp(r'^\uFEFF'), '').trim();
+        var decoded = false;
         try {
-          addFinal(jsonDecode(normalized));
+          final parsed = jsonDecode(normalized);
+          addFinal(parsed);
+          decoded = true;
+          if (parsed is String) {
+            try { addFinal(jsonDecode(parsed)); } catch (_) {}
+          }
         } catch (_) {
-          for (final line in normalized.split(RegExp(r'\\r?\\n'))) {
+          // Potrebbe essere una risposta SSE anziché JSON puro.
+        }
+        if (!decoded || finals.isEmpty) {
+          for (final line in normalized.split(RegExp(r'\r?\n'))) {
             final trimmed = line.trimLeft();
             if (!trimmed.startsWith('data:')) continue;
             final payload = trimmed.substring(5).trim();
@@ -2836,7 +2845,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ..clear()
         ..addAll(deduplicated.values);
       if (finals.isEmpty) {
-        throw Exception('Risposta PR-12 non riconosciuta (HTTP ${response.status}, tipo dati: ${raw.runtimeType}). Nessun dato del catalogo modificato.');
+        final preview = raw is String ? raw.substring(0, raw.length.clamp(0, 240)) : raw.toString().substring(0, raw.toString().length.clamp(0, 240));
+        throw Exception('Risposta PR-12 senza risultati interpretabili (HTTP ${response.status}, tipo ${raw.runtimeType}). Anteprima: $preview. Nessun dato del catalogo modificato.');
       }
       final byId = {for (final result in finals) (result['oggetto_id'] ?? '').toString(): result};
       final resolvedIds = <String>{};
