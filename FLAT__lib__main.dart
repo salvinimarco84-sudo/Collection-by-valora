@@ -2751,23 +2751,32 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
-  Future<void> _runPr12AiBatch({bool retryUnresolved = false}) async {
-    if (_pr12IncompleteRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Prima esegui ANALIZZA CATALOGO.'); return; }
+  Future<void> _runPr12AiBatch({bool retryUnresolved = false, Map<String, dynamic>? singleRecord}) async {
+    if (singleRecord == null && _pr12IncompleteRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Prima esegui ANALIZZA CATALOGO.'); return; }
     final List<Map<String, dynamic>> batch;
-    if (retryUnresolved) {
+    if (singleRecord != null) {
+      batch = [singleRecord];
+    } else if (retryUnresolved) {
       if (_pr12UnresolvedRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Non ci sono record da riprovare.'); return; }
       batch = _pr12UnresolvedRecords.take(10).toList();
     } else {
       if (_pr12NextBatchOffset >= _pr12IncompleteRecords.length) { setState(() => _pr12AiBatchStatus = 'Prima passata completata. I record irrisolti restano disponibili per una nuova ricerca.'); return; }
       batch = _pr12IncompleteRecords.skip(_pr12NextBatchOffset).take(10).toList();
     }
-    setState(() { _pr12AiBatchRunning = true; _pr12RetryRunning = retryUnresolved; _pr12AiBatchStatus = retryUnresolved ? 'Nuovo tentativo sui record irrisolti…' : 'Ricerca multi-fonte del lotto in corso…'; });
+    setState(() { _pr12AiBatchRunning = true; _pr12RetryRunning = retryUnresolved; _pr12AiBatchStatus = singleRecord != null ? 'Ricerca singola per l’oggetto ${singleRecord['codice_oggetto']}…' : (retryUnresolved ? 'Nuovo tentativo sui record irrisolti…' : 'Ricerca multi-fonte del lotto in corso…'); });
     try {
       final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
         'modalita_ia': 'TEST',
         'oggetti': batch.map((row) => {'id': (row['codice_oggetto'] ?? '').toString(), 'descrizione': (row['descrizione_oggetto'] ?? '').toString(), 'categoria': _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString()), 'tema': (row['tema'] ?? row['franchise'] ?? row['franchise_tema'] ?? row['linea_prodotto'] ?? '').toString().trim(), 'mercato': (row['mercato'] ?? row['market'] ?? 'Italia').toString()}).toList(),
       });
-      final raw = response.data;
+      dynamic raw = response.data;
+      // Supabase Functions può esporre il body come ByteStream: consumarlo e decodificarlo prima del parsing JSON/SSE.
+      if (raw is Stream<List<int>>) {
+        final bytes = await raw.fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk));
+        raw = utf8.decode(bytes, allowMalformed: true);
+      } else if (raw is Uint8List) {
+        raw = utf8.decode(raw, allowMalformed: true);
+      }
       final finals = <Map<String, dynamic>>[];
 
       void addFinal(dynamic value) {
@@ -2841,7 +2850,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (!mounted) return;
       setState(() {
         _pr12AiResults = [..._pr12AiResults.where((old) => !finals.any((fresh) => (fresh['oggetto_id'] ?? '').toString() == (old['oggetto_id'] ?? '').toString())), ...finals];
-        if (retryUnresolved) {
+        if (singleRecord != null) {
+          _pr12AiBatchStatus = 'Ricerca singola completata: ${finals.where((r) => r['ok'] == true).length} risposta/e valida/e. Nessun dato salvato.';
+        } else if (retryUnresolved) {
           _pr12UnresolvedRecords = [..._pr12UnresolvedRecords.where((row) => !resolvedIds.contains((row['codice_oggetto'] ?? '').toString()) && !batch.any((b) => (b['codice_oggetto'] ?? '').toString() == (row['codice_oggetto'] ?? '').toString())), ...unresolved];
         } else {
           _pr12NextBatchOffset += batch.length;
@@ -3587,6 +3598,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                           contentPadding: EdgeInsets.zero,
                           title: Text('#${row['codice_oggetto']} · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}'),
                           subtitle: Text('Mancano: ${missing.join(', ')}'),
+                          trailing: IconButton(
+                            tooltip: 'Cerca metadati per questo singolo record',
+                            onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(singleRecord: row),
+                            icon: const Icon(Icons.manage_search),
+                          ),
                         );
                       }),
                       if (_pr12IncompleteRecords.length > 30)
