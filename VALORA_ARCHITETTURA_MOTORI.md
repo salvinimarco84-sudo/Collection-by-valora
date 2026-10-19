@@ -68,7 +68,7 @@ Requisito UI da implementare nella schermata/form di registrazione identificata 
 - Chiarire che PR-12 ricerca metadati non è soggetto a questo abbonamento e che VALUTA ACQUISTO (PR-20) è una funzione distinta che non richiama il motore premium VALORA.
 - L'informativa deve essere raggiungibile dal modulo senza completare la registrazione e rimanere facilmente accessibile.
 - Non confondere l'informativa con l'accettazione contrattuale: eventuali checkbox/consensi e condizioni legali devono essere definiti separatamente.
-- Prima di modificare la UI, individuare il vero form RM9: nella versione del file Flutter esaminata è presente una schermata di accesso (`LoginPage`), ma non è stata identificata una schermata di registrazione RM9. Non aggiungere il pulsante alla schermata di accesso al posto del modulo corretto senza confermare il target.
+- Il componente riutilizzabile `lib/widgets/subscription_info.dart` è stato creato sul branch TEST. Offre il pulsante e la finestra informativa completa, ma non è ancora integrato nel form RM9 perché nel codice Flutter esaminato non è stata trovata la schermata di registrazione: è presente `LoginPage`, che non va confusa con RM9. L'integrazione finale resta da fare quando il form corretto viene individuato.
 
 ## Stato
 
