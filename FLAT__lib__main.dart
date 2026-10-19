@@ -2261,6 +2261,38 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     } catch (e) { if (mounted) setState(() => _pr12AiBatchStatus = 'Ricerca non completata: $e'); }
     finally { if (mounted) setState(() { _pr12AiBatchRunning = false; _pr12RetryRunning = false; }); }
   }
+  Future<void> _pr12ApplySelectedCandidate(Map<String, dynamic> result, Map<String, dynamic> candidate) async {
+    final id = int.tryParse((result['oggetto_id'] ?? '').toString());
+    if (id == null) { setState(() => _pr12AiBatchStatus = 'Non posso applicare: codice oggetto non valido.'); return; }
+    final nested = candidate['metadati'] is Map ? Map<String, dynamic>.from(candidate['metadati'] as Map) : <String, dynamic>{};
+    String valueFor(List<String> keys) { for (final key in keys) { final v = candidate[key] ?? nested[key]; if (v != null && v.toString().trim().isNotEmpty) return v.toString().trim(); } return ''; }
+    final maker = valueFor(['produttore','editore','manufacturer','publisher']);
+    final yearText = valueFor(['anno_uscita','anno','release_year','year']);
+    final productCode = valueFor(['codice_prodotto','codice','product_code','set_num','isbn','item_number']);
+    final year = int.tryParse(yearText);
+    if (maker.isEmpty && year == null && productCode.isEmpty) {
+      setState(() => _pr12AiBatchStatus = 'Fonte selezionata, ma non contiene ancora metadati strutturati da applicare. Nessun dato modificato.');
+      return;
+    }
+    final accepted = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('CONFERMA APPLICAZIONE METADATI'),
+      content: Text('Oggetto #$id\\nProduttore: ${maker.isEmpty ? 'non trovato' : maker}\\nAnno: ${year?.toString() ?? 'non trovato'}\\nCodice prodotto: ${productCode.isEmpty ? 'non trovato' : productCode}\\n\\nSaranno compilati soltanto i campi attualmente vuoti. I valori già presenti saranno conservati.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('APPLICA'))],
+    ));
+    if (accepted != true) return;
+    final client = Supabase.instance.client;
+    final current = await client.schema('collection').from('master_oggetti').select('produttore,anno_uscita,codice_prodotto').eq('codice_oggetto', id).maybeSingle();
+    if (current == null) throw Exception('Oggetto #$id non trovato nel catalogo TEST.');
+    final patch = <String, dynamic>{};
+    if ((current['produttore'] ?? '').toString().trim().isEmpty && maker.isNotEmpty) patch['produttore'] = maker;
+    if (current['anno_uscita'] == null && year != null && year >= 1800 && year <= DateTime.now().year + 2) patch['anno_uscita'] = year;
+    if ((current['codice_prodotto'] ?? '').toString().trim().isEmpty && productCode.isNotEmpty) patch['codice_prodotto'] = productCode;
+    if (patch.isEmpty) { setState(() => _pr12AiBatchStatus = 'Nessun campo vuoto aggiornabile per l’oggetto #$id. I dati presenti sono stati conservati.'); return; }
+    await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
+    if (!mounted) return;
+    setState(() { _pr12AiBatchStatus = 'Metadati applicati all’oggetto #$id: ${patch.keys.join(', ')}. Sono stati aggiornati soltanto campi vuoti.'; });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato: ${patch.keys.join(', ')}')));
+  }
   String _pr12CategoryFromDescription(String description) {
     final v = description.toLowerCase();
     if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(v)) return 'LEGO';
@@ -2804,17 +2836,37 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     )),
                     const SizedBox(height: 8),
                     SelectableText(_pr12AiBatchStatus),
+                    if (_pr12UnresolvedRecords.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text('DA RIPROVARE: ${_pr12UnresolvedRecords.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                        onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(retryUnresolved: true),
+                        icon: const Icon(Icons.refresh),
+                        label: Text(_pr12AiBatchRunning ? 'RICERCA IN CORSO…' : 'RIPROVA I PROSSIMI 10 IRRISOLTI'),
+                      )),
+                    ],
+                    if (_pr12NextBatchOffset < _pr12IncompleteRecords.length) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                        onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(),
+                        icon: const Icon(Icons.skip_next),
+                        label: Text('ELABORA PROSSIMO LOTTO · ${(_pr12IncompleteRecords.length - _pr12NextBatchOffset).clamp(0, 10)} DI ${_pr12IncompleteRecords.length - _pr12NextBatchOffset} RECORD'),
+                      )),
+                    ],
                     if (_pr12AiResults.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       Text('RISULTATI RICERCA (${_pr12AiResults.length})', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                       ..._pr12AiResults.map((result) {
                         final candidates = result['risultati'];
                         final candidateList = candidates is List ? candidates : const [];
+                        final objectId = (result['oggetto_id'] ?? '').toString();
+                        final selectedIndex = _pr12SelectedCandidates[objectId];
                         return Card(child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text('#${result['oggetto_id'] ?? ''} · ${result['descrizione'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(result['ok'] != true ? 'Errore tecnico: ${result['error'] ?? 'ricerca non riuscita'}' : (((result['numero_risultati'] as num?) ?? candidateList.length) == 0 ? 'Nessuna corrispondenza pertinente trovata' : '${result['numero_risultati'] ?? candidateList.length} risultati candidati, da verificare')),
-                          ...candidateList.take(5).map((candidate) {
-                            final item = candidate is Map ? Map<String, dynamic>.from(candidate) : <String, dynamic>{};
+                          Text(result['ok'] != true ? 'Errore tecnico: ${result['error'] ?? 'ricerca non riuscita'}' : (((result['numero_risultati'] as num?) ?? candidateList.length) == 0 ? 'Nessuna corrispondenza pertinente trovata' : '${result['numero_risultati'] ?? candidateList.length} candidati da verificare')),
+                          ...candidateList.take(5).toList().asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value is Map ? Map<String, dynamic>.from(entry.value as Map) : <String, dynamic>{};
                             final imageUrl = (item['image_url'] ?? item['immagine'] ?? '').toString().trim();
                             final title = (item['title'] ?? 'Titolo non disponibile').toString().trim();
                             final snippet = (item['snippet'] ?? '').toString().trim();
@@ -2823,77 +2875,33 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                             final year = (item['anno_uscita'] ?? item['anno'] ?? '').toString().trim();
                             final productCode = (item['codice_prodotto'] ?? item['codice'] ?? item['isbn'] ?? '').toString().trim();
                             final source = Uri.tryParse(url)?.host.replaceFirst(RegExp(r'^www\\.'), '') ?? '';
-                            return Container(
-                              margin: const EdgeInsets.only(top: 10),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: ValoraAppearance.instance.neutralOverlayStrong),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                            final selected = selectedIndex == index;
+                            return InkWell(onTap: () => setState(() => _pr12SelectedCandidates[objectId] = index), child: Container(
+                              margin: const EdgeInsets.only(top: 10), padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(border: Border.all(color: selected ? sectionColor : ValoraAppearance.instance.neutralOverlayStrong, width: selected ? 2 : 1), borderRadius: BorderRadius.circular(12), color: selected ? ValoraAppearance.instance.neutralOverlay : null),
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  if (imageUrl.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          imageUrl, width: 92, height: 112, fit: BoxFit.contain,
-                                          errorBuilder: (context, error, stack) => Container(
-                                            width: 92, height: 112, alignment: Alignment.center,
-                                            color: ValoraAppearance.instance.neutralOverlay,
-                                            child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                              Icon(Icons.image_not_supported_outlined, size: 28),
-                                              SizedBox(height: 4),
-                                              Text('Immagine\nnon disponibile', textAlign: TextAlign.center, style: TextStyle(fontSize: 10)),
-                                            ]),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: Container(
-                                        width: 92, height: 112, alignment: Alignment.center,
-                                        decoration: BoxDecoration(color: ValoraAppearance.instance.neutralOverlay, borderRadius: BorderRadius.circular(8)),
-                                        child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                          Icon(Icons.image_search_outlined, size: 30),
-                                          SizedBox(height: 5),
-                                          Text('Nessuna\nimmagine', textAlign: TextAlign.center, style: TextStyle(fontSize: 11)),
-                                        ]),
-                                      ),
-                                    ),
+                                  if (imageUrl.isNotEmpty) Padding(padding: const EdgeInsets.only(right: 12), child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(imageUrl, width: 92, height: 112, fit: BoxFit.contain, errorBuilder: (context, error, stack) => Container(width: 92, height: 112, alignment: Alignment.center, color: ValoraAppearance.instance.neutralOverlay, child: const Icon(Icons.image_not_supported_outlined, size: 28))))
+                                  else Padding(padding: const EdgeInsets.only(right: 12), child: Container(width: 92, height: 112, alignment: Alignment.center, decoration: BoxDecoration(color: ValoraAppearance.instance.neutralOverlay, borderRadius: BorderRadius.circular(8)), child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.image_search_outlined, size: 30), SizedBox(height: 5), Text('Nessuna immagine', textAlign: TextAlign.center, style: TextStyle(fontSize: 11))]))),
                                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                                    const SizedBox(height: 6),
+                                    Row(children: [Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: selected ? sectionColor : null), const SizedBox(width: 5), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)))]),
                                     if (maker.isNotEmpty) Text('Produttore / editore: $maker'),
                                     if (year.isNotEmpty) Text('Anno: $year'),
                                     if (productCode.isNotEmpty) Text('Codice / ISBN: $productCode'),
                                     Text('Fonte: ${source.isEmpty ? 'sito non identificato' : source}', style: TextStyle(color: sectionColor, fontSize: 12)),
                                   ])),
                                 ]),
-                                if (snippet.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  Text(snippet, maxLines: 5, overflow: TextOverflow.ellipsis),
-                                ],
-                                if (url.isNotEmpty) ...[
-                                  const SizedBox(height: 6),
-                                  SelectableText(url, style: TextStyle(color: sectionColor, fontSize: 12)),
-                                ],
-                                const SizedBox(height: 6),
-                                Row(children: [
-                                  const Icon(Icons.help_outline, size: 16),
-                                  const SizedBox(width: 5),
-                                  Expanded(child: Text('Candidato da verificare: non è ancora un’identificazione certa.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
-                                ]),
+                                if (snippet.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(snippet, maxLines: 5, overflow: TextOverflow.ellipsis)),
+                                if (url.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: SelectableText(url, style: TextStyle(color: sectionColor, fontSize: 12))),
+                                if (selected) Padding(padding: const EdgeInsets.only(top: 8), child: SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => _pr12ApplySelectedCandidate(result, item), icon: const Icon(Icons.check_circle_outline), label: const Text('APPLICA METADATI SE DISPONIBILI')))),
+                                const SizedBox(height: 4),
+                                Text('Candidato da verificare: selezionalo per applicare eventuali metadati strutturati.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                               ]),
-                            );
+                            ));
                           }),
                         ])));
                       }),
-                    ],
-                    if (_pr12IncompleteRecords.isNotEmpty) ...[
+                    ],                    if (_pr12IncompleteRecords.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       ..._pr12IncompleteRecords.take(30).map((row) {
                         final missing = <String>[
