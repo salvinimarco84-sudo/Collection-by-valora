@@ -286,7 +286,7 @@ function canonicalSearchText(value: string): string {
 function hostnameFromUrl(value: string): string {
   try { return new URL(value).hostname.replace(/^www\./i, ""); } catch { return ""; }
 }
-async function loadConfiguredSources(category: string, description: string, userId?: string, theme = ""): Promise<{ sources: ConfiguredSource[]; franchiseRules: FranchiseRule[]; queries: string[]; names: string[]; warnings: string[] }> {
+async function loadConfiguredSources(category: string, description: string, userId?: string, theme = "", market = "Italia"): Promise<{ sources: ConfiguredSource[]; franchiseRules: FranchiseRule[]; queries: string[]; names: string[]; warnings: string[] }> {
   const warnings: string[] = [];
   let archive: ConfiguredSource[] = [];
   let rules: FranchiseRule[] = [];
@@ -298,10 +298,34 @@ async function loadConfiguredSources(category: string, description: string, user
     const registry = await readConfigTable<RegistrySource>("registro_fonti", "id,nome,url_base,ambito,categoria,marchio_editore,franchise,mercato,tipo_fonte,priorita,attendibilita_dichiarata,stato_verifica,attiva,origine_configurazione,proprietario_utente,condivisa");
     const normalizedCategory = normalizeText(category);
     const normalizedDescription = normalizeText(description + " " + theme);
-    const relevant = registry.filter(s => (s.origine_configurazione === "sistema" || s.condivisa === true || (!!userId && s.proprietario_utente === userId)) && s.attiva !== false && s.url_base && hostnameFromUrl(s.url_base) &&
-      !/brickset/i.test([s.nome,s.url_base].join(" ")) &&
-      (s.mercato === "globale" || s.mercato === "Italia" || normalizedDescription.includes(normalizeText(s.mercato ?? "__none__")) || normalizedCategory.includes(normalizeText(s.categoria ?? "__none__")) ||
-       normalizeText(s.categoria ?? "").includes("universale") || normalizedDescription.includes(normalizeText(s.categoria ?? "__none__")) || normalizedDescription.includes(normalizeText(s.franchise ?? "__none__"))));
+    const normalizedMarket = normalizeText(market || "Italia");
+    const categoryAliases: Record<string, string[]> = {
+      LEGO: ["lego", "costruzioni", "building sets"],
+      FUMETTI: ["fumetti", "comics", "comic books", "manga", "graphic novels"],
+      ACTION_FIGURE: ["action figure", "figure", "figurines", "statue", "statue da collezione"],
+      DIECAST: ["diecast", "modellismo", "modellini", "scale models", "model vehicles"],
+      WATCHES: ["watches", "watch", "orologi", "orologeria"],
+      MUSIC: ["music", "vinyl", "vinile", "dischi", "record collecting"],
+      NUMISMATICS: ["numismatics", "coins", "monete", "banknotes", "banconote"],
+      TRADING_CARDS: ["trading cards", "cards", "carte collezionabili", "tcg"],
+      GIOCATTOLO: ["toys", "toy", "giocattoli", "giocattolo"],
+      COLLEZIONABILE: ["universale", "collectibles", "collectible", "collezionismo"]
+    };
+    const categoryTerms = categoryAliases[category] ?? [normalizedCategory];
+    const relevant = registry.filter(s => {
+      const visible = (s.origine_configurazione === "sistema" || s.condivisa === true || (!!userId && s.proprietario_utente === userId));
+      const sourceMarket = normalizeText(s.mercato || "globale");
+      const marketMatch = sourceMarket === "globale" || sourceMarket === normalizedMarket ||
+        (normalizedMarket === "italia" && sourceMarket === "europa");
+      const sourceCategory = normalizeText(s.categoria || "");
+      const categoryMatch = !sourceCategory || sourceCategory === "universale" ||
+        categoryTerms.some(term => term.length >= 3 && (sourceCategory.includes(normalizeText(term)) || normalizeText(term).includes(sourceCategory)));
+      const themeMatch = !!normalizeText(s.franchise || "") && normalizedDescription.includes(normalizeText(s.franchise || ""));
+      const makerMatch = !!normalizeText(s.marchio_editore || "") && normalizedDescription.includes(normalizeText(s.marchio_editore || ""));
+      return visible && s.attiva !== false && !!s.url_base && !!hostnameFromUrl(s.url_base) &&
+        !/brickset/i.test([s.nome,s.url_base].join(" ")) && marketMatch &&
+        (categoryMatch || themeMatch || makerMatch);
+    });
     const mapped: ConfiguredSource[] = relevant.map(s => ({
       codice_fonte: "REGISTRY:" + String(s.id ?? s.nome ?? ""),
       nome_fonte: s.nome,
@@ -698,9 +722,10 @@ Deno.serve(async (req: Request) => {
     const description = String(body.descrizione ?? body.query ?? "").trim().slice(0, 240);
     const category = String(body.categoria ?? "").trim().toUpperCase().slice(0, 40);
     const theme = String(body.tema ?? body.franchise ?? body.franchise_tema ?? "").trim().slice(0, 120);
+    const market = String(body.mercato ?? body.market ?? "Italia").trim().slice(0, 40) || "Italia";
     if (description.length < 2) return json({ ok: false, error: "Inserire una descrizione di almeno 2 caratteri." }, 400);
     const code = codeFrom(description);
-    const configured = await loadConfiguredSources(category, description, authenticatedUserId(req), theme);
+    const configured = await loadConfiguredSources(category, description, authenticatedUserId(req), theme, market);
     const staticTargeted = sourcesFor(category, description + " " + theme);
     const targeted = [...new Set([...staticTargeted, ...configured.names])];
     let directResults: SearchResult[] = [];
