@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:csv/csv.dart';
-import 'package:excel/excel.dart';
+import 'package:excel/excel.dart' as xlsx;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -1179,9 +1179,9 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         bytes = utf8.encode(const JsonEncoder.withIndent('  ').convert(rows));
         ext = 'json';
       } else if (format == 'xlsx') {
-        final workbook = Excel.createExcel();
+        final workbook = xlsx.Excel.createExcel();
         final sheet = workbook['Catalogo'];
-        sheet.appendRow(_headers.map((h) => TextCellValue(h)).toList());
+        sheet.appendRow(_headers.map((h) => xlsx.TextCellValue(h)).toList());
         for (final row in rows) {
           sheet.appendRow(_headers.map((h) => TextCellValue((row[h] ?? '').toString())).toList());
         }
@@ -1215,7 +1215,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
     if (name.endsWith('.xlsx')) {
-      final workbook = Excel.decodeBytes(file.bytes!);
+      final workbook = xlsx.Excel.decodeBytes(file.bytes!);
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
       final table = workbook.tables.values.first.rows;
       if (table.length < 2) throw Exception('Il foglio Excel è vuoto o non contiene righe dati.');
