@@ -2274,21 +2274,1520 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final maker = valueFor(['produttore','editore','manufacturer','publisher']);
     final yearText = valueFor(['anno_uscita','anno','release_year','year']);
     final productCode = valueFor(['codice_prodotto','codice','product_code','set_num','isbn','item_number']);
+    final candidateTitle = valueFor(['titolo_prodotto','nome_prodotto','product_name','title','titolo']);
     final year = int.tryParse(yearText);
-    if (maker.isEmpty && year == null && productCode.isEmpty) {
-      setState(() => _pr12AiBatchStatus = 'Fonte selezionata, ma non contiene ancora metadati strutturati da applicare. Nessun dato modificato.');
+    final usefulTitle = candidateTitle.length >= 5 &&
+      !RegExp(r'^(home|homepage|official website|search results|catalogo|risultati della ricerca)
+    if (patch.isEmpty) { setState(() => _pr12AiBatchStatus = 'Nessun campo vuoto aggiornabile per l’oggetto #$id. I dati presenti sono stati conservati.'); return; }
+    await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
+    if (!mounted) return;
+    setState(() { _pr12AiBatchStatus = 'Metadati applicati all’oggetto #$id: ${patch.keys.join(', ')}. Sono stati aggiornati soltanto campi vuoti.'; });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato: ${patch.keys.join(', ')}')));
+  }
+  String _pr12CategoryFromDescription(String description) {
+    final v = description.toLowerCase();
+    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(v)) return 'LEGO';
+    if (RegExp(r'fumett|comic|manga|panini|salda|bonelli|graphic novel|isbn').hasMatch(v)) return 'FUMETTI';
+    if (RegExp(r'myth cloth|saint seiya|bandai|gundam|gunpla|dragon ball|action figure|statua|transformers|optimus prime|bumblebee|megatron|star wars|naruto|one piece').hasMatch(v)) return 'ACTION_FIGURE';
+    if (RegExp(r'maisto|die.?cast|modellino|motorbike|motocicletta|modellismo|auto in scala').hasMatch(v)) return 'DIECAST';
+    return 'COLLEZIONABILE';
+  }
+  Future<void> _consult() async {
+    if (widget.apiCode == 'EXPLORE_RECORDS') {
+      final id = int.tryParse(_code.text.trim());
+      if (id == null || id <= 0) throw Exception('Inserisci il codice dell’oggetto di cui vuoi leggere lo storico.');
+      final response = await _ValoraRuntimeApi.call('object_history', {
+        'session_id': _sessionId,
+        'codice_oggetto': id,
+      });
+      final result = response['result'];
+      if (result is! Map) throw Exception('Risposta dello storico non valida.');
+      final history = Map<String, dynamic>.from(result);
+      final object = history['scheda_corrente'];
+      setState(() {
+        _currentObject = object is Map ? Map<String, dynamic>.from(object) : null;
+        final events = history['eventi_storici'];
+        _rows = events is List ? events : [];
+        _output = 'Storico in sola lettura · ${history['numero_eventi'] ?? _rows.length} eventi.';
+      });
       return;
     }
+
+    final args = widget.apiCode == 'OBJECT_MASTER'
+      ? {'codice_oggetto': int.tryParse(_code.text.trim())}
+      : {'cerca': _search.text.trim(), 'limite': 100, 'offset': 0};
+    final response = await _ValoraRuntimeApi.call('consultation', {
+      'session_id': _sessionId, 'consultation_code': widget.apiCode, 'arguments': args,
+    });
+    final result = response['result'];
+    dynamic data = result is Map ? result['risultato'] : result;
+    final list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
+    setState(() {
+      _rows = list;
+      _output = list.isEmpty ? 'Nessun risultato.' : 'Risultati: ${list.length}.';
+      _currentObject = widget.apiCode == 'OBJECT_MASTER' && list.isNotEmpty && list.first is Map
+        ? Map<String, dynamic>.from(list.first as Map) : null;
+    });
+  }
+
+  String _pretty(dynamic data) {
+    try { return const JsonEncoder.withIndent('  ').convert(data); }
+    catch (_) { return data?.toString() ?? ''; }
+  }
+
+  String _valueFor(Map<String, dynamic> m, List<String> keys, [String fallback = 'Non indicato']) {
+    for (final k in keys) {
+      final v = m[k];
+      if (v != null && v.toString().trim().isNotEmpty) return v.toString();
+    }
+    return fallback;
+  }
+
+  String _italianFieldLabel(String key) {
+    const labels = <String, String>{
+      'id': 'ID record',
+      'codice_oggetto': 'Codice oggetto',
+      'descrizione_oggetto': 'Descrizione oggetto',
+      'descrizione': 'Descrizione',
+      'nome': 'Nome',
+      'produttore': 'Produttore',
+      'linea': 'Linea',
+      'famiglia': 'Famiglia / categoria',
+      'categoria': 'Categoria',
+      'condizione': 'Condizione',
+      'completezza': 'Completezza',
+      'destinazione': 'Destinazione',
+      'quantita': 'Quantità',
+      'note': 'Note',
+      'valore_oggetto': 'Valore oggetto (€)',
+      'valore': 'Valore (€)',
+      'valore_stimato': 'Valore stimato (€)',
+      'stato': 'Stato',
+      'stato_oggetto': 'Stato oggetto',
+      'url_immagine': 'Immagine',
+      'immagine_url': 'Immagine',
+      'foto_url': 'Immagine',
+      'image_url': 'Immagine',
+      'data_inserimento': 'Data inserimento',
+      'data_creazione': 'Data creazione',
+      'data_modifica': 'Data ultima modifica',
+      'created_at': 'Data creazione',
+      'updated_at': 'Data ultima modifica',
+      'data_evento': 'Data evento',
+      'tipo_evento': 'Tipo evento',
+      'motivo_chiusura': 'Motivo chiusura',
+      'prezzo_acquisto': 'Prezzo di acquisto (€)',
+      'prezzo_vendita': 'Prezzo di vendita (€)',
+      'piattaforma': 'Piattaforma',
+      'fonte': 'Fonte',
+    };
+    if (labels.containsKey(key)) return labels[key]!;
+    final normalized = key
+        .replaceAll('_', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (normalized.isEmpty) return 'Campo';
+    return normalized[0].toUpperCase() + normalized.substring(1);
+  }
+
+  String _displayFieldValue(dynamic value) {
+    if (value == null || value.toString().trim().isEmpty) return 'Non indicato';
+    if (value is bool) return value ? 'Sì' : 'No';
+    final text = value.toString().trim();
+    if (text.toLowerCase() == 'true') return 'Sì';
+    if (text.toLowerCase() == 'false') return 'No';
+    return text;
+  }
+
+  Widget _detailFieldCard(String key, dynamic value) {
+    final label = _italianFieldLabel(key);
+    final text = _displayFieldValue(value);
+    final isUrl = text.startsWith('https://') || text.startsWith('http://');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(
+              color: sectionColor, fontSize: 13, fontWeight: FontWeight.w600,
+            )),
+            const SizedBox(height: 5),
+            SelectableText(text, style: TextStyle(fontSize: 15)),
+            if (isUrl) ...[
+              const SizedBox(height: 4),
+              Text('Fonte esterna', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _masterDetails(Map<String, dynamic> object) {
+    const imageKeys = {
+      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+      'immagine_principale', 'url_foto', 'foto', 'immagine',
+      'image', 'imageUrl', 'photo_url', 'main_image_url',
+    };
+    const summaryKeys = {
+      'id', 'codice_oggetto', 'descrizione_oggetto', 'descrizione', 'nome',
+      'destinazione', 'condizione', 'stato', 'stato_oggetto',
+      'valore_oggetto', 'valore', 'valore_stimato',
+    };
+    const identityKeys = {
+      'produttore', 'linea', 'famiglia', 'categoria', 'anno_uscita',
+      'codice_prodotto', 'codice', 'serie', 'licenza', 'franchise',
+    };
+    const conditionKeys = {
+      'completezza', 'quantita', 'note', 'data_inserimento',
+      'data_creazione', 'data_modifica', 'created_at', 'updated_at',
+      'fonte', 'fonte_dati_prodotto', 'url_fonte', 'fonte_dati',
+    };
+    const valueKeys = {
+      'valore_mercato', 'valore_mercato_eur', 'valore_stimato',
+      'valuta_valore', 'valuta', 'prezzo_acquisto', 'prezzo_vendita',
+      'valore_oggetto', 'valore',
+    };
+    const technicalKeys = {
+      'collegato_vendita', 'modificabile_pr02', 'motivo_esclusione',
+      'collegato_acquisto', 'collegato_inserzione', 'collegato_piattaforma',
+      'stato_verifica_dati', 'id', 'created_at', 'updated_at',
+      'record_id', 'deleted_at', 'versione_record',
+    };
+
+    final entries = object.entries.where((e) =>
+      !imageKeys.contains(e.key) && !summaryKeys.contains(e.key)
+    ).toList();
+    List<MapEntry<String, dynamic>> group(Set<String> keys) =>
+      entries.where((e) => keys.contains(e.key)).toList();
+    final identity = group(identityKeys);
+    final condition = group(conditionKeys).where((e) => !technicalKeys.contains(e.key)).toList();
+    final values = group(valueKeys);
+    final technical = entries.where((e) => technicalKeys.contains(e.key)).toList();
+    final assigned = <String>{
+      ...identity.map((e) => e.key),
+      ...condition.map((e) => e.key),
+      ...values.map((e) => e.key),
+      ...technical.map((e) => e.key),
+    };
+    final other = entries.where((e) => !assigned.contains(e.key)).toList();
+
+    Widget section(String title, IconData icon, List<MapEntry<String, dynamic>> fields) {
+      if (fields.isEmpty) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.only(top: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(icon, color: sectionColor, size: 19),
+              const SizedBox(width: 8),
+              Expanded(child: Text(title, style: TextStyle(
+                color: sectionColor, fontSize: 16, fontWeight: FontWeight.bold,
+              ))),
+            ]),
+            const SizedBox(height: 8),
+            ...fields.map((e) => _detailFieldCard(e.key, e.value)),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        section('IDENTIFICAZIONE', Icons.qr_code_2, identity),
+        section('GESTIONE OGGETTO', Icons.inventory_2_outlined, condition),
+        section('VALORI E VALUTAZIONE', Icons.euro_outlined, values),
+        section('ALTRI DETTAGLI', Icons.info_outline, other),
+      ],
+    );
+  }
+
+  Widget _pr11TechnicalDetails(Map<String, dynamic> object) {
+    const technicalKeys = {
+      'collegato_vendita', 'modificabile_pr02', 'motivo_esclusione',
+      'collegato_acquisto', 'collegato_inserzione', 'collegato_piattaforma',
+      'stato_verifica_dati', 'id', 'created_at', 'updated_at',
+      'record_id', 'deleted_at', 'versione_record',
+    };
+    final technical = object.entries.where((e) => technicalKeys.contains(e.key)).toList();
+    if (technical.isEmpty) {
+      return Card(child: const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('Nessun campo tecnico disponibile per questo oggetto.'),
+      ));
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('DATI TECNICI E DI SISTEMA',
+            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          ...technical.map((e) => _detailFieldCard(e.key, e.value)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _pr11HeaderCard(Map<String, dynamic> item) {
+    final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
+    final imageUrl = _valueFor(item, [
+      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+      'immagine_principale', 'url_foto', 'foto', 'immagine',
+      'image', 'imageUrl', 'photo_url', 'main_image_url',
+    ], '');
+    final destination = _valueFor(item, ['destinazione'], 'Non indicata');
+    final condition = _valueFor(item, ['condizione'], 'Non indicata');
+    final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
+    final value = _valueFor(item, ['valore_oggetto', 'valore', 'valore_stimato'], 'Non indicato');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('CODICE OGGETTO $code',
+            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: imageUrl.startsWith('http')
+                ? Image.network(imageUrl, width: 112, height: 112, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imagePlaceholder())
+                : _imagePlaceholder(),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              _pr11SummaryValue('Destinazione', destination),
+              _pr11SummaryValue('Condizione', condition),
+              _pr11SummaryValue('Stato', state),
+              _pr11SummaryValue('Valore registrato', value),
+            ])),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _pr11SummaryValue(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 7),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: TextStyle(color: sectionColor, fontSize: 12, fontWeight: FontWeight.w600)),
+      Text(value, style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 14)),
+    ]),
+  );
+
+  Widget _field(TextEditingController c, String label, {int lines = 1, TextInputType type = TextInputType.text, FocusNode? focusNode}) =>
+    Padding(padding: const EdgeInsets.only(bottom: 12), child: TextField(
+      controller: c, focusNode: focusNode, maxLines: lines, keyboardType: type,
+      decoration: InputDecoration(labelText: label),
+    ));
+
+  Widget _dropdown(String label, String current, List<String> options, ValueChanged<String?> onChanged) =>
+    Padding(padding: const EdgeInsets.only(bottom: 12), child: DropdownButtonFormField<String>(
+      value: current, decoration: InputDecoration(labelText: label),
+      items: options.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+      onChanged: onChanged,
+    ));
+
+  Widget _objectCard(
+    Map<String, dynamic> item, {
+    VoidCallback? onTap,    bool availableStyle = false,
+  }) {
+    final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
+    final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
+    final imageUrl = _valueFor(item, [
+      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+      'immagine_principale', 'url_foto', 'foto', 'immagine',
+      'image', 'imageUrl', 'photo_url', 'main_image_url',
+    ], '');
+    final destination = _valueFor(item, ['destinazione'], 'Non indicata');
+    final condition = _valueFor(item, ['condizione'], 'Non indicata');
+    final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
+    final value = _valueFor(item, ['valore_oggetto', 'valore', 'valore_stimato'], 'Non indicato');
+    final imageSize = availableStyle ? 104.0 : 88.0;
+    Widget infoChip(IconData icon, String label) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: sectionColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: sectionColor.withValues(alpha: 0.28)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13, color: sectionColor),
+        const SizedBox(width: 4),
+        Flexible(child: Text(label, style: const TextStyle(fontSize: 11))),
+      ]),
+    );
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: availableStyle ? sectionColor.withValues(alpha: 0.35) : ValoraAppearance.instance.neutralOverlay,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.all(availableStyle ? 14 : 12),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: imageUrl.startsWith('http')
+                ? Image.network(imageUrl, width: imageSize, height: imageSize, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize))
+                : _imagePlaceholder(size: imageSize),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(child: Text(
+                  'CODICE $code',
+                  style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 12),
+                )),
+                if (onTap != null) Icon(Icons.chevron_right, color: sectionColor, size: 20),
+              ]),
+              const SizedBox(height: 5),
+              Text(desc, style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: availableStyle ? 16 : 16,
+              )),
+              const SizedBox(height: 9),
+              if (availableStyle) ...[
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  infoChip(Icons.inventory_2_outlined, destination),
+                  infoChip(Icons.verified_outlined, condition),
+                ]),
+                const SizedBox(height: 7),
+                Row(children: [
+                  Icon(Icons.circle, size: 8, color: sectionColor),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text('Stato: $state', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
+                ]),
+                const SizedBox(height: 5),
+                Text(
+                  'Valore: $value',
+                  style: TextStyle(color: sectionColor, fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+              ] else ...[
+                Text('Destinazione: $destination'),
+                Text('Condizione: $condition'),
+                Text('Stato: $state'),
+                Text('Valore: $value'),
+              ],
+            ])),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder({double size = 88}) => Container(
+    width: size, height: size, color: ValoraAppearance.instance.neutralOverlay,
+    child: Icon(Icons.image_not_supported_outlined, color: ValoraAppearance.instance.textFaint, size: 30),
+  );
+
+  Widget _historyCard(Map<String, dynamic> event) {
+    final date = _valueFor(event, ['data_evento', 'data', 'created_at'], 'Data non indicata');
+    final rawType = _valueFor(event, ['tipo_evento', 'tipo', 'azione'], 'Evento');
+    final field = (event['campo_modificato'] ?? '').toString().trim();
+    final previous = (event['valore_precedente'] ?? '').toString().trim();
+    final next = (event['valore_nuovo'] ?? '').toString().trim();
+    final reason = (event['motivo'] ?? event['motivazione'] ?? '').toString().trim();
+    final note = (event['note'] ?? event['descrizione'] ?? event['dettaglio'] ?? '').toString().trim();
+    final isPr03Closure = rawType == 'CAMBIO_STATO' &&
+        (reason == 'DISTRUTTO' || reason == 'SMARRITO' || reason == 'DATO VIA' ||
+         next == 'DISTRUTTO' || next == 'PERSO' || next == 'USCITO');
+    final type = isPr03Closure ? 'CHIUSURA OGGETTO · PR-03' : rawType;
+    String fieldLabel(String value) {
+      const labels = <String, String>{
+        'quantita': 'Quantità',
+        'valore_oggetto': 'Valore oggetto',
+        'stato': 'Stato',
+        'descrizione_oggetto': 'Descrizione',
+        'condizione': 'Condizione',
+        'completezza': 'Completezza',
+        'destinazione': 'Destinazione',
+      };
+      return labels[value] ?? (value.isEmpty ? 'Campo modificato' : value.replaceAll('_', ' '));
+    }
+    final isStateChange = field == 'stato' || isPr03Closure;
+    final details = <Widget>[];
+    if (field.isNotEmpty && !isStateChange) {
+      details.add(_historyDetailRow('Campo', fieldLabel(field)));
+    }
+    if (previous.isNotEmpty || next.isNotEmpty) {
+      if (isStateChange) {
+        details.add(_historyDetailRow('Stato precedente', previous.isEmpty ? 'Non indicato' : previous));
+        details.add(_historyDetailRow('Stato finale', next.isEmpty ? 'Non indicato' : next));
+      } else if (previous.isNotEmpty && next.isNotEmpty) {
+        details.add(_historyDetailRow('Valore precedente', previous));
+        details.add(_historyDetailRow('Valore nuovo', next));
+      } else {
+        details.add(_historyDetailRow('Valore registrato', next.isEmpty ? previous : next));
+      }
+    }
+    if (reason.isNotEmpty) details.add(_historyDetailRow('Motivo', reason));
+    if (note.isNotEmpty) details.add(_historyDetailRow('Note', note));
+    if (details.isEmpty) {
+      details.add(Text('Nessun dettaglio registrato', style: TextStyle(color: ValoraAppearance.instance.textSecondary)));
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(isPr03Closure ? Icons.logout : Icons.history, color: sectionColor),
+              const SizedBox(width: 10),
+              Expanded(child: Text(type, style: const TextStyle(fontWeight: FontWeight.w600))),
+            ]),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 34),
+              child: Text(date, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 34),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: details.map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: item,
+                )).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _historyDetailRow(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 2),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
+        const SizedBox(height: 1),
+        Text(value, style: const TextStyle(fontSize: 15)),
+      ],
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final code = widget.apiCode;
+    final isAvailableList = code == 'OBJECTS_AVAILABLE';
+    final isHistory = code == 'EXPLORE_RECORDS';
+    final isMaster = code == 'OBJECT_MASTER';
+
+    if (code == 'PR-12') {
+      return Scaffold(
+        appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI')),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('RICERCA MULTI-FONTE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('PR-12 controlla il catalogo e individua tutti i record con almeno un metadato identificativo mancante. Questa fase è di sola lettura: i dati presenti non vengono modificati.'),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _loading ? null : () => _run(_loadIncompleteMetadataCatalog),
+                        icon: _loading
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.manage_search),
+                        label: Text(_loading ? 'ANALISI IN CORSO…' : 'ANALIZZA CATALOGO'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Record incompleti: ${_pr12IncompleteRecords.length}', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                    const SizedBox(height: 12),
+                    SizedBox(width: double.infinity, child: FilledButton.icon(
+                      onPressed: _loading || _pr12AiBatchRunning ? null : _runPr12AiBatch,
+                      icon: _pr12AiBatchRunning ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
+                      label: Text(_pr12AiBatchRunning ? 'RICERCA IN CORSO…' : 'AVVIA RICERCA MULTI-FONTE · LOTTO DA 10'),
+                    )),
+                    const SizedBox(height: 8),
+                    SelectableText(_pr12AiBatchStatus),
+                    if (_pr12UnresolvedRecords.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text('DA RIPROVARE: ${_pr12UnresolvedRecords.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                        onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(retryUnresolved: true),
+                        icon: const Icon(Icons.refresh),
+                        label: Text(_pr12AiBatchRunning ? 'RICERCA IN CORSO…' : 'RIPROVA I PROSSIMI 10 IRRISOLTI'),
+                      )),
+                    ],
+                    if (_pr12NextBatchOffset < _pr12IncompleteRecords.length) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                        onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(),
+                        icon: const Icon(Icons.skip_next),
+                        label: Text('ELABORA PROSSIMO LOTTO · ${(_pr12IncompleteRecords.length - _pr12NextBatchOffset).clamp(0, 10)} DI ${_pr12IncompleteRecords.length - _pr12NextBatchOffset} RECORD'),
+                      )),
+                    ],
+                    if (_pr12AiResults.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text('RISULTATI RICERCA (${_pr12AiResults.length})', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      ..._pr12AiResults.map((result) {
+                        final candidates = result['risultati'];
+                        final candidateList = candidates is List ? candidates : const [];
+                        final objectId = (result['oggetto_id'] ?? '').toString();
+                        final selectedIndex = _pr12SelectedCandidates[objectId];
+                        return Card(child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('#${result['oggetto_id'] ?? ''} · ${result['descrizione'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(result['ok'] != true ? 'Errore tecnico: ${result['error'] ?? 'ricerca non riuscita'}' : (((result['numero_risultati'] as num?) ?? candidateList.length) == 0 ? 'Nessuna corrispondenza pertinente trovata' : '${result['numero_risultati'] ?? candidateList.length} candidati da verificare')),
+                          ...candidateList.take(5).toList().asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final item = entry.value is Map ? Map<String, dynamic>.from(entry.value as Map) : <String, dynamic>{};
+                            final imageUrl = (item['image_url'] ?? item['immagine'] ?? '').toString().trim();
+                            final title = (item['title'] ?? 'Titolo non disponibile').toString().trim();
+                            final snippet = (item['snippet'] ?? '').toString().trim();
+                            final url = (item['url'] ?? '').toString().trim();
+                            final maker = (item['produttore'] ?? item['editore'] ?? '').toString().trim();
+                            final year = (item['anno_uscita'] ?? item['anno'] ?? '').toString().trim();
+                            final productCode = (item['codice_prodotto'] ?? item['codice'] ?? item['isbn'] ?? '').toString().trim();
+                            final source = Uri.tryParse(url)?.host.replaceFirst(RegExp(r'^www\\.'), '') ?? '';
+                            final selected = selectedIndex == index;
+                            return InkWell(onTap: () => setState(() => _pr12SelectedCandidates[objectId] = index), child: Container(
+                              margin: const EdgeInsets.only(top: 10), padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(border: Border.all(color: selected ? sectionColor : ValoraAppearance.instance.neutralOverlayStrong, width: selected ? 2 : 1), borderRadius: BorderRadius.circular(12), color: selected ? ValoraAppearance.instance.neutralOverlay : null),
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  if (imageUrl.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          imageUrl,
+                                          width: 92,
+                                          height: 112,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (context, error, stack) => Container(
+                                            width: 92,
+                                            height: 112,
+                                            alignment: Alignment.center,
+                                            color: ValoraAppearance.instance.neutralOverlay,
+                                            child: const Icon(Icons.image_not_supported_outlined, size: 28),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 12),
+                                      child: Container(
+                                        width: 92,
+                                        height: 112,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: ValoraAppearance.instance.neutralOverlay,
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.image_search_outlined, size: 30),
+                                            SizedBox(height: 5),
+                                            Text('Nessuna immagine', textAlign: TextAlign.center, style: TextStyle(fontSize: 11)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                    Row(children: [Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: selected ? sectionColor : null), const SizedBox(width: 5), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)))]),
+                                    if (maker.isNotEmpty) Text('Produttore / editore: $maker'),
+                                    if (year.isNotEmpty) Text('Anno: $year'),
+                                    if (productCode.isNotEmpty) Text('Codice / ISBN: $productCode'),
+                                    Text('Fonte: ${source.isEmpty ? 'sito non identificato' : source}', style: TextStyle(color: sectionColor, fontSize: 12)),
+                                  ])),
+                                ]),
+                                if (snippet.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(snippet, maxLines: 5, overflow: TextOverflow.ellipsis)),
+                                if (url.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: SelectableText(url, style: TextStyle(color: sectionColor, fontSize: 12))),
+                                if (selected) Padding(padding: const EdgeInsets.only(top: 8), child: SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => _pr12ApplySelectedCandidate(result, item), icon: const Icon(Icons.check_circle_outline), label: const Text('APPLICA METADATI SE DISPONIBILI')))),
+                                const SizedBox(height: 4),
+                                Text('Candidato da verificare: selezionalo per applicare eventuali metadati strutturati.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                              ]),
+                            ));
+                          }),
+                        ])));
+                      }),
+                    ],                    if (_pr12IncompleteRecords.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      ..._pr12IncompleteRecords.take(30).map((row) {
+                        final missing = <String>[
+                          if ((row['produttore'] ?? '').toString().trim().isEmpty) 'produttore',
+                          if (row['anno_uscita'] == null) 'anno',
+                          if ((row['codice_prodotto'] ?? '').toString().trim().isEmpty) 'codice prodotto',
+                        ];
+                        return ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('#${row['codice_oggetto']} · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}'),
+                          subtitle: Text('Mancano: ${missing.join(', ')}'),
+                        );
+                      }),
+                      if (_pr12IncompleteRecords.length > 30)
+                        Text('Visualizzati i primi 30 record su ${_pr12IncompleteRecords.length}.'),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('STATO DELLA RICERCA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    SelectableText(_metadataResult),
+                    if (_producer.text.isNotEmpty || _line.text.isNotEmpty || _family.text.isNotEmpty) ...[
+                      const Divider(height: 24),
+                      Text('METADATI SELEZIONATI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      _field(_producer, 'Produttore selezionato'),
+                      _field(_line, 'Anno di uscita selezionato'),
+                      _field(_family, 'Codice prodotto selezionato'),
+                      const Text('I dati sono solo in questa schermata. Per inserirli nel record, torna a PR-01 e lancia PR-12 dalla relativa maschera.'),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.title)),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        if (!isMaster)
+          Card(child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
+              style: TextStyle(color: sectionColor)),
+          )),
+        if (_isWrite && code == 'PR-01') ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('IDENTIFICAZIONE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                const SizedBox(height: 8),
+                _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('DATI IDENTIFICATIVI · INSERIMENTO MANUALE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                _field(_producer, 'Produttore (facoltativo)'),
+                _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
+                _field(_family, 'Codice prodotto (facoltativo)'),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('DATI INSERIBILI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+                _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+                _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
+                _field(_quantity, 'Quantità', type: TextInputType.number),
+                _field(_unitPrice, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextField(
+                    controller: _totalValue,
+                    readOnly: true,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Valore totale calcolato (€)',
+                      helperText: 'Quantità × prezzo unitario. Il totale viene registrato in valore_oggetto.',
+                    ),
+                  ),
+                ),
+                _field(_notes, 'Note', lines: 2),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('VALORI DETERMINATI DA ALTRE PROCEDURE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('Valore di mercato attuale (€)', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: _marketValue,
+                  readOnly: true,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    hintText: '0,00',
+                    helperText: 'Valore restituito dalla procedura di valutazione. 0,00 finché non è disponibile una stima.',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+              ]),
+            ),
+          ),
+        ],
+        if (_isWrite && code == 'PR-02') ...[
+          Card(child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('RICERCA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _search,
+                focusNode: _searchFocusNode,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _run(_searchPr02Objects),
+                decoration: InputDecoration(
+                  labelText: 'Parola, parte della descrizione o codice',
+                  hintText: 'Es. Batman',
+                  suffixIcon: IconButton(
+                    tooltip: 'Cerca',
+                    onPressed: _loading ? null : () => _run(_searchPr02Objects),
+                    icon: Icon(Icons.search),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
+              if (_pr02SearchCompleted)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _pr02SearchResults.isEmpty
+                      ? 'Nessun risultato trovato.'
+                      : 'Risultati mostrati nella finestra sovrapposta: ' + _pr02SearchResults.length.toString(),
+                    style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12),
+                  ),
+                ),
+            ]),
+          )),
+          if (_currentObject != null) ...[
+            const SizedBox(height: 12),
+            _pr02MetadataCard(_currentObject!),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(children: [
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: !_showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
+                        foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
+                      ),
+                      onPressed: () => setState(() => _showPr02TechnicalTab = false),
+                      child: Text('SCHEDA OGGETTO'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
+                        foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
+                      ),
+                      onPressed: () => setState(() => _showPr02TechnicalTab = true),
+                      child: Text('DATI TECNICI'),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            if (!_showPr02TechnicalTab)
+              LayoutBuilder(builder: (context, constraints) {
+                return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: _pr02Side(oldValues: true)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _pr02Side(oldValues: false)),
+                ]);
+              })
+            else
+              _pr02TechnicalCard(_currentObject!),
+          ],
+        ],
+        if (_isWrite && code == 'PR-03') ...[
+          _field(_search, 'Cerca oggetto per descrizione o codice'),
+          FilledButton.icon(
+            onPressed: _loading ? null : () => _run(_searchPr02Objects),
+            icon: Icon(Icons.search),
+            label: Text('CERCA E SELEZIONA OGGETTO'),
+          ),
+          if (_pr03PendingClosures.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text('Chiusure confermate in attesa: ${_pr03PendingClosures.length}',
+                style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+            ),
+          if (_currentObject != null) ...[
+            _dropdown('Motivo chiusura', _closeReason, const ['SMARRITO','DISTRUTTO','DATO VIA'], (v) => setState(() => _closeReason = v!)),
+            _field(_notes, 'Note', lines: 2),
+            FilledButton.icon(
+              onPressed: _loading ? null : () => _run(_confirmPr03Closure),
+              icon: Icon(Icons.verified_outlined),
+              label: Text('CONFERMA CHIUSURA'),
+            ),
+          ],
+        ],
+        if (!_isWrite && isHistory) ...[
+          TextField(controller:_search,textInputAction:TextInputAction.search,
+            onSubmitted:(_)=>_run(_searchPr02Objects),
+            decoration:InputDecoration(labelText:'Descrizione oggetto',
+              hintText:'Inserisci una descrizione completa o parziale',
+              suffixIcon:IconButton(tooltip:'Cerca oggetto',onPressed:_loading?null:()=>_run(_searchPr02Objects),
+                icon:Icon(Icons.search,color:sectionColor)))),
+        ],
+        if (!_isWrite && isMaster && widget.initialObjectCode == null) ...[
+          TextField(
+            controller: _search,
+            focusNode: _pr11SearchFocusNode,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) {
+              final query = _search.text.trim();
+              if (query.length >= 2 && !_loading) {
+                _lastPr11SearchQuery = query;
+                _run(_searchPr02Objects);
+              }
+            },
+            decoration: InputDecoration(
+              labelText: 'Descrizione oggetto',
+              hintText: 'Inserisci la descrizione completa o una parte',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                tooltip: 'Cerca oggetto',
+                onPressed: _loading ? null : () {
+                  FocusScope.of(context).unfocus();
+                  final query = _search.text.trim();
+                  if (query.length >= 2) {
+                    _lastPr11SearchQuery = query;
+                    _run(_searchPr02Objects);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Inserisci almeno 2 caratteri per cercare.')),
+                    );
+                  }
+                },
+                icon: Icon(Icons.search, color: sectionColor),
+              ),
+            ),
+          ),
+        ],
+        if (!_isWrite && isAvailableList)
+          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
+        if (!_isWrite && !isMaster && !isHistory && !isAvailableList)
+          _field(_search, 'Cerca'),
+        if (_isWrite && code == 'PR-01') ...[
+          FilledButton.icon(
+            onPressed: _loading ? null : () => _run(_confirmAndSaveNewObject),
+            icon: Icon(Icons.save_outlined),
+            label: Text(_loading ? 'SALVATAGGIO IN CORSO…' : 'CONFERMA E SALVA OGGETTO'),
+          ),
+          const SizedBox(height: 8),
+          if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
+            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
+        ] else if (_isWrite && code == 'PR-02') ...[
+          FilledButton.icon(
+            onPressed: _loading || _currentObject == null ? null : () => _run(_confirmPr02Changes),
+            icon: Icon(Icons.verified_outlined),
+            label: Text('CONFERMA DATI'),
+          ),
+        ] else if (_isWrite && code == 'PR-03') ...[
+          const SizedBox.shrink(),
+        ] else if (_isWrite) ...[
+          FilledButton.icon(onPressed: _loading ? null : () => _run(_preview),
+            icon: Icon(Icons.fact_check_outlined), label: Text('1 · CONTROLLA DATI E ANTEPRIMA')),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(onPressed: _loading || _lastResult == null ? null : () => _run(_confirmData),
+            icon: Icon(Icons.verified_outlined), label: Text('2 · CONFERMO I DATI')),
+          const SizedBox(height: 8),
+          FilledButton.icon(onPressed: _loading || !_dataConfirmed || !_finalReady ? null : () => _run(_save),
+            icon: Icon(Icons.save_outlined), label: Text('3 · CONFERMA DEFINITIVA E SALVA')),
+          const SizedBox(height: 8),
+          if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
+            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
+        ] else if (!isMaster)
+          FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
+            icon: Icon(Icons.search),
+            label: Text(_loading ? 'RICERCA...' : isAvailableList
+              ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
+              : isHistory ? 'VISUALIZZA STORICO OGGETTO'
+              : 'ESEGUI CONSULTAZIONE')),
+        if (_currentObject != null && code != 'PR-02' && code != 'PR-03') ...[
+          const SizedBox(height: 16),
+          if (isMaster) ...[
+            Text(
+              _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
+              style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(children: [
+                  Expanded(child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: !_showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
+                      foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
+                    ),
+                    onPressed: () => setState(() => _showPr02TechnicalTab = false),
+                    child: Text('SCHEDA OGGETTO'),
+                  )),
+                  const SizedBox(width: 8),
+                  Expanded(child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
+                      foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
+                    ),
+                    onPressed: () => setState(() => _showPr02TechnicalTab = true),
+                    child: Text('DATI TECNICI'),
+                  )),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (!_showPr02TechnicalTab) ...[
+              _pr11HeaderCard(_currentObject!),
+              Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('DATI DELL’OGGETTO',
+                      style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    _masterDetails(_currentObject!),
+                  ]),
+                ),
+              ),
+            ] else
+              _pr11TechnicalDetails(_currentObject!),
+          ] else if (isHistory) ...[
+            Text(
+              _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
+              style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
+            ),
+            const SizedBox(height: 12),
+            Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            _objectCard(_currentObject!),
+          ] else ...[
+            Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            _objectCard(_currentObject!),
+            ..._currentObject!.entries
+                .where((e) => !const {
+                      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
+                      'immagine_principale', 'url_foto', 'foto', 'immagine',
+                      'image', 'imageUrl', 'photo_url', 'main_image_url',
+                    }.contains(e.key))
+                .map((e) => _detailFieldCard(e.key, e.value)),
+          ],
+        ],
+        if (isAvailableList && _rows.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: sectionColor.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: sectionColor.withValues(alpha: 0.40)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 46, height: 46,
+                decoration: BoxDecoration(
+                  color: sectionColor.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.inventory_2_outlined, color: sectionColor, size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('OGGETTI DISPONIBILI', style: TextStyle(
+                  color: sectionColor, fontWeight: FontWeight.bold, letterSpacing: 0.5,
+                )),
+                const SizedBox(height: 4),
+                Text('${_rows.length} ${_rows.length == 1 ? 'oggetto trovato' : 'oggetti trovati'}',
+                  style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 3),
+                Text('Seleziona una scheda per vedere tutti i dettagli.',
+                  style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+              ])),
+            ]),
+          ),
+        ],
+        if (_rows.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          if (!isAvailableList)
+            Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
+              style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
+          ..._rows.map((r) {
+            if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
+            final item = Map<String, dynamic>.from(r);
+            if (isHistory) return _historyCard(item);
+            return _objectCard(item, availableStyle: isAvailableList, onTap: isAvailableList
+              ? () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => ObjectRuntimePage(
+                      title: 'Visualizza scheda',
+                      apiCode: 'OBJECT_MASTER',
+                      initialObjectCode: int.tryParse(item['codice_oggetto']?.toString() ?? item['id']?.toString() ?? ''),
+                    )
+                  )).then((_) {})
+              : null);
+          }),
+        ] else if (isAvailableList && !_loading) ...[
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            decoration: BoxDecoration(
+              color: ValoraAppearance.instance.card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: sectionColor.withValues(alpha: 0.28)),
+            ),
+            child: Column(children: [
+              Icon(Icons.inventory_2_outlined, size: 42, color: sectionColor),
+              const SizedBox(height: 12),
+              const Text('Nessun oggetto da mostrare',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center),
+              const SizedBox(height: 6),
+              Text('Premi “Visualizza elenco oggetti disponibili” per caricare l’elenco.',
+                style: TextStyle(color: ValoraAppearance.instance.textSecondary), textAlign: TextAlign.center),
+            ]),
+          ),
+        ],
+        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory) ...[
+          const SizedBox(height: 16),
+          Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
+            color: ValoraAppearance.instance.card, borderRadius: BorderRadius.circular(12)),
+            child: SelectableText(_output, style: TextStyle(fontSize: 13))),
+        ],
+        if (!_isWrite) ...[
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: sectionColor,
+                side: BorderSide(color: sectionColor, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close),
+              label: const Text('CHIUDI E TORNA AL BLOCCO DI APPARTENENZA'),
+            ),
+          ),
+        ],
+      ]),
+    );
+  }
+
+  Future<void> _confirmAndSaveNewObject() async {
+    if (_description.text.trim().isEmpty) throw Exception('La descrizione oggetto è obbligatoria.');
+    final yearText = _line.text.trim();
+    if (yearText.isNotEmpty) {
+      final year = int.tryParse(yearText);
+      if (year == null || year < 1000 || year > DateTime.now().year + 2) {
+        throw Exception('Anno di uscita non valido. Inserisci un anno plausibile oppure lascia il campo vuoto.');
+      }
+    }
+    final qty = int.tryParse(_quantity.text.trim());
+    if (qty == null || qty < 1) throw Exception('La quantità deve essere un numero intero maggiore di zero.');
+
+    final unitPriceLabel = _unitPrice.text.trim().isEmpty
+        ? 'Non indicato'
+        : '${_unitPrice.text.trim()} €';
+    final totalValueLabel = _totalValue.text.trim().isEmpty
+        ? 'Non indicato'
+        : '${_totalValue.text.trim()} €';
+    final marketValueLabel = _marketValue.text.trim().isEmpty
+        ? 'Non indicato'
+        : '${_marketValue.text.trim()} €';
+    final notesLabel = _notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Conferma inserimento oggetto'),
+        content: SingleChildScrollView(
+          child: Text(
+            'Descrizione: ${_description.text.trim()}\\n'
+            'Produttore: ${_producer.text.trim()}\\n'
+            'Linea / serie: ${_line.text.trim()}\\n'
+            'Famiglia / categoria: ${_family.text.trim()}\\n'
+            'Condizione: $_condition\\n'
+            'Completezza: $_completeness\\n'
+            'Destinazione: $_destination\\n'
+            'Quantità: ${_quantity.text.trim()}\\n'
+            'Prezzo unitario: $unitPriceLabel\\n'
+            'Valore totale: $totalValueLabel\\n'
+            'Valore di mercato stimato: $marketValueLabel\\n'
+            'Note: $notesLabel\\n\\n'
+            'Confermi il salvataggio di questo oggetto nel database TEST?',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('CONFERMA E SALVA')),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      setState(() => _output = 'Salvataggio annullato. Nessun oggetto salvato.');
+      return;
+    }
+
+    await _preview();
+    await _confirmData();
+    await _save();
+
+    if (!mounted) return;
+    final addAnother = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Oggetto salvato'),
+        content: Text('Vuoi inserire un altro oggetto?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('NO, TORNA AL MENU')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('SÌ, NUOVO OGGETTO')),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (addAnother == true) {
+      setState(() {
+        _description.clear();
+        _producer.clear();
+        _line.clear();
+        _family.clear();
+        _notes.clear();
+        _quantity.text = '1';
+        _unitPrice.clear();
+        _totalValue.clear();
+        _value.clear();
+        _marketValue.text = '0.00';
+        _condition = 'USATO';
+        _completeness = 'COMPLETO';
+        _destination = 'COLLEZIONE';
+        _metadataResult = 'La ricerca dei metadati è disponibile esclusivamente tramite PR-12.';
+        _output = 'Pronto per il prossimo oggetto.';
+      });
+      // Aspetta che il dialogo sia chiuso e il modulo sia ridisegnato prima di
+      // riportare il cursore sul primo campo utile del nuovo oggetto.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        FocusScope.of(context).requestFocus(_descriptionFocus);
+      });
+    } else {
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _preview() async {
+    if (widget.apiCode == 'PR-02' && _currentObject == null) {
+      await _searchPr02Objects();
+      return;
+    }
+    if ((widget.apiCode == 'PR-02' || widget.apiCode == 'PR-03') &&
+        _loadedObjectId != int.tryParse(_code.text.trim())) {
+      throw Exception('Per questa procedura carica prima la scheda completa del codice selezionato.');
+    }
+    if (!_lockHeld) await _acquireLock();
+    try {
+      final result = await _ValoraRuntimeApi.procedure(
+        widget.apiCode, 'preview', _payload(), sessionId: _sessionId,
+      );
+      setState(() {
+        _lastResult = result;
+        _dataConfirmed = false;
+        _finalReady = false;
+        _output = _pretty(result);
+      });
+    } catch (_) {
+      if (_lockHeld) {
+        try {
+          final response = await _ValoraRuntimeApi.call(
+            'release_lock', {'session_id': _sessionId},
+          );
+          final result = response['result'];
+          if (result is Map && result['rilasciato'] == true && mounted) {
+            setState(() => _lockHeld = false);
+          }
+        } catch (_) {}
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _confirmData() async {
+    if (_lastResult == null) throw Exception('Esegui prima l’anteprima.');
+    final payload = _payload()
+      ..['dati_confermati'] = true
+      ..['altra_operazione'] = false
+      ..['conferma_finale'] = false;
+    final result = await _ValoraRuntimeApi.procedure(widget.apiCode, 'review', payload, sessionId: _sessionId);
+    setState(() { _lastResult = result; _dataConfirmed = true; _finalReady = true; _output = _pretty(result); });
+  }
+
+  Map<String, dynamic> _pr02ConfirmationPayload() {
+    final payload = _payload();
+    final rows = payload['oggetti'];
+    if (rows is! List || rows.isEmpty || rows.first is! Map) {
+      throw Exception('Non ci sono modifiche valide da confermare.');
+    }
+    return Map<String, dynamic>.from(rows.first as Map);
+  }
+
+  String _pr02ConfirmationText(Map<String, dynamic> item) {
+    final labels = <String, String>{
+      'codice_oggetto': 'Codice oggetto',
+      'descrizione': 'Descrizione oggetto',
+      'produttore': 'Produttore',
+      'anno_uscita': 'Anno di uscita',
+      'codice_prodotto': 'Codice prodotto',
+      'fonte_dati_prodotto': 'Fonte dati',
+      'stato_verifica_dati': 'Stato verifica dati',
+      'condizione': 'Condizione',
+      'completezza': 'Completezza',
+      'destinazione': 'Destinazione',
+      'quantita': 'Quantità',
+      'valore_oggetto': 'Valore oggetto (€)',
+      'note': 'Note',
+    };
+    return item.entries.map((e) =>
+      '${labels[e.key] ?? _italianFieldLabel(e.key)}: ${_displayFieldValue(e.value)}'
+    ).join('\\n');
+  }
+
+  Future<void> _confirmPr02Changes() async {
+    if (_currentObject == null || _loadedObjectId == null) {
+      throw Exception('Seleziona prima un oggetto dalla ricerca.');
+    }
+
+    // Prepara e valida i dati, ma non scrive ancora nel database.
+    final item = _pr02ConfirmationPayload();
+    await _preview();
+    await _confirmData();
+
+    if (!mounted) return;
+    final accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Conferma modifiche oggetto'),
+        content: SingleChildScrollView(
+          child: SelectableText(_pr02ConfirmationText(item)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('ANNULLA'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('CONFERMA DATI'),
+          ),
+        ],
+      ),
+    );
+    if (accepted != true || !mounted) {
+      if (_lockHeld) await _releaseLock();
+      if (mounted) setState(() { _dataConfirmed = false; _finalReady = false; });
+      return;
+    }
+
+    _pr02PendingChanges.removeWhere((e) =>
+      e['codice_oggetto']?.toString() == item['codice_oggetto']?.toString());
+    _pr02PendingChanges.add(Map<String, dynamic>.from(item));
+
+    if (_lockHeld) await _releaseLock();
+    if (!mounted) return;
+
+    final another = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Modifica confermata'),
+        content: Text('Vuoi modificare un altro oggetto?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('NO, SALVA E TERMINA'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('SÌ, MODIFICA UN ALTRO'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (another == true) {
+      setState(() {
+        _search.clear();
+        _code.clear();
+        _description.clear();
+        _notes.clear();
+        _producer.clear();
+        _line.clear();
+        _family.clear();
+        _value.clear();
+        _currentObject = null;
+        _loadedObjectId = null;
+        _pr02SearchResults = [];
+        _pr02SearchCompleted = false;
+        _metadataSourceUrl = null;
+        _metadataSearchExecuted = false;
+        _metadataResult = 'Inserisci una parola o parte della descrizione per iniziare.';
+        _lastResult = null;
+        _dataConfirmed = false;
+        _finalReady = false;
+        _showPr02TechnicalTab = false;
+        _output = 'PR-02 pronta per una nuova ricerca.';
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) FocusScope.of(context).requestFocus(_searchFocusNode);
+      });
+      return;
+    }
+
+    if (_pr02PendingChanges.isEmpty) {
+      Navigator.of(context).pop();
+      return;
+    }
+    await _savePr02PendingChanges();
+  }
+
+  Future<void> _savePr02PendingChanges() async {
+    final pending = _pr02PendingChanges
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList(growable: false);
+    for (final item in pending) {
+      final payload = <String, dynamic>{
+        'oggetti': [Map<String, dynamic>.from(item)],
+        'dati_confermati': true,
+        'altra_operazione': false,
+        'conferma_finale': true,
+      };
+      await _acquireLock();
+      try {
+        final preview = await _ValoraRuntimeApi.procedure(
+          'PR-02', 'preview', payload, sessionId: _sessionId);
+        if (preview['errore'] != null) {
+          throw Exception(preview['errore'].toString());
+        }
+        await _ValoraRuntimeApi.procedure(
+          'PR-02', 'review', payload, sessionId: _sessionId);
+        final result = await _ValoraRuntimeApi.procedure(
+          'PR-02', 'save', payload, sessionId: _sessionId, requestId: _uuid.v4());
+        if (result['scrittura_eseguita'] != true) {
+          throw Exception('Salvataggio non confermato per oggetto ${item['codice_oggetto']}.');
+        }
+        if (result['blocco_rilasciato_automaticamente'] == true) {
+          setState(() => _lockHeld = false);
+        } else {
+          throw Exception('Salvataggio eseguito ma rilascio del blocco non confermato.');
+        }
+      } catch (_) {
+        if (_lockHeld) {
+          try { await _releaseLock(); } catch (_) {}
+        }
+        rethrow;
+      }
+    }
+    _pr02PendingChanges.clear();
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _save() async {
+    if (!_dataConfirmed || !_finalReady) throw Exception('Conferma i dati prima del salvataggio.');
+    final payload = _payload()
+      ..['dati_confermati'] = true
+      ..['altra_operazione'] = false
+      ..['conferma_finale'] = true;
+    final result = await _ValoraRuntimeApi.procedure(
+      widget.apiCode, 'save', payload, sessionId: _sessionId, requestId: _uuid.v4());
+    setState(() { _lastResult = result; _output = _pretty(result); _dataConfirmed = false; _finalReady = false; });
+    if (result['scrittura_eseguita'] != true) {
+      throw Exception('Scrittura non confermata dal runtime: blocco mantenuto per sicurezza.');
+    }
+    if (result['blocco_rilasciato_automaticamente'] == true) {
+      setState(() => _lockHeld = false);
+    } else {
+      throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
+    }
+    if (widget.apiCode == 'PR-01') {
+      _description.clear(); _producer.clear(); _line.clear(); _family.clear();
+      _notes.clear(); _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear();
+    }
+  }
+}, caseSensitive: false).hasMatch(candidateTitle);
+    if (maker.isEmpty && year == null && productCode.isEmpty && !usefulTitle) {
+      setState(() => _pr12AiBatchStatus = 'Fonte selezionata, ma non contiene ancora metadati strutturati o un titolo prodotto utilizzabile. Nessun dato modificato.');
+      return;
+    }
+    final client = Supabase.instance.client;
+    final current = await client.schema('collection').from('master_oggetti').select('descrizione_oggetto,produttore,anno_uscita,codice_prodotto').eq('codice_oggetto', id).maybeSingle();
+    if (current == null) throw Exception('Oggetto #$id non trovato nel catalogo TEST.');
+    final currentDescription = (current['descrizione_oggetto'] ?? '').toString().trim();
+    final shouldAppendTitle = usefulTitle && !currentDescription.toLowerCase().contains(candidateTitle.toLowerCase());
+    final proposedDescription = shouldAppendTitle
+      ? (currentDescription.isEmpty ? candidateTitle : '$currentDescription · $candidateTitle')
+      : currentDescription;
     final accepted = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: const Text('CONFERMA APPLICAZIONE METADATI'),
-      content: Text('Oggetto #$id\\nProduttore: ${maker.isEmpty ? 'non trovato' : maker}\\nAnno: ${year?.toString() ?? 'non trovato'}\\nCodice prodotto: ${productCode.isEmpty ? 'non trovato' : productCode}\\n\\nSaranno compilati soltanto i campi attualmente vuoti. I valori già presenti saranno conservati.'),
-      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('APPLICA'))],
+      content: Text('Oggetto #$id\\nDescrizione proposta: ${proposedDescription.isEmpty ? 'nessuna modifica' : proposedDescription}\\nProduttore: ${maker.isEmpty ? 'non trovato' : maker}\\nAnno: ${year?.toString() ?? 'non trovato'}\\nCodice prodotto: ${productCode.isEmpty ? 'non trovato' : productCode}\\n\\nLa descrizione esistente viene conservata e integrata con il titolo candidato. Gli altri campi vengono compilati soltanto se vuoti. Verifica che il candidato identifichi proprio questo oggetto.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMO'))],
     ));
     if (accepted != true) return;
-    final client = Supabase.instance.client;
-    final current = await client.schema('collection').from('master_oggetti').select('produttore,anno_uscita,codice_prodotto').eq('codice_oggetto', id).maybeSingle();
-    if (current == null) throw Exception('Oggetto #$id non trovato nel catalogo TEST.');
     final patch = <String, dynamic>{};
+    if (shouldAppendTitle) patch['descrizione_oggetto'] = proposedDescription;
     if ((current['produttore'] ?? '').toString().trim().isEmpty && maker.isNotEmpty) patch['produttore'] = maker;
     if (current['anno_uscita'] == null && year != null && year >= 1800 && year <= DateTime.now().year + 2) patch['anno_uscita'] = year;
     if ((current['codice_prodotto'] ?? '').toString().trim().isEmpty && productCode.isNotEmpty) patch['codice_prodotto'] = productCode;
