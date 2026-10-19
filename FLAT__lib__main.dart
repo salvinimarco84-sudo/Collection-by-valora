@@ -459,7 +459,9 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Ricerca oggetti', description: 'Cerca gli oggetti nel catalogo.', apiCode: 'READ-EXPLORE-RECORDS'),
     ProcedureEntry(title: 'PR-12 · Ricerca metadati', description: 'Cerca fonti e candidati per un oggetto, senza salvare automaticamente i dati.', apiCode: 'PR-12', readOnly: true),
     ProcedureEntry(title: 'REGISTRO FONTI · Gestisci cataloghi e siti', description: 'Consulta le fonti iniziali e aggiungi fonti specialistiche della tua nicchia collezionistica.', apiCode: 'SOURCE-REGISTRY', readOnly: false),
-    ProcedureEntry(title: 'Ricerca #DEMONOFLU', description: 'Ricerca inserzioni associate a #DEMONOFLU.', enabled: false),
+    ProcedureEntry(title: 'Le mie piattaforme di vendita', description: 'Aggiungi solo le piattaforme che utilizzi e attiva o disattiva ciascuna destinazione per le inserzioni VALORA.', apiCode: 'USER-SALES-PLATFORMS', readOnly: false),
+    ProcedureEntry(title: 'PR-14 · VALORA', description: 'Valutazione completa dell’oggetto, generazione delle inserzioni pertinenti e report PDF.', enabled: false),
+    ProcedureEntry(title: 'Valori di mercato', description: 'Aggiorna i valori degli oggetti catalogati, su richiesta o con pianificazione periodica.', enabled: false),
   ],
   'CONTROLLO': [
     ProcedureEntry(title: 'Stato runtime', description: 'Verifica lo stato del servizio runtime.', apiCode: 'RUNTIME-HEALTH'),
@@ -478,6 +480,169 @@ Color sectionColorForApiCode(String apiCode) {
   return goldColor;
 }
 
+
+class UserSalesPlatformsPage extends StatefulWidget {
+  const UserSalesPlatformsPage({super.key});
+  @override
+  State<UserSalesPlatformsPage> createState() => _UserSalesPlatformsPageState();
+}
+
+class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
+  final _name = TextEditingController();
+  final _url = TextEditingController();
+  List<Map<String, dynamic>> _platforms = [];
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+  String? _message;
+  String? get _userId => Supabase.instance.client.auth.currentUser?.id;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _url.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    if (_userId == null) {
+      setState(() { _loading = false; _error = 'Accedi per gestire le tue piattaforme.'; });
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      final rows = await Supabase.instance.client.schema('collection')
+          .from('piattaforme_utente').select()
+          .eq('user_id', _userId!).order('creato_il');
+      if (!mounted) return;
+      setState(() {
+        _platforms = (rows as List).whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row)).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _loading = false; _error = 'Impossibile caricare le piattaforme: $e'; });
+    }
+  }
+
+  Future<void> _add() async {
+    final name = _name.text.trim();
+    final url = _url.text.trim();
+    if (name.length < 2) {
+      setState(() => _error = 'Inserisci il nome della piattaforma.');
+      return;
+    }
+    if (_userId == null) {
+      setState(() => _error = 'Sessione non valida. Accedi nuovamente.');
+      return;
+    }
+    setState(() { _saving = true; _error = null; _message = null; });
+    try {
+      await Supabase.instance.client.schema('collection').from('piattaforme_utente').insert({
+        'user_id': _userId,
+        'nome_piattaforma': name,
+        'url_piattaforma': url.isEmpty ? null : url,
+        'utilizzata': true,
+      });
+      _name.clear();
+      _url.clear();
+      await _load();
+      if (!mounted) return;
+      setState(() { _saving = false; _message = 'Piattaforma aggiunta.'; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = 'Non è stato possibile aggiungere la piattaforma. Verifica che non sia già presente. Dettaglio: $e';
+      });
+    }
+  }
+
+  Future<void> _toggle(Map<String, dynamic> platform, bool used) async {
+    try {
+      await Supabase.instance.client.schema('collection').from('piattaforme_utente')
+          .update({'utilizzata': used, 'aggiornato_il': DateTime.now().toUtc().toIso8601String()})
+          .eq('id', platform['id']).eq('user_id', _userId!);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'Impossibile aggiornare la piattaforma: $e');
+    }
+  }
+
+  Future<void> _delete(Map<String, dynamic> platform) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rimuovere la piattaforma?'),
+        content: Text('Vuoi eliminare “${platform['nome_piattaforma']}” dal tuo elenco? Se vuoi solo sospenderla, disattiva il flag Utilizzata.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('RIMUOVI')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await Supabase.instance.client.schema('collection').from('piattaforme_utente')
+          .delete().eq('id', platform['id']).eq('user_id', _userId!);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'Impossibile rimuovere la piattaforma: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = ValoraAppearance.instance;
+    return Scaffold(
+      appBar: AppBar(title: const Text('LE MIE PIATTAFORME')),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        Text('Aggiungi soltanto i marketplace che utilizzi. VALORA preparerà le inserzioni solo per le piattaforme attive nel tuo elenco.',
+          style: TextStyle(color: a.textSecondary)),
+        const SizedBox(height: 16),
+        TextField(controller: _name, textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(labelText: 'Nome piattaforma', hintText: 'Es. Vinted, eBay, Subito, Facebook Marketplace')),
+        const SizedBox(height: 10),
+        TextField(controller: _url, keyboardType: TextInputType.url,
+          decoration: const InputDecoration(labelText: 'URL (facoltativo)', hintText: 'https://...')),
+        const SizedBox(height: 10),
+        FilledButton.icon(onPressed: _saving ? null : _add,
+          icon: const Icon(Icons.add), label: Text(_saving ? 'SALVATAGGIO…' : 'AGGIUNGI PIATTAFORMA')),
+        if (_message != null) Padding(padding: const EdgeInsets.only(top: 8),
+          child: Text(_message!, style: TextStyle(color: a.textSecondary))),
+        if (_error != null) Padding(padding: const EdgeInsets.only(top: 8),
+          child: Text(_error!, style: const TextStyle(color: Colors.redAccent))),
+        const SizedBox(height: 20),
+        Text('PIATTAFORME CONFIGURATE', style: TextStyle(color: a.colorFor('RICERCHE'), fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        if (_loading) const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
+        if (!_loading && _platforms.isEmpty) Padding(padding: const EdgeInsets.all(16),
+          child: Text('Non hai ancora aggiunto piattaforme. Inserisci la prima qui sopra.', style: TextStyle(color: a.textSecondary))),
+        ..._platforms.map((p) {
+          final used = p['utilizzata'] == true;
+          return Card(child: ListTile(
+            leading: Icon(Icons.storefront_outlined, color: used ? a.colorFor('RICERCHE') : a.textFaint),
+            title: Text((p['nome_piattaforma'] ?? '').toString()),
+            subtitle: Text(used ? 'Utilizzata: sì' : 'Utilizzata: no'),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              Switch(value: used, onChanged: (value) => _toggle(p, value)),
+              IconButton(tooltip: 'Rimuovi', icon: const Icon(Icons.delete_outline), onPressed: () => _delete(p)),
+            ]),
+          ));
+        }),
+      ]),
+    );
+  }
+}
 
 class SourceRegistryPage extends StatefulWidget {
   const SourceRegistryPage({super.key});
@@ -1277,7 +1442,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                             builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
                       : procedure.apiCode == 'SOURCE-REGISTRY'
                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
-                  : procedure.apiCode != null
+                  : procedure.apiCode == 'USER-SALES-PLATFORMS'
+                      ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
+                      : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
                       : null,
