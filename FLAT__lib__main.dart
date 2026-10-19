@@ -656,7 +656,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
             FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('RIPROVA')),
           ])))
         : Column(children: [
-            Padding(padding: const EdgeInsets.all(12), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Cerca fonte, marchio, categoria o mercato', border: OutlineInputBorder())),
+            Padding(padding: const EdgeInsets.all(12), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Cerca fonte, marchio, categoria o mercato', border: OutlineInputBorder()))),
             Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), child: Text('${visible.length} fonti · le fonti personali sono modificabili; quelle di sistema sono protette. Le fonti iniziali sono da verificare prima di usarle come prova definitiva.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
             Expanded(child: ListView.builder(padding: const EdgeInsets.fromLTRB(12, 4, 12, 90), itemCount: visible.length, itemBuilder: (context, i) {
               final s = visible[i];
