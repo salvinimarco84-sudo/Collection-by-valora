@@ -1122,7 +1122,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (candidates.isEmpty) {
       final warning = (result['avviso'] ?? '').toString().trim();
       final errors = result['errori_fonti'] is List
-          ? (result['errori_fonti'] as List).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).take(5).join('\\n')
+          ? (result['errori_fonti'] as List).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).take(5).join('\n')
           : '';
       final diagnostics = result['diagnostica'] is Map
           ? Map<String, dynamic>.from(result['diagnostica'] as Map)
@@ -1133,7 +1133,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               final count = (q['risultati_grezzi'] ?? 0).toString();
               final error = (q['errore'] ?? '').toString();
               return error.isEmpty ? '• $query: $count risultati grezzi' : '• $query: ERRORE $error';
-            }).join('\\n')
+            }).join('\n')
           : '';
       final details = <String>[
         'PR-12: ricerca completata, zero candidati utilizzabili.',
@@ -1141,12 +1141,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         'Risultati grezzi: ' + (diagnostics['risultati_grezzi_unici'] ?? 'n/d').toString() +
             '; dopo controllo codice: ' + (diagnostics['dopo_filtro_codice'] ?? 'n/d').toString() +
             '; dopo controllo pertinenza: ' + (diagnostics['dopo_filtro_pertinenza'] ?? 'n/d').toString() + '.',
-        if (queryDiagnostics.isNotEmpty) 'Dettaglio query:\\n' + queryDiagnostics,
-        if (errors.isNotEmpty) 'Errori fonti (primi 5):\\n' + errors,
+        if (queryDiagnostics.isNotEmpty) 'Dettaglio query:\n' + queryDiagnostics,
+        if (errors.isNotEmpty) 'Errori fonti (primi 5):\n' + errors,
         'Nessun metadato è stato salvato. Puoi riprovare o completare i campi manualmente.',
       ];
       setState(() {
-        _metadataResult = details.join('\\n\\n');
+        _metadataResult = details.join('\n\n');
         _output = _metadataResult;
       });
       return;
@@ -1917,9 +1917,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         title: const Text('Conferma inserimento oggetto'),
         content: SingleChildScrollView(child: Text(
           'Descrizione: ${_description.text.trim()}\n'
-          'Produttore: ${_producer.text.trim()}\\n'
-          'Linea / serie: ${_line.text.trim()}\\n'
-          'Famiglia / categoria: ${_family.text.trim()}\\n'
+          'Produttore: ${_producer.text.trim()}\n'
+          'Linea / serie: ${_line.text.trim()}\n'
+          'Famiglia / categoria: ${_family.text.trim()}\n'
           'Condizione: $_condition\n'
           'Completezza: $_completeness\n'
           'Destinazione: $_destination\n'
@@ -2062,7 +2062,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     };
     return item.entries.map((e) =>
       '${labels[e.key] ?? _italianFieldLabel(e.key)}: ${_displayFieldValue(e.value)}'
-    ).join('\\n');
+    ).join('\n');
   }
 
   Future<void> _confirmPr02Changes() async {
