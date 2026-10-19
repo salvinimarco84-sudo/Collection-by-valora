@@ -68,3 +68,80 @@ comment on table collection.registro_fonti_categorie is
 'Categorie e campi specialistici configurabili senza modificare lo schema principale degli oggetti.';
 comment on table collection.registro_fonti_ambiti is
 'Associa una fonte a più categorie, marchi, franchise e mercati.';
+
+-- Keep user-defined sources isolated. Public/system entries are readable, but
+-- client-side writes are restricted to the authenticated owner's rows.
+alter table collection.registro_fonti enable row level security;
+alter table collection.registro_fonti_categorie enable row level security;
+alter table collection.registro_fonti_ambiti enable row level security;
+
+create policy registro_fonti_read_visible
+  on collection.registro_fonti for select
+  using (origine_configurazione in ('sistema','condivisa') or proprietario_utente = auth.uid());
+
+create policy registro_fonti_insert_owner
+  on collection.registro_fonti for insert
+  with check (origine_configurazione = 'utente' and proprietario_utente = auth.uid() and condivisa = false);
+
+create policy registro_fonti_update_owner
+  on collection.registro_fonti for update
+  using (origine_configurazione = 'utente' and proprietario_utente = auth.uid() and condivisa = false)
+  with check (origine_configurazione = 'utente' and proprietario_utente = auth.uid() and condivisa = false);
+
+create policy registro_fonti_delete_owner
+  on collection.registro_fonti for delete
+  using (origine_configurazione = 'utente' and proprietario_utente = auth.uid() and condivisa = false);
+
+create policy registro_categorie_read_visible
+  on collection.registro_fonti_categorie for select
+  using (origine_configurazione in ('sistema','condivisa') or proprietario_utente = auth.uid());
+
+create policy registro_categorie_insert_owner
+  on collection.registro_fonti_categorie for insert
+  with check (origine_configurazione = 'utente' and proprietario_utente = auth.uid());
+
+create policy registro_categorie_update_owner
+  on collection.registro_fonti_categorie for update
+  using (origine_configurazione = 'utente' and proprietario_utente = auth.uid())
+  with check (origine_configurazione = 'utente' and proprietario_utente = auth.uid());
+
+create policy registro_categorie_delete_owner
+  on collection.registro_fonti_categorie for delete
+  using (origine_configurazione = 'utente' and proprietario_utente = auth.uid());
+
+create policy registro_ambiti_read_visible
+  on collection.registro_fonti_ambiti for select
+  using (exists (
+    select 1 from collection.registro_fonti f
+    where f.id = fonte_id
+      and (f.origine_configurazione in ('sistema','condivisa') or f.proprietario_utente = auth.uid())
+  ));
+
+create policy registro_ambiti_insert_owner
+  on collection.registro_fonti_ambiti for insert
+  with check (exists (
+    select 1 from collection.registro_fonti f
+    where f.id = fonte_id and f.proprietario_utente = auth.uid()
+      and f.origine_configurazione = 'utente' and not f.condivisa
+  ));
+
+create policy registro_ambiti_update_owner
+  on collection.registro_fonti_ambiti for update
+  using (exists (
+    select 1 from collection.registro_fonti f
+    where f.id = fonte_id and f.proprietario_utente = auth.uid()
+      and f.origine_configurazione = 'utente' and not f.condivisa
+  ))
+  with check (exists (
+    select 1 from collection.registro_fonti f
+    where f.id = fonte_id and f.proprietario_utente = auth.uid()
+      and f.origine_configurazione = 'utente' and not f.condivisa
+  ));
+
+create policy registro_ambiti_delete_owner
+  on collection.registro_fonti_ambiti for delete
+  using (exists (
+    select 1 from collection.registro_fonti f
+    where f.id = fonte_id and f.proprietario_utente = auth.uid()
+      and f.origine_configurazione = 'utente' and not f.condivisa
+  ));
