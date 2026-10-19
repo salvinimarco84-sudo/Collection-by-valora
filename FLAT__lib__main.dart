@@ -2157,37 +2157,51 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     setState(() {
       _metadataResult = 'PR-12: analisi del catalogo in corso…';
       _output = _metadataResult;
+      _pr12IncompleteRecords = [];
     });
-    final client = Supabase.instance.client;
-    final incomplete = <Map<String, dynamic>>[];
-    const pageSize = 500;
-    var offset = 0;
-    while (true) {
-      final rows = await client.schema('collection').from('master_oggetti')
-          .select('codice_oggetto,descrizione_oggetto,produttore,anno_uscita,codice_prodotto')
-          .order('codice_oggetto')
-          .range(offset, offset + pageSize - 1);
-      final page = List<Map<String, dynamic>>.from(rows);
-      for (final row in page) {
-        final producer = (row['produttore'] ?? '').toString().trim();
-        final year = row['anno_uscita'];
-        final productCode = (row['codice_prodotto'] ?? '').toString().trim();
-        if (producer.isEmpty || year == null || productCode.isEmpty) {
-          incomplete.add(row);
+    try {
+      final incomplete = <Map<String, dynamic>>[];
+      const pageSize = 500;
+      var offset = 0;
+      var totalRead = 0;
+      while (true) {
+        final response = await _ValoraRuntimeApi.call('pr12_catalog_page', {
+          'session_id': _sessionId,
+          'offset': offset,
+          'limit': pageSize,
+        });
+        if (response['ok'] != true || response['rows'] is! List) {
+          throw Exception('Il runtime non ha confermato la lettura del catalogo.');
         }
+        final page = List<Map<String, dynamic>>.from(
+          (response['rows'] as List).map((row) => Map<String, dynamic>.from(row as Map)),
+        );
+        totalRead += page.length;
+        for (final row in page) {
+          final producer = (row['produttore'] ?? '').toString().trim();
+          final year = row['anno_uscita'];
+          final productCode = (row['codice_prodotto'] ?? '').toString().trim();
+          if (producer.isEmpty || year == null || productCode.isEmpty) incomplete.add(row);
+        }
+        if (page.length < pageSize) break;
+        offset += pageSize;
       }
-      if (page.length < pageSize) break;
-      offset += pageSize;
+      if (!mounted) return;
+      setState(() {
+        _pr12IncompleteRecords = incomplete;
+        _metadataResult = 'Analisi completata: letti $totalRead record; ${incomplete.length} con almeno un metadato mancante. Nessun dato modificato.';
+        _output = _metadataResult;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _pr12IncompleteRecords = [];
+        _metadataResult = 'ANALISI NON COMPLETATA: $e';
+        _output = _metadataResult;
+      });
+      rethrow;
     }
-    if (!mounted) return;
-    setState(() {
-      _pr12IncompleteRecords = incomplete;
-      _metadataResult = 'Analisi completata: ${incomplete.length} record con almeno un metadato mancante. Nessun dato modificato.';
-      _output = _metadataResult;
-    });
   }
-
-
 
   Future<void> _consult() async {
     if (widget.apiCode == 'EXPLORE_RECORDS') {
