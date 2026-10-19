@@ -2548,7 +2548,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     try {
       final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
         'modalita_ia': 'TEST',
-        'oggetti': batch.map((row) => {'id': (row['codice_oggetto'] ?? '').toString(), 'descrizione': (row['descrizione_oggetto'] ?? '').toString(), 'categoria': _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString())}).toList(),
+        'oggetti': batch.map((row) => {'id': (row['codice_oggetto'] ?? '').toString(), 'descrizione': (row['descrizione_oggetto'] ?? '').toString(), 'categoria': _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString()), 'tema': (row['tema'] ?? row['franchise'] ?? row['franchise_tema'] ?? row['linea_prodotto'] ?? '').toString().trim()}).toList(),
       });
       final raw = response.data;
       final finals = <Map<String, dynamic>>[];
