@@ -3072,20 +3072,38 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   children: [
                     Text('RICERCA MULTI-FONTE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    const Text('Inserisci la descrizione dell’oggetto e avvia la ricerca. I candidati vengono mostrati per la verifica; nessun dato viene salvato automaticamente.'),
+                    const Text('PR-12 controlla il catalogo e individua tutti i record con almeno un metadato identificativo mancante. Questa fase è di sola lettura: i dati presenti non vengono modificati.'),
                     const SizedBox(height: 14),
-                    _field(_description, 'Descrizione oggetto da cercare', lines: 2),
-                    const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: _loading ? null : () => _run(_prepareMetadata),
+                        onPressed: _loading ? null : () => _run(_loadIncompleteMetadataCatalog),
                         icon: _loading
                             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.travel_explore),
-                        label: Text(_loading ? 'RICERCA IN CORSO…' : 'AVVIA RICERCA PR-12'),
+                            : const Icon(Icons.manage_search),
+                        label: Text(_loading ? 'ANALISI IN CORSO…' : 'ANALIZZA CATALOGO'),
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    Text('Record incompleti: ${_pr12IncompleteRecords.length}', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                    if (_pr12IncompleteRecords.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      ..._pr12IncompleteRecords.take(30).map((row) {
+                        final missing = <String>[
+                          if ((row['produttore'] ?? '').toString().trim().isEmpty) 'produttore',
+                          if (row['anno_uscita'] == null) 'anno',
+                          if ((row['codice_prodotto'] ?? '').toString().trim().isEmpty) 'codice prodotto',
+                        ];
+                        return ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('#${row['codice_oggetto']} · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}'),
+                          subtitle: Text('Mancano: ${missing.join(', ')}'),
+                        );
+                      }),
+                      if (_pr12IncompleteRecords.length > 30)
+                        Text('Visualizzati i primi 30 record su ${_pr12IncompleteRecords.length}.'),
+                    ],
                   ],
                 ),
               ),
