@@ -5258,12 +5258,12 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                   icon: const Icon(Icons.fact_check_outlined, color: goldColor),
                   onPressed: () {
                     final fields = <String, String>{
-                      'Oggetto': (v['descrizione'] ?? '').toString(),
-                      'Candidato': (c['title'] ?? '').toString(),
-                      'Produttore proposto': (c['produttore'] ?? '').toString(),
-                      'Anno proposto': (c['anno_uscita'] ?? '').toString(),
-                      'Codice prodotto proposto': (c['codice_prodotto'] ?? c['isbn'] ?? '').toString(),
-                      'Fonte': (c['url'] ?? '').toString(),
+                      "Oggetto": (v["descrizione"] ?? "").toString(),
+                      "Candidato": (c["title"] ?? "").toString(),
+                      "Produttore proposto": (c["produttore"] ?? "").toString(),
+                      "Anno proposto": (c["anno_uscita"] ?? "").toString(),
+                      "Codice prodotto proposto": (c["codice_prodotto"] ?? c["isbn"] ?? "").toString(),
+                      "Fonte": (c["url"] ?? "").toString(),
                     };
                     showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
                       title: const Text('Proposta metadati · sola lettura'),
