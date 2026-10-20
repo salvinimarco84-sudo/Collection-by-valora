@@ -1878,7 +1878,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                               ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
                               : procedure.apiCode == 'WRITE-PR-04'
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
-                          : procedure.apiCode != null
+                          : procedure.apiCode == 'WRITE-PR-05'
+                               ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
+                               : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
                       : null,
@@ -5611,6 +5613,172 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
           _content(), const SizedBox(height: 12),
           Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status))),
         ])))));
+  }
+}
+
+
+
+
+class EditPurchasePage extends StatefulWidget {
+  const EditPurchasePage({super.key});
+  @override
+  State<EditPurchasePage> createState() => _EditPurchasePageState();
+}
+
+class _EditPurchasePageState extends State<EditPurchasePage> {
+  final _query=TextEditingController(), _date=TextEditingController(), _total=TextEditingController(), _description=TextEditingController();
+  final _session=_uuid.v4();
+  bool _busy=false,_locked=false,_confirmed=false,_finalConfirmed=false;
+  String _status='Cerca un acquisto esistente.';
+  List<Map<String,dynamic>> _found=[];
+  Map<String,dynamic>? _purchase,_review,_last;
+  List<Map<String,dynamic>> _items=[];
+  @override
+  void dispose(){_query.dispose();_date.dispose();_total.dispose();_description.dispose();super.dispose();}
+
+  double? _money(dynamic v){
+    if(v==null)return null;
+    var s=v.toString().trim().replaceAll('€','').replaceAll(' ','');
+    if(s.contains(','))s=s.replaceAll('.','').replaceAll(',','.');
+    return double.tryParse(s);
+  }
+  String _code(Map<String,dynamic> r)=>(r['codice_acquisto']??r['purchase_code']??r['id']??'').toString();
+  String _name(Map<String,dynamic> r)=>(r['descrizione_acquisto']??r['descrizione']??r['description']??'Acquisto').toString();
+  dynamic _totalValue(Map<String,dynamic> r)=>r['importo_totale']??r['totale']??r['prezzo_acquisto']??r['amount'];
+  double get _allocated=>_items.fold<double>(0,(s,r)=>s+(_money(r['importo']??r['prezzo_acquisto']??r['valore'])??0));
+  void _msg(String s)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(s)));
+  Map<String,dynamic> _unwrap(Map<String,dynamic> r){
+    final v=r['result'];return v is Map?Map<String,dynamic>.from(v):r;
+  }
+  Future<void> _lock()async{
+    final r=await _ValoraRuntimeApi.call('acquire_lock',{'session_id':_session});
+    final v=r['result'];
+    if(v is Map&&v['acquisito']==true){_locked=true;return;}
+    throw Exception(v is Map?(v['messaggio']??'Blocco archivio non acquisito.').toString():'Blocco archivio non acquisito.');
+  }
+  Future<void> _unlock()async{
+    if(!_locked)return;
+    try{await _ValoraRuntimeApi.call('release_lock',{'session_id':_session});}finally{_locked=false;}
+  }
+  Future<void> _search()async{
+    if(_query.text.trim().isEmpty){_msg('Inserisci codice o descrizione.');return;}
+    setState(()=>_busy=true);
+    try{
+      final r=await _ValoraRuntimeApi.call('procedure',{'procedure':'PR-05','step':'search','session_id':_session,'payload':{'query':_query.text.trim(),'codice_acquisto':_query.text.trim()}});
+      final data=_unwrap(r);
+      final raw=data['acquisti']??data['risultati']??data['results']??data['rows'];
+      if(raw is! List)throw Exception('Il runtime non ha restituito una lista di acquisti.');
+      if(!mounted)return;
+      setState((){_found=raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();_purchase=null;_items=[];_review=null;_last=null;_status=_found.isEmpty?'Nessun acquisto trovato.':'Seleziona l’acquisto da modificare.';});
+    }catch(e){if(mounted)setState(()=>_status='Ricerca non completata: $e');}
+    finally{if(mounted)setState(()=>_busy=false);}
+  }
+  Future<void> _load(Map<String,dynamic> row)async{
+    setState(()=>_busy=true);
+    try{
+      final code=_code(row);
+      if(code.isEmpty)throw Exception('Codice acquisto stabile mancante.');
+      final r=await _ValoraRuntimeApi.procedure('PR-05','load',{'codice_acquisto':code,'purchase_code':code},sessionId:_session);
+      final p=r['acquisto'] is Map?Map<String,dynamic>.from(r['acquisto']):r;
+      final raw=p['oggetti']??p['allocazioni']??p['dettagli']??p['items'];
+      final date=DateTime.tryParse((p['data_acquisto']??p['data']??p['purchase_date']??'').toString());
+      final amount=_money(_totalValue(p));
+      if(raw is! List||raw.isEmpty)throw Exception('Dettagli oggetto non disponibili: modifica bloccata.');
+      if(date==null||amount==null)throw Exception('Data o totale originario mancanti.');
+      if(!mounted)return;
+      setState((){_purchase=p;_date.text=date.toIso8601String().substring(0,10);_total.text=amount.toStringAsFixed(2);_description.text=_name(p);_items=raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();_review=null;_last=null;_confirmed=false;_finalConfirmed=false;_status='Scheda completa caricata. Codice acquisto e codici oggetto saranno conservati.';});
+    }catch(e){if(mounted)setState(()=>_status='Scheda non caricata: $e');}
+    finally{if(mounted)setState(()=>_busy=false);}
+  }
+  bool _valid(){
+    if(_purchase==null||_code(_purchase!).isEmpty){_msg('Seleziona un acquisto con codice valido.');return false;}
+    if(DateTime.tryParse(_date.text.trim())==null){_msg('Data non valida. Usa AAAA-MM-GG.');return false;}
+    final total=_money(_total.text);
+    if(total==null||total<0||_description.text.trim().isEmpty){_msg('Descrizione e totale sono obbligatori.');return false;}
+    if(_items.isEmpty||_items.any((r)=>_money(r['importo']??r['prezzo_acquisto']??r['valore'])==null)){_msg('Allocazioni non complete: salvataggio bloccato.');return false;}
+    if((_allocated-total).abs()>0.009){_msg('Quadratura non valida: somma allocazioni diversa dal totale.');return false;}
+    return true;
+  }
+  Map<String,dynamic> _payload({bool confirmed=false,bool finalConfirmation=false})=> {
+    'codice_acquisto':_code(_purchase!), 'purchase_code':_code(_purchase!),
+    'data_acquisto':_date.text.trim(),'descrizione_acquisto':_description.text.trim(),
+    'importo_totale':_money(_total.text),'oggetti':_items,
+    'dati_confermati':confirmed,'conferma_finale':finalConfirmation,
+    'mantieni_codici_oggetto':true,'non_eliminare_ricreare':true,
+    'aggiorna_cassa':true,'registra_storico':true,'verifica_quadratura':true,
+  };
+  Future<void> _preview()async{
+    if(!_valid())return;setState(()=>_busy=true);
+    try{await _lock();final r=await _ValoraRuntimeApi.procedure('PR-05','preview',_payload(),sessionId:_session);if(mounted)setState(()=>{_last=r,_status='Anteprima completata: controlla le differenze prima della review.'});}
+    catch(e){if(mounted)setState(()=>_status='Anteprima non riuscita: $e');}
+    finally{await _unlock();if(mounted)setState(()=>_busy=false);}
+  }
+  Future<void> _reviewStep()async{
+    if(!_confirmed||!_valid())return;setState(()=>_busy=true);
+    try{await _lock();final r=await _ValoraRuntimeApi.procedure('PR-05','review',_payload(confirmed:true),sessionId:_session);if(mounted)setState(()=>{_review=r,_finalConfirmed=false,_status='Review ricevuta. Conferma solo dopo averla controllata.'});}
+    catch(e){if(mounted)setState(()=>_status='Review non riuscita: $e');}
+    finally{await _unlock();if(mounted)setState(()=>_busy=false);}
+  }
+  Future<void> _save()async{
+    if(!_confirmed||!_finalConfirmed||_review==null||!_valid()){_msg('Completa i controlli e la conferma finale.');return;}
+    setState(()=>_busy=true);
+    try{
+      await _lock();
+      final r=await _ValoraRuntimeApi.procedure('PR-05','save',_payload(confirmed:true,finalConfirmation:true),sessionId:_session,requestId:_uuid.v4());
+      final reread=r['rilettura_database'];
+      final verified=r['rilettura_verificata']==true||r['verifica_post_scrittura']=='OK'||r['stato']=='SALVATO_E_VERIFICATO';
+      final audit=r['storico_aggiornato']==true||r['audit_registrato']==true;
+      final cash=r['cassa_aggiornata']==true||r['movimenti_cassa_aggiornati']==true;
+      final code=(r['codice_acquisto']??r['purchase_code']??_code(_purchase!)).toString()==_code(_purchase!);
+      final saved=r['scrittura_eseguita']==true&&verified&&audit&&cash&&code&&reread is Map;
+      if(r['blocco_rilasciato_automaticamente']==true)_locked=false;
+      if(!mounted)return;
+      setState(()=>{_last=r,_status:saved?'Modifica verificata: codice conservato, cassa e storico aggiornati.':'Modifica NON considerata conclusa: il runtime non ha confermato tutti i controlli richiesti.'});
+      if(saved&&mounted){
+        final again=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
+          title:const Text('Modifica verificata'),content:const Text('Vuoi modificare un altro acquisto?'),
+          actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('NO, TERMINA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('SÌ, ALTRO ACQUISTO'))]));
+        if(!mounted)return;
+        if(again==true)setState(()=>{_query.clear(),_found=[],_purchase=null,_items=[],_review=null,_last=null,_confirmed=false,_finalConfirmed=false,_status='Cerca un altro acquisto.'});
+        else Navigator.of(context).pop();
+      }
+    }catch(e){if(mounted)setState(()=>_status='Modifica non confermata: $e');}
+    finally{await _unlock();if(mounted)setState(()=>_busy=false);}
+  }
+  Widget _line(String a,String b)=>Padding(padding:const EdgeInsets.symmetric(vertical:4),child:Row(children:[Expanded(child:Text(a)),Flexible(child:Text(b,textAlign:TextAlign.end))]));
+  Widget _result(String title,Map<String,dynamic> data)=>Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(color:goldColor,fontWeight:FontWeight.bold)),const SizedBox(height:8),SelectableText(const JsonEncoder.withIndent('  ').convert(data))])));
+  @override
+  Widget build(BuildContext context){
+    final color=ValoraAppearance.instance.colorFor('ACQUISTI');
+    return Scaffold(appBar:AppBar(title:const Text('PR-05 · MODIFICA ACQUISTO')),
+      body:SafeArea(child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:820),child:ListView(padding:const EdgeInsets.all(16),children:[
+        const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Nessuna eliminazione/ricreazione. Quadratura, cassa, storico e rilettura sono obbligatori.'))),
+        Text('1 · CERCA ACQUISTO',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
+        TextField(controller:_query,decoration:const InputDecoration(labelText:'Codice acquisto o descrizione'),onSubmitted:(_)=>_search()),
+        FilledButton(onPressed:_busy?null:_search,child:const Text('CERCA')),
+        for(final row in _found) Card(child:ListTile(title:Text(_name(row)),subtitle:Text('Codice: '+_code(row)+' · Totale: '+((_money(_totalValue(row))??0).toStringAsFixed(2))+' €'),trailing:const Icon(Icons.chevron_right),onTap:_busy?null:()=>_load(row))),
+        if(_purchase!=null)...[
+          const Divider(height:24),Text('2 · MODIFICA SCHEDA ESISTENTE',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
+          _line('Codice acquisto',_code(_purchase!)),
+          TextField(controller:_description,decoration:const InputDecoration(labelText:'Descrizione acquisto *'),onChanged:(_)=>setState(()=>{_review=null,_last=null,_confirmed=false,_finalConfirmed=false})),
+          TextField(controller:_date,decoration:const InputDecoration(labelText:'Data acquisto (AAAA-MM-GG) *'),onChanged:(_)=>setState(()=>{_review=null,_last=null,_confirmed=false,_finalConfirmed=false})),
+          TextField(controller:_total,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Totale acquisto (€) *'),onChanged:(_)=>setState(()=>{_review=null,_last=null,_confirmed=false,_finalConfirmed=false})),
+          _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),_line('Totale','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
+          if((_money(_total.text)??-999)-_allocated).abs()>0.009) const Text('QUADRATURA NON VALIDA: il salvataggio è bloccato.',style:TextStyle(color:Colors.redAccent,fontWeight:FontWeight.bold)),
+          for(final item in _items) Card(child:ListTile(title:Text((item['descrizione_oggetto']??item['descrizione']??item['nome']??'Oggetto collegato').toString()),subtitle:Text('Codice oggetto: '+(item['codice_oggetto']??item['object_code']??item['id']??'non disponibile').toString()),trailing:Text('€ '+((_money(item['importo']??item['prezzo_acquisto']??item['valore'])??0).toStringAsFixed(2))))),
+          FilledButton(onPressed:_busy?null:_preview,child:const Text('CONTROLLA MODIFICA')),
+          if(_last!=null)_result('ANTEPRIMA / ESITO RUNTIME',_last!),
+          CheckboxListTile(value:_confirmed,title:const Text('Confermo che i dati della modifica sono corretti.'),onChanged:_busy?null:(v)=>setState(()=>{_confirmed=v??false,_finalConfirmed=false,_review=null})),
+          FilledButton(onPressed:_busy||!_confirmed?null:_reviewStep,child:const Text('VALIDA DATI (REVIEW)')),
+          if(_review!=null)...[
+            _result('ESITO REVIEW',_review!),
+            CheckboxListTile(value:_finalConfirmed,title:const Text('Autorizzo la modifica dell’acquisto esistente, con aggiornamento di cassa e storico.'),onChanged:_busy?null:(v)=>setState(()=>_finalConfirmed=v??false)),
+            FilledButton(onPressed:_busy||!_finalConfirmed?null:_save,child:const Text('CONFERMA E SALVA MODIFICA')),
+          ],
+        ],
+        if(_busy)const LinearProgressIndicator(),
+        Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
+      ])))));
   }
 }
 
