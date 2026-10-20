@@ -67,6 +67,19 @@ jobs:
           if ! grep -q 'android.permission.INTERNET' "$MANIFEST"; then
             sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' "$MANIFEST"
           fi
+          if ! grep -q 'android.permission.RECORD_AUDIO' "$MANIFEST"; then
+            sed -i '/<manifest/a\    <uses-permission android:name="android.permission.RECORD_AUDIO"/>' "$MANIFEST"
+          fi
+          if ! grep -q 'android.speech.RecognitionService' "$MANIFEST"; then
+            python - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          block = '    <queries>\n        <intent>\n            <action android:name="android.speech.RecognitionService" />\n        </intent>\n    </queries>\n'
+          s = s.replace('</manifest>', block + '</manifest>')
+          p.write_text(s)
+          PY
+          fi
 
       - name: Install dependencies
         run: flutter pub get
