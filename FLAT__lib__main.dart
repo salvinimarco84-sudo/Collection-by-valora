@@ -5159,6 +5159,9 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
           'id': (v['codice_oggetto'] ?? '').toString(),
           'descrizione': (v['descrizione_oggetto'] ?? '').toString(),
           'categoria': _category((v['descrizione_oggetto'] ?? '').toString()),
+          'produttore_attuale': (v['produttore'] ?? '').toString(),
+          'anno_uscita_attuale': v['anno_uscita'],
+          'codice_prodotto': (v['codice_prodotto'] ?? '').toString(),
         }).toList()})).timeout(const Duration(minutes: 5));
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw Exception('HTTP ${response.statusCode}: ${response.body.substring(0, response.body.length.clamp(0, 500).toInt())}');
@@ -5223,7 +5226,36 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
               Text(v['ok'] == true ? 'Candidati: ${candidates.length} · nessuna scrittura' : 'ERRORE: ${v['error'] ?? 'non specificato'}'),
               ...candidates.take(4).map((c) => ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.link, color: goldColor),
                 title: Text((c['title'] ?? 'Risultato senza titolo').toString(), style: const TextStyle(fontSize: 13)),
-                subtitle: Text('${c['url'] ?? ''}\n${c['snippet'] ?? ''}', maxLines: 4, overflow: TextOverflow.ellipsis))),
+                subtitle: Text('${c['url'] ?? ''}\n${c['snippet'] ?? ''}', maxLines: 4, overflow: TextOverflow.ellipsis),
+                onTap: () {
+                  final rawUrl = (c['url'] ?? '').toString().trim();
+                  final uri = Uri.tryParse(rawUrl);
+                  if (uri != null && (uri.scheme == 'https' || uri.scheme == 'http') && uri.host.isNotEmpty) {
+                    launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link candidato non valido.')));
+                  }
+                },
+                trailing: IconButton(
+                  tooltip: 'Prepara proposta metadati',
+                  icon: const Icon(Icons.fact_check_outlined, color: goldColor),
+                  onPressed: () {
+                    final fields = <String, String>{
+                      'Oggetto': (v['descrizione'] ?? '').toString(),
+                      'Candidato': (c['title'] ?? '').toString(),
+                      'Produttore proposto': (c['produttore'] ?? '').toString(),
+                      'Anno proposto': (c['anno_uscita'] ?? '').toString(),
+                      'Codice prodotto proposto': (c['codice_prodotto'] ?? c['isbn'] ?? '').toString(),
+                      'Fonte': (c['url'] ?? '').toString(),
+                    };
+                    showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
+                      title: const Text('Proposta metadati · sola lettura'),
+                      content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+                        children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? 'non disponibile' : e.value}'))).toList())),
+                      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
+                    ));
+                  },
+                )),
               if (v['diagnostica_ricerca'] is Map) SelectableText('Diagnostica: ${jsonEncode(v['diagnostica_ricerca'])}', style: const TextStyle(fontSize: 11, color: Colors.white54)),
             ])));
           }),
