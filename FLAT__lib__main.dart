@@ -1876,7 +1876,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
                           : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
                               ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
-                              : procedure.apiCode != null
+                              : procedure.apiCode == 'WRITE-PR-04'
+                          ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
+                          : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
                       : null,
@@ -5290,6 +5292,329 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 }
+
+
+
+class _PurchaseItemDraft {
+  final description = TextEditingController();
+  final price = TextEditingController();
+  String destination = 'COLLEZIONE';
+  String condition = 'USATO';
+  String completeness = 'COMPLETO';
+  double? get amount {
+    var s = price.text.trim().replaceAll('€', '').replaceAll(' ', '');
+    if (s.contains(',')) s = s.replaceAll('.', '').replaceAll(',', '.');
+    return double.tryParse(s);
+  }
+  Map<String, dynamic> json() => {
+    'descrizione': description.text.trim(), 'prezzo_acquisto': amount,
+    'destinazione': destination, 'condizione': condition,
+    'completezza': completeness, 'quantita': 1,
+  };
+  void dispose() { description.dispose(); price.dispose(); }
+}
+
+/// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
+class NewPurchasePage extends StatefulWidget {
+  const NewPurchasePage({super.key});
+  @override
+  State<NewPurchasePage> createState() => _NewPurchasePageState();
+}
+
+class _NewPurchasePageState extends State<NewPurchasePage> {
+  int _step = 0;
+  String _type = 'SINGOLO';
+  final _count = TextEditingController(text: '2');
+  DateTime _date = DateTime.now();
+  final List<_PurchaseItemDraft> _items = [_PurchaseItemDraft()];
+  final String _session = _uuid.v4();
+  bool _busy = false, _locked = false, _dataConfirmed = false, _finalConfirmed = false;
+  Map<String, dynamic>? _preview, _review;
+  String _status = 'Bozza locale: nessun acquisto registrato.';
+
+  @override
+  void dispose() { _count.dispose(); for (final i in _items) { i.dispose(); } super.dispose(); }
+
+  String _dateLabel(DateTime d) =>
+      d.day.toString().padLeft(2, '0') + '/' +
+      d.month.toString().padLeft(2, '0') + '/' + d.year.toString();
+  double get _total => _items.fold<double>(0, (sum, i) => sum + (i.amount ?? 0));
+  void _notice(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
+  void _invalidate() { _preview = null; _review = null; _dataConfirmed = false; _finalConfirmed = false; }
+
+  void _resize(int n) {
+    while (_items.length < n) { _items.add(_PurchaseItemDraft()); }
+    while (_items.length > n) { _items.removeLast().dispose(); }
+    _invalidate();
+  }
+
+  bool _valid() {
+    if (_items.isEmpty) { _notice('Inserisci almeno un oggetto.'); return false; }
+    for (var i = 0; i < _items.length; i++) {
+      if (_items[i].description.text.trim().isEmpty) {
+        _notice('Inserisci la descrizione dell’oggetto ' + (i + 1).toString() + '.'); return false;
+      }
+      final p = _items[i].amount;
+      if (p == null || p < 0) {
+        _notice('Inserisci un prezzo valido per l’oggetto ' + (i + 1).toString() + '.'); return false;
+      }
+    }
+    return true;
+  }
+
+  Map<String, dynamic> _payload({bool confirmed = false, bool finalConfirmation = false}) => {
+    'tipo_acquisto': _type,
+    'data_acquisto': _date.toIso8601String().substring(0, 10),
+    'numero_oggetti': _items.length,
+    'importo_totale': double.parse(_total.toStringAsFixed(2)),
+    'oggetti': _items.map((e) => e.json()).toList(),
+    'dati_confermati': confirmed,
+    'conferma_finale': finalConfirmation,
+    'altra_operazione': false,
+  };
+
+  Future<bool> _acquire() async {
+    final r = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _session});
+    final data = r['result'];
+    if (data is Map && data['acquisito'] == true) { _locked = true; return true; }
+    if (mounted) setState(() => _status =
+      (data is Map ? data['messaggio'] : null)?.toString() ?? 'Blocco archivio non acquisito.');
+    return false;
+  }
+
+  Future<void> _release() async {
+    if (!_locked) return;
+    try { await _ValoraRuntimeApi.call('release_lock', {'session_id': _session}); }
+    finally { _locked = false; }
+  }
+
+  Future<void> _runPreview() async {
+    if (!_valid()) return;
+    setState(() { _busy = true; _status = 'Controllo preliminare in TEST…'; _invalidate(); });
+    try {
+      if (!await _acquire()) return;
+      final r = await _ValoraRuntimeApi.procedure('PR-04', 'preview', _payload(), sessionId: _session);
+      if (!mounted) return;
+      setState(() { _preview = r; _step = 4; _status = 'Controllo preliminare ricevuto. Verifica i dati prima di procedere.'; });
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Controllo non riuscito: ' + e.toString());
+    } finally { await _release(); if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _runReview() async {
+    if (!_dataConfirmed) { _notice('Conferma prima la correttezza dei dati.'); return; }
+    setState(() { _busy = true; _status = 'Validazione dei dati (review)…'; _review = null; _finalConfirmed = false; });
+    try {
+      if (!await _acquire()) return;
+      final r = await _ValoraRuntimeApi.procedure('PR-04', 'review', _payload(confirmed: true), sessionId: _session);
+      if (!mounted) return;
+      setState(() { _review = r; _status = 'Review ricevuta. Leggi l’esito prima di autorizzare il salvataggio.'; });
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Validazione non riuscita: ' + e.toString());
+    } finally { await _release(); if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _save() async {
+    if (!_dataConfirmed || !_finalConfirmed || _review == null) {
+      _notice('Completa la review e autorizza esplicitamente il salvataggio.'); return;
+    }
+    setState(() { _busy = true; _status = 'Invio del salvataggio al runtime TEST…'; });
+    try {
+      if (!await _acquire()) return;
+      final r = await _ValoraRuntimeApi.procedure('PR-04', 'save',
+        _payload(confirmed: true, finalConfirmation: true), sessionId: _session, requestId: _uuid.v4());
+      final reread = r['rilettura_database'];
+      final results = r['risultati'];
+      final rows = reread is List ? reread : (results is List ? results : null);
+      final verified = r['rilettura_verificata'] == true ||
+        r['verifica_post_scrittura'] == 'OK' || r['stato'] == 'SALVATO_E_VERIFICATO';
+      final saved = r['scrittura_eseguita'] == true && verified && rows?.length == _items.length;
+      if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
+      if (!mounted) return;
+      setState(() {
+        _preview = r;
+        _status = saved
+          ? 'Acquisto salvato e rilettura verificata per tutti gli oggetti.'
+          : 'Salvataggio NON considerato concluso: il runtime non conferma scrittura e rilettura coerenti per tutti gli oggetti. La bozza resta disponibile.';
+      });
+      if (saved && mounted) {
+        final another = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+          title: const Text('Acquisto verificato'),
+          content: const Text('Vuoi effettuare un altro acquisto?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('NO, TERMINA')),
+            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SÌ, ALTRO ACQUISTO')),
+          ],
+        ));
+        if (!mounted) return;
+        if (another == true) {
+          for (final i in _items) { i.dispose(); }
+          setState(() {
+            _step = 0; _type = 'SINGOLO'; _date = DateTime.now();
+            _items..clear()..add(_PurchaseItemDraft()); _count.text = '2';
+            _preview = null; _review = null; _dataConfirmed = false; _finalConfirmed = false;
+            _status = 'Nuova bozza pronta. Nessun acquisto registrato.';
+          });
+        } else { Navigator.of(context).pop(); }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Salvataggio non confermato: ' + e.toString());
+    } finally { await _release(); if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _pickDate() async {
+    final d = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime(1990),
+      lastDate: DateTime.now().add(const Duration(days: 1)), helpText: 'DATA DELL’ACQUISTO',
+      cancelText: 'ANNULLA', confirmText: 'CONFERMA DATA');
+    if (d != null && mounted) setState(() { _date = d; _invalidate(); });
+  }
+
+  Widget _heading(String title, String subtitle) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 5), Text(subtitle, style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+    ]));
+
+  Widget _choice(String title, String subtitle, IconData icon, bool selected, VoidCallback onTap) => Card(
+    color: selected ? ValoraAppearance.instance.card : null,
+    child: ListTile(leading: Icon(icon, color: selected ? goldColor : null), title: Text(title),
+      subtitle: Text(subtitle), trailing: Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off),
+      onTap: _busy ? null : onTap));
+
+  Widget _itemEditor(int n) {
+    final item = _items[n];
+    return Card(key: ValueKey('pr04-item-' + n.toString()), margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('OGGETTO ' + (n + 1).toString(), style: TextStyle(color: ValoraAppearance.instance.colorFor('ACQUISTI'), fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        TextField(controller: item.description, decoration: const InputDecoration(labelText: 'Descrizione oggetto *'),
+          onChanged: (_) => setState(_invalidate)),
+        const SizedBox(height: 8),
+        TextField(controller: item.price, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Prezzo di acquisto (€) *', hintText: 'Es. 25,00'),
+          onChanged: (_) => setState(_invalidate)),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(value: item.destination, decoration: const InputDecoration(labelText: 'Destinazione'),
+          items: const [DropdownMenuItem(value: 'COLLEZIONE', child: Text('COLLEZIONE')), DropdownMenuItem(value: 'RIVENDITA', child: Text('RIVENDITA'))],
+          onChanged: _busy ? null : (v) => setState(() { item.destination = v ?? item.destination; _invalidate(); })),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: DropdownButtonFormField<String>(value: item.condition, decoration: const InputDecoration(labelText: 'Condizione'),
+            items: const [DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')), DropdownMenuItem(value: 'USATO', child: Text('USATO')), DropdownMenuItem(value: 'DA RIPARARE', child: Text('DA RIPARARE'))],
+            onChanged: _busy ? null : (v) => setState(() { item.condition = v ?? item.condition; _invalidate(); }))),
+          const SizedBox(width: 8),
+          Expanded(child: DropdownButtonFormField<String>(value: item.completeness, decoration: const InputDecoration(labelText: 'Completezza'),
+            items: const [DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')), DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')), DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI'))],
+            onChanged: _busy ? null : (v) => setState(() { item.completeness = v ?? item.completeness; _invalidate(); }))),
+        ]),
+      ])));
+  }
+
+  Widget _line(String label, String value, {bool bold = false}) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4), child: Row(children: [
+      Expanded(child: Text(label, style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w500, color: bold ? goldColor : null))),
+      const SizedBox(width: 8), Flexible(child: Text(value, textAlign: TextAlign.end, style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w600, color: bold ? goldColor : null))),
+    ]));
+
+  Widget _result(String title, Map<String, dynamic> value) => Card(
+    child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 8), SelectableText(const JsonEncoder.withIndent('  ').convert(value)),
+    ])));
+
+  Widget _content() {
+    if (_step == 0) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _heading('Che tipo di acquisto vuoi registrare?', 'Una transazione può contenere uno o più oggetti.'),
+      _choice('ACQUISTO SINGOLO', 'Una transazione · un oggetto', Icons.shopping_bag_outlined, _type == 'SINGOLO',
+        () => setState(() { _type = 'SINGOLO'; _resize(1); _count.text = '1'; })),
+      _choice('ACQUISTO MULTIPLO / LOTTO', 'Una transazione · più oggetti distinti', Icons.inventory_2_outlined, _type == 'LOTTO',
+        () => setState(() { _type = 'LOTTO'; if (_items.length < 2) _resize(2); _count.text = _items.length.toString(); })),
+      const SizedBox(height: 12), FilledButton(onPressed: _busy ? null : () => setState(() => _step = 1), child: const Text('CONTINUA')),
+    ]);
+
+    if (_step == 1) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _heading('Dati dell’acquisto', 'La data è unica per tutta la transazione.'),
+      Card(child: ListTile(leading: const Icon(Icons.calendar_month_outlined), title: const Text('Data acquisto'),
+        subtitle: Text(_dateLabel(_date)), trailing: const Icon(Icons.edit_calendar_outlined), onTap: _busy ? null : _pickDate)),
+      if (_type == 'LOTTO') ...[
+        const SizedBox(height: 10), TextField(controller: _count, keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Numero di oggetti distinti *', helperText: 'Quanti record oggetto devono essere creati nella stessa transazione?')),
+      ],
+      const SizedBox(height: 12), FilledButton(onPressed: _busy ? null : () {
+        if (_type == 'LOTTO') {
+          final n = int.tryParse(_count.text.trim());
+          if (n == null || n < 2 || n > 500) { _notice('Inserisci un numero compreso fra 2 e 500.'); return; }
+          _resize(n);
+        } else { _resize(1); }
+        setState(() => _step = 2);
+      }, child: const Text('CONTINUA AGLI OGGETTI')),
+      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 0), child: const Text('INDIETRO')),
+    ]);
+
+    if (_step == 2) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _heading(_type == 'SINGOLO' ? 'Descrivi l’oggetto acquistato' : 'Inserisci tutti gli oggetti del lotto',
+        _type == 'SINGOLO' ? 'Un oggetto, un record, un acquisto.' : 'Ogni oggetto ha il proprio prezzo e record; la transazione resta unica.'),
+      for (var i = 0; i < _items.length; i++) _itemEditor(i),
+      Card(child: Padding(padding: const EdgeInsets.all(12), child: _line('TOTALE ACQUISTO', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true))),
+      const SizedBox(height: 10), FilledButton(onPressed: _busy ? null : () { if (!_valid()) return; setState(() => _step = 3); }, child: const Text('RIEPILOGO ACQUISTO')),
+      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 1), child: const Text('INDIETRO')),
+    ]);
+
+    if (_step == 3) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _heading('Riepilogo acquisto', 'Controlla i dati prima del controllo. Nessuna scrittura è stata eseguita.'),
+      Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _line('Tipo', _type == 'SINGOLO' ? 'Acquisto singolo' : 'Acquisto multiplo / lotto'),
+        _line('Data acquisto', _dateLabel(_date)), _line('Oggetti distinti', _items.length.toString()),
+        const Divider(height: 22),
+        for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text((i + 1).toString() + '. ' + _items[i].description.text.trim(), style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+          Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
+        ])),
+        const Divider(height: 22), _line('TOTALE TRANSAZIONE', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
+      ]))),
+      const SizedBox(height: 10), FilledButton.icon(onPressed: _busy ? null : _runPreview, icon: const Icon(Icons.fact_check_outlined), label: const Text('CONTROLLA NEL RUNTIME TEST')),
+      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 2), child: const Text('MODIFICA OGGETTI')),
+    ]);
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      _heading('Verifica e conferma', 'Preview e review devono completarsi prima del salvataggio.'),
+      if (_preview != null) _result('ESITO CONTROLLO PRELIMINARE', _preview!),
+      CheckboxListTile(value: _dataConfirmed, contentPadding: EdgeInsets.zero,
+        title: const Text('Confermo che descrizioni, destinazioni e prezzi sono corretti.'),
+        onChanged: _busy ? null : (v) => setState(() { _dataConfirmed = v ?? false; _finalConfirmed = false; _review = null; })),
+      SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy || !_dataConfirmed ? null : _runReview,
+        child: Text(_busy ? 'ATTENDI…' : 'VALIDA DATI (REVIEW)'))),
+      if (_review != null) ...[
+        const SizedBox(height: 10), _result('ESITO REVIEW', _review!),
+        CheckboxListTile(value: _finalConfirmed, contentPadding: EdgeInsets.zero,
+          title: const Text('Conferma definitiva: autorizzo una sola transazione e tutti i record oggetto in TEST.'),
+          onChanged: _busy ? null : (v) => setState(() => _finalConfirmed = v ?? false)),
+        SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy || !_finalConfirmed ? null : _save,
+          child: Text(_busy ? 'ATTENDI…' : 'CONFERMA E REGISTRA ACQUISTO'))),
+      ],
+      OutlinedButton(onPressed: _busy ? null : () => setState(() { _step = 3; _invalidate(); }), child: const Text('INDIETRO AL RIEPILOGO')),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = ValoraAppearance.instance.colorFor('ACQUISTI');
+    return Scaffold(appBar: AppBar(title: const Text('PR-04 · NUOVO ACQUISTO')),
+      body: SafeArea(child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 820),
+        child: ListView(padding: const EdgeInsets.all(16), children: [
+          const Card(child: Padding(padding: EdgeInsets.all(12), child: Text('AMBIENTE TEST · Nessun acquisto viene registrato senza conferma esplicita. Dopo il salvataggio è obbligatoria la rilettura di verifica.'))),
+          const SizedBox(height: 12),
+          ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: (_step + 1) / 5, minHeight: 5, color: c)),
+          const SizedBox(height: 8), Text('PASSAGGIO ' + (_step + 1).toString() + ' DI 5', style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1)),
+          const SizedBox(height: 14), if (_busy) const LinearProgressIndicator(),
+          _content(), const SizedBox(height: 12),
+          Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status))),
+        ])))));
+  }
+}
+
 
 class Pr12BatchPage extends StatefulWidget {
   const Pr12BatchPage({super.key});
