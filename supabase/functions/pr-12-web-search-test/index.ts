@@ -934,7 +934,6 @@ Deno.serve(async (req: Request) => {
       risultati: [], numero_risultati: 0, ricerca_esterna_eseguita: true, metadati_confermati: false,
       avviso: "Nessuna corrispondenza verificabile trovata per il codice esatto. Nessun risultato generico non pertinente è stato mostrato.",
       errori_fonti: errors, fonti_specializzate: targeted,
-      diagnostica: { fonti_database_caricate: configured.sources.length, regole_franchise: configured.franchiseRules.length, query: diagnosticaQuery, risultati_grezzi_unici: conteggioGrezzi, dopo_filtro_codice: conteggioDopoCodice, dopo_filtro_pertinenza: conteggioDopoPertinenza },
       fonti_database: configured.sources.map(s => ({ codice_fonte: s.codice_fonte, nome_fonte: s.nome_fonte, url: s.url_principale, tipo_fonte: s.tipo_fonte, stato_affidabilita: s.stato_affidabilita, priorita: s.priorita_metadati })),
       regole_franchise_applicate: configured.franchiseRules.map(r => r.franchise),
       query_eseguite: queries,
