@@ -820,7 +820,7 @@ function comicSeriesAnchorQueries(category: string, description: string): { seri
 
   // Prefer explicit issue markers. A trailing number is accepted as a fallback
   // for common inventory descriptions such as "Batman 1" or "Dylan Dog 45".
-  const explicit = normalized.match(/(?:#|\b(?:n(?:umero)?\\.?|albo|issue|numero)\s*)0*(\d{1,4})\b/i);
+  const explicit = normalized.match(/(?:#|\b(?:n(?:umero)?[.]?|albo|issue|numero)\s*)0*(\d{1,4})\b/i);
   const trailing = !explicit ? normalized.match(/(?:^|\s)(0*\d{1,4})\s*$/) : null;
   const issueText = explicit?.[1] ?? trailing?.[1];
   if (!issueText) return null;
