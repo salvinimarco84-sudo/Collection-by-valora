@@ -5309,7 +5309,7 @@ class _PurchaseItemDraft {
     return double.tryParse(s);
   }
   Map<String, dynamic> json() => {
-    'descrizione': description.text.trim(), 'prezzo_acquisto': amount,
+    'descrizione': description.text.trim(), 'valore_acquisto': amount,
     'destinazione': destination, 'condizione': condition,
     'completezza': completeness, 'quantita': 1,
   };
@@ -5365,11 +5365,17 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   }
 
   Map<String, dynamic> _payload({bool confirmed = false, bool finalConfirmation = false}) => {
-    'tipo_acquisto': _type,
-    'data_acquisto': _date.toIso8601String().substring(0, 10),
-    'numero_oggetti': _items.length,
-    'importo_totale': double.parse(_total.toStringAsFixed(2)),
-    'oggetti': _items.map((e) => e.json()).toList(),
+    // Contratto canonico di collection.pr_04_nuovo_acquisto(p_operazioni):
+    // le operazioni sono un array e ogni oggetto usa valore_acquisto.
+    'operazioni': [
+      {
+        'tipo_acquisto': _type,
+        'data_acquisto': _date.toIso8601String().substring(0, 10),
+        'importo_totale': double.parse(_total.toStringAsFixed(2)),
+        'valuta': 'EUR',
+        'oggetti': _items.map((e) => e.json()).toList(),
+      }
+    ],
     'dati_confermati': confirmed,
     'conferma_finale': finalConfirmation,
     'altra_operazione': false,
