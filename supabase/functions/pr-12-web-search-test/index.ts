@@ -724,6 +724,13 @@ function relevanceScore(result: SearchResult, category: string, description: str
     else if (/rebrickable\.com/i.test(url)) score += 4;
   }
   if (/merriam-webster|dictionary|definition|meaning of|kmsauto|windows office activator/i.test(title + " " + url)) score -= 20;
+  // Penalizza pagine generiche del franchise: nominare Transformers non basta
+  // a identificare uno specifico giocattolo o una action figure.
+  if (isTransformers && (
+    /\\/wiki\\/main_page|transformers_\\(film_series\\)|\\/movies\\/|imdb\\.com\\/list\\//i.test(url) ||
+    /transformers wiki|film series|all movies|every transformers movie|main page/i.test(title)
+  )) score -= 18;
+  if (isTransformers && /studio series|86 movie|optimus prime|product|figure|toy|hasbro/i.test(title + " " + snippet)) score += 5;
   if (/information|definition|meaning of/i.test(title) && !/batman|comic|comic book|long halloween/i.test(title + " " + url)) score -= 20;
   // For multi-word searches, require meaningful evidence in the title or snippet,
   // not just an incidental token in the URL.
