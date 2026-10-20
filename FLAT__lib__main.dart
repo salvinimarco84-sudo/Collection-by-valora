@@ -5709,13 +5709,13 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
   };
   Future<void> _preview()async{
     if(!_valid())return;setState(()=>_busy=true);
-    try{await _lock();final r=await _ValoraRuntimeApi.procedure('PR-05','preview',_payload(),sessionId:_session);if(mounted)setState(()=>{_last=r,_status='Anteprima completata: controlla le differenze prima della review.'});}
+    try{await _lock();final r=await _ValoraRuntimeApi.procedure('PR-05','preview',_payload(),sessionId:_session);if(mounted)setState((){_last=r;_status='Anteprima completata: controlla le differenze prima della review.';});}
     catch(e){if(mounted)setState(()=>_status='Anteprima non riuscita: $e');}
     finally{await _unlock();if(mounted)setState(()=>_busy=false);}
   }
   Future<void> _reviewStep()async{
     if(!_confirmed||!_valid())return;setState(()=>_busy=true);
-    try{await _lock();final r=await _ValoraRuntimeApi.procedure('PR-05','review',_payload(confirmed:true),sessionId:_session);if(mounted)setState(()=>{_review=r,_finalConfirmed=false,_status='Review ricevuta. Conferma solo dopo averla controllata.'});}
+    try{await _lock();final r=await _ValoraRuntimeApi.procedure('PR-05','review',_payload(confirmed:true),sessionId:_session);if(mounted)setState((){_review=r;_finalConfirmed=false;_status='Review ricevuta. Conferma solo dopo averla controllata.';});}
     catch(e){if(mounted)setState(()=>_status='Review non riuscita: $e');}
     finally{await _unlock();if(mounted)setState(()=>_busy=false);}
   }
@@ -5733,13 +5733,13 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
       final saved=r['scrittura_eseguita']==true&&verified&&audit&&cash&&code&&reread is Map;
       if(r['blocco_rilasciato_automaticamente']==true)_locked=false;
       if(!mounted)return;
-      setState(()=>{_last=r,_status:saved?'Modifica verificata: codice conservato, cassa e storico aggiornati.':'Modifica NON considerata conclusa: il runtime non ha confermato tutti i controlli richiesti.'});
+      setState((){_last=r;_status=saved?'Modifica verificata: codice conservato, cassa e storico aggiornati.':'Modifica NON considerata conclusa: il runtime non ha confermato tutti i controlli richiesti.';});
       if(saved&&mounted){
         final again=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
           title:const Text('Modifica verificata'),content:const Text('Vuoi modificare un altro acquisto?'),
           actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('NO, TERMINA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('SÌ, ALTRO ACQUISTO'))]));
         if(!mounted)return;
-        if(again==true)setState(()=>{_query.clear(),_found=[],_purchase=null,_items=[],_review=null,_last=null,_confirmed=false,_finalConfirmed=false,_status='Cerca un altro acquisto.'});
+        if(again==true)setState((){_query.clear();_found=[];_purchase=null;_items=[];_review=null;_last=null;_confirmed=false;_finalConfirmed=false;_status='Cerca un altro acquisto.';});
         else Navigator.of(context).pop();
       }
     }catch(e){if(mounted)setState(()=>_status='Modifica non confermata: $e');}
@@ -5760,15 +5760,15 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
         if(_purchase!=null)...[
           const Divider(height:24),Text('2 · MODIFICA SCHEDA ESISTENTE',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
           _line('Codice acquisto',_code(_purchase!)),
-          TextField(controller:_description,decoration:const InputDecoration(labelText:'Descrizione acquisto *'),onChanged:(_)=>setState(()=>{_review=null,_last=null,_confirmed=false,_finalConfirmed=false})),
+          TextField(controller:_description,decoration:const InputDecoration(labelText:'Descrizione acquisto *'),onChanged:(_)=>setState((){_review=null;_last=null;_confirmed=false;_finalConfirmed=false;})),
           TextField(controller:_date,decoration:const InputDecoration(labelText:'Data acquisto (AAAA-MM-GG) *'),onChanged:(_)=>setState(()=>{_review=null,_last=null,_confirmed=false,_finalConfirmed=false})),
           TextField(controller:_total,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Totale acquisto (€) *'),onChanged:(_)=>setState(()=>{_review=null,_last=null,_confirmed=false,_finalConfirmed=false})),
           _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),_line('Totale','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
-          if((_money(_total.text)??-999)-_allocated).abs()>0.009) const Text('QUADRATURA NON VALIDA: il salvataggio è bloccato.',style:TextStyle(color:Colors.redAccent,fontWeight:FontWeight.bold)),
+          if (((_money(_total.text) ?? -999) - _allocated).abs() > 0.009) const Text('QUADRATURA NON VALIDA: il salvataggio è bloccato.',style:TextStyle(color:Colors.redAccent,fontWeight:FontWeight.bold)),
           for(final item in _items) Card(child:ListTile(title:Text((item['descrizione_oggetto']??item['descrizione']??item['nome']??'Oggetto collegato').toString()),subtitle:Text('Codice oggetto: '+(item['codice_oggetto']??item['object_code']??item['id']??'non disponibile').toString()),trailing:Text('€ '+((_money(item['importo']??item['prezzo_acquisto']??item['valore'])??0).toStringAsFixed(2))))),
           FilledButton(onPressed:_busy?null:_preview,child:const Text('CONTROLLA MODIFICA')),
           if(_last!=null)_result('ANTEPRIMA / ESITO RUNTIME',_last!),
-          CheckboxListTile(value:_confirmed,title:const Text('Confermo che i dati della modifica sono corretti.'),onChanged:_busy?null:(v)=>setState(()=>{_confirmed=v??false,_finalConfirmed=false,_review=null})),
+          CheckboxListTile(value:_confirmed,title:const Text('Confermo che i dati della modifica sono corretti.'),onChanged:_busy?null:(v)=>setState((){_confirmed=v??false;_finalConfirmed=false;_review=null;})),
           FilledButton(onPressed:_busy||!_confirmed?null:_reviewStep,child:const Text('VALIDA DATI (REVIEW)')),
           if(_review!=null)...[
             _result('ESITO REVIEW',_review!),
