@@ -3547,18 +3547,32 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }
       final totalKey = firstKey(totalKeys);
       final countKey = firstKey(countKeys);
+      double amount(dynamic value) {
+        if (value is num) return value.toDouble();
+        return double.tryParse((value ?? '0').toString().replaceAll(',', '.')) ?? 0;
+      }
+      String euro(dynamic value) {
+        final n = amount(value);
+        final fixed = n.toStringAsFixed(2).split('.');
+        final whole = fixed[0].replaceAllMapped(RegExp(r'\\B(?=(\\d{3})+(?!\\d))'), (_) => '.');
+        return '${whole},${fixed[1]} €';
+      }
+      final isCash = widget.apiCode == 'REPORT-CASH';
+      final totalSales = amount(report['entrate_vendite'] ?? report['totale_venduto'] ?? report['totale_vendite'] ?? report['totale'] ?? 0);
+      final totalPurchases = amount(report['uscite_acquisti'] ?? report['totale_acquisti'] ?? report['totale'] ?? 0);
+      final total = totalKey == null ? 0.0 : amount(report[totalKey]);
       final summary = [
         'Periodo: $periodLabel',
         if (countKey != null) 'Operazioni: ${report[countKey]}',
-        if (totalKey != null) 'Totale: ${report[totalKey]}',
-        if (widget.apiCode == 'REPORT-CASH') 'Entrate vendite: ${report['entrate_vendite'] ?? 0}',
-        if (widget.apiCode == 'REPORT-CASH') 'Uscite acquisti: ${report['uscite_acquisti'] ?? 0}',
-        if (widget.apiCode == 'REPORT-CASH' && report['riepilogo_per_tipo'] != null)
-          'Riepilogo per tipo: ${_pretty(report['riepilogo_per_tipo'])}',
+        if (isCash) 'Totale entrate: ${euro(totalSales)}',
+        if (isCash) 'Totale uscite: ${euro(totalPurchases)}',
+        if (isCash) 'Risultato (entrate − uscite): ${euro(totalSales - totalPurchases)}',
+        if (!isCash) 'Totale periodo: ${euro(total)}',
       ].join('\\n');
       setState(() {
         _rows = list;
-        _output = '$summary\\n\\n${_pretty(report)}';
+        // Per questi report mostriamo un riepilogo leggibile, non il JSON grezzo.
+        _output = summary;
         _currentObject = null;
       });
       return;
@@ -4675,7 +4689,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ]),
           ),
         ],
-        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory) ...[
+        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory && code != 'REPORT-CASH' && code != 'REPORT-PURCHASES' && code != 'REPORT-SALES') ...[
           const SizedBox(height: 16),
           Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
