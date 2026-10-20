@@ -13,6 +13,7 @@ on:
   pull_request:
     branches:
       - main
+      - repair/pr12-preserve-full-app
 
 permissions:
   contents: read
