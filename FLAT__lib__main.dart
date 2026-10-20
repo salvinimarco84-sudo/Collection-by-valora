@@ -5211,8 +5211,10 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
           if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: $_offset · lotti: ${(_queue.length / 10).ceil()}'),
           if (_error != null) SelectableText(_error!, style: const TextStyle(color: Color(0xFFE35D5D))),
         ]))),
-        if (_queue.isNotEmpty) ...[
-          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('PROSSIMO LOTTO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+        // Mostra l'anteprima del lotto soltanto prima della prima elaborazione.
+        // Dopo ogni lotto l'elenco operativo si svuota: restano visibili solo risultati già analizzati.
+        if (_queue.isNotEmpty && _results.isEmpty) ...[
+          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('ELENCO DEL LOTTO DA ANALIZZARE', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
           ..._queue.skip(_offset).take(10).map((v) => ListTile(dense: true, leading: const Icon(Icons.inventory_2_outlined, color: goldColor),
             title: Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString()),
             subtitle: Text('ID ${v['codice_oggetto']} · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}'))),
