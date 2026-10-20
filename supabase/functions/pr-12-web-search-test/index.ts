@@ -814,14 +814,14 @@ function filterForExactCode(results: SearchResult[], category: string, descripti
   return results.filter(r => exactCode.test(r.title + " " + r.url + " " + r.snippet));
 }
 function comicSeriesAnchorQueries(category: string, description: string): { seriesTitle: string; issueNumber: number | null; queries: string[] } | null {
-  const normalized = canonicalSearchText(description).replace(/\\s+/g, " ").trim();
+  const normalized = canonicalSearchText(description).replace(/\s+/g, " ").trim();
   const isComic = category === "FUMETTI" || /fumett|comic|manga|panini|saldapress|bonelli|batman|spider-man|marvel|dc comics|walking dead/i.test(normalized);
   if (!isComic) return null;
 
   // Prefer explicit issue markers. A trailing number is accepted as a fallback
   // for common inventory descriptions such as "Batman 1" or "Dylan Dog 45".
-  const explicit = normalized.match(/(?:#|\\b(?:n(?:umero)?\\.?|albo|issue|numero)\\s*)0*(\\d{1,4})\\b/i);
-  const trailing = !explicit ? normalized.match(/(?:^|\\s)(0*\\d{1,4})\\s*$/) : null;
+  const explicit = normalized.match(/(?:#|\b(?:n(?:umero)?\\.?|albo|issue|numero)\s*)0*(\d{1,4})\b/i);
+  const trailing = !explicit ? normalized.match(/(?:^|\s)(0*\d{1,4})\s*$/) : null;
   const issueText = explicit?.[1] ?? trailing?.[1];
   if (!issueText) return null;
   const issueNumber = Number(issueText);
@@ -831,8 +831,8 @@ function comicSeriesAnchorQueries(category: string, description: string): { seri
   if (explicit) seriesTitle = normalized.replace(explicit[0], " ");
   else if (trailing) seriesTitle = normalized.slice(0, trailing.index).trim();
   seriesTitle = seriesTitle
-    .replace(/[|,:;\\-]+\\s*$/, "")
-    .replace(/\\s+/g, " ")
+    .replace(/[|,:;\-]+\s*$/, "")
+    .replace(/\s+/g, " ")
     .trim();
   if (seriesTitle.length < 2) return null;
 
