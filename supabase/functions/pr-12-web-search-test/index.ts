@@ -727,7 +727,7 @@ function relevanceScore(result: SearchResult, category: string, description: str
   // Penalizza pagine generiche del franchise: nominare Transformers non basta
   // a identificare uno specifico giocattolo o una action figure.
   if (isTransformers && (
-    /\\/wiki\\/main_page|transformers_\\(film_series\\)|\\/movies\\/|imdb\\.com\\/list\\//i.test(url) ||
+    /\/wiki\/main_page|transformers_\(film_series\)|\/movies\/|imdb\.com\/list\//i.test(url) ||
     /transformers wiki|film series|all movies|every transformers movie|main page/i.test(title)
   )) score -= 18;
   if (isTransformers && /studio series|86 movie|optimus prime|product|figure|toy|hasbro/i.test(title + " " + snippet)) score += 5;
