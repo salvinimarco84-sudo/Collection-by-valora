@@ -9,6 +9,7 @@ on:
       - feat/blocco-utente
       - feature/pr12-engine-test-current
       - repair/pr12-preserve-full-app
+      - feature/pr04-nuovo-acquisto-mask
   pull_request:
     branches:
       - main
