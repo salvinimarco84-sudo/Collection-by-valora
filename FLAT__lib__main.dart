@@ -5272,7 +5272,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                       actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
                     ));
                   },
-                )),
+                ))),
               if (v['diagnostica_ricerca'] is Map) SelectableText('Diagnostica: ${jsonEncode(v['diagnostica_ricerca'])}', style: const TextStyle(fontSize: 11, color: Colors.white54)),
             ])));
           }),
