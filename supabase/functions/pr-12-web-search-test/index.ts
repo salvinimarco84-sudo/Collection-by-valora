@@ -813,6 +813,45 @@ function filterForExactCode(results: SearchResult[], category: string, descripti
   const exactCode = new RegExp("(^|[^0-9])" + code + "(-1)?([^0-9]|$)", "i");
   return results.filter(r => exactCode.test(r.title + " " + r.url + " " + r.snippet));
 }
+function comicSeriesAnchorQueries(category: string, description: string): { seriesTitle: string; issueNumber: number | null; queries: string[] } | null {
+  const normalized = canonicalSearchText(description).replace(/\\s+/g, " ").trim();
+  const isComic = category === "FUMETTI" || /fumett|comic|manga|panini|saldapress|bonelli|batman|spider-man|marvel|dc comics|walking dead/i.test(normalized);
+  if (!isComic) return null;
+
+  // Prefer explicit issue markers. A trailing number is accepted as a fallback
+  // for common inventory descriptions such as "Batman 1" or "Dylan Dog 45".
+  const explicit = normalized.match(/(?:#|\\b(?:n(?:umero)?\\.?|albo|issue|numero)\\s*)0*(\\d{1,4})\\b/i);
+  const trailing = !explicit ? normalized.match(/(?:^|\\s)(0*\\d{1,4})\\s*$/) : null;
+  const issueText = explicit?.[1] ?? trailing?.[1];
+  if (!issueText) return null;
+  const issueNumber = Number(issueText);
+  if (!Number.isFinite(issueNumber) || issueNumber < 0) return null;
+
+  let seriesTitle = normalized;
+  if (explicit) seriesTitle = normalized.replace(explicit[0], " ");
+  else if (trailing) seriesTitle = normalized.slice(0, trailing.index).trim();
+  seriesTitle = seriesTitle
+    .replace(/[|,:;\\-]+\\s*$/, "")
+    .replace(/\\s+/g, " ")
+    .trim();
+  if (seriesTitle.length < 2) return null;
+
+  const quoted = '"' + seriesTitle.replace(/"/g, " ") + '"';
+  return {
+    seriesTitle,
+    issueNumber,
+    queries: [
+      quoted + ' fumetto numero 1 serie',
+      'site:panini.it ' + quoted + ' 1',
+      'site:saldapress.com ' + quoted + ' 1',
+      'site:sergiobonelli.it ' + quoted + ' 1',
+      'site:comics.org ' + quoted,
+      'site:leagueofcomicgeeks.com ' + quoted + ' issue 1',
+      'site:dc.com ' + quoted + ' #1',
+      'site:marvel.com ' + quoted + ' issue 1',
+    ],
+  };
+}
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, error: "Usare POST." }, 405);
@@ -837,15 +876,19 @@ Deno.serve(async (req: Request) => {
     // Limite per lotto per evitare costi/tempi incontrollati; le priorità arrivano dal registro.
     const franchiseQueries = thematicFranchiseQueries(cleanDescription, theme);
     const categoryQueries = makeQueries(category, cleanDescription);
-    // Riserva sempre spazio al franchise e alla categoria: un registro molto ricco
-    // non deve espellere tutte le ricerche tematiche dal limite massimo di 20 query.
+    const comicAnchor = comicSeriesAnchorQueries(category, cleanDescription);
+    // Per i fumetti seriali la ricerca dell'albo posseduto resta attiva e viene
+    // affiancata dalla ricerca del numero 1, usato soltanto per identificare la serie.
+    // I risultati del numero 1 non vengono trattati come metadati dell'albo posseduto.
     const prioritizedQueries = [
-      ...configured.queries.slice(0, 8),
-      ...franchiseQueries.slice(0, 6),
-      ...categoryQueries.slice(0, 6),
-      ...configured.queries.slice(8),
-      ...franchiseQueries.slice(6),
-      ...categoryQueries.slice(6),
+      ...configured.queries.slice(0, 6),
+      ...(comicAnchor?.queries.slice(0, 5) ?? []),
+      ...franchiseQueries.slice(0, 4),
+      ...categoryQueries.slice(0, 5),
+      ...configured.queries.slice(6),
+      ...(comicAnchor?.queries.slice(5) ?? []),
+      ...franchiseQueries.slice(4),
+      ...categoryQueries.slice(5),
     ];
     const queries = [...new Set(prioritizedQueries)].slice(0, 20);
     let searchResults: SearchResult[] = [];
@@ -880,6 +923,7 @@ Deno.serve(async (req: Request) => {
     if (!results.length) return json({
       ok: true, procedura: "PR-12", modalita: "RICERCA_CATALOGO_E_WEB",
       descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null,
+      ...(comicAnchor ? { ricerca_serie: { titolo_serie_ipotizzato: comicAnchor.seriesTitle, numero_riferimento: 1, numero_albo_cercato: comicAnchor.issueNumber, funzione_numero_1: "identificazione_serie_non_valutazione_albo" } } : {}),
       risultati: [], numero_risultati: 0, ricerca_esterna_eseguita: true, metadati_confermati: false,
       avviso: "Nessuna corrispondenza verificabile trovata per il codice esatto. Nessun risultato generico non pertinente è stato mostrato.",
       errori_fonti: errors, fonti_specializzate: targeted,
@@ -892,6 +936,7 @@ Deno.serve(async (req: Request) => {
     return json({
       ok: true, procedura: "PR-12", modalita: "RICERCA_CATALOGO_E_WEB",
       descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null,
+      ...(comicAnchor ? { ricerca_serie: { titolo_serie_ipotizzato: comicAnchor.seriesTitle, numero_riferimento: 1, numero_albo_cercato: comicAnchor.issueNumber, funzione_numero_1: "identificazione_serie_non_valutazione_albo" } } : {}),
       risultati: results.slice(0, 15), numero_risultati: Math.min(results.length, 15),
       ricerca_esterna_eseguita: true, metadati_confermati: false,
       motori_utilizzati: [...new Set(results.map(r => r.motore))],
