@@ -5330,8 +5330,8 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   DateTime _date = DateTime.now();
   final List<_PurchaseItemDraft> _items = [_PurchaseItemDraft()];
   final String _session = _uuid.v4();
-  bool _busy = false, _locked = false, _dataConfirmed = false, _finalConfirmed = false;
-  Map<String, dynamic>? _preview, _review;
+  bool _busy = false, _locked = false, _dataConfirmed = false;
+  Map<String, dynamic>? _preview;
   String _status = 'Bozza locale: nessun acquisto registrato.';
 
   @override
@@ -5342,7 +5342,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       d.month.toString().padLeft(2, '0') + '/' + d.year.toString();
   double get _total => _items.fold<double>(0, (sum, i) => sum + (i.amount ?? 0));
   void _notice(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
-  void _invalidate() { _preview = null; _review = null; _dataConfirmed = false; _finalConfirmed = false; }
+  void _invalidate() { _preview = null; _dataConfirmed = false; }
 
   void _resize(int n) {
     while (_items.length < n) { _items.add(_PurchaseItemDraft()); }
@@ -5408,19 +5408,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     } finally { await _release(); if (mounted) setState(() => _busy = false); }
   }
 
-  Future<void> _runReview() async {
-    if (!_dataConfirmed) { _notice('Conferma prima la correttezza dei dati.'); return; }
-    setState(() { _busy = true; _status = 'Validazione dei dati (review)…'; _review = null; _finalConfirmed = false; });
-    try {
-      if (!await _acquire()) return;
-      final r = await _ValoraRuntimeApi.procedure('PR-04', 'review', _payload(confirmed: true), sessionId: _session);
-      if (!mounted) return;
-      setState(() { _review = r; _status = 'Review ricevuta. Leggi l’esito prima di autorizzare il salvataggio.'; });
-    } catch (e) {
-      if (mounted) setState(() => _status = 'Validazione non riuscita: ' + e.toString());
-    } finally { await _release(); if (mounted) setState(() => _busy = false); }
-  }
-
   Future<void> _save() async {
     if (_preview == null || !_dataConfirmed) {
       _notice('Completa il riepilogo prima di salvare.'); return;
@@ -5459,8 +5446,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
           setState(() {
             _step = 0; _type = 'SINGOLO'; _date = DateTime.now();
             _items..clear()..add(_PurchaseItemDraft()); _count.text = '2';
-            _preview = null; _review = null; _dataConfirmed = false; _finalConfirmed = false;
-            _status = 'Nuova bozza pronta. Nessun acquisto registrato.';
+            _preview = null; _dataConfirmed = false; _status = 'Nuova bozza pronta. Nessun acquisto registrato.';
           });
         } else { Navigator.of(context).pop(); }
       }
@@ -5523,12 +5509,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       Expanded(child: Text(label, style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w500, color: bold ? goldColor : null))),
       const SizedBox(width: 8), Flexible(child: Text(value, textAlign: TextAlign.end, style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w600, color: bold ? goldColor : null))),
     ]));
-
-  Widget _result(String title, Map<String, dynamic> value) => Card(
-    child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 8), SelectableText(const JsonEncoder.withIndent('  ').convert(value)),
-    ])));
 
   Widget _content() {
     if (_step == 0) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -5601,10 +5581,10 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       const SizedBox(height: 12),
       FilledButton(onPressed: _busy ? null : () {
         for (final item in _items) { item.dispose(); }
-        setState(() { _step = 0; _type = 'SINGOLO'; _date = DateTime.now(); _items..clear()..add(_PurchaseItemDraft()); _count.text = '1'; _preview = null; _review = null; _dataConfirmed = false; _finalConfirmed = false; _status = 'Nuova bozza pronta. Nessun acquisto precedente è stato salvato.'; });
+        setState(() { _step = 0; _type = 'SINGOLO'; _date = DateTime.now(); _items..clear()..add(_PurchaseItemDraft()); _count.text = '1'; _preview = null; _dataConfirmed = false; _status = 'Nuova bozza pronta. Nessun acquisto precedente è stato salvato.'; });
       }, child: const Text('SÌ · INSERISCI UN ALTRO ACQUISTO')),
       const SizedBox(height: 8),
-      FilledButton(onPressed: _busy ? null : () { setState(() { _dataConfirmed = true; _finalConfirmed = true; }); _save(); }, child: Text(_busy ? 'ATTENDI…' : 'NO · SALVA E ESCI')),
+      FilledButton(onPressed: _busy ? null : () { setState(() { _dataConfirmed = true; }); _save(); }, child: Text(_busy ? 'ATTENDI…' : 'NO · SALVA E ESCI')),
       OutlinedButton(onPressed: _busy ? null : () => setState(() { _step = 2; _invalidate(); }), child: const Text('MODIFICA DATI')),
     ]);
   }
@@ -5637,10 +5617,9 @@ class EditPurchasePage extends StatefulWidget {
 class _EditPurchasePageState extends State<EditPurchasePage> {
   final _query=TextEditingController(), _date=TextEditingController(), _total=TextEditingController(), _description=TextEditingController();
   final _session=_uuid.v4();
-  bool _busy=false,_locked=false,_confirmed=false,_finalConfirmed=false;
-  String _status='Cerca un acquisto esistente.';
+  bool _busy=false,_locked=false,_confirmed=false,String _status='Cerca un acquisto esistente.';
   List<Map<String,dynamic>> _found=[];
-  Map<String,dynamic>? _purchase,_review,_last;
+  Map<String,dynamic>? _purchase,_last;
   List<Map<String,dynamic>> _items=[];
   @override
   void dispose(){_query.dispose();_date.dispose();_total.dispose();_description.dispose();super.dispose();}
@@ -5678,7 +5657,7 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
       final raw=data['acquisti']??data['risultati']??data['results']??data['rows'];
       if(raw is! List)throw Exception('Il runtime non ha restituito una lista di acquisti.');
       if(!mounted)return;
-      setState((){_found=raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();_purchase=null;_items=[];_review=null;_last=null;_status=_found.isEmpty?'Nessun acquisto trovato.':'Seleziona l’acquisto da modificare.';});
+      setState((){_found=raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();_purchase=null;_items=[];_last=null;_status=_found.isEmpty?'Nessun acquisto trovato.':'Seleziona l’acquisto da modificare.';});
     }catch(e){if(mounted)setState(()=>_status='Ricerca non completata: $e');}
     finally{if(mounted)setState(()=>_busy=false);}
   }
@@ -5695,7 +5674,7 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
       if(raw is! List||raw.isEmpty)throw Exception('Dettagli oggetto non disponibili: modifica bloccata.');
       if(date==null||amount==null)throw Exception('Data o totale originario mancanti.');
       if(!mounted)return;
-      setState((){_purchase=p;_date.text=date.toIso8601String().substring(0,10);_total.text=amount.toStringAsFixed(2);_description.text=_name(p);_items=raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();_review=null;_last=null;_confirmed=false;_finalConfirmed=false;_status='Scheda completa caricata. Codice acquisto e codici oggetto saranno conservati.';});
+      setState((){_purchase=p;_date.text=date.toIso8601String().substring(0,10);_total.text=amount.toStringAsFixed(2);_description.text=_name(p);_items=raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();_last=null;_confirmed=false;_status='Scheda completa caricata. Codice acquisto e codici oggetto saranno conservati.';});
     }catch(e){if(mounted)setState(()=>_status='Scheda non caricata: $e');}
     finally{if(mounted)setState(()=>_busy=false);}
   }
@@ -5722,12 +5701,6 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
     catch(e){if(mounted)setState(()=>_status='Anteprima non riuscita: $e');}
     finally{await _unlock();if(mounted)setState(()=>_busy=false);}
   }
-  Future<void> _reviewStep()async{
-    if(!_confirmed||!_valid())return;setState(()=>_busy=true);
-    try{await _lock();final r=await _ValoraRuntimeApi.procedure('PR-05','review',_payload(confirmed:true),sessionId:_session);if(mounted)setState((){_review=r;_finalConfirmed=false;_status='Review ricevuta. Conferma solo dopo averla controllata.';});}
-    catch(e){if(mounted)setState(()=>_status='Review non riuscita: $e');}
-    finally{await _unlock();if(mounted)setState(()=>_busy=false);}
-  }
   Future<void> _save()async{
     if(!_confirmed||_last==null||!_valid()){_msg('Controlla i dati e conferma il riepilogo prima di salvare.');return;}
     setState(()=>_busy=true);
@@ -5748,14 +5721,13 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
           title:const Text('Modifica verificata'),content:const Text('Vuoi modificare un altro acquisto?'),
           actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('NO, TERMINA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('SÌ, ALTRO ACQUISTO'))]));
         if(!mounted)return;
-        if(again==true)setState((){_query.clear();_found=[];_purchase=null;_items=[];_review=null;_last=null;_confirmed=false;_finalConfirmed=false;_status='Cerca un altro acquisto.';});
+        if(again==true)setState((){_query.clear();_found=[];_purchase=null;_items=[];_last=null;_confirmed=false;_status='Cerca un altro acquisto.';});
         else Navigator.of(context).pop();
       }
     }catch(e){if(mounted)setState(()=>_status='Modifica non confermata: $e');}
     finally{await _unlock();if(mounted)setState(()=>_busy=false);}
   }
   Widget _line(String a,String b)=>Padding(padding:const EdgeInsets.symmetric(vertical:4),child:Row(children:[Expanded(child:Text(a)),Flexible(child:Text(b,textAlign:TextAlign.end))]));
-  Widget _result(String title,Map<String,dynamic> data)=>Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(color:goldColor,fontWeight:FontWeight.bold)),const SizedBox(height:8),SelectableText(const JsonEncoder.withIndent('  ').convert(data))])));
   @override
   Widget build(BuildContext context){
     final color=ValoraAppearance.instance.colorFor('ACQUISTI');
@@ -5769,9 +5741,9 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
         if(_purchase!=null)...[
           const Divider(height:24),Text('2 · MODIFICA SCHEDA ESISTENTE',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
           _line('Codice acquisto',_code(_purchase!)),
-          TextField(controller:_description,decoration:const InputDecoration(labelText:'Descrizione acquisto *'),onChanged:(_)=>setState((){_review=null;_last=null;_confirmed=false;_finalConfirmed=false;})),
-          TextField(controller:_date,decoration:const InputDecoration(labelText:'Data acquisto (AAAA-MM-GG) *'),onChanged:(_)=>setState((){_review=null;_last=null;_confirmed=false;_finalConfirmed=false;})),
-          TextField(controller:_total,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Totale acquisto (€) *'),onChanged:(_)=>setState((){_review=null;_last=null;_confirmed=false;_finalConfirmed=false;})),
+          TextField(controller:_description,decoration:const InputDecoration(labelText:'Descrizione acquisto *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
+          TextField(controller:_date,decoration:const InputDecoration(labelText:'Data acquisto (AAAA-MM-GG) *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
+          TextField(controller:_total,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Totale acquisto (€) *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
           _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),_line('Totale','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
           if (((_money(_total.text) ?? -999) - _allocated).abs() > 0.009) const Text('QUADRATURA NON VALIDA: il salvataggio è bloccato.',style:TextStyle(color:Colors.redAccent,fontWeight:FontWeight.bold)),
           for(final item in _items) Card(child:ListTile(title:Text((item['descrizione_oggetto']??item['descrizione']??item['nome']??'Oggetto collegato').toString()),subtitle:Text('Codice oggetto: '+(item['codice_oggetto']??item['object_code']??item['id']??'non disponibile').toString()),trailing:Text('€ '+((_money(item['importo']??item['prezzo_acquisto']??item['valore'])??0).toStringAsFixed(2))))),
