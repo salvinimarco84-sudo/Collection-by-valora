@@ -1819,9 +1819,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     padding: const EdgeInsets.all(10),
                     child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Container(width: 54, height: 54,
-                        decoration: BoxDecoration(color: ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.16),
+                        decoration: BoxDecoration(
+                          color: section.title == 'RICERCHE'
+                              ? ValoraAppearance.instance.colorFor(section.title)
+                              : ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.16),
                           borderRadius: BorderRadius.circular(14)),
-                        child: Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: 30)),
+                        child: Icon(section.icon,
+                          color: section.title == 'RICERCHE'
+                              ? Colors.white
+                              : ValoraAppearance.instance.colorFor(section.title),
+                          size: 30)),
                       const SizedBox(height: 12),
                       Text(section.title, textAlign: TextAlign.center,
                         style: TextStyle(color: ValoraAppearance.instance.colorFor(section.title), fontWeight: FontWeight.bold,
