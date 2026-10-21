@@ -44,10 +44,15 @@ new_login = """ClipOval(
                       ),
                     )"""
 
-if "Image.asset('valora_logo.png'" not in source and "Image.asset(\n                        'valora_logo.png'" not in source:
+# Controlla il logo specificamente nella schermata login: la presenza di
+# Image.asset in un'altra schermata non deve impedire questa sostituzione.
+login_logo_present = bool(re.search(
+    r"Image\.asset\s*\(\s*['\"]valora_logo\.png['\"]",
+    source,
+))
+if not login_logo_present:
     source, count = login_pattern.subn(new_login, source, count=1)
     if count == 0:
-        # Non bloccare la build per una differenza grafica: il logo è facoltativo.
         print("AVVISO: blocco logo login non riconosciuto; mantengo l'icona attuale.")
 
 # Logo nell'AppBar, se il titolo atteso esiste. La mancata corrispondenza
@@ -99,13 +104,61 @@ if flutter_match:
         lines.append("  uses-material-design: true")
     if not any(re.match(r"^\s+assets\s*:", line) for line in lines):
         lines.append("  assets:")
+    # Dichiarare entrambi i percorsi: il file originale alla radice e la copia
+    # usata dalla schermata di accesso Flutter.
     lines.append("    - valora_logo.png")
+    lines.append("    - assets/valora_logo.png")
     replacement = "\n".join(lines) + "\n"
     yaml = yaml[:flutter_match.start()] + replacement + yaml[flutter_match.end():]
 else:
-    yaml = yaml.rstrip() + "\n\nflutter:\n  uses-material-design: true\n  assets:\n    - valora_logo.png\n"
+    yaml = yaml.rstrip() + "\n\nflutter:\n  uses-material-design: true\n  assets:\n    - valora_logo.png\n    - assets/valora_logo.png\n"
 
 # Scrittura solo dopo aver controllato tutti i file richiesti.
 MAIN.write_text(source, encoding="utf-8")
 PUBSPEC.write_text(yaml, encoding="utf-8")
+# Imposta nome e icona Android usando lo stesso file logo impiegato nella schermata di accesso.
+ANDROID = ROOT / "android"
+if ANDROID.is_dir():
+    try:
+        from PIL import Image, ImageOps
+    except ImportError as exc:
+        raise SystemExit("ERRORE: Pillow è necessario per generare l'icona Android.") from exc
+
+    manifest = ANDROID / "app" / "src" / "main" / "AndroidManifest.xml"
+    if manifest.is_file():
+        manifest_text = manifest.read_text(encoding="utf-8")
+        manifest_text = re.sub(r'android:label="[^"]*"', 'android:label="COLLECTION by VALORA"', manifest_text, count=1)
+        manifest_text = re.sub(r'android:icon="[^"]*"', 'android:icon="@mipmap/ic_launcher"', manifest_text, count=1)
+        manifest.write_text(manifest_text, encoding="utf-8")
+
+    with Image.open(LOGO) as original:
+        logo = original.convert("RGBA")
+    for density, size in {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}.items():
+        folder = ANDROID / "app" / "src" / "main" / "res" / f"mipmap-{density}"
+        folder.mkdir(parents=True, exist_ok=True)
+        canvas = Image.new("RGBA", (size, size), (18, 18, 18, 255))
+        fitted = ImageOps.contain(logo, (int(size * 0.82), int(size * 0.82)), Image.Resampling.LANCZOS)
+        canvas.alpha_composite(fitted, ((size - fitted.width) // 2, (size - fitted.height) // 2))
+        canvas.save(folder / "ic_launcher.png")
+        adaptive_size = int(size * 2)
+        foreground = Image.new("RGBA", (adaptive_size, adaptive_size), (0, 0, 0, 0))
+        fitted_fg = ImageOps.contain(logo, (int(adaptive_size * 0.66), int(adaptive_size * 0.66)), Image.Resampling.LANCZOS)
+        foreground.alpha_composite(fitted_fg, ((adaptive_size - fitted_fg.width) // 2, (adaptive_size - fitted_fg.height) // 2))
+        foreground.save(folder / "ic_launcher_foreground.png")
+
+    adaptive = ANDROID / "app" / "src" / "main" / "res" / "mipmap-anydpi-v26"
+    adaptive.mkdir(parents=True, exist_ok=True)
+    (adaptive / "ic_launcher.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+        '    <background android:drawable="@color/ic_launcher_background"/>\n'
+        '    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n'
+        '</adaptive-icon>\n', encoding="utf-8")
+    colors = ANDROID / "app" / "src" / "main" / "res" / "values"
+    colors.mkdir(parents=True, exist_ok=True)
+    (colors / "ic_launcher_background.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<resources><color name="ic_launcher_background">#121212</color></resources>\n',
+        encoding="utf-8")
+    print("Nome e icona Android configurati con il logo VALORA.")
 print("Logo VALORA configurato dalla radice del repository.")
