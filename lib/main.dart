@@ -2822,37 +2822,45 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       try {
         workbook = xlsx.Excel.decodeBytes(bytes);
       } catch (e) {
-        throw Exception('Excel non leggibile. Verifica che il file sia un .xlsx valido e non protetto: $e');
+        throw Exception('Excel non leggibile. Usa un file .xlsx (non .xls) non protetto. Dettaglio: $e');
       }
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
 
-      // Cerca il foglio che contiene davvero le intestazioni, non solo il primo foglio.
-      List<dynamic>? table;
-      for (final sheet in workbook.tables.values) {
-        final rows = sheet.rows;
-        final found = rows.any((row) => row.any((cell) {
-          final h = (cell?.value?.toString() ?? '').trim().toLowerCase();
-          return const {'descrizione_oggetto','descrizione','nome'}.contains(h);
-        }));
-        if (found) { table = rows; break; }
-      }
-      table ??= workbook.tables.values.first.rows;
-      if (table.isEmpty) throw Exception('Il foglio Excel è vuoto o non contiene righe leggibili.');
+      String normalizeHeader(dynamic value) => (value ?? '')
+          .toString()
+          .replaceFirst('\uFEFF', '')
+          .trim()
+          .toLowerCase()
+          .replaceAll(RegExp(r'[\\s\\-./]+'), '_');
 
+      const descriptionHeaders = {
+        'descrizione_oggetto','descrizione','nome','description','object_description'
+      };
+      List<dynamic>? table;
       int headerIndex = -1;
       List<String> headers = <String>[];
-      for (var rowIndex = 0; rowIndex < table.length; rowIndex++) {
-        final candidate = table[rowIndex]
-            .map((cell) => (cell?.value?.toString() ?? '').trim().toLowerCase())
-            .toList();
-        if (candidate.any((h) => const {'descrizione_oggetto','descrizione','nome'}.contains(h))) {
-          headerIndex = rowIndex;
-          headers = candidate;
-          break;
+
+      // Cerca la riga di intestazione in tutti i fogli, anche se non è la prima
+      // riga e anche se Excel ha intestazioni con spazi o maiuscole.
+      for (final sheet in workbook.tables.values) {
+        final rows = sheet.rows;
+        for (var ri = 0; ri < rows.length; ri++) {
+          final candidate = rows[ri]
+              .map((cell) => normalizeHeader(cell?.value))
+              .toList();
+          if (candidate.any(descriptionHeaders.contains)) {
+            table = rows;
+            headerIndex = ri;
+            headers = candidate;
+            break;
+          }
         }
+        if (table != null) break;
       }
-      if (headerIndex < 0) {
-        throw Exception('Intestazione non trovata: serve descrizione_oggetto, descrizione o nome.');
+
+      if (table == null || headerIndex < 0) {
+        final sheets = workbook.tables.keys.join(', ');
+        throw Exception('Intestazione non trovata nei fogli Excel ($sheets). Serve una colonna descrizione_oggetto, descrizione o nome.');
       }
 
       final parsed = <Map<String, dynamic>>[];
@@ -2862,14 +2870,17 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         for (var i = 0; i < headers.length && i < sourceRow.length; i++) {
           final header = headers[i];
           if (header.isEmpty) continue;
-          row[header] = sourceRow[i]?.value?.toString() ?? '';
+          row[header] = sourceRow[i]?.value?.toString().trim() ?? '';
         }
-        // Mappa le intestazioni del master MyBricks/VALORA.
-        row['descrizione_oggetto'] ??= row['descrizione'] ?? row['nome'] ?? '';
-        row['quantita'] ??= row['quantita_importazione'] ?? row['quantità'] ?? '1';
+
+        // Mantiene i nomi del master originale e aggiunge alias solo se mancanti.
+        row['descrizione_oggetto'] = row['descrizione_oggetto'] ??
+            row['descrizione'] ?? row['nome'] ?? row['description'] ?? '';
+        row['quantita'] = row['quantita'] ??
+            row['quantita_importazione'] ?? row['quantità'] ?? '1';
         parsed.add(row);
       }
-      if (parsed.isEmpty) throw Exception('Intestazione trovata, ma non ci sono righe oggetto da importare.');
+      if (parsed.isEmpty) throw Exception('Intestazione trovata nel foglio Excel, ma non ci sono righe oggetto da importare.');
       return parsed;
     }
     if (name.endsWith('.csv')) {
