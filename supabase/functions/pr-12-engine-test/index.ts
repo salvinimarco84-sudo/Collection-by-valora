@@ -23,6 +23,9 @@ type QueueItem = {
   categoria?: string;
   tema?: string;
   mercato?: string;
+  produttore_attuale?: string;
+  anno_uscita_attuale?: string;
+  codice_prodotto?: string;
 };
 type RankedCandidate = { url: string; confidence: number; reason: string };
 
@@ -51,8 +54,16 @@ function validItem(value: unknown): QueueItem | null {
   const categoria = String(v.categoria ?? "").trim().toUpperCase().slice(0, 40);
   const tema = String(v.tema ?? v.franchise ?? v.franchise_tema ?? "").trim().slice(0, 120);
   const mercato = String(v.mercato ?? v.market ?? "Italia").trim().slice(0, 40) || "Italia";
+  const produttore_attuale = String(v.produttore_attuale ?? "").trim().slice(0, 160);
+  const anno_uscita_attuale = String(v.anno_uscita_attuale ?? "").trim().slice(0, 20);
+  const codice_prodotto = String(v.codice_prodotto ?? "").trim().slice(0, 100);
   if (!id || descrizione.length < 2) return null;
-  return { id, descrizione, ...(categoria ? { categoria } : {}), ...(tema ? { tema } : {}), mercato };
+  return {
+    id, descrizione, ...(categoria ? { categoria } : {}), ...(tema ? { tema } : {}), mercato,
+    ...(produttore_attuale ? { produttore_attuale } : {}),
+    ...(anno_uscita_attuale ? { anno_uscita_attuale } : {}),
+    ...(codice_prodotto ? { codice_prodotto } : {}),
+  };
 }
 
 function providerConfig(mode: AiMode): { key: string; model: string } | null {
@@ -144,6 +155,67 @@ async function rankCandidates(
   return { candidates: ordered, ranking };
 }
 
+async function prepareQueue(req: Request): Promise<Response> {
+  const base = Deno.env.get("SUPABASE_URL") ?? "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
+  const authorization = req.headers.get("Authorization") ?? "";
+  if (!base || !anonKey || !authorization) {
+    return json({ ok: false, error: "Contesto Supabase autenticato non disponibile." }, 500);
+  }
+
+  const rows: Array<Record<string, unknown>> = [];
+  const pageSize = 1000;
+  const maxRows = 10000;
+  try {
+    for (let offset = 0; offset < maxRows; offset += pageSize) {
+      const url = new URL(base.replace(/\/$/, "") + "/rest/v1/master_oggetti");
+      url.searchParams.set("select", "codice_oggetto,descrizione_oggetto,produttore,anno_uscita,codice_prodotto");
+      url.searchParams.set("order", "codice_oggetto.asc");
+      const end = Math.min(offset + pageSize, maxRows) - 1;
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          apikey: anonKey,
+          Authorization: authorization,
+          "Accept-Profile": "collection",
+          "Range-Unit": "items",
+          Range: String(offset) + "-" + String(end),
+        },
+        signal: AbortSignal.timeout(25000),
+      });
+      if (!response.ok) {
+        const detail = (await response.text()).slice(0, 400);
+        return json({ ok: false, error: "Lettura catalogo TEST fallita: HTTP " + response.status + " " + detail }, 502);
+      }
+      const page = await response.json();
+      if (!Array.isArray(page)) return json({ ok: false, error: "Formato catalogo non valido." }, 502);
+      rows.push(...page.filter((v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v)));
+      if (page.length < pageSize) break;
+    }
+
+    const isMissing = (value: unknown) => value === null || value === undefined || String(value).trim() === "";
+    const incomplete = rows.filter((row) =>
+      isMissing(row.produttore) || isMissing(row.anno_uscita) || isMissing(row.codice_prodotto)
+    );
+    return json({
+      ok: true,
+      totale_catalogo_letto: rows.length,
+      totale_incompleti: incomplete.length,
+      oggetti: incomplete.map((row) => ({
+        id: row.codice_oggetto,
+        descrizione: row.descrizione_oggetto,
+        produttore: row.produttore,
+        anno_uscita: row.anno_uscita,
+        codice_prodotto: row.codice_prodotto,
+      })),
+      sola_lettura: true,
+      limite_catalogo_letto: maxRows,
+    });
+  } catch (error) {
+    return json({ ok: false, error: error instanceof Error ? error.message : String(error) }, 502);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, error: "Usare POST." }, 405);
@@ -153,6 +225,10 @@ Deno.serve(async (req: Request) => {
     body = await req.json();
   } catch {
     return json({ ok: false, error: "JSON non valido." }, 400);
+  }
+
+  if (String(body.azione ?? "").trim().toUpperCase() === "PREPARA_CODA") {
+    return await prepareQueue(req);
   }
 
   const mode = parseMode(body.modalita_ia);
@@ -189,6 +265,9 @@ Deno.serve(async (req: Request) => {
           categoria: item.categoria ?? "",
           tema: item.tema ?? "",
           mercato: item.mercato ?? "Italia",
+          produttore_attuale: item.produttore_attuale ?? "",
+          anno_uscita_attuale: item.anno_uscita_attuale ?? "",
+          codice_prodotto: item.codice_prodotto ?? "",
         }),
       });
       const searchPayload = await searchResponse.json().catch(() => ({}));
