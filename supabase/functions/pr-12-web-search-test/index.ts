@@ -671,6 +671,41 @@ async function searchBrave(query: string): Promise<SearchResult[]> {
     return [{ title, url, snippet: cleanText(String(item.description ?? "")), source_query: query, motore: "BRAVE_SEARCH_API" }];
   });
 }
+// Reuse identical search queries briefly to reduce repeated external requests.
+const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+const SEARCH_CACHE_MAX_ENTRIES = 250;
+const searchResultCache = new Map<string, { expiresAt: number; results: SearchResult[] }>();
+
+async function searchOneCached(query: string): Promise<SearchResult[]> {
+  const key = normalizeText(query).trim();
+  const now = Date.now();
+  const cached = searchResultCache.get(key);
+  if (cached && cached.expiresAt > now) return cached.results.map((item) => ({ ...item, source_query: query }));
+  if (cached) searchResultCache.delete(key);
+  const results = await searchOne(query);
+  if (searchResultCache.size >= SEARCH_CACHE_MAX_ENTRIES) {
+    const oldestKey = searchResultCache.keys().next().value;
+    if (oldestKey) searchResultCache.delete(oldestKey);
+  }
+  searchResultCache.set(key, { expiresAt: now + SEARCH_CACHE_TTL_MS, results: results.map((item) => ({ ...item })) });
+  return results;
+}
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item: T, index: number) => Promise<R>): Promise<PromiseSettledResult<R>[]> {
+  const output: PromiseSettledResult<R>[] = new Array(items.length);
+  let nextIndex = 0;
+  const runners = Array.from({ length: Math.min(Math.max(1, limit), items.length) }, async () => {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      try { output[index] = { status: "fulfilled", value: await worker(items[index], index) }; }
+      catch (reason) { output[index] = { status: "rejected", reason }; }
+    }
+  });
+  await Promise.all(runners);
+  return output;
+}
+
 async function searchOne(query: string): Promise<SearchResult[]> {
   const errors: string[] = [];
   // Provider API documentata, se è stata configurata la relativa chiave segreta.
@@ -859,11 +894,8 @@ function comicSeriesAnchorQueries(category: string, description: string): { seri
     ],
   };
 }
-Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ ok: false, error: "Usare POST." }, 405);
+async function handleSingleSearch(body: any, req: Request): Promise<Response> {
   try {
-    const body = await req.json();
     const description = String(body.descrizione ?? body.query ?? "").trim().slice(0, 240);
     const category = String(body.categoria ?? "").trim().toUpperCase().slice(0, 40);
     const theme = String(body.tema ?? body.franchise ?? body.franchise_tema ?? "").trim().slice(0, 120);
@@ -903,7 +935,7 @@ Deno.serve(async (req: Request) => {
     // Fonti specialistiche dal database TEST prima delle query generiche.
     {
       // Il crawler DC è una fonte aggiuntiva, non deve bloccare i mercati locali.
-      const settled = await Promise.allSettled(queries.map(searchOne));
+      const settled = await mapWithConcurrency(queries, 4, (query) => searchOneCached(query));
       for (let i = 0; i < settled.length; i++) {
         const item = settled[i];
         if (item.status === "rejected") { const errorText = item.reason instanceof Error ? item.reason.message : String(item.reason); errors.push(queries[i] + ": " + errorText); diagnosticaQuery.push({ query: queries[i], risultati_grezzi: 0, errore: errorText }); continue; }
@@ -934,7 +966,6 @@ Deno.serve(async (req: Request) => {
       risultati: [], numero_risultati: 0, ricerca_esterna_eseguita: true, metadati_confermati: false,
       avviso: "Nessuna corrispondenza verificabile trovata per il codice esatto. Nessun risultato generico non pertinente è stato mostrato.",
       errori_fonti: errors, fonti_specializzate: targeted,
-      diagnostica: { fonti_database_caricate: configured.sources.length, regole_franchise: configured.franchiseRules.length, query: diagnosticaQuery, risultati_grezzi_unici: conteggioGrezzi, dopo_filtro_codice: conteggioDopoCodice, dopo_filtro_pertinenza: conteggioDopoPertinenza },
       fonti_database: configured.sources.map(s => ({ codice_fonte: s.codice_fonte, nome_fonte: s.nome_fonte, url: s.url_principale, tipo_fonte: s.tipo_fonte, stato_affidabilita: s.stato_affidabilita, priorita: s.priorita_metadati })),
       regole_franchise_applicate: configured.franchiseRules.map(r => r.franchise),
       query_eseguite: queries,
@@ -955,5 +986,61 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     return json({ ok: false, procedura: "PR-12", ricerca_esterna_eseguita: false, error: error instanceof Error ? error.message : String(error) }, 502);
+  }
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ ok: false, error: "Usare POST." }, 405);
+  try {
+    const body = await req.json();
+    if (Array.isArray(body?.oggetti)) {
+      const objects = body.oggetti;
+      if (objects.length < 1 || objects.length > 10) {
+        return json({ ok: false, procedura: "PR-12", error: "Il batch deve contenere da 1 a 10 oggetti." }, 400);
+      }
+      const risultati_oggetti = [];
+      for (let i = 0; i < objects.length; i++) {
+        const item = objects[i];
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          risultati_oggetti.push({ indice: i, id: null, ok: false, error: "Elemento non valido: atteso un oggetto JSON." });
+          continue;
+        }
+        const id = String(item.id ?? item.codice_oggetto ?? i + 1).slice(0, 120);
+        const singleBody = {
+          ...body,
+          ...item,
+          oggetti: undefined,
+        };
+        delete (singleBody as Record<string, unknown>).oggetti;
+        const response = await handleSingleSearch(singleBody, req);
+        let payload: unknown;
+        try { payload = await response.json(); }
+        catch { payload = { ok: false, error: "Risposta PR-12 non leggibile." }; }
+        const payloadOk = response.status >= 200 && response.status < 300 && (payload as any)?.ok !== false;
+        risultati_oggetti.push({
+          id,
+          indice: i,
+          descrizione: String(item.descrizione ?? item.query ?? "").trim().slice(0, 240),
+          categoria: String(item.categoria ?? "").trim().toUpperCase().slice(0, 40) || "NON_CLASSIFICATA",
+          ok: payloadOk,
+          stato_http: response.status,
+          risultato: payload,
+        });
+      }
+      return json({
+        ok: risultati_oggetti.every((x) => x.ok),
+        procedura: "PR-12",
+        modalita: "RICERCA_BATCH",
+        numero_oggetti: objects.length,
+        numero_completati: risultati_oggetti.filter((x) => x.ok).length,
+        numero_falliti: risultati_oggetti.filter((x) => !x.ok).length,
+        risultati_oggetti,
+        avviso: "Ogni oggetto mantiene risultati e controlli indipendenti. Le ricerche identiche possono riutilizzare la cache temporanea dell'istanza.",
+      });
+    }
+    return await handleSingleSearch(body, req);
+  } catch (error) {
+    return json({ ok: false, procedura: "PR-12", ricerca_esterna_eseguita: false, error: error instanceof Error ? error.message : String(error) }, 400);
   }
 });
