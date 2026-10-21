@@ -3259,7 +3259,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final maker = (clues['marchio'] ?? '').toString().trim();
       final code = (clues['codice_prodotto'] ?? '').toString().trim();
       final category = (clues['categoria'] ?? '').toString().trim();
-      final visibleText = (clues['testo_visibile'] ?? '').toString().trim();
       setState(() {
         if (description.isNotEmpty) _description.text = description;
         if (maker.isNotEmpty) _producer.text = maker;
@@ -5395,6 +5394,12 @@ class _PurchaseItemDraft {
   final price = TextEditingController();
   Uint8List? photoBytes;
   String? photoName;
+  String? photoUrl;
+  String? metadataProducer;
+  String? metadataCode;
+  String? metadataCategory;
+  int? metadataYear;
+  String? metadataSourceUrl;
   String photoStatus = 'Nessuna foto selezionata.';
   String destination = 'COLLEZIONE';
   String condition = 'USATO';
@@ -5408,6 +5413,12 @@ class _PurchaseItemDraft {
     'descrizione': description.text.trim(), 'valore_acquisto': amount,
     'destinazione': destination, 'condizione': condition,
     'completezza': completeness, 'quantita': 1,
+    if (metadataProducer != null) 'produttore': metadataProducer,
+    if (metadataCode != null) 'codice_prodotto': metadataCode,
+    if (metadataCategory != null) 'categoria': metadataCategory,
+    if (metadataYear != null) 'anno_uscita': metadataYear,
+    if (metadataSourceUrl != null) 'fonte_metadati_url': metadataSourceUrl,
+    if (photoUrl != null) 'immagine_url': photoUrl,
   };
   void dispose() { description.dispose(); price.dispose(); }
 }
@@ -5438,13 +5449,19 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       d.month.toString().padLeft(2, '0') + '/' + d.year.toString();
   double get _total => _items.fold<double>(0, (sum, i) => sum + (i.amount ?? 0));
   void _notice(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
+
   Future<void> _photoAndRecognize(_PurchaseItemDraft item) async {
     try {
       final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
       if (picked == null) return;
       final bytes = await picked.readAsBytes();
       if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Foto vuota o superiore a 10 MB.');
-      setState(() { item.photoBytes = bytes; item.photoName = picked.name.isNotEmpty ? picked.name : 'foto_acquisto.jpg'; item.photoStatus = 'Foto acquisita. Riconoscimento PR-12 in corso…'; });
+      setState(() {
+        item.photoBytes = bytes;
+        item.photoName = picked.name.isNotEmpty ? picked.name : 'foto_acquisto.jpg';
+        item.photoUrl = null;
+        item.photoStatus = 'Foto acquisita. Riconoscimento PR-12 in corso…';
+      });
       final mime = (item.photoName ?? '').toLowerCase().endsWith('.png') ? 'image/png' : ((item.photoName ?? '').toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
       final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
         'azione': 'ANALIZZA_FOTO', 'modalita_ia': 'TEST',
@@ -5455,32 +5472,94 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       final clues = data['identificazione'] is Map ? Map<String,dynamic>.from(data['identificazione']) : <String,dynamic>{};
       final results = data['risultati'] is List ? (data['risultati'] as List).whereType<Map>().map((v)=>Map<String,dynamic>.from(v)).toList() : <Map<String,dynamic>>[];
       if (!mounted) return;
-      final apply = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-        title: const Text('PR-12 · Verifica oggetto'),
-        content: SizedBox(width: 520, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text('Descrizione proposta: ${clues['descrizione_provvisoria'] ?? 'Non rilevata'}'),
-          Text('Marchio: ${clues['marchio'] ?? 'Non rilevato'}'),
-          Text('Codice prodotto: ${clues['codice_prodotto'] ?? 'Non rilevato'}'),
-          if (clues['incertezze'] is List) Text('Incertezze: ${(clues['incertezze'] as List).join(' · ')}'),
-          const Divider(), Text('Candidati trovati: ${results.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
-          for (final result in results.take(6)) Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text((result['title'] ?? 'Risultato').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text((result['url'] ?? '').toString(), style: const TextStyle(fontSize: 11)),
-          ])),
-          const Text('La ricerca non salva dati nel database.'),
-        ]))),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('RIFIUTA')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('USA DESCRIZIONE')),
-        ],
-      ));
-      if (apply == true && mounted) setState(() {
-        final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
+      final imageCandidates = results.where((r) {
+        final u = (r['image_url'] ?? r['immagine_url'] ?? r['url_immagine'] ?? '').toString().trim();
+        return u.startsWith('https://') || u.startsWith('http://');
+      }).toList();
+      final selection = await showDialog<Map<String, dynamic>>(
+        context: context, barrierDismissible: false,
+        builder: (ctx) {
+          int selected = -1;
+          return StatefulBuilder(builder: (ctx, refreshDialog) => AlertDialog(
+            title: const Text('PR-12 · Verifica oggetto e immagine'),
+            content: SizedBox(width: 560, child: SingleChildScrollView(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Descrizione proposta: ' + (clues['descrizione_provvisoria'] ?? 'Non rilevata').toString()),
+                Text('Marchio: ' + (clues['marchio'] ?? 'Non rilevato').toString()),
+                Text('Codice prodotto: ' + (clues['codice_prodotto'] ?? 'Non rilevato').toString()),
+                if ((clues['categoria'] ?? '').toString().trim().isNotEmpty) Text('Categoria: ' + clues['categoria'].toString()),
+                if (clues['incertezze'] is List && (clues['incertezze'] as List).isNotEmpty)
+                  Text('Da verificare: ' + (clues['incertezze'] as List).join(' · ')),
+                const Divider(),
+                const Text('Scegli l’immagine da associare all’oggetto', style: TextStyle(fontWeight: FontWeight.bold)),
+                RadioListTile<int>(
+                  value: -1, groupValue: selected,
+                  onChanged: (v) => refreshDialog(() => selected = v ?? -1),
+                  title: const Text('Mantieni la foto scattata'),
+                  subtitle: const Text('La foto del tuo esemplare'),
+                  secondary: ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.memory(bytes, width: 58, height: 58, fit: BoxFit.cover)),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (imageCandidates.isEmpty)
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Nessuna immagine online utilizzabile. Puoi mantenere la foto originale.')),
+                for (var i = 0; i < imageCandidates.length; i++)
+                  RadioListTile<int>(
+                    value: i, groupValue: selected,
+                    onChanged: (v) => refreshDialog(() => selected = v ?? -1),
+                    contentPadding: EdgeInsets.zero,
+                    title: Text((imageCandidates[i]['title'] ?? 'Immagine trovata online').toString()),
+                    subtitle: Text((imageCandidates[i]['motore'] ?? imageCandidates[i]['url'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    secondary: ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.network(
+                      (imageCandidates[i]['image_url'] ?? imageCandidates[i]['immagine_url'] ?? imageCandidates[i]['url_immagine']).toString(),
+                      width: 58, height: 58, fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, size: 36),
+                    )),
+                  ),
+                const Divider(),
+                Text('Risultati catalografici PR-12: ${results.length}. I metadati proposti restano da verificare.'),
+                const Text('La ricerca non salva dati nel database.'),
+              ],
+            ))),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, <String,dynamic>{'annulla': true}), child: const Text('ANNULLA')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, <String,dynamic>{
+                'use_original': selected < 0,
+                if (selected >= 0) 'candidate': imageCandidates[selected],
+              }), child: const Text('USA SELEZIONE')),
+            ],
+          ));
+        },
+      );
+      if (selection == null || selection['annulla'] == true) {
+        if (mounted) setState(() => item.photoStatus = 'Ricerca terminata. Foto originale conservata; nessuna proposta applicata.');
+        return;
+      }
+      final selectedCandidate = selection['candidate'] is Map
+          ? Map<String,dynamic>.from(selection['candidate'] as Map)
+          : (results.isNotEmpty ? results.first : <String,dynamic>{});
+      final description = (clues['descrizione_provvisoria'] ?? selectedCandidate['title'] ?? '').toString().trim();
+      final maker = (clues['marchio'] ?? selectedCandidate['produttore'] ?? selectedCandidate['editore'] ?? '').toString().trim();
+      final code = (clues['codice_prodotto'] ?? selectedCandidate['codice_prodotto'] ?? selectedCandidate['isbn'] ?? '').toString().trim();
+      final category = (clues['categoria'] ?? '').toString().trim();
+      final yearValue = selectedCandidate['anno_uscita'] ?? selectedCandidate['anno_pubblicazione'] ?? selectedCandidate['year'];
+      final yearText = yearValue?.toString() ?? '';
+      final yearMatch = RegExp(r'(19\d{2}|20\d{2})').firstMatch(yearText);
+      final selectedUrl = selection['use_original'] == true ? null
+          : (selectedCandidate['image_url'] ?? selectedCandidate['immagine_url'] ?? selectedCandidate['url_immagine'] ?? '').toString().trim();
+      if (mounted) setState(() {
         if (description.isNotEmpty) item.description.text = description;
-        item.photoStatus = 'Indizi proposti da PR-12. Verifica la descrizione prima di confermare l’acquisto.';
+        item.metadataProducer = maker.isEmpty ? null : maker;
+        item.metadataCode = code.isEmpty ? null : code;
+        item.metadataCategory = category.isEmpty ? null : category;
+        item.metadataYear = yearMatch == null ? null : int.tryParse(yearMatch.group(1)!);
+        item.metadataSourceUrl = (selectedCandidate['url'] ?? '').toString().trim().isEmpty ? null : selectedCandidate['url'].toString();
+        item.photoUrl = selectedUrl != null && (selectedUrl.startsWith('https://') || selectedUrl.startsWith('http://')) ? selectedUrl : null;
+        item.photoStatus = item.photoUrl == null
+          ? 'Metadati PR-12 proposti. Foto originale selezionata; verifica i dati prima di salvare.'
+          : 'Metadati PR-12 proposti. Immagine online selezionata; verifica i dati prima di salvare.';
         _invalidate();
       });
-      else if (mounted) setState(() => item.photoStatus = 'Foto conservata nella bozza; proposte non applicate.');
     } catch (e) {
       if (mounted) setState(() => item.photoStatus = 'Riconoscimento non riuscito: $e');
     }
