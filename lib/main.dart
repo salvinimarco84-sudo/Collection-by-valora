@@ -5369,7 +5369,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     // le operazioni sono un array e ogni oggetto usa valore_acquisto.
     'operazioni': [
       {
-        'tipo_acquisto': _type,
         'data_acquisto': _date.toIso8601String().substring(0, 10),
         'importo_totale': double.parse(_total.toStringAsFixed(2)),
         'valuta': 'EUR',
@@ -5403,7 +5402,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       if (!await _acquire()) return;
       final r = await _ValoraRuntimeApi.procedure('PR-04', 'preview', _payload(), sessionId: _session);
       if (!mounted) return;
-      setState(() { _preview = r; _step = 4; _status = 'Controllo preliminare ricevuto. Verifica i dati prima di procedere.'; });
+      setState(() { _preview = r; _step = 4; _status = 'Riepilogo pronto. SÌ riparte con un nuovo acquisto senza salvare questo; NO salva e chiude.'; });
     } catch (e) {
       if (mounted) setState(() => _status = 'Controllo non riuscito: ' + e.toString());
     } finally { await _release(); if (mounted) setState(() => _busy = false); }
@@ -5423,8 +5422,8 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   }
 
   Future<void> _save() async {
-    if (!_dataConfirmed || !_finalConfirmed || _review == null) {
-      _notice('Completa la review e autorizza esplicitamente il salvataggio.'); return;
+    if (_preview == null || !_dataConfirmed) {
+      _notice('Completa il riepilogo prima di salvare.'); return;
     }
     setState(() { _busy = true; _status = 'Invio del salvataggio al runtime TEST…'; });
     try {
@@ -5569,7 +5568,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     ]);
 
     if (_step == 3) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading('Riepilogo acquisto', 'Controlla i dati prima del controllo. Nessuna scrittura è stata eseguita.'),
+      _heading('Riepilogo acquisto', 'Controlla i dati prima di procedere. Nessuna scrittura è stata eseguita.'),
       Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _line('Tipo', _type == 'SINGOLO' ? 'Acquisto singolo' : 'Acquisto multiplo / lotto'),
         _line('Data acquisto', _dateLabel(_date)), _line('Oggetti distinti', _items.length.toString()),
@@ -5581,30 +5580,33 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         ])),
         const Divider(height: 22), _line('TOTALE TRANSAZIONE', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
       ]))),
-      const SizedBox(height: 10), FilledButton.icon(onPressed: _busy ? null : _runPreview, icon: const Icon(Icons.fact_check_outlined), label: const Text('CONTROLLA NEL RUNTIME TEST')),
+      const SizedBox(height: 10), FilledButton.icon(onPressed: _busy ? null : _runPreview, icon: const Icon(Icons.fact_check_outlined), label: const Text('CONTROLLA E MOSTRA RIEPILOGO')),
       OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 2), child: const Text('MODIFICA OGGETTI')),
     ]);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading('Verifica e conferma', 'Preview e review devono completarsi prima del salvataggio.'),
-      if (_preview != null) _result('ESITO CONTROLLO PRELIMINARE', _preview!),
-      CheckboxListTile(value: _dataConfirmed, contentPadding: EdgeInsets.zero,
-        title: const Text('Confermo che descrizioni, destinazioni e prezzi sono corretti.'),
-        onChanged: _busy ? null : (v) => setState(() { _dataConfirmed = v ?? false; _finalConfirmed = false; _review = null; })),
-      SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy || !_dataConfirmed ? null : _runReview,
-        child: Text(_busy ? 'ATTENDI…' : 'VALIDA DATI (REVIEW)'))),
-      if (_review != null) ...[
-        const SizedBox(height: 10), _result('ESITO REVIEW', _review!),
-        CheckboxListTile(value: _finalConfirmed, contentPadding: EdgeInsets.zero,
-          title: const Text('Conferma definitiva: autorizzo una sola transazione e tutti i record oggetto in TEST.'),
-          onChanged: _busy ? null : (v) => setState(() => _finalConfirmed = v ?? false)),
-        SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy || !_finalConfirmed ? null : _save,
-          child: Text(_busy ? 'ATTENDI…' : 'CONFERMA E REGISTRA ACQUISTO'))),
-      ],
-      OutlinedButton(onPressed: _busy ? null : () => setState(() { _step = 3; _invalidate(); }), child: const Text('INDIETRO AL RIEPILOGO')),
+      _heading('Riepilogo acquisto', 'SÌ riparte con un nuovo acquisto senza salvare questo. NO salva l’acquisto e chiude la procedura.'),
+      Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _line('Tipo', _type == 'SINGOLO' ? 'Acquisto singolo' : 'Acquisto multiplo / lotto'),
+        _line('Data acquisto', _dateLabel(_date)), _line('Oggetti distinti', _items.length.toString()),
+        const Divider(height: 22),
+        for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text((i + 1).toString() + '. ' + _items[i].description.text.trim(), style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+          Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
+        ])),
+        const Divider(height: 22), _line('TOTALE ACQUISTO', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
+      ]))),
+      const SizedBox(height: 12),
+      FilledButton(onPressed: _busy ? null : () {
+        for (final item in _items) { item.dispose(); }
+        setState(() { _step = 0; _type = 'SINGOLO'; _date = DateTime.now(); _items..clear()..add(_PurchaseItemDraft()); _count.text = '1'; _preview = null; _review = null; _dataConfirmed = false; _finalConfirmed = false; _status = 'Nuova bozza pronta. Nessun acquisto precedente è stato salvato.'; });
+      }, child: const Text('SÌ · INSERISCI UN ALTRO ACQUISTO')),
+      const SizedBox(height: 8),
+      FilledButton(onPressed: _busy ? null : () { setState(() { _dataConfirmed = true; _finalConfirmed = true; }); _save(); }, child: Text(_busy ? 'ATTENDI…' : 'NO · SALVA E ESCI')),
+      OutlinedButton(onPressed: _busy ? null : () => setState(() { _step = 2; _invalidate(); }), child: const Text('MODIFICA DATI')),
     ]);
   }
-
   @override
   Widget build(BuildContext context) {
     final c = ValoraAppearance.instance.colorFor('ACQUISTI');
