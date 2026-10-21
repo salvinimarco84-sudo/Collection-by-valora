@@ -3216,13 +3216,29 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
+  Future<void> _startAssistantPhoto() async {
+    if (_loading) return;
+    setState(() {
+      _selectedImageBytes = null;
+      _selectedImageName = null;
+      _imageStatus = 'Apro la fotocamera…';
+    });
+    await _captureImage();
+    if (!mounted) return;
+    if (_selectedImageBytes == null || _selectedImageBytes!.isEmpty) {
+      setState(() => _imageStatus = 'Nessuna foto acquisita. Premi ASSISTENTE VALORA per riprovare.');
+      return;
+    }
+    await _recognizeSelectedPhoto();
+  }
+
   Future<void> _recognizeSelectedPhoto() async {
     final bytes = _selectedImageBytes;
     if (bytes == null || bytes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Scatta prima una foto dell’oggetto.')));
       return;
     }
-    setState(() { _loading = true; _imageStatus = 'Riconoscimento visivo e ricerca PR-12 in corso…'; });
+    setState(() { _loading = true; _imageStatus = 'Sto riconoscendo l’oggetto e cercando fonti con PR-12…'; });
     try {
       final mime = (_selectedImageName ?? '').toLowerCase().endsWith('.png') ? 'image/png'
           : ((_selectedImageName ?? '').toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
@@ -3239,45 +3255,43 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final clues = data['identificazione'] is Map ? Map<String,dynamic>.from(data['identificazione']) : <String,dynamic>{};
       final results = data['risultati'] is List ? (data['risultati'] as List).whereType<Map>().map((v)=>Map<String,dynamic>.from(v)).toList() : <Map<String,dynamic>>[];
       if (!mounted) return;
-      final apply = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-        title: const Text('PR-12 · Risultati dalla foto'),
-        content: SizedBox(width: 520, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text('Descrizione proposta: ${clues['descrizione_provvisoria'] ?? 'Non rilevata'}'),
-          Text('Categoria: ${clues['categoria'] ?? 'Da verificare'}'),
-          Text('Marchio: ${clues['marchio'] ?? 'Non rilevato'}'),
-          Text('Codice prodotto: ${clues['codice_prodotto'] ?? 'Non rilevato'}'),
-          if ((clues['testo_visibile'] ?? '').toString().isNotEmpty) Text('Testo letto: ${clues['testo_visibile']}'),
-          if (clues['incertezze'] is List) Text('Da verificare: ${(clues['incertezze'] as List).join(' · ')}'),
-          const Divider(),
-          Text('Candidati catalogo: ${results.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
-          for (final result in results.take(8)) Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text((result['title'] ?? 'Risultato senza titolo').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
-            Text((result['url'] ?? '').toString(), style: const TextStyle(fontSize: 11)),
-            Text((result['snippet'] ?? '').toString(), style: const TextStyle(fontSize: 12)),
-          ])),
-          const SizedBox(height: 8),
-          const Text('I risultati sono proposte, non conferme. Nessun dato è stato salvato.', style: TextStyle(fontWeight: FontWeight.w600)),
-        ]))),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('RIFIUTA')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('USA INDIZI NELLA BOZZA')),
-        ],
-      ));
-      if (apply == true && mounted) {
-        setState(() {
-          final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
-          final maker = (clues['marchio'] ?? '').toString().trim();
-          final code = (clues['codice_prodotto'] ?? '').toString().trim();
-          if (description.isNotEmpty) _description.text = description;
-          if (maker.isNotEmpty) _producer.text = maker;
-          if (code.isNotEmpty) _family.text = code;
-          _metadataSearchExecuted = true;
-          _metadataResult = 'PR-12 ha proposto indizi dalla foto. Verifica i campi e confermali nella procedura.';
-          _imageStatus = 'Riconoscimento completato. Foto originale conservata; metadati ancora da confermare.';
-        });
-      } else if (mounted) setState(() => _imageStatus = 'Ricerca completata senza applicare proposte alla bozza.');
+      final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
+      final maker = (clues['marchio'] ?? '').toString().trim();
+      final code = (clues['codice_prodotto'] ?? '').toString().trim();
+      final category = (clues['categoria'] ?? '').toString().trim();
+      final visibleText = (clues['testo_visibile'] ?? '').toString().trim();
+      setState(() {
+        if (description.isNotEmpty) _description.text = description;
+        if (maker.isNotEmpty) _producer.text = maker;
+        if (code.isNotEmpty) _family.text = code;
+        if (category.isNotEmpty) _line.text = category;
+        if (_description.text.trim().isEmpty && results.isNotEmpty) {
+          final title = (results.first['title'] ?? '').toString().trim();
+          if (title.isNotEmpty) _description.text = title;
+        }
+        _metadataSearchExecuted = true;
+        _metadataResult = results.isEmpty
+          ? 'Riconoscimento completato. Nessuna corrispondenza online affidabile: verifica e completa i dati.'
+          : 'Riconoscimento completato. PR-12 ha trovato ${results.length} risultati da verificare.';
+        final uncertainty = clues['incertezze'] is List ? (clues['incertezze'] as List).join(' · ') : '';
+        _imageStatus = 'Assistente VALORA: campi compilati con le informazioni disponibili. ${uncertainty.isNotEmpty ? "Da verificare: $uncertainty. " : ""}Controlla i dati prima di salvare.';
+      });
+      if (mounted) {
+        final details = <String>[
+          if (description.isNotEmpty) 'Descrizione',
+          if (maker.isNotEmpty) 'Marca',
+          if (code.isNotEmpty) 'Codice prodotto',
+          if (category.isNotEmpty) 'Categoria',
+        ];
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(details.isEmpty
+            ? 'Ricerca terminata. Completa manualmente i campi non riconosciuti.'
+            : 'Maschera compilata: ${details.join(", ")}. Verifica i risultati PR-12 e completa il record.'),
+          duration: const Duration(seconds: 5),
+        ));
+      }
     } catch (e) {
-      if (mounted) setState(() => _imageStatus = 'Riconoscimento non disponibile: $e');
+      if (mounted) setState(() => _imageStatus = 'Assistente non disponibile: $e. Puoi comunque compilare la maschera manualmente.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -3285,66 +3299,56 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Widget _imageField() {
     final hasSelected = _selectedImageBytes != null;
-    return Card(child: Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('IMMAGINE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 6),
-        Text('Facoltativa. Scatta una foto oppure carica un file immagine. Dimensione massima: 10 MB.',
-          style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
-        const SizedBox(height: 6),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: ValoraAppearance.instance.neutralOverlay,
-            borderRadius: BorderRadius.circular(8),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.auto_awesome, color: sectionColor, size: 26),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('ASSISTENTE VALORA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 3),
+              Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.',
+                style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
+            ])),
+          ]),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _loading ? null : _startAssistantPhoto,
+              icon: _loading
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.mic),
+              label: Text(_loading ? 'ASSISTENTE AL LAVORO…' : 'ASSISTENTE VALORA · SCATTA E CERCA'),
+              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+            ),
           ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Consigli per identificare meglio l’oggetto', style: TextStyle(fontWeight: FontWeight.w600)),
-              SizedBox(height: 4),
-              Text('Se puoi, aggiungi una foto reale dell’oggetto e una foto nitida del codice prodotto o dell’etichetta. Le immagini di catalogo possono aiutare il confronto, ma non dimostrano le condizioni dell’esemplare posseduto.'),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(children: [
-          Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : _captureImage, icon: const Icon(Icons.camera_alt_outlined), label: const Text('SCATTA FOTO'))),
-          const SizedBox(width: 8),
-          Expanded(child: FilledButton.icon(onPressed: _loading || !hasSelected ? null : _recognizeSelectedPhoto, icon: const Icon(Icons.document_scanner_outlined), label: const Text('RICONOSCI E CERCA · PR-12'))),
+          if (hasSelected) ...[
+            const SizedBox(height: 10),
+            ClipRRect(borderRadius: BorderRadius.circular(10),
+              child: Image.memory(_selectedImageBytes!, height: 180, width: double.infinity, fit: BoxFit.contain)),
+          ] else if (_existingImageUrl != null && _existingImageUrl!.startsWith('http')) ...[
+            const SizedBox(height: 10),
+            ClipRRect(borderRadius: BorderRadius.circular(10),
+              child: Image.network(_existingImageUrl!, height: 160, width: double.infinity, fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => _imagePlaceholder(size: 100))),
+          ],
+          const SizedBox(height: 8),
+          Text(_imageStatus, style: TextStyle(
+            color: _imageStatus.startsWith('Assistente non disponibile') || _imageStatus.startsWith('Scatto')
+              ? Colors.orangeAccent : ValoraAppearance.instance.textSecondary,
+            fontSize: 12)),
+          const SizedBox(height: 4),
+          Align(alignment: Alignment.centerRight, child: TextButton.icon(
+            onPressed: _loading ? null : _pickImageFile,
+            icon: const Icon(Icons.photo_library_outlined),
+            label: const Text('Scegli invece una foto dalla galleria'),
+          )),
         ]),
-        if (hasSelected)
-          ClipRRect(borderRadius: BorderRadius.circular(10),
-            child: Image.memory(_selectedImageBytes!, height: 190, width: double.infinity, fit: BoxFit.contain))
-        else if (_existingImageUrl != null && _existingImageUrl!.startsWith('http'))
-          ClipRRect(borderRadius: BorderRadius.circular(10),
-            child: Image.network(_existingImageUrl!, height: 190, width: double.infinity, fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => _imagePlaceholder(size: 120)))
-        else
-          Container(height: 100, width: double.infinity, alignment: Alignment.center,
-            decoration: BoxDecoration(color: ValoraAppearance.instance.neutralOverlay, borderRadius: BorderRadius.circular(10)),
-            child: Icon(Icons.add_a_photo_outlined, size: 34, color: ValoraAppearance.instance.textFaint)),
-        const SizedBox(height: 8),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          if (defaultTargetPlatform == TargetPlatform.android)
-            OutlinedButton.icon(onPressed: _loading ? null : _captureImage,
-              icon: const Icon(Icons.camera_alt_outlined), label: const Text('SCATTA FOTO')),
-          OutlinedButton.icon(onPressed: _loading ? null : _pickImageFile,
-            icon: const Icon(Icons.folder_open_outlined), label: const Text('CARICA IMMAGINE')),
-          if (hasSelected)
-            TextButton.icon(onPressed: _loading ? null : () => setState(() {
-              _selectedImageBytes = null; _selectedImageName = null; _imageStatus = 'Selezione immagine rimossa.';
-            }), icon: const Icon(Icons.delete_outline), label: const Text('RIMUOVI')),
-        ]),
-        const SizedBox(height: 4),
-        Text(_imageStatus, style: TextStyle(
-          color: _imageStatus.startsWith('Caricamento') || _imageStatus.startsWith('Scatto')
-            ? Colors.orangeAccent : ValoraAppearance.instance.textSecondary,
-          fontSize: 12)),
-      ]),
-    ));
+      ),
+    );
   }
 
   Widget _readOnlyImageCard() {
