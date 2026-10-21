@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:csv/csv.dart';
 import 'package:excel/excel.dart' as xlsx;
 import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart' as pw_core;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -4419,7 +4420,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ...records.map((record) => headers.map((key) => _exportCellValue(record[key])).toList()),
         ];
         document.addPage(pw.MultiPage(
-          pageFormat: pw.PdfPageFormat.a4,
+          pageFormat: pw_core.PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(28),
           build: (context) => [
             pw.Text('COLLECTION by VALORA',
@@ -4434,9 +4435,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               data: tableData,
               headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
               cellStyle: const pw.TextStyle(fontSize: 6),
-              headerDecoration: const pw.BoxDecoration(color: pw.PdfColor.fromInt(0xFFD6B15E)),
+              headerDecoration: const pw.BoxDecoration(color: pw_core.PdfColor.fromInt(0xFFD6B15E)),
               cellAlignment: pw.Alignment.topLeft,
-              border: pw.TableBorder.all(color: pw.PdfColor.fromInt(0xFFBBBBBB), width: 0.35),
+              border: pw.TableBorder.all(color: pw_core.PdfColor.fromInt(0xFFBBBBBB), width: 0.35),
             ),
           ],
         ));
