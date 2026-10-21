@@ -5729,7 +5729,7 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
     finally{await _unlock();if(mounted)setState(()=>_busy=false);}
   }
   Future<void> _save()async{
-    if(!_confirmed||!_finalConfirmed||_review==null||!_valid()){_msg('Completa i controlli e la conferma finale.');return;}
+    if(!_confirmed||_last==null||!_valid()){_msg('Controlla i dati e conferma il riepilogo prima di salvare.');return;}
     setState(()=>_busy=true);
     try{
       await _lock();
@@ -5775,15 +5775,20 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
           _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),_line('Totale','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
           if (((_money(_total.text) ?? -999) - _allocated).abs() > 0.009) const Text('QUADRATURA NON VALIDA: il salvataggio è bloccato.',style:TextStyle(color:Colors.redAccent,fontWeight:FontWeight.bold)),
           for(final item in _items) Card(child:ListTile(title:Text((item['descrizione_oggetto']??item['descrizione']??item['nome']??'Oggetto collegato').toString()),subtitle:Text('Codice oggetto: '+(item['codice_oggetto']??item['object_code']??item['id']??'non disponibile').toString()),trailing:Text('€ '+((_money(item['importo']??item['prezzo_acquisto']??item['valore'])??0).toStringAsFixed(2))))),
-          FilledButton(onPressed:_busy?null:_preview,child:const Text('CONTROLLA MODIFICA')),
-          if(_last!=null)_result('ANTEPRIMA / ESITO RUNTIME',_last!),
-          CheckboxListTile(value:_confirmed,title:const Text('Confermo che i dati della modifica sono corretti.'),onChanged:_busy?null:(v)=>setState((){_confirmed=v??false;_finalConfirmed=false;_review=null;})),
-          FilledButton(onPressed:_busy||!_confirmed?null:_reviewStep,child:const Text('VALIDA DATI (REVIEW)')),
-          if(_review!=null)...[
-            _result('ESITO REVIEW',_review!),
-            CheckboxListTile(value:_finalConfirmed,title:const Text('Autorizzo la modifica dell’acquisto esistente, con aggiornamento di cassa e storico.'),onChanged:_busy?null:(v)=>setState(()=>_finalConfirmed=v??false)),
-            FilledButton(onPressed:_busy||!_finalConfirmed?null:_save,child:const Text('CONFERMA E SALVA MODIFICA')),
-          ],
+          FilledButton(onPressed:_busy?null:_preview,child:const Text('MOSTRA RIEPILOGO')),
+          if(_last!=null) Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            const Text('RIEPILOGO MODIFICA',style:TextStyle(fontWeight:FontWeight.bold)),
+            _line('Codice acquisto',_code(_purchase!)),
+            _line('Data',_date.text.trim()),
+            _line('Descrizione',_description.text.trim()),
+            _line('Oggetti collegati',_items.length.toString()),
+            _line('Totale acquisto','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
+            _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),
+            const Text('I codici degli oggetti collegati vengono conservati. Il salvataggio aggiorna cassa e storico tramite runtime.'),
+          ]))),
+          CheckboxListTile(value:_confirmed,title:const Text('Confermo il riepilogo e autorizzo il salvataggio.'),onChanged:_busy||_last==null?null:(v)=>setState(()=>_confirmed=v??false)),
+          FilledButton(onPressed:_busy||!_confirmed||_last==null?null:_save,child:Text(_busy?'ATTENDI…':'SALVA MODIFICA E TERMINA')),
+        ],
         ],
         if(_busy)const LinearProgressIndicator(),
         Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
