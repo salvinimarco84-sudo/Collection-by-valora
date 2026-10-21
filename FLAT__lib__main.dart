@@ -24,6 +24,7 @@ class ValoraAppearance extends ChangeNotifier {
   ValoraAppearance._();
   static final instance = ValoraAppearance._();
   static const Map<String, Color> defaults = {
+    'COLLEZIONE': Color(0xFFD6B15E),
     'CATALOGO': Color(0xFF3978C5), 'ACQUISTI': Color(0xFF39875B),
     'VENDITE': Color(0xFFC74444),
     'VALUTAZIONI': Color(0xFF8556C7), 'REPORT': Color(0xFFE17D35),
@@ -39,7 +40,7 @@ class ValoraAppearance extends ChangeNotifier {
   ];
   final Map<String, Color> colors = Map<String, Color>.from(defaults);
   bool whiteBackground = false;
-  Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
+  Color colorFor(String section) => section == 'COLLEZIONE' ? goldColor : (colors[section] ?? defaults[section] ?? goldColor);
   Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
   Color get card => whiteBackground ? Colors.white : cardColor;
   Color get textPrimary => whiteBackground ? const Color(0xFF171717) : Colors.white;
@@ -67,6 +68,7 @@ class ValoraAppearance extends ChangeNotifier {
     final p=await SharedPreferences.getInstance(); await p.setBool('valora_white_background',white); notifyListeners();
   }
   Future<void> setColor(String section,Color color) async {
+    if(section == 'COLLEZIONE') return;
     if(colors.entries.any((e)=>e.key!=section&&e.value.value==color.value)) return;
     colors[section]=color;
     final p=await SharedPreferences.getInstance(); await p.setInt('valora_color_$section',color.value); notifyListeners();
@@ -174,7 +176,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       Text('COLORE DEI BLOCCHI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:4),
       const Text('Ogni blocco ha un colore esclusivo. I colori già assegnati agli altri blocchi non sono disponibili.'),
-      ...ValoraAppearance.defaults.keys.map((section){
+      ...ValoraAppearance.defaults.keys.where((section)=>section != 'COLLEZIONE').map((section){
         final current=a.colorFor(section);
         final available=ValoraAppearance.palette.where((c)=>c.value==current.value||
           !a.colors.entries.any((e)=>e.key!=section&&e.value.value==c.value)).toList();
@@ -1733,6 +1735,188 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
   );
 }
 
+
+class CollectionOverviewPage extends StatefulWidget {
+  const CollectionOverviewPage({super.key});
+
+  @override
+  State<CollectionOverviewPage> createState() => _CollectionOverviewPageState();
+}
+
+class _CollectionOverviewPageState extends State<CollectionOverviewPage> {
+  static const int _pageSize = 500;
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _records = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCollection();
+  }
+
+  Future<void> _loadCollection() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final all = <Map<String, dynamic>>[];
+      var offset = 0;
+      while (true) {
+        final response = await Supabase.instance.client.schema('collection')
+            .from('master_oggetti')
+            .select()
+            .eq('destinazione', 'COLLEZIONE')
+            .neq('archiviato_test', true)
+            .order('descrizione_oggetto')
+            .range(offset, offset + _pageSize - 1);
+        final batch = (response as List)
+            .map((row) => Map<String, dynamic>.from(row as Map))
+            .where((row) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
+                .contains((row['stato'] ?? '').toString().toUpperCase()))
+            .toList();
+        all.addAll(batch);
+        if ((response as List).length < _pageSize) break;
+        offset += _pageSize;
+      }
+      if (!mounted) return;
+      setState(() { _records = all; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _error = 'Impossibile caricare la collezione dal database TEST: $e'; _loading = false; });
+    }
+  }
+
+  String _themeOf(Map<String, dynamic> row) {
+    for (final key in ['tema', 'categoria', 'categoria_oggetto', 'collezione', 'linea_collezionistica']) {
+      final value = row[key]?.toString().trim() ?? '';
+      if (value.isNotEmpty) return value.toUpperCase();
+    }
+    final metadata = row['metadati'];
+    if (metadata is Map) {
+      for (final key in ['tema', 'categoria', 'collezione', 'linea']) {
+        final value = metadata[key]?.toString().trim() ?? '';
+        if (value.isNotEmpty) return value.toUpperCase();
+      }
+    }
+    final producer = row['produttore']?.toString().trim() ?? '';
+    if (producer.isNotEmpty) return producer.toUpperCase();
+    return 'ALTRI OGGETTI';
+  }
+
+  String? _imageOf(Map<String, dynamic> row) {
+    for (final key in ['immagine_url', 'image_url', 'foto_url', 'url_immagine', 'immagine', 'foto']) {
+      final value = row[key]?.toString().trim() ?? '';
+      if (value.startsWith('https://') || value.startsWith('http://')) return value;
+    }
+    final metadata = row['metadati'];
+    if (metadata is Map) {
+      for (final key in ['immagine_url', 'image_url', 'foto_url', 'url_immagine']) {
+        final value = metadata[key]?.toString().trim() ?? '';
+        if (value.startsWith('https://') || value.startsWith('http://')) return value;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final row in _records) {
+      grouped.putIfAbsent(_themeOf(row), () => <Map<String, dynamic>>[]).add(row);
+    }
+    final themes = grouped.keys.toList()
+      ..sort((a, b) => grouped[b]!.length.compareTo(grouped[a]!.length));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('COLLEZIONE', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: goldColor),
+        actions: [
+          IconButton(tooltip: 'Aggiorna dati', onPressed: _loading ? null : _loadCollection,
+            icon: const Icon(Icons.refresh, color: goldColor)),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: goldColor))
+          : _error != null
+              ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(
+                  mainAxisSize: MainAxisSize.min, children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    FilledButton(onPressed: _loadCollection, child: const Text('RIPROVA')),
+                  ])))
+              : _records.isEmpty
+                  ? const Center(child: Text('Nessun record disponibile nella destinazione COLLEZIONE.'))
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 100),
+                      children: [
+                        Card(
+                          color: goldColor.withValues(alpha: 0.14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: const BorderSide(color: goldColor, width: 1.4)),
+                          child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
+                            const Icon(Icons.inventory_2_outlined, color: goldColor, size: 38),
+                            const SizedBox(width: 12),
+                            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text('LA TUA COLLEZIONE', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                              SizedBox(height: 4),
+                              Text('Temi e record caricati dal database'),
+                            ])),
+                            Column(children: [
+                              Text('${_records.length}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 26)),
+                              const Text('record', style: TextStyle(fontSize: 11)),
+                            ]),
+                          ])),
+                        ),
+                        for (final theme in themes)
+                          Card(
+                            margin: const EdgeInsets.only(top: 12),
+                            clipBehavior: Clip.antiAlias,
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Container(
+                                width: double.infinity,
+                                color: goldColor.withValues(alpha: 0.13),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                child: Row(children: [
+                                  const Icon(Icons.folder_special_outlined, color: goldColor),
+                                  const SizedBox(width: 10),
+                                  Expanded(child: Text(theme, style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold, letterSpacing: 0.6))),
+                                  Text('${grouped[theme]!.length} record', style: const TextStyle(color: goldColor, fontWeight: FontWeight.w600)),
+                                ]),
+                              ),
+                              ...grouped[theme]!.map((row) {
+                                final image = _imageOf(row);
+                                final description = (row['descrizione_oggetto'] ?? 'Oggetto senza descrizione').toString();
+                                final code = (row['codice_oggetto'] ?? '').toString();
+                                final producer = (row['produttore'] ?? '').toString();
+                                return ListTile(
+                                  leading: image == null
+                                      ? const CircleAvatar(backgroundColor: Color(0x22D6B15E), child: Icon(Icons.inventory_2_outlined, color: goldColor))
+                                      : ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(image, width: 48, height: 48, fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, color: goldColor))),
+                                  title: Text(description),
+                                  subtitle: Text([if (code.isNotEmpty) code, if (producer.isNotEmpty) producer].join(' · ')),
+                                  isThreeLine: false,
+                                  trailing: const Icon(Icons.chevron_right, color: goldColor),
+                                  onTap: () => showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
+                                    title: Text(description),
+                                    content: SingleChildScrollView(child: Column(
+                                      mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: row.entries.where((entry) => entry.value != null && entry.value.toString().trim().isNotEmpty)
+                                        .map((entry) => Padding(padding: const EdgeInsets.only(bottom: 6),
+                                          child: Text('${entry.key.replaceAll('_', ' ')}: ${entry.value}'))).toList())),
+                                    actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
+                                  )),
+                                );
+                              }),
+                            ]),
+                          ),
+                      ],
+                    ),
+    );
+  }
+}
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
@@ -1791,6 +1975,41 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ),
           Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text('Gestione della tua collezione', style: TextStyle(color: ValoraAppearance.instance.textMuted))),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: Material(
+                color: ValoraAppearance.instance.card,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const CollectionOverviewPage())),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: goldColor.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: goldColor, width: 1.8),
+                    ),
+                    child: Row(children: [
+                      Container(width: 56, height: 56,
+                        decoration: BoxDecoration(color: goldColor.withValues(alpha: 0.20), borderRadius: BorderRadius.circular(14)),
+                        child: const Icon(Icons.inventory_2_outlined, color: goldColor, size: 32)),
+                      const SizedBox(width: 14),
+                      const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('COLLEZIONE', style: TextStyle(color: goldColor, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+                        SizedBox(height: 5),
+                        Text('Tutti i temi e tutti i record, sempre visibili'),
+                      ])),
+                      const Icon(Icons.chevron_right, color: goldColor, size: 30),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
+          ),
           Expanded(child: GridView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: dashboardSections.length,
@@ -2185,16 +2404,19 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
-    if (file.bytes == null) throw Exception('Impossibile leggere il file selezionato.');
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      throw Exception('Il file selezionato non contiene dati leggibili. Riprova selezionandolo dalla memoria del dispositivo.');
+    }
     final name = file.name.toLowerCase();
     if (name.endsWith('.json')) {
-      final data = jsonDecode(utf8.decode(file.bytes!));
+      final data = jsonDecode(utf8.decode(bytes));
       final list = data is Map ? (data['oggetti'] ?? data['objects'] ?? data['data']) : data;
       if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
     if (name.endsWith('.xlsx')) {
-      final workbook = xlsx.Excel.decodeBytes(file.bytes!);
+      final workbook = xlsx.Excel.decodeBytes(bytes);
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
       final table = workbook.tables.values.first.rows;
       if (table.isEmpty) throw Exception('Il foglio Excel è vuoto o non contiene righe leggibili.');
@@ -2234,7 +2456,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       return parsed;
     }
     if (name.endsWith('.csv')) {
-      final text = utf8.decode(file.bytes!).replaceFirst('\uFEFF','');
+      final text = utf8.decode(bytes).replaceFirst('\uFEFF','');
       final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
       if (table.length < 2) throw Exception('CSV vuoto o senza righe dati.');
       final headers = table.first.map((e)=>e.toString().trim().toLowerCase()).toList();
@@ -2248,12 +2470,23 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<void> _pickImport() async {
+    var stage = 'selezione del file';
     setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
     try {
       final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
-      final rows=await _parse(picked.files.first);
+      final selectedFile = picked.files.first;
+      stage = 'lettura del file ' + selectedFile.name;
+      final bytes = selectedFile.bytes;
+      if (bytes == null || bytes.isEmpty) {
+        throw Exception('Il selettore file non ha restituito il contenuto. Riapri la procedura e scegli il file dalla memoria del dispositivo.');
+      }
+      stage = 'analisi del file ' + selectedFile.name;
+      final rows=await _parse(selectedFile);
+      if (rows.isEmpty) throw Exception('Il file non contiene righe oggetto valide.');
+      stage = 'lettura del catalogo TEST';
       final existing=await _catalog();
+      stage = 'controllo duplicati e righe';
       final descriptions=existing.map((e)=>_norm(e['descrizione_oggetto'])).toSet();
       final codes=existing.map((e)=>_norm(e['codice_oggetto'])).toSet();
       for(var i=0;i<rows.length;i++) {
@@ -2264,7 +2497,10 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
           rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
       }
       if(mounted)setState(() { _rows=rows; _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Nessun record salvato.'; });
-    } catch(e) { if(mounted)setState(()=>_status='Importazione non riuscita: '+e.toString()); }
+    } catch(e, st) {
+      debugPrint('VALORA IMPORT ERROR [$stage]: $e\\n$st');
+      if(mounted)setState(()=>_status='Importazione non riuscita durante ' + stage + ': ' + e.toString());
+    }
     finally { if(mounted)setState(()=>_busy=false); }
   }
 
@@ -3193,8 +3429,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() {
         _selectedImageBytes = bytes; _selectedImageName = file.name;
         _imageAcquisition = 'CARICAMENTO_FILE';
-        _imageStatus = 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
+        _imageStatus = widget.apiCode == 'PR-01'
+          ? 'Immagine caricata. Avvio riconoscimento e ricerca metadati con PR-12…'
+          : 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
       });
+      // PR-01 deve avviare la stessa ricerca automatica sia con uno scatto
+      // dalla fotocamera sia con una foto selezionata dalla galleria/file.
+      if (widget.apiCode == 'PR-01') {
+        await _recognizeSelectedPhoto();
+      }
     } catch (e) {
       if (mounted) setState(() => _imageStatus = 'Caricamento immagine non riuscito: $e');
     }
@@ -6099,6 +6342,64 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
     } finally { if (mounted) setState(() => _running = false); }
   }
 
+  Future<void> _confirmMetadata(Map v, Map c, BuildContext dialogContext) async {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sessione scaduta. Accedi nuovamente.')));
+      return;
+    }
+    final rawId = (v['oggetto_id'] ?? '').toString();
+    final source = (c['url'] ?? '').toString().trim();
+    final title = (c['title'] ?? '').toString().trim();
+    if (rawId.isEmpty || title.length < 2 || source.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nome ufficiale, codice oggetto e fonte sono obbligatori.')));
+      return;
+    }
+    try {
+      final response = await http.post(
+        Uri.parse('$supabaseUrl/functions/v1/pr-12-confirm-metadata-test'),
+        headers: {'apikey': publishableKey, 'Authorization': 'Bearer ${session.accessToken}', 'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode({
+          'codice_oggetto': rawId,
+          'conferma_utente': true,
+          'metadati': {
+            'nome_ufficiale': title,
+            'codice_identificativo': c['codice_identificativo'] ?? c['codice_prodotto'] ?? c['isbn'],
+            'produttore': c['produttore'] ?? c['brand'],
+            'anno_uscita': c['anno_uscita'],
+            'versione_variante': c['versione_variante'] ?? c['variante'],
+            'descrizione_ufficiale': c['descrizione_ufficiale'] ?? c['snippet'],
+            'tema': c['tema'],
+            'sezione': c['sezione'],
+            'sottotema': c['sottotema'],
+            'isbn': c['isbn'],
+            'editore': c['editore'],
+            'url_fonte': source,
+            'url_immagine': c['url_immagine'] ?? c['image_url'],
+          }
+        }),
+      ).timeout(const Duration(seconds: 25));
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300 || decoded is! Map || decoded['ok'] != true) {
+        throw Exception(decoded is Map ? (decoded['error'] ?? 'Salvataggio non confermato') : 'Risposta non valida');
+      }
+      if (dialogContext.mounted) Navigator.pop(dialogContext);
+      if (!mounted) return;
+      setState(() {
+        final index = _results.indexWhere((r) => (r['oggetto_id'] ?? '').toString() == rawId);
+        if (index >= 0) {
+          _results[index]['descrizione'] = title;
+          _results[index]['metadati_confermati'] = true;
+          _results[index]['scrittura_database'] = true;
+        }
+        _status = 'Metadati salvati e verificati per oggetto $rawId. Descrizione sostituita con il nome ufficiale.';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Metadati salvati. Descrizione aggiornata con il nome ufficiale.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final remaining = (_queue.length - _offset).clamp(0, 10);
@@ -6162,10 +6463,17 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                       "Fonte": (c["url"] ?? "").toString(),
                     };
                     showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
-                      title: const Text('Proposta metadati · sola lettura'),
+                      title: const Text('Conferma metadati trovati'),
                       content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
                         children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? 'non disponibile' : e.value}'))).toList())),
-                      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ANNULLA')),
+                        FilledButton.icon(
+                          onPressed: () => _confirmMetadata(v, c, dialogContext),
+                          icon: const Icon(Icons.save_outlined),
+                          label: const Text('CONFERMA E SALVA'),
+                        ),
+                      ],
                     ));
                   },
                 ))),
