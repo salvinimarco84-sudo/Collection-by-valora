@@ -2873,10 +2873,16 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       return parsed;
     }
     if (name.endsWith('.csv')) {
-      final text = utf8.decode(bytes).replaceFirst('\uFEFF','');
-      final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
-      if (table.length < 2) throw Exception('CSV vuoto o senza righe dati.');
-      final headers = table.first.map((e)=>e.toString().trim().toLowerCase()).toList();
+      // Il CSV esportato da Excel/Android può usare LF invece di CRLF.
+      // Normalizza le terminazioni prima del parsing e rimuove il BOM UTF-8.
+      var text = utf8.decode(bytes, allowMalformed: true).replaceFirst('\uFEFF','');
+      text = text.replaceAll('\r\n','\n').replaceAll('\r','\n');
+      if (text.trim().isEmpty) throw Exception('Il file CSV è realmente vuoto.');
+      final table = CsvToListConverter(shouldParseNumbers:false, eol:'\n').convert(text);
+      if (table.length < 2) {
+        throw Exception('CSV letto ma senza righe dati: controlla separatore e terminazioni di riga.');
+      }
+      final headers = table.first.map((e)=>e.toString().replaceFirst('\uFEFF','').trim().toLowerCase()).toList();
       return table.skip(1).where((r)=>r.any((v)=>v.toString().trim().isNotEmpty)).map((r) {
         final row=<String,dynamic>{};
         for (var i=0;i<headers.length && i<r.length;i++) { row[headers[i]]=r[i]; }
