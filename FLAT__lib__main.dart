@@ -32,6 +32,14 @@ class ValoraAppearance extends ChangeNotifier {
     'REPORT': Color(0xFFE17D35),
     'RICERCHE': Color(0xFF252525),
     'CONTROLLO': Color(0xFF777777),
+    'COLLEZIONE': Color(0xFFD6B45C),
+    'LEGO': Color(0xFFE31B23),
+    'SAINT SEIYA': Color(0xFF7137B8),
+    'MOTO DIE-CAST': Color(0xFFDD741D),
+    'FUMETTI': Color(0xFF008C4A),
+    'GUNDAM': Color(0xFFC62828),
+    'TRANSFORMERS': Color(0xFF2476C8),
+    'ALTRE COLLEZIONI': Color(0xFF466B87),
   };
   static const List<Color> palette = [
     Color(0xFF3978C5),Color(0xFF39875B),Color(0xFFC74444),Color(0xFFD6A83F),
@@ -43,6 +51,9 @@ class ValoraAppearance extends ChangeNotifier {
   ];
   final Map<String, Color> colors = Map<String, Color>.from(defaults);
   bool whiteBackground = false;
+  bool useBlockLayout = false;
+  final Map<String, String> imageUrls = {};
+  final Map<String, String> imagePaths = {};
   Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
   Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
   Color get card => whiteBackground ? Colors.white : cardColor;
@@ -55,7 +66,16 @@ class ValoraAppearance extends ChangeNotifier {
   Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
-    whiteBackground = false; // VALORA: sfondo nero obbligatorio.
+    whiteBackground = false; // Configurazione iniziale: sfondo nero.
+    useBlockLayout = p.getBool('valora_block_layout') ?? false;
+    imageUrls.clear();
+    imagePaths.clear();
+    for (final k in defaults.keys) {
+      final url = p.getString('valora_image_url_$k');
+      final path = p.getString('valora_image_path_$k');
+      if (url != null && url.isNotEmpty) imageUrls[k] = url;
+      if (path != null && path.isNotEmpty) imagePaths[k] = path;
+    }
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
     final used=<int>{};
     for(final k in defaults.keys) {
@@ -63,6 +83,30 @@ class ValoraAppearance extends ChangeNotifier {
         final replacement=palette.firstWhere((c)=>used.add(c.value),orElse:()=>defaults[k]!);
         colors[k]=replacement;
       }
+    }
+    notifyListeners();
+  }
+  Future<void> setLayout(bool blocks) async {
+    useBlockLayout = blocks;
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('valora_block_layout', blocks);
+    notifyListeners();
+  }
+  Future<void> setSectionImage(String section, {String? url, String? path}) async {
+    final p = await SharedPreferences.getInstance();
+    if (url == null || url.trim().isEmpty) {
+      imageUrls.remove(section);
+      await p.remove('valora_image_url_$section');
+    } else {
+      imageUrls[section] = url.trim();
+      await p.setString('valora_image_url_$section', url.trim());
+    }
+    if (path == null || path.trim().isEmpty) {
+      imagePaths.remove(section);
+      await p.remove('valora_image_path_$section');
+    } else {
+      imagePaths[section] = path.trim();
+      await p.setString('valora_image_path_$section', path.trim());
     }
     notifyListeners();
   }
@@ -162,31 +206,136 @@ class AppearanceSettingsPage extends StatefulWidget {
 }
 class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
   final a=ValoraAppearance.instance;
-  @override void initState(){super.initState();a.addListener(refresh);}
-  void refresh(){if(mounted)setState((){});}
-  @override void dispose(){a.removeListener(refresh);super.dispose();}
+  bool _uploading = false;
+  final Map<String, TextEditingController> _urlControllers = {};
+  @override void initState(){
+    super.initState();
+    a.addListener(refresh);
+    for(final section in _allPersonalizableSections) {
+      _urlControllers[section] = TextEditingController(text: a.imageUrls[section] ?? '');
+    }
+  }
+  static const List<String> _allPersonalizableSections = [
+    'COLLEZIONE','CATALOGO','ACQUISTI','VENDITE','FLUSSI DI CASSA',
+    'VALUTAZIONI','REPORT','RICERCHE','CONTROLLO','LEGO','SAINT SEIYA',
+    'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','ALTRE COLLEZIONI'
+  ];
+  void refresh(){
+    if(!mounted)return;
+    for(final section in _allPersonalizableSections) {
+      final controller = _urlControllers[section];
+      if(controller != null && !controller.text.trim().isNotEmpty && a.imageUrls[section] != null) {
+        controller.text = a.imageUrls[section]!;
+      }
+    }
+    setState((){});
+  }
+  Future<void> _uploadSectionImage(String section) async {
+    setState(()=>_uploading=true);
+    try {
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.image, allowMultiple: false, withData: true,
+      );
+      if(picked == null || picked.files.isEmpty) return;
+      final file = picked.files.first;
+      final bytes = file.bytes;
+      if(bytes == null || bytes.isEmpty) throw Exception('Impossibile leggere il file immagine.');
+      final ext = (file.extension ?? 'png').toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      final path = '${section.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}-${DateTime.now().millisecondsSinceEpoch}.${ext.isEmpty ? 'png' : ext}';
+      final storage = Supabase.instance.client.storage.from('valora-section-images');
+      await storage.uploadBinary(path, bytes, fileOptions: const FileOptions(upsert: true));
+      final url = storage.getPublicUrl(path);
+      await a.setSectionImage(section, url: url, path: path);
+      _urlControllers[section]?.text = url;
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Immagine aggiornata per $section.')));
+    } catch(e) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content:Text('Caricamento non riuscito: $e. Verifica che esista il bucket pubblico valora-section-images in Supabase Storage.'),
+        duration:const Duration(seconds:6),
+      ));
+    } finally {
+      if(mounted) setState(()=>_uploading=false);
+    }
+  }
+  @override void dispose(){
+    a.removeListener(refresh);
+    for(final c in _urlControllers.values){c.dispose();}
+    super.dispose();
+  }
+  Widget _sectionImageEditor(String section) {
+    final color=a.colorFor(section);
+    final url=a.imageUrls[section];
+    return Card(
+      color:const Color(0xFF171717),
+      child:Padding(
+        padding:const EdgeInsets.all(12),
+        child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Row(children:[
+            Container(width:44,height:44,decoration:BoxDecoration(color:color.withValues(alpha:0.2),borderRadius:BorderRadius.circular(9)),
+              clipBehavior:Clip.antiAlias,
+              child:url==null?Icon(Icons.image_outlined,color:color,size:26):Image.network(url,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Icon(Icons.broken_image_outlined,color:color))),
+            const SizedBox(width:10),
+            Expanded(child:Text(section,style:TextStyle(color:color,fontWeight:FontWeight.bold))),
+            IconButton(tooltip:'Carica immagine',onPressed:_uploading?null:()=>_uploadSectionImage(section),icon:const Icon(Icons.upload_file)),
+          ]),
+          const SizedBox(height:8),
+          TextField(
+            controller:_urlControllers[section],
+            keyboardType:TextInputType.url,
+            decoration:const InputDecoration(labelText:'URL immagine (opzionale)',hintText:'https://…',isDense:true,border:OutlineInputBorder()),
+            onSubmitted:(value)=>a.setSectionImage(section,url:value),
+          ),
+          Row(children:[
+            TextButton.icon(onPressed:()=>_uploadSectionImage(section),icon:const Icon(Icons.photo_library_outlined),label:const Text('Carica immagine')),
+            const Spacer(),
+            TextButton(onPressed:()async{
+              _urlControllers[section]?.clear();
+              await a.setSectionImage(section);
+            },child:const Text('Ripristina')),
+          ]),
+        ]),
+      ),
+    );
+  }
   @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('Personalizzazione')),
+    appBar:AppBar(title:const Text('Personalizza VALORA')),
     body:ListView(padding:const EdgeInsets.all(16),children:[
-      Text('SFONDO',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const Text('CONFIGURAZIONE HOME',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:8),
-      SegmentedButton<bool>(segments:const [
-        ButtonSegment<bool>(value:false,label:Text('Nero')),
-        ButtonSegment<bool>(value:true,label:Text('Bianco'), enabled:false)],
-        selected:{false},onSelectionChanged:(_)=>a.setBackground(false)),
+      SegmentedButton<bool>(
+        segments:const [
+          ButtonSegment<bool>(value:false,icon:Icon(Icons.view_agenda_outlined),label:Text('Schede')),
+          ButtonSegment<bool>(value:true,icon:Icon(Icons.grid_view_rounded),label:Text('Blocchi')),
+        ],
+        selected:{a.useBlockLayout},
+        onSelectionChanged:(values)=>a.setLayout(values.first),
+      ),
+      const SizedBox(height:8),
+      const Text('La modalità iniziale è Schede con sfondo nero. Cambiare modalità modifica solo la presentazione, non le procedure o i dati.'),
       const SizedBox(height:20),
-      Text('COLORE DEI BLOCCHI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const Text('SFONDO',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const SizedBox(height:8),
+      const ListTile(
+        contentPadding:EdgeInsets.zero,
+        leading:Icon(Icons.dark_mode_outlined,color:goldColor),
+        title:Text('Nero'),
+        subtitle:Text('Sfondo predefinito VALORA'),
+        trailing:Icon(Icons.check_circle,color:goldColor),
+      ),
+      const SizedBox(height:12),
+      const Text('COLORI DELLE SEZIONI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:4),
-      const Text('Ogni blocco ha un colore esclusivo. I colori già assegnati agli altri blocchi non sono disponibili.'),
+      const Text('Scegli il colore distintivo di ciascuna sezione.'),
       ...ValoraAppearance.defaults.keys.map((section){
         final current=a.colorFor(section);
         final available=ValoraAppearance.palette.where((c)=>c.value==current.value||
           !a.colors.entries.any((e)=>e.key!=section&&e.value.value==c.value)).toList();
-        return Card(child:Padding(padding:const EdgeInsets.symmetric(horizontal:12,vertical:6),
+        return Card(color:const Color(0xFF171717),child:Padding(
+          padding:const EdgeInsets.symmetric(horizontal:12,vertical:6),
           child:Row(children:[
-            Container(width:18,height:18,decoration:BoxDecoration(color:current,borderRadius:BorderRadius.circular(4))),
+            Container(width:22,height:22,decoration:BoxDecoration(color:current,borderRadius:BorderRadius.circular(5))),
             const SizedBox(width:10),
-            Expanded(child:Text(section,style:TextStyle(color:a.whiteBackground?Colors.black87:ValoraAppearance.instance.textPrimary))),
+            Expanded(child:Text(section,style:TextStyle(color:a.textPrimary))),
             DropdownButton<int>(value:current.value,items:available.map((c)=>DropdownMenuItem<int>(
               value:c.value,child:Row(children:[
                 Container(width:20,height:20,decoration:BoxDecoration(color:c,borderRadius:BorderRadius.circular(4))),
@@ -196,10 +345,21 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
           ])));
       }),
       const SizedBox(height:20),
+      const Text('IMMAGINE PERSONALIZZATA PER SEZIONE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const SizedBox(height:4),
+      const Text('Carica un logo o una foto oppure incolla un URL. Il caricamento richiede il bucket pubblico valora-section-images in Supabase Storage.'),
+      if(_uploading) const LinearProgressIndicator(),
+      ..._allPersonalizableSections.map(_sectionImageEditor),
+      const SizedBox(height:20),
       OutlinedButton.icon(onPressed:()async{
         await a.reset();
-        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Impostazioni iniziali ripristinate.')));
-      },icon:const Icon(Icons.restart_alt),label:const Text('RIPRISTINA IMPOSTAZIONI INIZIALI')),
+        for(final section in _allPersonalizableSections) {
+          _urlControllers[section]?.text='';
+          await a.setSectionImage(section);
+        }
+        await a.setLayout(false);
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Ripristinata la configurazione iniziale: Schede, sfondo nero.')));
+      },icon:const Icon(Icons.restart_alt),label:const Text('RIPRISTINA CONFIGURAZIONE INIZIALE')),
     ]));
 }
 
@@ -2076,7 +2236,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
             Container(
               width: 48, height: 48,
               decoration: BoxDecoration(color: color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 27),
+              clipBehavior: Clip.antiAlias,
+              child: (ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title]) is String &&
+                      ((ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title])?.isNotEmpty ?? false)
+                  ? Image.network(
+                      (ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title])!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 27),
+                    )
+                  : Icon(icon, color: color, size: 27),
             ),
             const SizedBox(width: 13),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2097,7 +2265,64 @@ class _HomeDashboardState extends State<HomeDashboard> {
     ),
   );
 
-  Widget buildDashboard() => ListView(
+  Widget buildDashboard() {
+    if (ValoraAppearance.instance.useBlockLayout) {
+      return LayoutBuilder(builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 600 ? 3 : 2;
+        final entries = <Map<String, dynamic>>[
+          {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
+          ...dashboardSections.map((section)=> {
+            'title':section.menuTitle ?? section.title,
+            'subtitle':section.description,
+            'color':ValoraAppearance.instance.colorFor(section.title),
+            'icon':section.icon,
+            'tap':() => setState(()=>selectedSection=section),
+          }),
+        ];
+        return GridView.builder(
+          padding: const EdgeInsets.all(14),
+          itemCount: entries.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns, crossAxisSpacing: 10, mainAxisSpacing: 10,
+            childAspectRatio: constraints.maxWidth < 600 ? 0.98 : 1.18,
+          ),
+          itemBuilder: (context,index) {
+            final entry=entries[index];
+            final title=entry['title'] as String;
+            final color=entry['color'] as Color;
+            final icon=entry['icon'] as IconData;
+            final url=ValoraAppearance.instance.imageUrls[title] ??
+              ValoraAppearance.instance.imageUrls[title=='VENDITE E INSERZIONI'?'VENDITE':title];
+            return Material(
+              color: const Color(0xFF151515),
+              borderRadius: BorderRadius.circular(15),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(15),
+                onTap: entry['tap'] as VoidCallback,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(borderRadius:BorderRadius.circular(15),border:Border.all(color:color,width:1.4)),
+                  child: Column(mainAxisAlignment:MainAxisAlignment.center,children:[
+                    Expanded(child:ClipRRect(
+                      borderRadius:BorderRadius.circular(11),
+                      child:url!=null && url.isNotEmpty
+                        ? Image.network(url,fit:BoxFit.contain,width:double.infinity,errorBuilder:(_,__,___)=>Icon(icon,color:color,size:42))
+                        : Icon(icon,color:color,size:42),
+                    )),
+                    const SizedBox(height:8),
+                    Text(title,textAlign:TextAlign.center,style:TextStyle(color:color,fontWeight:FontWeight.bold,fontSize:12)),
+                    const SizedBox(height:4),
+                    if(title=='COLLEZIONE') Text(_catalogLoading?'…':'${_catalogRows.length} record',style:const TextStyle(color:Colors.white70,fontSize:10)),
+                    Icon(Icons.chevron_right,color:color,size:23),
+                  ]),
+                ),
+              ),
+            );
+          },
+        );
+      });
+    }
+    return ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
     children: [
       const Padding(
@@ -2132,6 +2357,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       const Center(child: Text('COLLECTION by VALORA', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
     ],
   );
+  }
 
   Widget buildCollection() => ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
