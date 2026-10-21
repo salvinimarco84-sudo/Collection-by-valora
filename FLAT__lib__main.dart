@@ -3193,8 +3193,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() {
         _selectedImageBytes = bytes; _selectedImageName = file.name;
         _imageAcquisition = 'CARICAMENTO_FILE';
-        _imageStatus = 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
+        _imageStatus = widget.apiCode == 'PR-01'
+          ? 'Immagine caricata. Avvio riconoscimento e ricerca metadati con PR-12…'
+          : 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
       });
+      // PR-01 deve avviare la stessa ricerca automatica sia con uno scatto
+      // dalla fotocamera sia con una foto selezionata dalla galleria/file.
+      if (widget.apiCode == 'PR-01') {
+        await _recognizeSelectedPhoto();
+      }
     } catch (e) {
       if (mounted) setState(() => _imageStatus = 'Caricamento immagine non riuscito: $e');
     }
