@@ -1,3 +1,4 @@
+import 'dart:io' show File;
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
