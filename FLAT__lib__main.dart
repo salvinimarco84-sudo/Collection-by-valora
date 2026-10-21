@@ -4906,11 +4906,37 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }) {
     final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
     final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
-    final imageUrl = _valueFor(item, [
-      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
-      'immagine_principale', 'url_foto', 'foto', 'immagine',
-      'image', 'imageUrl', 'photo_url', 'main_image_url',
-    ], '');
+    String firstImage(dynamic value) {
+      const imageKeys = <String>[
+        'url_immagine_catalogo', 'url_immagine', 'immagine_url', 'foto_url',
+        'image_url', 'immagine_principale', 'url_foto', 'foto', 'immagine',
+        'image', 'imageUrl', 'photo_url', 'main_image_url', 'image_uri',
+        'photo_uri', 'url_foto_principale', 'percorso_immagine',
+      ];
+      if (value is Map) {
+        for (final key in imageKeys) {
+          final candidate = value[key];
+          if (candidate is String && (candidate.startsWith('https://') || candidate.startsWith('http://'))) {
+            return candidate.trim();
+          }
+        }
+        // Alcuni runtime restituiscono i metadati immagine annidati in JSON.
+        for (final nested in value.values) {
+          final found = firstImage(nested);
+          if (found.isNotEmpty) return found;
+        }
+      } else if (value is Iterable) {
+        for (final nested in value) {
+          final found = firstImage(nested);
+          if (found.isNotEmpty) return found;
+        }
+      } else if (value is String) {
+        final trimmed = value.trim();
+        if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) return trimmed;
+      }
+      return '';
+    }
+    final imageUrl = firstImage(item);
     final destination = _valueFor(item, ['destinazione'], 'Non indicata');
     final condition = _valueFor(item, ['condizione'], 'Non indicata');
     final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
