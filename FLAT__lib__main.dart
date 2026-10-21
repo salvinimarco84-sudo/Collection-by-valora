@@ -3258,6 +3258,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
       final maker = (clues['marchio'] ?? '').toString().trim();
       final code = (clues['codice_prodotto'] ?? '').toString().trim();
+      final category = (clues['categoria'] ?? '').toString().trim();
       setState(() {
         if (description.isNotEmpty) _description.text = description;
         if (maker.isNotEmpty) _producer.text = maker;
@@ -5540,7 +5541,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       final description = (clues['descrizione_provvisoria'] ?? selectedCandidate['title'] ?? '').toString().trim();
       final maker = (clues['marchio'] ?? selectedCandidate['produttore'] ?? selectedCandidate['editore'] ?? '').toString().trim();
       final code = (clues['codice_prodotto'] ?? selectedCandidate['codice_prodotto'] ?? selectedCandidate['isbn'] ?? '').toString().trim();
-      final category = (clues['categoria'] ?? '').toString().trim();
       final yearValue = selectedCandidate['anno_uscita'] ?? selectedCandidate['anno_pubblicazione'] ?? selectedCandidate['year'];
       final yearText = yearValue?.toString() ?? '';
       final yearMatch = RegExp(r'(19\d{2}|20\d{2})').firstMatch(yearText);
