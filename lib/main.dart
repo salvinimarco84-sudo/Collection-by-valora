@@ -1224,7 +1224,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         final fileName = (_profileImageName ?? 'profilo.jpg').replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
         final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'jpg';
         final mime = switch (ext) { 'png' => 'image/png', 'webp' => 'image/webp', _ => 'image/jpeg' };
-        final path = '\${user.id}/profilo/\${_uuid.v4()}.$ext';
+        final path = '${user.id}/profilo/${_uuid.v4()}.$ext';
         await client.storage.from('valora-profili-test').uploadBinary(path, _profileImageBytes!, fileOptions: FileOptions(contentType: mime, upsert: false));
         profileImagePath = path;
         _profileImageStoragePath = path;
@@ -4408,7 +4408,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         }
       }
       final stamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
-      final baseName = 'VALORA_\${widget.apiCode}_$stamp';
+      final baseName = 'VALORA_${widget.apiCode}_$stamp';
       Uint8List bytes;
       String extension;
       if (asPdf) {
@@ -4426,16 +4426,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             pw.SizedBox(height: 6),
             pw.Text(widget.title, style: const pw.TextStyle(fontSize: 14)),
             pw.SizedBox(height: 4),
-            pw.Text('Record: \${records.length} · Generato il \${_dateLabel(DateTime.now())}',
+            pw.Text('Record: ${records.length} · Generato il ${_dateLabel(DateTime.now())}',
                 style: const pw.TextStyle(fontSize: 9)),
             pw.SizedBox(height: 14),
             pw.TableHelper.fromTextArray(
               data: tableData,
               headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
               cellStyle: const pw.TextStyle(fontSize: 6),
-              headerDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFD6B15E)),
+              headerDecoration: const pw.BoxDecoration(color: pw.PdfColor.fromInt(0xFFD6B15E)),
               cellAlignment: pw.Alignment.topLeft,
-              border: pw.TableBorder.all(color: PdfColor.fromInt(0xFFBBBBBB), width: 0.35),
+              border: pw.TableBorder.all(color: pw.PdfColor.fromInt(0xFFBBBBBB), width: 0.35),
             ),
           ],
         ));
@@ -4464,7 +4464,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(savedPath == null
             ? 'Esportazione annullata.'
-            : 'File \${extension.toUpperCase()} creato: $savedPath'),
+            : 'File ${extension.toUpperCase()} creato: $savedPath'),
         duration: const Duration(seconds: 5),
       ));
     } catch (e) {
