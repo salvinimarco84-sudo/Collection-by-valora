@@ -47,7 +47,7 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = collection, public
-as $
+as $function$
 declare
   v_id bigint := (p_record->>'codice_oggetto')::bigint;
   v_nome text := nullif(btrim(p_record->>'nome_ufficiale'), '');
@@ -109,7 +109,7 @@ begin
     'master_metadati_salvato', true
   );
 end;
-$;
+$function$;
 
 revoke all on function collection.confirm_pr12_metadati(jsonb) from public, anon, authenticated;
 grant execute on function collection.confirm_pr12_metadati(jsonb) to service_role;
