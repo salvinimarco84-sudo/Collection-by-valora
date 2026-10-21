@@ -42,7 +42,7 @@ class ValoraAppearance extends ChangeNotifier {
     Color(0xFFF4511E),Color(0xFF43A047),Color(0xFF6A1B9A),Color(0xFF283593),
   ];
   final Map<String, Color> colors = Map<String, Color>.from(defaults);
-  bool whiteBackground = true;
+  bool whiteBackground = false;
   Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
   Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
   Color get card => whiteBackground ? Colors.white : cardColor;
@@ -55,7 +55,7 @@ class ValoraAppearance extends ChangeNotifier {
   Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
-    whiteBackground = p.getBool('valora_white_background') ?? true;
+    whiteBackground = false; // VALORA: sfondo nero obbligatorio.
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
     final used=<int>{};
     for(final k in defaults.keys) {
@@ -76,8 +76,8 @@ class ValoraAppearance extends ChangeNotifier {
     final p=await SharedPreferences.getInstance(); await p.setInt('valora_color_$section',color.value); notifyListeners();
   }
   Future<void> reset() async {
-    whiteBackground=true; colors..clear()..addAll(defaults);
-    final p=await SharedPreferences.getInstance(); await p.setBool('valora_white_background', true);
+    whiteBackground=false; colors..clear()..addAll(defaults);
+    final p=await SharedPreferences.getInstance(); await p.setBool('valora_white_background', false);
     for(final k in defaults.keys){await p.remove('valora_color_$k');}
     notifyListeners();
   }
@@ -172,8 +172,8 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       const SizedBox(height:8),
       SegmentedButton<bool>(segments:const [
         ButtonSegment<bool>(value:false,label:Text('Nero')),
-        ButtonSegment<bool>(value:true,label:Text('Bianco'))],
-        selected:{a.whiteBackground},onSelectionChanged:(v)=>a.setBackground(v.first)),
+        ButtonSegment<bool>(value:true,label:Text('Bianco'), enabled:false)],
+        selected:{false},onSelectionChanged:(_)=>a.setBackground(false)),
       const SizedBox(height:20),
       Text('COLORE DEI BLOCCHI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:4),
@@ -1750,6 +1750,127 @@ class HomeDashboard extends StatefulWidget {
 
 class _HomeDashboardState extends State<HomeDashboard> {
   DashboardSection? selectedSection;
+  bool _catalogLoading = true;
+  List<Map<String, dynamic>> _catalogRows = [];
+  String? _catalogError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardCatalog();
+  }
+
+  Future<void> _loadDashboardCatalog() async {
+    try {
+      final response = await Supabase.instance.client.schema('collection').rpc(
+        'pr_11_ricerca_schede', params: {'p_cerca': null},
+      );
+      dynamic payload = response;
+      if (payload is List && payload.length == 1 && payload.first is Map) {
+        payload = payload.first;
+      }
+      if (payload is! Map || payload['oggetti'] is! List) {
+        throw Exception('Risposta catalogo non valida.');
+      }
+      final rows = (payload['oggetti'] as List)
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+      if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _catalogError = '$e'; _catalogLoading = false; });
+    }
+  }
+
+  String _dashboardDescription(Map<String, dynamic> row) =>
+      (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString();
+
+  String _dashboardCategory(Map<String, dynamic> row) {
+    final d = _dashboardDescription(row).toLowerCase();
+    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d)) return 'LEGO';
+    if (RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d)) return 'SAINT SEIYA';
+    if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
+    if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman').hasMatch(d)) return 'FUMETTI';
+    if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
+    return 'ALTRE COLLEZIONI';
+  }
+
+  String? _dashboardImageUrl(Map<String, dynamic> row) {
+    for (final key in ['image_url', 'immagine_url', 'foto_url', 'url_immagine', 'image', 'foto']) {
+      final value = row[key];
+      if (value is String && (value.startsWith('https://') || value.startsWith('http://'))) return value;
+    }
+    return null;
+  }
+
+  Widget _dashboardCategoryPanel(String category, String subtitle, Color color, IconData icon) {
+    final rows = _catalogRows.where((r) => _dashboardCategory(r) == category).toList();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.22),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.75), width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(width: 38, height: 38,
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(9)),
+              child: Icon(icon, color: Colors.white, size: 23)),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(category, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+              Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ])),
+            Text('${rows.length} record', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            const SizedBox(width: 6),
+            TextButton(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoryObjectSearchPage())),
+              style: TextButton.styleFrom(foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 7)),
+              child: const Text('VEDI TUTTI', style: TextStyle(fontSize: 10)),
+            ),
+          ]),
+          if (_catalogLoading)
+            const Padding(padding: EdgeInsets.all(14), child: LinearProgressIndicator())
+          else if (rows.isEmpty)
+            const Padding(padding: EdgeInsets.fromLTRB(4, 10, 4, 5),
+              child: Text('Nessun record riconosciuto in questa categoria.', style: TextStyle(color: Colors.white70, fontSize: 12)))
+          else
+            SizedBox(height: 118, child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: rows.length > 5 ? 5 : rows.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final row = rows[index];
+                final url = _dashboardImageUrl(row);
+                return SizedBox(width: 98, child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
+                    title: 'Scheda oggetto', apiCode: 'OBJECT_MASTER',
+                    initialObjectCode: int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString()),
+                  ))),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(height: 75, width: 98,
+                      decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(7),
+                        border: Border.all(color: Colors.white24)),
+                      clipBehavior: Clip.antiAlias,
+                      child: url == null
+                        ? Icon(icon, color: color.withValues(alpha: 0.9), size: 34)
+                        : Image.network(url, fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 34))),
+                    const SizedBox(height: 4),
+                    Text(_dashboardDescription(row), maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontSize: 10, height: 1.1)),
+                  ]),
+                ));
+              },
+            )),
+        ]),
+      ),
+    );
+  }
 
   Future<void> logout() async {
     await Supabase.instance.client.auth.signOut();
@@ -1790,62 +1911,107 @@ class _HomeDashboardState extends State<HomeDashboard> {
       );
 
   Widget buildDashboard() => LayoutBuilder(builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 1000 ? 4 : constraints.maxWidth >= 600 ? 3 : 2;
-        return Column(children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 18, 16, 4),
-            child: Text('CENTRO OPERATIVO', textAlign: TextAlign.center,
-              style: TextStyle(color: goldColor, fontSize: 20,
-                fontWeight: FontWeight.bold, letterSpacing: 2)),
-          ),
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Gestione della tua collezione', style: TextStyle(color: ValoraAppearance.instance.textMuted))),
-          Expanded(child: GridView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: dashboardSections.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columns, crossAxisSpacing: 12, mainAxisSpacing: 12,
-              childAspectRatio: 0.95,
+        final wide = constraints.maxWidth >= 900;
+        final categories = <Widget>[
+          _dashboardCategoryPanel('LEGO', 'Mattoncini, set, minifigure e collezioni', const Color(0xFFE31B23), Icons.extension),
+          _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth, personaggi e accessori', const Color(0xFF7137B8), Icons.shield_outlined),
+          _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
+          _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
+          _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
+          _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
+        ];
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+          children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF242018), Color(0xFF3A2E12)]),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: goldColor, width: 1.5),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => setState(() => selectedSection = dashboardSections.firstWhere((v) => v.title == 'CATALOGO')),
+                child: Row(children: [
+                  const Icon(Icons.inventory_2, color: goldColor, size: 48),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('COLLEZIONE', style: TextStyle(color: goldColor, fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 3),
+                    const Text('Tutti i temi e tutti i record della tua collezione', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    const SizedBox(height: 5),
+                    Text(_catalogLoading ? 'Conteggio in aggiornamento…' : '${_catalogRows.length} record',
+                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  ])),
+                  const Icon(Icons.chevron_right, color: goldColor, size: 30),
+                ]),
+              ),
             ),
-            itemBuilder: (context, index) {
-              final section = dashboardSections[index];
-              return Material(
-                color: ValoraAppearance.instance.card, borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => setState(() => selectedSection = section),
-                  child: Container(
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: ValoraAppearance.instance.colorFor(section.title), width: 1.2)),
-                    padding: const EdgeInsets.all(10),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Container(width: 54, height: 54,
-                        decoration: BoxDecoration(
-                          color: section.title == 'RICERCHE'
-                              ? ValoraAppearance.instance.colorFor(section.title)
-                              : ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.16),
-                          borderRadius: BorderRadius.circular(14)),
-                        child: Icon(section.icon,
-                          color: section.title == 'RICERCHE'
-                              ? Colors.white
-                              : ValoraAppearance.instance.colorFor(section.title),
-                          size: 30)),
-                      const SizedBox(height: 12),
-                      Text(section.menuTitle ?? section.title, textAlign: TextAlign.center,
-                        style: TextStyle(color: ValoraAppearance.instance.colorFor(section.title), fontWeight: FontWeight.bold,
-                          fontSize: 13, letterSpacing: 0.5)),
-                      const SizedBox(height: 6),
-                      Text(section.description, textAlign: TextAlign.center,
-                        style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11)),
-                    ]),
+            if (_catalogError != null)
+              Container(
+                padding: const EdgeInsets.all(10), margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
+                child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
+              ),
+            if (wide)
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: Column(children: categories.take(3).toList())),
+                const SizedBox(width: 12),
+                Expanded(child: Column(children: categories.skip(3).toList())),
+              ])
+            else
+              ...categories,
+            const SizedBox(height: 12),
+            const Divider(color: Colors.white24),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text('CENTRO OPERATIVO', style: TextStyle(color: goldColor, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+            ),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: dashboardSections.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: constraints.maxWidth >= 1000 ? 4 : constraints.maxWidth >= 600 ? 3 : 2,
+                crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.15,
+              ),
+              itemBuilder: (context, index) {
+                final section = dashboardSections[index];
+                final color = ValoraAppearance.instance.colorFor(section.title);
+                return Material(
+                  color: const Color(0xFF171717),
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () => setState(() => selectedSection = section),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: color, width: 1.2),
+                      ),
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Container(width: 44, height: 44,
+                          decoration: BoxDecoration(color: color.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(12)),
+                          child: Icon(section.icon, color: color, size: 25)),
+                        const SizedBox(height: 8),
+                        Text(section.menuTitle ?? section.title, textAlign: TextAlign.center,
+                          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11.5)),
+                        const SizedBox(height: 4),
+                        Text(section.description, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                      ]),
+                    ),
                   ),
-                ),
-              );
-            },
-          )),
-          Padding(padding: const EdgeInsets.all(10), child: Text('COLLECTION by VALORA',
-            style: TextStyle(color: ValoraAppearance.instance.textFaint, fontSize: 11, letterSpacing: 1))),
-        ]);
+                );
+              },
+            ),
+            Padding(padding: const EdgeInsets.all(10), child: Center(child: Text('COLLECTION by VALORA',
+              style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1)))),
+          ],
+        );
       });
 
   Widget buildSection(DashboardSection section) {
