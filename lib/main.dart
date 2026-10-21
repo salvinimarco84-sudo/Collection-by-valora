@@ -2734,6 +2734,7 @@ class ObjectTransferPage extends StatefulWidget {
 class _ObjectTransferPageState extends State<ObjectTransferPage> {
   bool _busy = false;
   String _status = 'Pronto. Ambiente TEST.';
+  PlatformFile? _selectedImportFile;
   List<Map<String, dynamic>> _rows = [];
   final Set<int> _duplicates = {};
   final Set<int> _invalid = {};
@@ -2921,24 +2922,78 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<void> _pickImport() async {
-    setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
+    setState(() {
+      _busy = true;
+      _selectedImportFile = null;
+      _rows = [];
+      _duplicates.clear();
+      _invalid.clear();
+      _status = 'Apertura selettore file…';
+    });
     try {
-      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true);
-      if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
-      final rows=await _parse(picked.files.first);
-      final existing=await _catalog();
-      final descriptions=existing.map((e)=>_norm(e['descrizione_oggetto'])).toSet();
-      final codes=existing.map((e)=>_norm(e['codice_oggetto'])).toSet();
-      for(var i=0;i<rows.length;i++) {
-        final desc=_norm(rows[i]['descrizione_oggetto'] ?? rows[i]['descrizione'] ?? rows[i]['nome']);
-        final code=_norm(rows[i]['codice_oggetto']);
-        if(desc.isEmpty) _invalid.add(i);
-        else if(descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
-          rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
+      final picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['xlsx', 'csv', 'json'],
+        withData: true,
+        allowMultiple: false,
+      );
+      if (picked == null || picked.files.isEmpty) {
+        if (mounted) setState(() => _status = 'Selezione annullata. Nessun dato modificato.');
+        return;
       }
-      if(mounted)setState(() { _rows=rows; _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Nessun record salvato.'; });
-    } catch(e) { if(mounted)setState(()=>_status='Importazione non riuscita: '+e.toString()); }
-    finally { if(mounted)setState(()=>_busy=false); }
+      final file = picked.files.first;
+      if (mounted) {
+        setState(() {
+          _selectedImportFile = file;
+          _status = 'File selezionato: ${file.name} · ${file.size} byte. Premi ANALIZZA FILE per caricarlo e vedere l’anteprima. Nessun record salvato.';
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Selezione file non riuscita: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _analyzeImport() async {
+    final file = _selectedImportFile;
+    if (file == null) {
+      setState(() => _status = 'Prima seleziona un file.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _rows = [];
+      _duplicates.clear();
+      _invalid.clear();
+      _status = 'Caricamento di ${file.name} (${file.size} byte)…';
+    });
+    try {
+      final rows = await _parse(file);
+      final existing = await _catalog();
+      final descriptions = existing.map((e) => _norm(e['descrizione_oggetto'])).toSet();
+      final codes = existing.map((e) => _norm(e['codice_oggetto'])).toSet();
+      for (var i = 0; i < rows.length; i++) {
+        final desc = _norm(rows[i]['descrizione_oggetto'] ?? rows[i]['descrizione'] ?? rows[i]['nome']);
+        final code = _norm(rows[i]['codice_oggetto']);
+        if (desc.isEmpty) {
+          _invalid.add(i);
+        } else if (descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
+            rows.take(i).any((r) => _norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome']) == desc)) {
+          _duplicates.add(i);
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _rows = rows;
+          _status = 'File letto: ${file.name}. Anteprima: ${rows.length} righe. Possibili duplicati: ${_duplicates.length}. Senza descrizione: ${_invalid.length}. Nessun record salvato.';
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Analisi di ${file.name} non riuscita: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   String _enumValue(dynamic value, List<String> allowed, String fallback) {
@@ -3003,7 +3058,21 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         Text(widget.importMode?'Importa Excel, CSV o JSON. VALORA controlla i dati e mostra l’anteprima prima del salvataggio.':'Esporta il catalogo TEST in Excel, CSV o JSON.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
         const SizedBox(height:16),
         if(widget.importMode) ...[
-          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_pickImport,icon:const Icon(Icons.file_open),label:const Text('SELEZIONA FILE E ANALIZZA'))),
+          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_pickImport,icon:const Icon(Icons.file_open),label:const Text('1. SELEZIONA FILE'))),
+          if (_selectedImportFile != null) ...[
+            const SizedBox(height: 10),
+            Card(child: ListTile(
+              leading: const Icon(Icons.attach_file),
+              title: Text(_selectedImportFile!.name, maxLines: 2, overflow: TextOverflow.ellipsis),
+              subtitle: Text('File selezionato · ${_selectedImportFile!.size} byte'),
+              trailing: const Icon(Icons.check_circle_outline),
+            )),
+            SizedBox(width:double.infinity,child:FilledButton.icon(
+              onPressed:_busy?null:_analyzeImport,
+              icon:const Icon(Icons.fact_check),
+              label:const Text('2. CARICA E ANALIZZA FILE'),
+            )),
+          ],
           if(_rows.isNotEmpty) ...[
             const SizedBox(height:10),
             Text('Anteprima record: '+_rows.length.toString(),style:TextStyle(color:color,fontWeight:FontWeight.bold)),
