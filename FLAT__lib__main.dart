@@ -2185,16 +2185,19 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
-    if (file.bytes == null) throw Exception('Impossibile leggere il file selezionato.');
+    final bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      throw Exception('Il file selezionato non contiene dati leggibili. Riprova selezionandolo dalla memoria del dispositivo.');
+    }
     final name = file.name.toLowerCase();
     if (name.endsWith('.json')) {
-      final data = jsonDecode(utf8.decode(file.bytes!));
+      final data = jsonDecode(utf8.decode(bytes));
       final list = data is Map ? (data['oggetti'] ?? data['objects'] ?? data['data']) : data;
       if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
     if (name.endsWith('.xlsx')) {
-      final workbook = xlsx.Excel.decodeBytes(file.bytes!);
+      final workbook = xlsx.Excel.decodeBytes(bytes);
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
       final table = workbook.tables.values.first.rows;
       if (table.isEmpty) throw Exception('Il foglio Excel è vuoto o non contiene righe leggibili.');
@@ -2234,7 +2237,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       return parsed;
     }
     if (name.endsWith('.csv')) {
-      final text = utf8.decode(file.bytes!).replaceFirst('\uFEFF','');
+      final text = utf8.decode(bytes).replaceFirst('\uFEFF','');
       final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
       if (table.length < 2) throw Exception('CSV vuoto o senza righe dati.');
       final headers = table.first.map((e)=>e.toString().trim().toLowerCase()).toList();
@@ -2252,7 +2255,12 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
     try {
       final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
-      final rows=await _parse(picked.files.first);
+      final selectedFile = picked.files.first;
+      if (selectedFile.bytes == null || selectedFile.bytes!.isEmpty) {
+        throw Exception('Il selettore file non ha restituito il contenuto. Riapri la procedura e scegli il file dalla memoria del dispositivo.');
+      }
+      final rows=await _parse(selectedFile);
+      if (rows.isEmpty) throw Exception('Il file non contiene righe oggetto valide.');
       final existing=await _catalog();
       final descriptions=existing.map((e)=>_norm(e['descrizione_oggetto'])).toSet();
       final codes=existing.map((e)=>_norm(e['codice_oggetto'])).toSet();
