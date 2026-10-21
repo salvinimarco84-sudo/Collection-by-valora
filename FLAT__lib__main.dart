@@ -2251,17 +2251,23 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<void> _pickImport() async {
+    var stage = 'selezione del file';
     setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
     try {
       final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
       final selectedFile = picked.files.first;
-      if (selectedFile.bytes == null || selectedFile.bytes!.isEmpty) {
+      stage = 'lettura del file ' + selectedFile.name;
+      final bytes = selectedFile.bytes;
+      if (bytes == null || bytes.isEmpty) {
         throw Exception('Il selettore file non ha restituito il contenuto. Riapri la procedura e scegli il file dalla memoria del dispositivo.');
       }
+      stage = 'analisi del file ' + selectedFile.name;
       final rows=await _parse(selectedFile);
       if (rows.isEmpty) throw Exception('Il file non contiene righe oggetto valide.');
+      stage = 'lettura del catalogo TEST';
       final existing=await _catalog();
+      stage = 'controllo duplicati e righe';
       final descriptions=existing.map((e)=>_norm(e['descrizione_oggetto'])).toSet();
       final codes=existing.map((e)=>_norm(e['codice_oggetto'])).toSet();
       for(var i=0;i<rows.length;i++) {
@@ -2272,7 +2278,10 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
           rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
       }
       if(mounted)setState(() { _rows=rows; _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Nessun record salvato.'; });
-    } catch(e) { if(mounted)setState(()=>_status='Importazione non riuscita: '+e.toString()); }
+    } catch(e, st) {
+      debugPrint('VALORA IMPORT ERROR [$stage]: $e\\n$st');
+      if(mounted)setState(()=>_status='Importazione non riuscita durante ' + stage + ': ' + e.toString());
+    }
     finally { if(mounted)setState(()=>_busy=false); }
   }
 
