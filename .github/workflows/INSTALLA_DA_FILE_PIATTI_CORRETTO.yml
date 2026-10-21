@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'FLAT__*'
+      - '!FLAT__lib__main.dart'
+      - '!FLAT__pubspec.yaml'
   workflow_dispatch:
 
 permissions:
