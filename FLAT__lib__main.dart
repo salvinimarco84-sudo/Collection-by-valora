@@ -2789,21 +2789,27 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
-    // Il workflow Android compila questo file FLAT__lib__main.dart.
-    // Non usare bytes: Android può restituire null anche dopo la selezione.
+    // Compatibile con la versione file_picker bloccata nel progetto:
+    // bytes, poi readStream, infine path locale quando disponibile.
     late final Uint8List bytes;
     try {
-      bytes = await file.readAsBytes();
-    } catch (e) {
-      int declaredSize = file.size;
-      try {
-        final path = file.path;
-        if (path != null && path.trim().isNotEmpty) {
-          final localFile = File(path);
-          if (await localFile.exists()) declaredSize = await localFile.length();
+      if (file.bytes != null) {
+        bytes = file.bytes!;
+      } else if (file.readStream != null) {
+        final buffer = BytesBuilder(copy: false);
+        await for (final chunk in file.readStream!) {
+          buffer.add(chunk);
         }
-      } catch (_) {}
-      throw Exception('Lettura di "${file.name}" non riuscita (${declaredSize} byte dichiarati). Dettaglio file_picker: $e');
+        bytes = buffer.takeBytes();
+      } else {
+        final path = file.path;
+        if (path == null || path.trim().isEmpty) {
+          throw Exception('Android non ha fornito né contenuto, né flusso, né percorso locale.');
+        }
+        bytes = await File(path).readAsBytes();
+      }
+    } catch (e) {
+      throw Exception('Lettura di "${file.name}" non riuscita (${file.size} byte dichiarati). Dettaglio: $e');
     }
     if (bytes.isEmpty) {
       throw Exception('Il file "${file.name}" è stato selezionato ma contiene 0 byte.');
