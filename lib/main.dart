@@ -5736,7 +5736,91 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   )).then((_) {})
               : null);
           }),
-          if (_isPeriodReport) ...[
+          if (widget.apiCode == 'REPORT-CASH') ...[
+            const SizedBox(height: 18),
+            Builder(builder: (context) {
+              double parseMoney(dynamic value) {
+                if (value is num) return value.toDouble();
+                var raw = (value ?? '').toString().trim()
+                    .replaceAll('€', '').replaceAll('EUR', '')
+                    .replaceAll(RegExp(r'\\s+'), '');
+                if (raw.isEmpty) return 0;
+                if (raw.contains(',') && raw.contains('.')) {
+                  raw = raw.lastIndexOf(',') > raw.lastIndexOf('.')
+                      ? raw.replaceAll('.', '').replaceAll(',', '.')
+                      : raw.replaceAll(',', '');
+                } else if (raw.contains(',')) {
+                  raw = raw.replaceAll(',', '.');
+                }
+                return double.tryParse(raw) ?? 0;
+              }
+              double fieldAmount(Map<String, dynamic> row, List<String> keys) {
+                for (final key in keys) {
+                  final value = row[key];
+                  if (value != null && value.toString().trim().isNotEmpty) {
+                    return parseMoney(value);
+                  }
+                }
+                return 0;
+              }
+              var entries = 0.0;
+              var exits = 0.0;
+              for (final raw in _rows) {
+                if (raw is! Map) continue;
+                final row = Map<String, dynamic>.from(raw);
+                entries += fieldAmount(row, ['entrata','importo_entrata','totale_entrate','entrate']);
+                exits += fieldAmount(row, ['uscita','importo_uscita','totale_uscite','uscite']);
+                // Alcuni movimenti possono esporre un unico importo e una categoria.
+                final hasEntry = ['entrata','importo_entrata','totale_entrate','entrate'].any((k) => row[k] != null);
+                final hasExit = ['uscita','importo_uscita','totale_uscite','uscite'].any((k) => row[k] != null);
+                if (!hasEntry && !hasExit) {
+                  final amount = fieldAmount(row, ['importo','importo_totale','amount']);
+                  final kind = '${row['tipo'] ?? row['tipo_movimento'] ?? row['categoria'] ?? ''}'.toLowerCase();
+                  if (kind.contains('entrata') || kind.contains('vendita') || kind.contains('accredito')) {
+                    entries += amount;
+                  } else if (kind.contains('uscita') || kind.contains('acquisto') || kind.contains('spesa') || kind.contains('giroconto')) {
+                    exits += amount;
+                  }
+                }
+              }
+              String euro(double value) {
+                final fixed = value.toStringAsFixed(2).split('.');
+                final whole = fixed[0].replaceAllMapped(RegExp(r'\\B(?=(\\d{3})+(?!\\d))'), (_) => '.');
+                return '${whole},${fixed[1]} €';
+              }
+              final balance = entries - exits;
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: sectionColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: sectionColor.withValues(alpha: 0.55)),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('RIEPILOGO FLUSSI DI CASSA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    const Expanded(child: Text('TOTALE ENTRATE')),
+                    Text(euro(entries), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ]),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    const Expanded(child: Text('TOTALE USCITE')),
+                    Text(euro(exits), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ]),
+                  const Divider(height: 18),
+                  Row(children: [
+                    const Expanded(child: Text('SALDO (ENTRATE − USCITE)', style: TextStyle(fontWeight: FontWeight.bold))),
+                    Text(euro(balance), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: balance >= 0 ? Colors.green : Colors.red)),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text('${_rows.length} operazioni elencate', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                ]),
+              );
+            }),
+          ],
+          if (_isPeriodReport && widget.apiCode != 'REPORT-CASH') ...[
             const SizedBox(height: 18),
             Builder(builder: (context) {
               double parseAmount(dynamic value) {
