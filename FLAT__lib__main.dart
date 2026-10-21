@@ -1753,6 +1753,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
   bool _catalogLoading = true;
   List<Map<String, dynamic>> _catalogRows = [];
   String? _catalogError;
+  final Map<int, String> _dashboardImageUrls = {};
+  final Set<int> _dashboardImageLookups = {};
 
   @override
   void initState() {
@@ -1777,9 +1779,41 @@ class _HomeDashboardState extends State<HomeDashboard> {
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
       if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
+      await _loadDashboardImages(rows);
     } catch (e) {
       if (mounted) setState(() { _catalogError = '$e'; _catalogLoading = false; });
     }
+  }
+
+  Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows) async {
+    // Le anteprime visibili interrogano il registro immagini ufficiale:
+    // immagini_oggetto + Storage privato, tramite URL firmati a scadenza.
+    final selected = <Map<String, dynamic>>[];
+    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'ALTRE COLLEZIONI']) {
+      selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
+    }
+    final ids = selected.map((row) => int.tryParse(
+      (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
+    )).whereType<int>().where((id) => id > 0 && !_dashboardImageLookups.contains(id)).toSet();
+    if (ids.isEmpty) return;
+    _dashboardImageLookups.addAll(ids);
+    await Future.wait(ids.map((id) async {
+      try {
+        final response = await Supabase.instance.client.functions.invoke(
+          'collection-object-images-test',
+          body: {'action': 'get', 'codice_oggetto': id},
+        );
+        if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
+        final data = Map<String, dynamic>.from(response.data as Map);
+        final url = (data['signed_url'] ?? '').toString().trim();
+        if (url.startsWith('https://') || url.startsWith('http://')) {
+          _dashboardImageUrls[id] = url;
+        }
+      } catch (_) {
+        // L'assenza di foto o un permesso mancante non deve bloccare la HOME.
+      }
+    }));
+    if (mounted) setState(() {});
   }
 
   String _dashboardDescription(Map<String, dynamic> row) =>
@@ -1796,6 +1830,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   String? _dashboardImageUrl(Map<String, dynamic> row) {
+    final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
+    if (id != null && _dashboardImageUrls.containsKey(id)) return _dashboardImageUrls[id];
     for (final key in ['image_url', 'immagine_url', 'foto_url', 'url_immagine', 'image', 'foto']) {
       final value = row[key];
       if (value is String && (value.startsWith('https://') || value.startsWith('http://'))) return value;
