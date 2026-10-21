@@ -2790,38 +2790,27 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
-    // Android providers can return a path without populating PlatformFile.bytes.
-    Uint8List? bytes = file.bytes;
-
-    // FilePicker può restituire nome e dimensione prima di aver materializzato
-    // i byte. Leggi lo stream nativo quando disponibile, poi prova il path locale.
-    if (bytes == null || bytes.isEmpty) {
+    // Procedura di lettura dedicata del file_picker: il plugin recupera il
+    // contenuto anche quando il picker non popola bytes o non espone un path
+    // direttamente leggibile (ad esempio documenti forniti da Android SAF).
+    late final Uint8List bytes;
+    try {
+      bytes = await file.readAsBytes();
+    } catch (e) {
+      int declaredSize = file.size;
       try {
-        final stream = file.readStream;
-        if (stream != null) {
-          final chunks = <int>[];
-          await for (final chunk in stream) {
-            chunks.addAll(chunk);
-          }
-          if (chunks.isNotEmpty) bytes = Uint8List.fromList(chunks);
+        final path = file.path;
+        if (path != null && path.trim().isNotEmpty) {
+          final localFile = File(path);
+          if (await localFile.exists()) declaredSize = await localFile.length();
         }
       } catch (_) {
-        // Continua con il fallback sul path.
+        // Conserva la dimensione dichiarata dal selettore.
       }
+      throw Exception('Impossibile leggere il file "${file.name}" (dimensione dichiarata: $declaredSize byte). Il selettore lo ha individuato ma file_picker non è riuscito a recuperarne il contenuto. Dettaglio tecnico: $e');
     }
-    if (bytes == null || bytes.isEmpty) {
-      final path = file.path;
-      if (path != null && path.trim().isNotEmpty) {
-        try {
-          final loaded = await File(path).readAsBytes();
-          if (loaded.isNotEmpty) bytes = loaded;
-        } catch (_) {
-          // Continua e mostra l'errore leggibile sotto.
-        }
-      }
-    }
-    if (bytes == null || bytes.isEmpty) {
-      throw Exception('File selezionato: ${file.name}, dimensione dichiarata: ${file.size} byte, ma nessun contenuto è stato letto (bytes, stream e percorso locale vuoti/non accessibili). Seleziona il file da Download o dalla memoria del dispositivo.');
+    if (bytes.isEmpty) {
+      throw Exception('Il file "${file.name}" è stato letto ma contiene 0 byte. Seleziona il file originale, non un collegamento o un elemento cloud non scaricato.');
     }
 
     final name = file.name.trim().toLowerCase();
