@@ -615,6 +615,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta entrate, uscite e saldi registrati.', apiCode: 'REPORT-CASH'),
   ],
   'REPORT': [
+    ProcedureEntry(title: 'Report per franchise / tema', description: 'Cerca in tutto il catalogo per descrizione, categoria collezionistica, tema e sottotema; esporta tutti i risultati.', apiCode: 'REPORT-COLLECTION-THEME'),
     ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta le entrate derivate dalle vendite e le uscite derivate dagli acquisti.', apiCode: 'REPORT-CASH'),
     ProcedureEntry(title: 'Report mattutino', description: 'Riepilogo operativo del mattino.', enabled: false),
   ],
@@ -4476,6 +4477,45 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Future<void> _consult() async {
+    if (widget.apiCode == 'REPORT-COLLECTION-THEME') {
+      final term = _search.text.trim();
+      if (term.isEmpty) throw Exception('Inserisci un franchise o tema, ad esempio Batman, LEGO City o Saint Seiya.');
+      final normalized = term.toLowerCase();
+      final all = <Map<String, dynamic>>[];
+      const batchSize = 500;
+      var offset = 0;
+      while (true) {
+        final page = await Supabase.instance.client.schema('collection')
+            .from('master_oggetti').select('*')
+            .range(offset, offset + batchSize - 1);
+        final rows = (page as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+        all.addAll(rows);
+        if (rows.length < batchSize) break;
+        offset += batchSize;
+        if (offset >= 100000) throw Exception('Il catalogo supera il limite di sicurezza della ricerca. Riduci il perimetro o usa un indice server.');
+      }
+      const searchKeys = <String>[
+        'descrizione_oggetto', 'categoria', 'categoria_collezione',
+        'sezione_collezione', 'sezione', 'tema', 'franchise',
+        'franchise_tema', 'sottotema', 'sotto_tema', 'linea_prodotto',
+      ];
+      final matched = <Map<String, dynamic>>[];
+      final seen = <String>{};
+      for (final row in all) {
+        final searchable = searchKeys.map((k) => (row[k] ?? '').toString().toLowerCase()).join(' ');
+        if (!searchable.contains(normalized)) continue;
+        final id = (row['codice_oggetto'] ?? row['id'] ?? '').toString();
+        final uniqueKey = id.isNotEmpty ? id : jsonEncode(row);
+        if (seen.add(uniqueKey)) matched.add(row);
+      }
+      if (!mounted) return;
+      setState(() {
+        _rows = matched;
+        _currentObject = null;
+        _output = 'Report franchise/tema: "$term" · ${matched.length} oggetti unici trovati nel catalogo completo.';
+      });
+      return;
+    }
     if (widget.apiCode == 'EXPLORE_RECORDS') {
       final id = int.tryParse(_code.text.trim());
       if (id == null || id <= 0) throw Exception('Inserisci il codice dell’oggetto di cui vuoi leggere lo storico.');
