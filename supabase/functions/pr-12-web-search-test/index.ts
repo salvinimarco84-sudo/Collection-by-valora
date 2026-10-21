@@ -894,11 +894,8 @@ function comicSeriesAnchorQueries(category: string, description: string): { seri
     ],
   };
 }
-Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ ok: false, error: "Usare POST." }, 405);
+async function handleSingleSearch(body: any, req: Request): Promise<Response> {
   try {
-    const body = await req.json();
     const description = String(body.descrizione ?? body.query ?? "").trim().slice(0, 240);
     const category = String(body.categoria ?? "").trim().toUpperCase().slice(0, 40);
     const theme = String(body.tema ?? body.franchise ?? body.franchise_tema ?? "").trim().slice(0, 120);
@@ -989,5 +986,63 @@ Deno.serve(async (req: Request) => {
     });
   } catch (error) {
     return json({ ok: false, procedura: "PR-12", ricerca_esterna_eseguita: false, error: error instanceof Error ? error.message : String(error) }, 502);
+  } catch (error) {
+    return json({ ok: false, procedura: "PR-12", ricerca_esterna_eseguita: false, error: error instanceof Error ? error.message : String(error) }, 502);
+  }
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ ok: false, error: "Usare POST." }, 405);
+  try {
+    const body = await req.json();
+    if (Array.isArray(body?.oggetti)) {
+      const objects = body.oggetti;
+      if (objects.length < 1 || objects.length > 10) {
+        return json({ ok: false, procedura: "PR-12", error: "Il batch deve contenere da 1 a 10 oggetti." }, 400);
+      }
+      const risultati_oggetti = [];
+      for (let i = 0; i < objects.length; i++) {
+        const item = objects[i];
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          risultati_oggetti.push({ indice: i, id: null, ok: false, error: "Elemento non valido: atteso un oggetto JSON." });
+          continue;
+        }
+        const id = String(item.id ?? item.codice_oggetto ?? i + 1).slice(0, 120);
+        const singleBody = {
+          ...body,
+          ...item,
+          oggetti: undefined,
+        };
+        delete (singleBody as Record<string, unknown>).oggetti;
+        const response = await handleSingleSearch(singleBody, req);
+        let payload: unknown;
+        try { payload = await response.json(); }
+        catch { payload = { ok: false, error: "Risposta PR-12 non leggibile." }; }
+        const payloadOk = response.status >= 200 && response.status < 300 && (payload as any)?.ok !== false;
+        risultati_oggetti.push({
+          id,
+          indice: i,
+          descrizione: String(item.descrizione ?? item.query ?? "").trim().slice(0, 240),
+          categoria: String(item.categoria ?? "").trim().toUpperCase().slice(0, 40) || "NON_CLASSIFICATA",
+          ok: payloadOk,
+          stato_http: response.status,
+          risultato: payload,
+        });
+      }
+      return json({
+        ok: risultati_oggetti.every((x) => x.ok),
+        procedura: "PR-12",
+        modalita: "RICERCA_BATCH",
+        numero_oggetti: objects.length,
+        numero_completati: risultati_oggetti.filter((x) => x.ok).length,
+        numero_falliti: risultati_oggetti.filter((x) => !x.ok).length,
+        risultati_oggetti,
+        avviso: "Ogni oggetto mantiene risultati e controlli indipendenti. Le ricerche identiche possono riutilizzare la cache temporanea dell'istanza.",
+      });
+    }
+    return await handleSingleSearch(body, req);
+  } catch (error) {
+    return json({ ok: false, procedura: "PR-12", ricerca_esterna_eseguita: false, error: error instanceof Error ? error.message : String(error) }, 400);
   }
 });
