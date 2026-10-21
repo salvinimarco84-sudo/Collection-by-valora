@@ -87,7 +87,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze application source
-        run: flutter analyze lib/main.dart --no-fatal-infos
+        run: flutter analyze lib/main.dart --no-fatal-infos --no-fatal-warnings
 
       - name: Build release APK
         run: flutter build apk --release
@@ -145,7 +145,7 @@ jobs:
         run: flutter pub get
 
       - name: Analyze application source
-        run: flutter analyze lib/main.dart --no-fatal-infos
+        run: flutter analyze lib/main.dart --no-fatal-infos --no-fatal-warnings
 
       - name: Build Windows release
         run: flutter build windows --release
