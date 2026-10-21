@@ -5853,7 +5853,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
       final response = await http.post(Uri.parse('$supabaseUrl/functions/v1/pr-12-engine-test'),
-        headers: {'apikey': publishableKey, 'Authorization': 'Bearer ${session.accessToken}', 'Content-Type': 'application/json', 'Accept': 'text/event-stream'},
+        headers: {'apikey': publishableKey, 'Authorization': 'Bearer ${session.accessToken}', 'Content-Type': 'application/json', 'Accept': 'application/json'},
         body: jsonEncode({'modalita_ia': 'TEST', 'oggetti': batch.map((v) => {
           'id': (v['codice_oggetto'] ?? '').toString(),
           'descrizione': (v['descrizione_oggetto'] ?? '').toString(),
@@ -5865,17 +5865,12 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw Exception('HTTP ${response.statusCode}: ${response.body.substring(0, response.body.length.clamp(0, 500).toInt())}');
       }
-      final events = <Map<String, dynamic>>[];
-      for (final line in const LineSplitter().convert(response.body)) {
-        if (!line.startsWith('data:')) continue;
-        try { final v = jsonDecode(line.substring(5).trim()); if (v is Map) events.add(Map<String, dynamic>.from(v)); } catch (_) {}
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map || decoded['ok'] != true || decoded['tipo'] != 'coda_completata') {
+        final message = decoded is Map ? (decoded['error'] ?? 'Risposta PR-12 non valida').toString() : 'Risposta PR-12 non valida';
+        throw Exception(message);
       }
-      final finals = events.where((v) => v['tipo'] == 'coda_completata').toList();
-      if (finals.isEmpty) {
-        final errors = events.where((v) => v['tipo'] == 'oggetto_errore').map((v) => (v['risultato'] as Map?)?['error']?.toString() ?? 'errore').take(3).join('; ');
-        throw Exception('Evento finale PR-12 assente. ${errors.isEmpty ? response.body.substring(0, response.body.length.clamp(0, 500).toInt()) : errors}');
-      }
-      final rawResults = finals.last['risultati_finali'];
+      final rawResults = decoded['risultati_finali'];
       final batchResults = rawResults is List ? rawResults.whereType<Map>().map((v) => Map<String, dynamic>.from(v)).toList() : <Map<String, dynamic>>[];
       if (mounted) setState(() {
         _results.addAll(batchResults); _offset += batch.length;
