@@ -55,7 +55,7 @@ class ValoraAppearance extends ChangeNotifier {
   Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
-    whiteBackground = p.getBool('valora_white_background') ?? false;
+    whiteBackground = p.getBool('valora_white_background') ?? true;
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
     final used=<int>{};
     for(final k in defaults.keys) {
@@ -77,7 +77,7 @@ class ValoraAppearance extends ChangeNotifier {
   }
   Future<void> reset() async {
     whiteBackground=true; colors..clear()..addAll(defaults);
-    final p=await SharedPreferences.getInstance(); await p.remove('valora_white_background');
+    final p=await SharedPreferences.getInstance(); await p.setBool('valora_white_background', true);
     for(final k in defaults.keys){await p.remove('valora_color_$k');}
     notifyListeners();
   }
@@ -389,8 +389,9 @@ class _LoginPageState extends State<LoginPage> {
 
 class DashboardSection {
   const DashboardSection({required this.title, required this.description,
-    required this.icon, required this.color});
+    required this.icon, required this.color, this.menuTitle});
   final String title;
+  final String? menuTitle;
   final String description;
   final IconData icon;
   final Color color;
@@ -399,7 +400,7 @@ class DashboardSection {
 const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'CATALOGO', description: 'Consulta e gestisci gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
   DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti e allocazioni', icon: Icons.shopping_cart_outlined, color: Color(0xFFC74444)),
-  DashboardSection(title: 'VENDITE', description: 'Vendite e inserzioni', icon: Icons.sell_outlined, color: Color(0xFF39875B)),
+  DashboardSection(title: 'VENDITE', menuTitle: 'VENDITE E INSERZIONI', description: 'Vendite e inserzioni', icon: Icons.sell_outlined, color: Color(0xFF39875B)),
   DashboardSection(title: 'FLUSSI DI CASSA', description: 'Entrate, uscite e saldi', icon: Icons.account_balance_wallet_outlined, color: Color(0xFFD6A83F)),
   DashboardSection(title: 'VALUTAZIONI', description: 'VALORA e valore collezione', icon: Icons.query_stats, color: Color(0xFF8556C7)),
   DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
@@ -1830,7 +1831,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                               : ValoraAppearance.instance.colorFor(section.title),
                           size: 30)),
                       const SizedBox(height: 12),
-                      Text(section.title, textAlign: TextAlign.center,
+                      Text(section.menuTitle ?? section.title, textAlign: TextAlign.center,
                         style: TextStyle(color: ValoraAppearance.instance.colorFor(section.title), fontWeight: FontWeight.bold,
                           fontSize: 13, letterSpacing: 0.5)),
                       const SizedBox(height: 6),
