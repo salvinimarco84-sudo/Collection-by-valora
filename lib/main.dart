@@ -38,7 +38,7 @@ class ValoraAppearance extends ChangeNotifier {
     Color(0xFFF4511E),Color(0xFF43A047),Color(0xFF6A1B9A),Color(0xFF283593),
   ];
   final Map<String, Color> colors = Map<String, Color>.from(defaults);
-  bool whiteBackground = false;
+  bool whiteBackground = true;
   Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
   Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
   Color get card => whiteBackground ? Colors.white : cardColor;
@@ -72,7 +72,7 @@ class ValoraAppearance extends ChangeNotifier {
     final p=await SharedPreferences.getInstance(); await p.setInt('valora_color_$section',color.value); notifyListeners();
   }
   Future<void> reset() async {
-    whiteBackground=false; colors..clear()..addAll(defaults);
+    whiteBackground=true; colors..clear()..addAll(defaults);
     final p=await SharedPreferences.getInstance(); await p.remove('valora_white_background');
     for(final k in defaults.keys){await p.remove('valora_color_$k');}
     notifyListeners();
