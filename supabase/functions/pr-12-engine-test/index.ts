@@ -197,11 +197,13 @@ async function prepareQueue(req: Request): Promise<Response> {
     const incomplete = rows.filter((row) =>
       isMissing(row.produttore) || isMissing(row.anno_uscita) || isMissing(row.codice_prodotto)
     );
+    const searchable = incomplete.filter((row) => String(row.descrizione_oggetto ?? "").trim().length >= 2);
     return json({
       ok: true,
       totale_catalogo_letto: rows.length,
-      totale_incompleti: incomplete.length,
-      oggetti: incomplete.map((row) => ({
+      totale_incompleti: searchable.length,
+      totale_senza_descrizione: incomplete.length - searchable.length,
+      oggetti: searchable.map((row) => ({
         id: row.codice_oggetto,
         descrizione: row.descrizione_oggetto,
         produttore: row.produttore,
