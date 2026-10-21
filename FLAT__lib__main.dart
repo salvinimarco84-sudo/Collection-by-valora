@@ -2788,16 +2788,34 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
-    if (file.bytes == null) throw Exception('Impossibile leggere il file selezionato.');
+    // Il workflow Android compila questo file FLAT__lib__main.dart.
+    // Non usare bytes: Android può restituire null anche dopo la selezione.
+    late final Uint8List bytes;
+    try {
+      bytes = await file.readAsBytes();
+    } catch (e) {
+      int declaredSize = file.size;
+      try {
+        final path = file.path;
+        if (path != null && path.trim().isNotEmpty) {
+          final localFile = File(path);
+          if (await localFile.exists()) declaredSize = await localFile.length();
+        }
+      } catch (_) {}
+      throw Exception('Lettura di "${file.name}" non riuscita (${declaredSize} byte dichiarati). Dettaglio file_picker: $e');
+    }
+    if (bytes.isEmpty) {
+      throw Exception('Il file "${file.name}" è stato selezionato ma contiene 0 byte.');
+    }
     final name = file.name.toLowerCase();
     if (name.endsWith('.json')) {
-      final data = jsonDecode(utf8.decode(file.bytes!));
+      final data = jsonDecode(utf8.decode(bytes));
       final list = data is Map ? (data['oggetti'] ?? data['objects'] ?? data['data']) : data;
       if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
     if (name.endsWith('.xlsx')) {
-      final workbook = xlsx.Excel.decodeBytes(file.bytes!);
+      final workbook = xlsx.Excel.decodeBytes(bytes);
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
       final table = workbook.tables.values.first.rows;
       if (table.isEmpty) throw Exception('Il foglio Excel è vuoto o non contiene righe leggibili.');
@@ -2837,7 +2855,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       return parsed;
     }
     if (name.endsWith('.csv')) {
-      final text = utf8.decode(file.bytes!).replaceFirst('\uFEFF','');
+      final text = utf8.decode(bytes).replaceFirst('\uFEFF','');
       final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
       if (table.length < 2) throw Exception('CSV vuoto o senza righe dati.');
       final headers = table.first.map((e)=>e.toString().trim().toLowerCase()).toList();
@@ -2853,7 +2871,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   Future<void> _pickImport() async {
     setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
     try {
-      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true);
+      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true,withReadStream:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
       final rows=await _parse(picked.files.first);
       final existing=await _catalog();
