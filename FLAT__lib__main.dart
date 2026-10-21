@@ -3209,10 +3209,77 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (bytes.length > 10 * 1024 * 1024) throw Exception('La foto supera il limite di 10 MB.');
       setState(() {
         _selectedImageBytes = bytes; _selectedImageName = picked.name.isNotEmpty ? picked.name : 'foto_valora.jpg';
-        _imageAcquisition = 'FOTOCAMERA'; _imageStatus = 'Foto pronta. Verrà associata dopo il salvataggio.';
+        _imageAcquisition = 'FOTOCAMERA'; _imageStatus = 'Foto pronta. Avvia il riconoscimento per passare a PR-12.';
       });
     } catch (e) {
       if (mounted) setState(() => _imageStatus = 'Scatto foto non riuscito: $e');
+    }
+  }
+
+  Future<void> _recognizeSelectedPhoto() async {
+    final bytes = _selectedImageBytes;
+    if (bytes == null || bytes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Scatta prima una foto dell’oggetto.')));
+      return;
+    }
+    setState(() { _loading = true; _imageStatus = 'Riconoscimento visivo e ricerca PR-12 in corso…'; });
+    try {
+      final mime = (_selectedImageName ?? '').toLowerCase().endsWith('.png') ? 'image/png'
+          : ((_selectedImageName ?? '').toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
+      final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
+        'azione': 'ANALIZZA_FOTO',
+        'modalita_ia': 'TEST',
+        'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}',
+        'mercato': 'Italia',
+      });
+      final data = response.data;
+      if (data is! Map || data['ok'] != true) {
+        throw Exception(data is Map ? (data['error'] ?? 'Riconoscimento non riuscito').toString() : 'Risposta PR-12 non valida');
+      }
+      final clues = data['identificazione'] is Map ? Map<String,dynamic>.from(data['identificazione']) : <String,dynamic>{};
+      final results = data['risultati'] is List ? (data['risultati'] as List).whereType<Map>().map((v)=>Map<String,dynamic>.from(v)).toList() : <Map<String,dynamic>>[];
+      if (!mounted) return;
+      final apply = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+        title: const Text('PR-12 · Risultati dalla foto'),
+        content: SizedBox(width: 520, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text('Descrizione proposta: ${clues['descrizione_provvisoria'] ?? 'Non rilevata'}'),
+          Text('Categoria: ${clues['categoria'] ?? 'Da verificare'}'),
+          Text('Marchio: ${clues['marchio'] ?? 'Non rilevato'}'),
+          Text('Codice prodotto: ${clues['codice_prodotto'] ?? 'Non rilevato'}'),
+          if ((clues['testo_visibile'] ?? '').toString().isNotEmpty) Text('Testo letto: ${clues['testo_visibile']}'),
+          if (clues['incertezze'] is List) Text('Da verificare: ${(clues['incertezze'] as List).join(' · ')}'),
+          const Divider(),
+          Text('Candidati catalogo: ${results.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          for (final result in results.take(8)) Padding(padding: const EdgeInsets.symmetric(vertical: 5), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text((result['title'] ?? 'Risultato senza titolo').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text((result['url'] ?? '').toString(), style: const TextStyle(fontSize: 11)),
+            Text((result['snippet'] ?? '').toString(), style: const TextStyle(fontSize: 12)),
+          ])),
+          const SizedBox(height: 8),
+          const Text('I risultati sono proposte, non conferme. Nessun dato è stato salvato.', style: TextStyle(fontWeight: FontWeight.w600)),
+        ]))),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('RIFIUTA')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('USA INDIZI NELLA BOZZA')),
+        ],
+      ));
+      if (apply == true && mounted) {
+        setState(() {
+          final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
+          final maker = (clues['marchio'] ?? '').toString().trim();
+          final code = (clues['codice_prodotto'] ?? '').toString().trim();
+          if (description.isNotEmpty) _description.text = description;
+          if (maker.isNotEmpty) _producer.text = maker;
+          if (code.isNotEmpty) _family.text = code;
+          _metadataSearchExecuted = true;
+          _metadataResult = 'PR-12 ha proposto indizi dalla foto. Verifica i campi e confermali nella procedura.';
+          _imageStatus = 'Riconoscimento completato. Foto originale conservata; metadati ancora da confermare.';
+        });
+      } else if (mounted) setState(() => _imageStatus = 'Ricerca completata senza applicare proposte alla bozza.');
+    } catch (e) {
+      if (mounted) setState(() => _imageStatus = 'Riconoscimento non disponibile: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -3243,6 +3310,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ),
         ),
         const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : _captureImage, icon: const Icon(Icons.camera_alt_outlined), label: const Text('SCATTA FOTO'))),
+          const SizedBox(width: 8),
+          Expanded(child: FilledButton.icon(onPressed: _loading || !hasSelected ? null : _recognizeSelectedPhoto, icon: const Icon(Icons.document_scanner_outlined), label: const Text('RICONOSCI E CERCA · PR-12'))),
+        ]),
         if (hasSelected)
           ClipRRect(borderRadius: BorderRadius.circular(10),
             child: Image.memory(_selectedImageBytes!, height: 190, width: double.infinity, fit: BoxFit.contain))
@@ -5317,6 +5389,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 class _PurchaseItemDraft {
   final description = TextEditingController();
   final price = TextEditingController();
+  Uint8List? photoBytes;
+  String? photoName;
+  String photoStatus = 'Nessuna foto selezionata.';
   String destination = 'COLLEZIONE';
   String condition = 'USATO';
   String completeness = 'COMPLETO';
@@ -5359,6 +5434,53 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       d.month.toString().padLeft(2, '0') + '/' + d.year.toString();
   double get _total => _items.fold<double>(0, (sum, i) => sum + (i.amount ?? 0));
   void _notice(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
+  Future<void> _photoAndRecognize(_PurchaseItemDraft item) async {
+    try {
+      final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Foto vuota o superiore a 10 MB.');
+      setState(() { item.photoBytes = bytes; item.photoName = picked.name.isNotEmpty ? picked.name : 'foto_acquisto.jpg'; item.photoStatus = 'Foto acquisita. Riconoscimento PR-12 in corso…'; });
+      final mime = (item.photoName ?? '').toLowerCase().endsWith('.png') ? 'image/png' : ((item.photoName ?? '').toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
+      final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
+        'azione': 'ANALIZZA_FOTO', 'modalita_ia': 'TEST',
+        'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}', 'mercato': 'Italia',
+      });
+      final data = response.data;
+      if (data is! Map || data['ok'] != true) throw Exception(data is Map ? (data['error'] ?? 'Riconoscimento non riuscito').toString() : 'Risposta PR-12 non valida');
+      final clues = data['identificazione'] is Map ? Map<String,dynamic>.from(data['identificazione']) : <String,dynamic>{};
+      final results = data['risultati'] is List ? (data['risultati'] as List).whereType<Map>().map((v)=>Map<String,dynamic>.from(v)).toList() : <Map<String,dynamic>>[];
+      if (!mounted) return;
+      final apply = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+        title: const Text('PR-12 · Verifica oggetto'),
+        content: SizedBox(width: 520, child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text('Descrizione proposta: ${clues['descrizione_provvisoria'] ?? 'Non rilevata'}'),
+          Text('Marchio: ${clues['marchio'] ?? 'Non rilevato'}'),
+          Text('Codice prodotto: ${clues['codice_prodotto'] ?? 'Non rilevato'}'),
+          if (clues['incertezze'] is List) Text('Incertezze: ${(clues['incertezze'] as List).join(' · ')}'),
+          const Divider(), Text('Candidati trovati: ${results.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          for (final result in results.take(6)) Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text((result['title'] ?? 'Risultato').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text((result['url'] ?? '').toString(), style: const TextStyle(fontSize: 11)),
+          ])),
+          const Text('La ricerca non salva dati nel database.'),
+        ]))),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('RIFIUTA')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('USA DESCRIZIONE')),
+        ],
+      ));
+      if (apply == true && mounted) setState(() {
+        final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
+        if (description.isNotEmpty) item.description.text = description;
+        item.photoStatus = 'Indizi proposti da PR-12. Verifica la descrizione prima di confermare l’acquisto.';
+        _invalidate();
+      });
+      else if (mounted) setState(() => item.photoStatus = 'Foto conservata nella bozza; proposte non applicate.');
+    } catch (e) {
+      if (mounted) setState(() => item.photoStatus = 'Riconoscimento non riuscito: $e');
+    }
+  }
   void _invalidate() { _preview = null; _dataConfirmed = false; }
 
   void _resize(int n) {
@@ -5500,6 +5622,17 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         const SizedBox(height: 8),
         TextField(controller: item.description, decoration: const InputDecoration(labelText: 'Descrizione oggetto *'),
           onChanged: (_) => setState(_invalidate)),
+        const SizedBox(height: 6),
+        SizedBox(width: double.infinity, child: OutlinedButton.icon(
+          onPressed: _busy ? null : () => _photoAndRecognize(item),
+          icon: const Icon(Icons.camera_alt_outlined),
+          label: const Text('SCATTA FOTO · RICONOSCIMENTO PR-12'),
+        )),
+        if (item.photoBytes != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.memory(item.photoBytes!, height: 130, width: double.infinity, fit: BoxFit.contain),
+        )),
+        Text(item.photoStatus, style: TextStyle(fontSize: 12, color: ValoraAppearance.instance.textSecondary)),
         const SizedBox(height: 8),
         TextField(controller: item.price, keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: const InputDecoration(labelText: 'Prezzo di acquisto (€) *', hintText: 'Es. 25,00'),
