@@ -2862,15 +2862,56 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       return parsed;
     }
     if (name.endsWith('.csv')) {
-      final text = utf8.decode(bytes).replaceFirst('\uFEFF','');
-      final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
-      if (table.length < 2) throw Exception('CSV vuoto o senza righe dati.');
-      final headers = table.first.map((e)=>e.toString().trim().toLowerCase()).toList();
-      return table.skip(1).where((r)=>r.any((v)=>v.toString().trim().isNotEmpty)).map((r) {
-        final row=<String,dynamic>{};
-        for (var i=0;i<headers.length && i<r.length;i++) { row[headers[i]]=r[i]; }
-        return row;
-      }).toList();
+      // Gestisce BOM, righe vuote iniziali e separatori comuni dei CSV esportati.
+      String csvText;
+      try {
+        csvText = utf8.decode(bytes);
+      } on FormatException {
+        csvText = latin1.decode(bytes);
+      }
+      csvText = csvText.replaceFirst('\uFEFF', '').replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+      if (csvText.trim().isEmpty) {
+        throw Exception('Il file "\${file.name}" è vuoto: \${bytes.length} byte letti.');
+      }
+      final nonEmptyLines = csvText.split('\n').where((line) => line.trim().isNotEmpty).toList();
+      if (nonEmptyLines.isEmpty) {
+        throw Exception('Il file "\${file.name}" contiene solo righe vuote (\${bytes.length} byte letti).');
+      }
+      final sample = nonEmptyLines.first;
+      int countDelimiter(String delimiter) => delimiter.allMatches(sample).length;
+      final delimiters = <String>[';', ',', '\t'];
+      delimiters.sort((a, b) => countDelimiter(b).compareTo(countDelimiter(a)));
+      final delimiter = countDelimiter(delimiters.first) == 0 ? ',' : delimiters.first;
+      final table = CsvToListConverter(
+        shouldParseNumbers: false,
+        fieldDelimiter: delimiter,
+      ).convert(csvText);
+      final nonEmptyRows = table.where((row) =>
+          row.any((value) => value.toString().trim().isNotEmpty)).toList();
+      if (nonEmptyRows.length < 2) {
+        throw Exception('CSV letto (\${bytes.length} byte; \${nonEmptyRows.length} righe non vuote; separatore "\${delimiter == '\t' ? 'TAB' : delimiter}"), ma non contiene intestazione e righe dati.');
+      }
+      // Cerca l'intestazione anche se il file contiene righe introduttive.
+      int headerIndex = nonEmptyRows.indexWhere((row) => row.any((value) {
+        final header = value.toString().trim().toLowerCase().replaceAll(' ', '_');
+        return header == 'descrizione_oggetto' || header == 'descrizione' || header == 'nome';
+      }));
+      if (headerIndex < 0) headerIndex = 0;
+      final headers = nonEmptyRows[headerIndex].map((value) =>
+          value.toString().trim().toLowerCase().replaceAll(' ', '_')).toList();
+      final parsed = <Map<String, dynamic>>[];
+      for (final values in nonEmptyRows.skip(headerIndex + 1)) {
+        if (!values.any((value) => value.toString().trim().isNotEmpty)) continue;
+        final row = <String, dynamic>{};
+        for (var i = 0; i < headers.length && i < values.length; i++) {
+          if (headers[i].isNotEmpty) row[headers[i]] = values[i];
+        }
+        parsed.add(row);
+      }
+      if (parsed.isEmpty) {
+        throw Exception('CSV letto correttamente (\${bytes.length} byte; \${nonEmptyRows.length} righe non vuote), ma dopo l’intestazione non sono state trovate righe dati.');
+      }
+      return parsed;
     }
     throw Exception('Formato non supportato. Usa XLSX, CSV o JSON.');
   }
