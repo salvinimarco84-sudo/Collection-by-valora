@@ -1790,7 +1790,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     // Le anteprime visibili interrogano il registro immagini ufficiale:
     // immagini_oggetto + Storage privato, tramite URL firmati a scadenza.
     final selected = <Map<String, dynamic>>[];
-    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'ALTRE COLLEZIONI']) {
+    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
       selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
     }
     final ids = selected.map((row) => int.tryParse(
@@ -1827,6 +1827,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
     if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman').hasMatch(d)) return 'FUMETTI';
     if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
+    if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
     return 'ALTRE COLLEZIONI';
   }
 
@@ -1864,7 +1865,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             Text('${rows.length} record', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
             const SizedBox(width: 6),
             TextButton(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoryObjectSearchPage())),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: category))),
               style: TextButton.styleFrom(foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 7)),
               child: const Text('VEDI TUTTI', style: TextStyle(fontSize: 10)),
             ),
@@ -2060,6 +2061,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
       _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
       _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
+      _dashboardCategoryPanel('TRANSFORMERS', 'Autobot, Decepticon e personaggi', const Color(0xFF2476C8), Icons.smart_toy_outlined),
       _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
     ],
   );
@@ -2177,7 +2179,8 @@ class _ValoraRuntimeApi {
 }
 
 class CategoryObjectSearchPage extends StatefulWidget {
-  const CategoryObjectSearchPage({super.key});
+  const CategoryObjectSearchPage({super.key, this.initialQuery});
+  final String? initialQuery;
 
   @override
   State<CategoryObjectSearchPage> createState() => _CategoryObjectSearchPageState();
@@ -2189,10 +2192,46 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   String _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
   List<Map<String, dynamic>> _results = [];
 
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialQuery?.trim() ?? '';
+    if (initial.isNotEmpty) {
+      _query.text = initial;
+      _message = 'Apertura automatica della categoria $initial…';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _search();
+      });
+    }
+  }
+
   String _description(Map<String, dynamic> row) =>
       (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString();
 
   String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
+
+  bool _matchesInitialCategory(Map<String, dynamic> row, String category) {
+    final d = _description(row).toLowerCase();
+    switch (category.toUpperCase()) {
+      case 'LEGO':
+        return RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d);
+      case 'SAINT SEIYA':
+        return RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d);
+      case 'MOTO DIE-CAST':
+        return RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja|aprilia rsv|honda vtr').hasMatch(d);
+      case 'FUMETTI':
+        return RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman').hasMatch(d);
+      case 'GUNDAM':
+        return RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d);
+      case 'TRANSFORMERS':
+        return RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d);
+      case 'ALTRE COLLEZIONI':
+        return !['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS']
+            .any((name) => _matchesInitialCategory(row, name));
+      default:
+        return d.contains(category.toLowerCase());
+    }
+  }
 
   Future<void> _search() async {
     final query = _query.text.trim();
@@ -2209,9 +2248,10 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       _message = 'Ricerca nel catalogo in corso…';
     });
     try {
+      final categoryMode = widget.initialQuery?.trim().isNotEmpty ?? false;
       final response = await Supabase.instance.client.schema('collection').rpc(
         'pr_11_ricerca_schede',
-        params: {'p_cerca': query},
+        params: {'p_cerca': categoryMode ? null : query},
       );
       dynamic payload = response;
       if (payload is List && payload.length == 1 && payload.first is Map) {
@@ -2224,7 +2264,9 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       final rows = (payload['oggetti'] as List)
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
-          .where((row) => _description(row).toLowerCase().contains(normalizedQuery))
+          .where((row) => categoryMode
+              ? _matchesInitialCategory(row, widget.initialQuery!.trim())
+              : _description(row).toLowerCase().contains(normalizedQuery))
           .toList()
         ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
 
