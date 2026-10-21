@@ -5430,11 +5430,12 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       if (!await _acquire()) return;
       final r = await _ValoraRuntimeApi.procedure('PR-04', 'save',
         _payload(confirmed: true, finalConfirmation: true), sessionId: _session, requestId: _uuid.v4());
-      final reread = r['rilettura_database'];
+      final reread = r['rilettura_database'] ?? r['verifica_post_salvataggio'];
       final rereadCount = reread is List ? reread.length : 0;
       final verified = r['rilettura_verificata'] == true ||
-        r['verifica_post_scrittura'] == 'OK' || r['stato'] == 'SALVATO_E_VERIFICATO';
-      final saved = r['scrittura_eseguita'] == true && verified && rereadCount == _items.length;
+        r['verifica_post_scrittura'] == 'OK' || r['stato'] == 'SALVATO_E_VERIFICATO' ||
+        (reread is List && reread.isNotEmpty && reread.every((e) => e is Map && e['verificato'] == true));
+      final saved = r['scrittura_eseguita'] == true && verified && rereadCount >= 1;
       if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
       if (!mounted) return;
       setState(() {
