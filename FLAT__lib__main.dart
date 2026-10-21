@@ -4495,15 +4495,25 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         offset += batchSize;
         if (offset >= 100000) throw Exception('Il catalogo supera il limite di sicurezza della ricerca. Riduci il perimetro o usa un indice server.');
       }
-      const searchKeys = <String>[
-        'descrizione_oggetto', 'categoria', 'categoria_collezione',
-        'sezione_collezione', 'sezione', 'tema', 'franchise',
-        'franchise_tema', 'sottotema', 'sotto_tema', 'linea_prodotto',
-      ];
+      // Cerca ricorsivamente in TUTTI i campi del record, inclusi metadati JSON
+      // e colonne non note in anticipo. Non dipende da nomi ipotizzati come "tema".
+      String flattenSearchable(dynamic value) {
+        if (value == null) return '';
+        if (value is Map) {
+          return value.entries
+              .map((entry) => '${entry.key} ${flattenSearchable(entry.value)}')
+              .join(' ');
+        }
+        if (value is Iterable) {
+          return value.map(flattenSearchable).join(' ');
+        }
+        return value.toString();
+      }
+
       final matched = <Map<String, dynamic>>[];
       final seen = <String>{};
       for (final row in all) {
-        final searchable = searchKeys.map((k) => (row[k] ?? '').toString().toLowerCase()).join(' ');
+        final searchable = flattenSearchable(row).toLowerCase();
         if (!searchable.contains(normalized)) continue;
         final id = (row['codice_oggetto'] ?? row['id'] ?? '').toString();
         final uniqueKey = id.isNotEmpty ? id : jsonEncode(row);
