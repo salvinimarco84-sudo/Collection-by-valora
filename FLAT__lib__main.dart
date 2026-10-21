@@ -5419,6 +5419,7 @@ class _PurchaseItemDraft {
     if (metadataSourceUrl != null) 'fonte_dati_prodotto': metadataSourceUrl,
     if (metadataProducer != null || metadataCode != null || metadataYear != null)
       'stato_verifica_dati': 'DA_VERIFICARE',
+    if (photoUrl != null) 'url_immagine_catalogo': photoUrl,
   };
   void dispose() { description.dispose(); price.dispose(); }
 }
