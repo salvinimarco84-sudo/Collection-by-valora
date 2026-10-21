@@ -6099,6 +6099,64 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
     } finally { if (mounted) setState(() => _running = false); }
   }
 
+  Future<void> _confirmMetadata(Map v, Map c, BuildContext dialogContext) async {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sessione scaduta. Accedi nuovamente.')));
+      return;
+    }
+    final rawId = (v['oggetto_id'] ?? '').toString();
+    final source = (c['url'] ?? '').toString().trim();
+    final title = (c['title'] ?? '').toString().trim();
+    if (rawId.isEmpty || title.length < 2 || source.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nome ufficiale, codice oggetto e fonte sono obbligatori.')));
+      return;
+    }
+    try {
+      final response = await http.post(
+        Uri.parse('$supabaseUrl/functions/v1/pr-12-confirm-metadata-test'),
+        headers: {'apikey': publishableKey, 'Authorization': 'Bearer ${session.accessToken}', 'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode({
+          'codice_oggetto': rawId,
+          'conferma_utente': true,
+          'metadati': {
+            'nome_ufficiale': title,
+            'codice_identificativo': c['codice_identificativo'] ?? c['codice_prodotto'] ?? c['isbn'],
+            'produttore': c['produttore'] ?? c['brand'],
+            'anno_uscita': c['anno_uscita'],
+            'versione_variante': c['versione_variante'] ?? c['variante'],
+            'descrizione_ufficiale': c['descrizione_ufficiale'] ?? c['snippet'],
+            'tema': c['tema'],
+            'sezione': c['sezione'],
+            'sottotema': c['sottotema'],
+            'isbn': c['isbn'],
+            'editore': c['editore'],
+            'url_fonte': source,
+            'url_immagine': c['url_immagine'] ?? c['image_url'],
+          }
+        }),
+      ).timeout(const Duration(seconds: 25));
+      final decoded = jsonDecode(response.body);
+      if (response.statusCode < 200 || response.statusCode >= 300 || decoded is! Map || decoded['ok'] != true) {
+        throw Exception(decoded is Map ? (decoded['error'] ?? 'Salvataggio non confermato') : 'Risposta non valida');
+      }
+      if (dialogContext.mounted) Navigator.pop(dialogContext);
+      if (!mounted) return;
+      setState(() {
+        final index = _results.indexWhere((r) => (r['oggetto_id'] ?? '').toString() == rawId);
+        if (index >= 0) {
+          _results[index]['descrizione'] = title;
+          _results[index]['metadati_confermati'] = true;
+          _results[index]['scrittura_database'] = true;
+        }
+        _status = 'Metadati salvati e verificati per oggetto $rawId. Descrizione sostituita con il nome ufficiale.';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Metadati salvati. Descrizione aggiornata con il nome ufficiale.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final remaining = (_queue.length - _offset).clamp(0, 10);
@@ -6162,10 +6220,17 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                       "Fonte": (c["url"] ?? "").toString(),
                     };
                     showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
-                      title: const Text('Proposta metadati · sola lettura'),
+                      title: const Text('Conferma metadati trovati'),
                       content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
                         children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? 'non disponibile' : e.value}'))).toList())),
-                      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ANNULLA')),
+                        FilledButton.icon(
+                          onPressed: () => _confirmMetadata(v, c, dialogContext),
+                          icon: const Icon(Icons.save_outlined),
+                          label: const Text('CONFERMA E SALVA'),
+                        ),
+                      ],
                     ));
                   },
                 ))),
