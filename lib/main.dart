@@ -5415,10 +5415,10 @@ class _PurchaseItemDraft {
     'completezza': completeness, 'quantita': 1,
     if (metadataProducer != null) 'produttore': metadataProducer,
     if (metadataCode != null) 'codice_prodotto': metadataCode,
-    if (metadataCategory != null) 'categoria': metadataCategory,
     if (metadataYear != null) 'anno_uscita': metadataYear,
-    if (metadataSourceUrl != null) 'fonte_metadati_url': metadataSourceUrl,
-    if (photoUrl != null) 'immagine_url': photoUrl,
+    if (metadataSourceUrl != null) 'fonte_dati_prodotto': metadataSourceUrl,
+    if (metadataProducer != null || metadataCode != null || metadataYear != null)
+      'stato_verifica_dati': 'DA_VERIFICARE',
   };
   void dispose() { description.dispose(); price.dispose(); }
 }
