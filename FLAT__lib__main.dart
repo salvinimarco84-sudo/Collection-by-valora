@@ -2871,11 +2871,11 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       }
       csvText = csvText.replaceFirst('\uFEFF', '').replaceAll('\r\n', '\n').replaceAll('\r', '\n');
       if (csvText.trim().isEmpty) {
-        throw Exception('Il file "\${file.name}" è vuoto: \${bytes.length} byte letti.');
+        throw Exception('Il file "${file.name}" è vuoto: ${bytes.length} byte letti.');
       }
       final nonEmptyLines = csvText.split('\n').where((line) => line.trim().isNotEmpty).toList();
       if (nonEmptyLines.isEmpty) {
-        throw Exception('Il file "\${file.name}" contiene solo righe vuote (\${bytes.length} byte letti).');
+        throw Exception('Il file "${file.name}" contiene solo righe vuote (${bytes.length} byte letti).');
       }
       final sample = nonEmptyLines.first;
       int countDelimiter(String delimiter) => delimiter.allMatches(sample).length;
@@ -2889,7 +2889,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       final nonEmptyRows = table.where((row) =>
           row.any((value) => value.toString().trim().isNotEmpty)).toList();
       if (nonEmptyRows.length < 2) {
-        throw Exception('CSV letto (\${bytes.length} byte; \${nonEmptyRows.length} righe non vuote; separatore "\${delimiter == '\t' ? 'TAB' : delimiter}"), ma non contiene intestazione e righe dati.');
+        throw Exception('CSV letto (${bytes.length} byte; ${nonEmptyRows.length} righe non vuote; separatore "${delimiter == '\t' ? 'TAB' : delimiter}"), ma non contiene intestazione e righe dati.');
       }
       // Cerca l'intestazione anche se il file contiene righe introduttive.
       int headerIndex = nonEmptyRows.indexWhere((row) => row.any((value) {
@@ -2909,7 +2909,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         parsed.add(row);
       }
       if (parsed.isEmpty) {
-        throw Exception('CSV letto correttamente (\${bytes.length} byte; \${nonEmptyRows.length} righe non vuote), ma dopo l’intestazione non sono state trovate righe dati.');
+        throw Exception('CSV letto correttamente (${bytes.length} byte; ${nonEmptyRows.length} righe non vuote), ma dopo l’intestazione non sono state trovate righe dati.');
       }
       return parsed;
     }
