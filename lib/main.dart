@@ -4497,16 +4497,58 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
 
     final periodArgs = _isPeriodReport ? _reportDateArguments() : <String, dynamic>{};
+    const pageSize = 100;
     final args = _isPeriodReport
-      ? <String, dynamic>{'data_da': periodArgs['data_da'], 'data_a': periodArgs['data_a'], 'limite': 100, 'offset': 0}
+      ? <String, dynamic>{'data_da': periodArgs['data_da'], 'data_a': periodArgs['data_a'], 'limite': pageSize, 'offset': 0}
       : widget.apiCode == 'OBJECT_MASTER'
         ? {'codice_oggetto': int.tryParse(_code.text.trim())}
-        : {'cerca': _search.text.trim(), 'limite': 100, 'offset': 0};
+        : {'cerca': _search.text.trim(), 'limite': pageSize, 'offset': 0};
     final response = await _ValoraRuntimeApi.call('consultation', {
       'session_id': _sessionId, 'consultation_code': widget.apiCode, 'arguments': args,
     });
     final result = response['result'];
     dynamic data = result is Map ? (result['risultato'] ?? result) : result;
+
+    // Carica le pagine successive automaticamente: l'elenco completo rimane
+    // scorrevole e anche l'esportazione include tutti i record recuperati.
+    if (widget.apiCode != 'OBJECT_MASTER') {
+      final firstList = _isPeriodReport && data is Map
+          ? ((data as Map)['record'] is List ? List<dynamic>.from((data as Map)['record'] as List) : <dynamic>[])
+          : (data is List ? List<dynamic>.from(data as List) : <dynamic>[]);
+      if (firstList.length == pageSize) {
+        final allRows = <dynamic>[...firstList];
+        var offset = pageSize;
+        String signature(List<dynamic> rows) => rows.isEmpty
+            ? ''
+            : '${jsonEncode(rows.first)}|${jsonEncode(rows.last)}|${rows.length}';
+        var previousSignature = signature(firstList);
+        for (var page = 1; page < 100; page++) {
+          final nextArgs = <String, dynamic>{...args, 'limite': pageSize, 'offset': offset};
+          final nextResponse = await _ValoraRuntimeApi.call('consultation', {
+            'session_id': _sessionId,
+            'consultation_code': widget.apiCode,
+            'arguments': nextArgs,
+          });
+          final nextResult = nextResponse['result'];
+          final nextData = nextResult is Map ? (nextResult['risultato'] ?? nextResult) : nextResult;
+          final nextList = _isPeriodReport && nextData is Map
+              ? ((nextData as Map)['record'] is List ? List<dynamic>.from((nextData as Map)['record'] as List) : <dynamic>[])
+              : (nextData is List ? List<dynamic>.from(nextData as List) : <dynamic>[]);
+          if (nextList.isEmpty) break;
+          final nextSignature = signature(nextList);
+          if (nextSignature == previousSignature) break;
+          allRows.addAll(nextList);
+          previousSignature = nextSignature;
+          if (nextList.length < pageSize) break;
+          offset += pageSize;
+        }
+        if (_isPeriodReport && data is Map) {
+          data = <String, dynamic>{...Map<String, dynamic>.from(data as Map), 'record': allRows};
+        } else {
+          data = allRows;
+        }
+      }
+    }
     if (_isPeriodReport && data is Map) {
       final report = Map<String, dynamic>.from(data);
       final recordList = report['record'];
