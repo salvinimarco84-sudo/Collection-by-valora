@@ -3225,6 +3225,23 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         const SizedBox(height: 6),
         Text('Facoltativa. Scatta una foto oppure carica un file immagine. Dimensione massima: 10 MB.',
           style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: ValoraAppearance.instance.neutralOverlay,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Consigli per identificare meglio l’oggetto', style: TextStyle(fontWeight: FontWeight.w600)),
+              SizedBox(height: 4),
+              Text('Se puoi, aggiungi una foto reale dell’oggetto e una foto nitida del codice prodotto o dell’etichetta. Le immagini di catalogo possono aiutare il confronto, ma non dimostrano le condizioni dell’esemplare posseduto.'),
+            ],
+          ),
+        ),
         const SizedBox(height: 10),
         if (hasSelected)
           ClipRRect(borderRadius: BorderRadius.circular(10),
