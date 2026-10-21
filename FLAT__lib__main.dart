@@ -5789,7 +5789,6 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
           CheckboxListTile(value:_confirmed,title:const Text('Confermo il riepilogo e autorizzo il salvataggio.'),onChanged:_busy||_last==null?null:(v)=>setState(()=>_confirmed=v??false)),
           FilledButton(onPressed:_busy||!_confirmed||_last==null?null:_save,child:Text(_busy?'ATTENDI…':'SALVA MODIFICA E TERMINA')),
         ],
-        ],
         if(_busy)const LinearProgressIndicator(),
         Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
       ])))));
