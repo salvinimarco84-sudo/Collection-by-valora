@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show File;
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:typed_data';
@@ -2791,19 +2792,36 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
     // Android providers can return a path without populating PlatformFile.bytes.
     Uint8List? bytes = file.bytes;
+
+    // FilePicker può restituire nome e dimensione prima di aver materializzato
+    // i byte. Leggi lo stream nativo quando disponibile, poi prova il path locale.
+    if (bytes == null || bytes.isEmpty) {
+      try {
+        final stream = file.readStream;
+        if (stream != null) {
+          final chunks = <int>[];
+          await for (final chunk in stream) {
+            chunks.addAll(chunk);
+          }
+          if (chunks.isNotEmpty) bytes = Uint8List.fromList(chunks);
+        }
+      } catch (_) {
+        // Continua con il fallback sul path.
+      }
+    }
     if (bytes == null || bytes.isEmpty) {
       final path = file.path;
       if (path != null && path.trim().isNotEmpty) {
         try {
-          final loaded = await FilePicker.platform.readFile(path: path);
-          if (loaded != null && loaded.isNotEmpty) bytes = loaded;
+          final loaded = await File(path).readAsBytes();
+          if (loaded.isNotEmpty) bytes = loaded;
         } catch (_) {
-          // Show a safe, actionable error below instead of a null-check crash.
+          // Continua e mostra l'errore leggibile sotto.
         }
       }
     }
     if (bytes == null || bytes.isEmpty) {
-      throw Exception('Android non ha fornito il contenuto del file. Riprova scegliendolo da Download o dalla memoria del dispositivo.');
+      throw Exception('File selezionato: ${file.name}, dimensione dichiarata: ${file.size} byte, ma nessun contenuto è stato letto (bytes, stream e percorso locale vuoti/non accessibili). Seleziona il file da Download o dalla memoria del dispositivo.');
     }
 
     final name = file.name.trim().toLowerCase();
@@ -2935,6 +2953,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         type: FileType.custom,
         allowedExtensions: const ['xlsx', 'csv', 'json'],
         withData: true,
+        withReadStream: true,
         allowMultiple: false,
       );
       if (picked == null || picked.files.isEmpty) {
