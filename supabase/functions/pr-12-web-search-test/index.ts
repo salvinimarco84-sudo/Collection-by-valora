@@ -986,8 +986,6 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
     });
   } catch (error) {
     return json({ ok: false, procedura: "PR-12", ricerca_esterna_eseguita: false, error: error instanceof Error ? error.message : String(error) }, 502);
-  } catch (error) {
-    return json({ ok: false, procedura: "PR-12", ricerca_esterna_eseguita: false, error: error instanceof Error ? error.message : String(error) }, 502);
   }
 }
 
