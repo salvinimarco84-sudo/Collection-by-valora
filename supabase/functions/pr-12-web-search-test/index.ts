@@ -671,6 +671,41 @@ async function searchBrave(query: string): Promise<SearchResult[]> {
     return [{ title, url, snippet: cleanText(String(item.description ?? "")), source_query: query, motore: "BRAVE_SEARCH_API" }];
   });
 }
+// Reuse identical search queries briefly to reduce repeated external requests.
+const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+const SEARCH_CACHE_MAX_ENTRIES = 250;
+const searchResultCache = new Map<string, { expiresAt: number; results: SearchResult[] }>();
+
+async function searchOneCached(query: string): Promise<SearchResult[]> {
+  const key = normalizeText(query).trim();
+  const now = Date.now();
+  const cached = searchResultCache.get(key);
+  if (cached && cached.expiresAt > now) return cached.results.map((item) => ({ ...item, source_query: query }));
+  if (cached) searchResultCache.delete(key);
+  const results = await searchOne(query);
+  if (searchResultCache.size >= SEARCH_CACHE_MAX_ENTRIES) {
+    const oldestKey = searchResultCache.keys().next().value;
+    if (oldestKey) searchResultCache.delete(oldestKey);
+  }
+  searchResultCache.set(key, { expiresAt: now + SEARCH_CACHE_TTL_MS, results: results.map((item) => ({ ...item })) });
+  return results;
+}
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item: T, index: number) => Promise<R>): Promise<PromiseSettledResult<R>[]> {
+  const output: PromiseSettledResult<R>[] = new Array(items.length);
+  let nextIndex = 0;
+  const runners = Array.from({ length: Math.min(Math.max(1, limit), items.length) }, async () => {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      try { output[index] = { status: "fulfilled", value: await worker(items[index], index) }; }
+      catch (reason) { output[index] = { status: "rejected", reason }; }
+    }
+  });
+  await Promise.all(runners);
+  return output;
+}
+
 async function searchOne(query: string): Promise<SearchResult[]> {
   const errors: string[] = [];
   // Provider API documentata, se è stata configurata la relativa chiave segreta.
@@ -903,7 +938,7 @@ Deno.serve(async (req: Request) => {
     // Fonti specialistiche dal database TEST prima delle query generiche.
     {
       // Il crawler DC è una fonte aggiuntiva, non deve bloccare i mercati locali.
-      const settled = await Promise.allSettled(queries.map(searchOne));
+      const settled = await mapWithConcurrency(queries, 4, (query) => searchOneCached(query));
       for (let i = 0; i < settled.length; i++) {
         const item = settled[i];
         if (item.status === "rejected") { const errorText = item.reason instanceof Error ? item.reason.message : String(item.reason); errors.push(queries[i] + ": " + errorText); diagnosticaQuery.push({ query: queries[i], risultati_grezzi: 0, errore: errorText }); continue; }
