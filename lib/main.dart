@@ -32,6 +32,14 @@ class ValoraAppearance extends ChangeNotifier {
     'REPORT': Color(0xFFE17D35),
     'RICERCHE': Color(0xFF252525),
     'CONTROLLO': Color(0xFF777777),
+    'COLLEZIONE': Color(0xFFD6B45C),
+    'LEGO': Color(0xFFE31B23),
+    'SAINT SEIYA': Color(0xFF7137B8),
+    'MOTO DIE-CAST': Color(0xFFDD741D),
+    'FUMETTI': Color(0xFF008C4A),
+    'GUNDAM': Color(0xFFC62828),
+    'TRANSFORMERS': Color(0xFF2476C8),
+    'ALTRE COLLEZIONI': Color(0xFF466B87),
   };
   static const List<Color> palette = [
     Color(0xFF3978C5),Color(0xFF39875B),Color(0xFFC74444),Color(0xFFD6A83F),
@@ -2228,7 +2236,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
             Container(
               width: 48, height: 48,
               decoration: BoxDecoration(color: color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color, size: 27),
+              clipBehavior: Clip.antiAlias,
+              child: (ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title]) is String &&
+                      ((ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title])?.isNotEmpty ?? false)
+                  ? Image.network(
+                      (ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title])!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 27),
+                    )
+                  : Icon(icon, color: color, size: 27),
             ),
             const SizedBox(width: 13),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2249,7 +2265,64 @@ class _HomeDashboardState extends State<HomeDashboard> {
     ),
   );
 
-  Widget buildDashboard() => ListView(
+  Widget buildDashboard() {
+    if (ValoraAppearance.instance.useBlockLayout) {
+      return LayoutBuilder(builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 600 ? 3 : 2;
+        final entries = <Map<String, dynamic>>[
+          {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
+          ...dashboardSections.map((section)=> {
+            'title':section.menuTitle ?? section.title,
+            'subtitle':section.description,
+            'color':ValoraAppearance.instance.colorFor(section.title),
+            'icon':section.icon,
+            'tap':() => setState(()=>selectedSection=section),
+          }),
+        ];
+        return GridView.builder(
+          padding: const EdgeInsets.all(14),
+          itemCount: entries.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns, crossAxisSpacing: 10, mainAxisSpacing: 10,
+            childAspectRatio: constraints.maxWidth < 600 ? 0.98 : 1.18,
+          ),
+          itemBuilder: (context,index) {
+            final entry=entries[index];
+            final title=entry['title'] as String;
+            final color=entry['color'] as Color;
+            final icon=entry['icon'] as IconData;
+            final url=ValoraAppearance.instance.imageUrls[title] ??
+              ValoraAppearance.instance.imageUrls[title=='VENDITE E INSERZIONI'?'VENDITE':title];
+            return Material(
+              color: const Color(0xFF151515),
+              borderRadius: BorderRadius.circular(15),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(15),
+                onTap: entry['tap'] as VoidCallback,
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(borderRadius:BorderRadius.circular(15),border:Border.all(color:color,width:1.4)),
+                  child: Column(mainAxisAlignment:MainAxisAlignment.center,children:[
+                    Expanded(child:ClipRRect(
+                      borderRadius:BorderRadius.circular(11),
+                      child:url!=null && url.isNotEmpty
+                        ? Image.network(url,fit:BoxFit.contain,width:double.infinity,errorBuilder:(_,__,___)=>Icon(icon,color:color,size:42))
+                        : Icon(icon,color:color,size:42),
+                    )),
+                    const SizedBox(height:8),
+                    Text(title,textAlign:TextAlign.center,style:TextStyle(color:color,fontWeight:FontWeight.bold,fontSize:12)),
+                    const SizedBox(height:4),
+                    if(title=='COLLEZIONE') Text(_catalogLoading?'…':'${_catalogRows.length} record',style:const TextStyle(color:Colors.white70,fontSize:10)),
+                    Icon(Icons.chevron_right,color:color,size:23),
+                  ]),
+                ),
+              ),
+            );
+          },
+        );
+      });
+    }
+    return ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
     children: [
       const Padding(
@@ -2284,6 +2357,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       const Center(child: Text('COLLECTION by VALORA', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
     ],
   );
+  }
 
   Widget buildCollection() => ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
