@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:csv/csv.dart';
 import 'package:excel/excel.dart' as xlsx;
+import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -4383,6 +4384,97 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (RegExp(r'maisto|die.?cast|modellino|motorbike|motocicletta|modellismo|auto in scala|hot wheels|matchbox').hasMatch(v)) return 'DIECAST';
     return 'COLLEZIONABILE';
   }
+  String _exportCellValue(dynamic value) {
+    if (value == null) return '';
+    if (value is Map || value is List) return jsonEncode(value);
+    return value.toString();
+  }
+
+  Future<void> _exportResults({required bool asPdf}) async {
+    if (_rows.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Non ci sono risultati da esportare.')),
+      );
+      return;
+    }
+    try {
+      final records = _rows.map((row) => row is Map
+          ? Map<String, dynamic>.from(row)
+          : <String, dynamic>{'Risultato': row}).toList();
+      final headers = <String>[];
+      for (final record in records) {
+        for (final key in record.keys) {
+          if (!headers.contains(key)) headers.add(key);
+        }
+      }
+      final stamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final baseName = 'VALORA_\${widget.apiCode}_$stamp';
+      Uint8List bytes;
+      String extension;
+      if (asPdf) {
+        final document = pw.Document();
+        final tableData = <List<String>>[
+          headers,
+          ...records.map((record) => headers.map((key) => _exportCellValue(record[key])).toList()),
+        ];
+        document.addPage(pw.MultiPage(
+          pageFormat: pw.PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(28),
+          build: (context) => [
+            pw.Text('COLLECTION by VALORA',
+                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 6),
+            pw.Text(widget.title, style: const pw.TextStyle(fontSize: 14)),
+            pw.SizedBox(height: 4),
+            pw.Text('Record: \${records.length} · Generato il \${_dateLabel(DateTime.now())}',
+                style: const pw.TextStyle(fontSize: 9)),
+            pw.SizedBox(height: 14),
+            pw.TableHelper.fromTextArray(
+              data: tableData,
+              headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+              cellStyle: const pw.TextStyle(fontSize: 6),
+              headerDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFD6B15E)),
+              cellAlignment: pw.Alignment.topLeft,
+              border: pw.TableBorder.all(color: PdfColor.fromInt(0xFFBBBBBB), width: 0.35),
+            ),
+          ],
+        ));
+        bytes = Uint8List.fromList(await document.save());
+        extension = 'pdf';
+      } else {
+        final workbook = xlsx.Excel.createExcel();
+        final sheet = workbook['Risultati'];
+        sheet.appendRow(headers.map((h) => xlsx.TextCellValue(h)).toList());
+        for (final record in records) {
+          sheet.appendRow(headers.map((h) => xlsx.TextCellValue(_exportCellValue(record[h]))).toList());
+        }
+        final encoded = workbook.encode();
+        if (encoded == null) throw Exception('Creazione del file Excel non riuscita.');
+        bytes = Uint8List.fromList(encoded);
+        extension = 'xlsx';
+      }
+      final savedPath = await FilePicker.platform.saveFile(
+        dialogTitle: asPdf ? 'Salva report PDF' : 'Salva elenco Excel',
+        fileName: '$baseName.$extension',
+        type: FileType.custom,
+        allowedExtensions: [extension],
+        bytes: bytes,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(savedPath == null
+            ? 'Esportazione annullata.'
+            : 'File \${extension.toUpperCase()} creato: $savedPath'),
+        duration: const Duration(seconds: 5),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Esportazione non riuscita: $e'), duration: const Duration(seconds: 6)),
+      );
+    }
+  }
+
   Future<void> _consult() async {
     if (widget.apiCode == 'EXPLORE_RECORDS') {
       final id = int.tryParse(_code.text.trim());
@@ -5549,6 +5641,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   )).then((_) {})
               : null);
           }),
+          const SizedBox(height: 18),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _loading ? null : () => _exportResults(asPdf: false),
+              icon: const Icon(Icons.file_download_outlined),
+              label: const Text('CREA FILE EXCEL'),
+            )),
+            const SizedBox(width: 10),
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _loading ? null : () => _exportResults(asPdf: true),
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              label: const Text('CREA FILE PDF'),
+            )),
+          ]),
         ] else if (isAvailableList && !_loading) ...[
           const SizedBox(height: 20),
           Container(
