@@ -5736,6 +5736,66 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   )).then((_) {})
               : null);
           }),
+          if (_isPeriodReport) ...[
+            const SizedBox(height: 18),
+            Builder(builder: (context) {
+              double parseAmount(dynamic value) {
+                if (value is num) return value.toDouble();
+                var raw = (value ?? '').toString().trim()
+                    .replaceAll('€', '').replaceAll('EUR', '')
+                    .replaceAll(RegExp(r'\\s+'), '');
+                if (raw.isEmpty) return 0;
+                if (raw.contains(',') && raw.contains('.')) {
+                  raw = raw.lastIndexOf(',') > raw.lastIndexOf('.')
+                      ? raw.replaceAll('.', '').replaceAll(',', '.')
+                      : raw.replaceAll(',', '');
+                } else if (raw.contains(',')) {
+                  raw = raw.replaceAll(',', '.');
+                }
+                return double.tryParse(raw) ?? 0;
+              }
+              double amountFor(Map<String, dynamic> item) {
+                final keys = widget.apiCode == 'REPORT-SALES'
+                    ? <String>['importo_vendita','prezzo_di_vendita','importo_totale','importo','totale','prezzo']
+                    : <String>['importo_totale_acquisto','importo_acquisto','prezzo_di_acquisto','importo','totale','prezzo'];
+                for (final key in keys) {
+                  if (item[key] != null && item[key].toString().trim().isNotEmpty) {
+                    return parseAmount(item[key]);
+                  }
+                }
+                return 0;
+              }
+              final total = _rows.whereType<Map>()
+                  .map((item) => amountFor(Map<String, dynamic>.from(item)))
+                  .fold<double>(0, (sum, value) => sum + value);
+              final label = widget.apiCode == 'REPORT-SALES'
+                  ? 'TOTALE VENDITE'
+                  : widget.apiCode == 'REPORT-PURCHASES'
+                      ? 'TOTALE ACQUISTI'
+                      : 'TOTALE OPERAZIONI';
+              final money = total.toStringAsFixed(2).replaceAll('.', ',');
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: sectionColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: sectionColor.withValues(alpha: 0.55)),
+                ),
+                child: Row(children: [
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text('${_rows.length} operazioni elencate', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                    ],
+                  )),
+                  Text('$money €', style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
+                ]),
+              );
+            }),
+          ],
           const SizedBox(height: 18),
           Row(children: [
             Expanded(child: OutlinedButton.icon(
