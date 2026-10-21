@@ -2788,38 +2788,71 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
-    if (file.bytes == null) throw Exception('Impossibile leggere il file selezionato.');
-    final name = file.name.toLowerCase();
+    // Android providers can return a path without populating PlatformFile.bytes.
+    Uint8List? bytes = file.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      final path = file.path;
+      if (path != null && path.trim().isNotEmpty) {
+        try {
+          final loaded = await FilePicker.platform.readFile(path: path);
+          if (loaded != null && loaded.isNotEmpty) bytes = loaded;
+        } catch (_) {
+          // Show a safe, actionable error below instead of a null-check crash.
+        }
+      }
+    }
+    if (bytes == null || bytes.isEmpty) {
+      throw Exception('Android non ha fornito il contenuto del file. Riprova scegliendolo da Download o dalla memoria del dispositivo.');
+    }
+
+    final name = file.name.trim().toLowerCase();
     if (name.endsWith('.json')) {
-      final data = jsonDecode(utf8.decode(file.bytes!));
+      final dynamic data;
+      try {
+        data = jsonDecode(utf8.decode(bytes));
+      } catch (e) {
+        throw Exception('JSON non valido o non leggibile: $e');
+      }
       final list = data is Map ? (data['oggetti'] ?? data['objects'] ?? data['data']) : data;
       if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
     if (name.endsWith('.xlsx')) {
-      final workbook = xlsx.Excel.decodeBytes(file.bytes!);
+      final xlsx.Excel workbook;
+      try {
+        workbook = xlsx.Excel.decodeBytes(bytes);
+      } catch (e) {
+        throw Exception('Excel non leggibile. Verifica che il file sia un .xlsx valido e non protetto: $e');
+      }
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
-      final table = workbook.tables.values.first.rows;
+
+      // Cerca il foglio che contiene davvero le intestazioni, non solo il primo foglio.
+      List<dynamic>? table;
+      for (final sheet in workbook.tables.values) {
+        final rows = sheet.rows;
+        final found = rows.any((row) => row.any((cell) {
+          final h = (cell?.value?.toString() ?? '').trim().toLowerCase();
+          return const {'descrizione_oggetto','descrizione','nome'}.contains(h);
+        }));
+        if (found) { table = rows; break; }
+      }
+      table ??= workbook.tables.values.first.rows;
       if (table.isEmpty) throw Exception('Il foglio Excel è vuoto o non contiene righe leggibili.');
 
-      // I file esportati da app esterne possono avere righe introduttive prima dell'intestazione.
-      // Cerca la riga che contiene un campo descrizione riconosciuto, invece di assumere la prima riga.
       int headerIndex = -1;
       List<String> headers = <String>[];
       for (var rowIndex = 0; rowIndex < table.length; rowIndex++) {
         final candidate = table[rowIndex]
             .map((cell) => (cell?.value?.toString() ?? '').trim().toLowerCase())
             .toList();
-        final hasDescription = candidate.any((h) =>
-            h == 'descrizione_oggetto' || h == 'descrizione' || h == 'nome');
-        if (hasDescription) {
+        if (candidate.any((h) => const {'descrizione_oggetto','descrizione','nome'}.contains(h))) {
           headerIndex = rowIndex;
           headers = candidate;
           break;
         }
       }
       if (headerIndex < 0) {
-        throw Exception('Intestazione non trovata. Il foglio deve contenere una colonna descrizione_oggetto, descrizione o nome.');
+        throw Exception('Intestazione non trovata: serve descrizione_oggetto, descrizione o nome.');
       }
 
       final parsed = <Map<String, dynamic>>[];
@@ -2831,19 +2864,24 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
           if (header.isEmpty) continue;
           row[header] = sourceRow[i]?.value?.toString() ?? '';
         }
+        // Mappa le intestazioni del master MyBricks/VALORA.
+        row['descrizione_oggetto'] ??= row['descrizione'] ?? row['nome'] ?? '';
+        row['quantita'] ??= row['quantita_importazione'] ?? row['quantità'] ?? '1';
         parsed.add(row);
       }
       if (parsed.isEmpty) throw Exception('Intestazione trovata, ma non ci sono righe oggetto da importare.');
       return parsed;
     }
     if (name.endsWith('.csv')) {
-      final text = utf8.decode(file.bytes!).replaceFirst('\uFEFF','');
+      final text = utf8.decode(bytes).replaceFirst('\uFEFF','');
       final table = const CsvToListConverter(shouldParseNumbers:false).convert(text);
       if (table.length < 2) throw Exception('CSV vuoto o senza righe dati.');
       final headers = table.first.map((e)=>e.toString().trim().toLowerCase()).toList();
       return table.skip(1).where((r)=>r.any((v)=>v.toString().trim().isNotEmpty)).map((r) {
         final row=<String,dynamic>{};
         for (var i=0;i<headers.length && i<r.length;i++) { row[headers[i]]=r[i]; }
+        row['descrizione_oggetto'] ??= row['descrizione'] ?? row['nome'] ?? '';
+        row['quantita'] ??= row['quantita_importazione'] ?? row['quantità'] ?? '1';
         return row;
       }).toList();
     }
