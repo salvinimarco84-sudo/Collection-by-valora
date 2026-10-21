@@ -176,6 +176,8 @@ class _DashboardState extends State<Dashboard> {
         title: Text(name), trailing: const Icon(Icons.chevron_right),
         onTap: name.startsWith('PR-01') ? () => Navigator.push(context,
           MaterialPageRoute(builder: (_) => const NewObjectPage()))
+          : name.startsWith('PR-05') ? () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const EditPurchasePage()))
           : () => showDialog<void>(context: context, builder: (ctx) => AlertDialog(
             title: Text(name), content: const Text('Procedura non ancora abilitata in questa versione.'),
             actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CHIUDI'))],
@@ -417,5 +419,367 @@ class _NewObjectPageState extends State<NewObjectPage> {
       const SizedBox(height:12),
       Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(message))),
     ]),
+  );
+}
+
+ 
+class EditPurchasePage extends StatefulWidget {
+  const EditPurchasePage({super.key});
+  @override
+  State<EditPurchasePage> createState() => _EditPurchasePageState();
+}
+
+class _EditPurchasePageState extends State<EditPurchasePage> {
+  final search = TextEditingController();
+  final purchaseDate = TextEditingController();
+  final total = TextEditingController();
+  final List<Map<String, dynamic>> purchases = [];
+  Map<String, dynamic>? selected;
+  Map<String, dynamic>? preview;
+  bool busy = false, dataConfirmed = false, finalConfirmed = false, lockHeld = false;
+  String message = 'Cerca un acquisto per codice o descrizione.';
+  String? requestId;
+  late final String sessionId = _uuidV4();
+
+  String _uuidV4() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final h = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${h.substring(0,8)}-${h.substring(8,12)}-${h.substring(12,16)}-${h.substring(16,20)}-${h.substring(20)}';
+  }
+
+  @override
+  void dispose() {
+    search.dispose();
+    purchaseDate.dispose();
+    total.dispose();
+    if (lockHeld) { _releaseLock(); }
+    super.dispose();
+  }
+
+  Future<Map<String, dynamic>> _call({
+    required String step,
+    Map<String, dynamic> payload = const {},
+    String? action,
+  }) async {
+    final client = Supabase.instance.client;
+    final session = client.auth.currentSession;
+    if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
+    final body = <String, dynamic>{
+      'procedure': 'PR-05',
+      'step': step,
+      'session_id': sessionId,
+      'payload': payload,
+    };
+    if (action != null) body['action'] = action;
+    if (requestId != null) body['request_id'] = requestId;
+    final response = await client.functions.invoke(
+      'collection-procedure-runtime-test',
+      body: body,
+      headers: {'Authorization': 'Bearer ${session.accessToken}'},
+    );
+    final raw = response.data;
+    if (response.status < 200 || response.status >= 300) {
+      final errorText = raw is Map ? raw['error']?.toString() : null;
+      throw Exception(errorText ?? 'Runtime HTTP ${response.status}: $raw');
+    }
+    if (raw is! Map) throw Exception('Risposta runtime non valida: $raw');
+    if (raw['error'] != null) throw Exception('${raw['error']}');
+    final map = Map<String, dynamic>.from(raw);
+    final result = map['result'];
+    return result is Map ? Map<String, dynamic>.from(result) : map;
+  }
+
+  Future<void> _searchPurchases() async {
+    setState(() { busy = true; message = 'Ricerca acquisti in corso…'; });
+    try {
+      final result = await _call(
+        step: search.text.trim().isEmpty ? 'list' : 'search',
+        payload: {'query': search.text.trim()},
+      );
+      final rows = result['acquisti'];
+      if (rows is! List) throw Exception('Il runtime non ha restituito l’elenco acquisti.');
+      setState(() {
+        purchases
+          ..clear()
+          ..addAll(rows.whereType<Map>().map((e) => Map<String, dynamic>.from(e)));
+        selected = null;
+        preview = null;
+        dataConfirmed = false;
+        finalConfirmed = false;
+        message = 'Trovati ${purchases.length} acquisti. Seleziona una riga per modificarla.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => message = 'Ricerca non riuscita: $e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _loadPurchase(Map<String, dynamic> row) async {
+    setState(() { busy = true; message = 'Caricamento acquisto…'; });
+    try {
+      final result = await _call(
+        step: 'load',
+        payload: {'query': '${row['codice_acquisto']}'},
+      );
+      final rows = result['acquisti'];
+      if (rows is! List || rows.isEmpty || rows.first is! Map) {
+        throw Exception('Il runtime non ha restituito la scheda dell’acquisto.');
+      }
+      final loaded = Map<String, dynamic>.from(rows.first as Map);
+      setState(() {
+        selected = loaded;
+        purchaseDate.text = (loaded['data_acquisto'] ?? '').toString();
+        total.text = (loaded['importo_totale'] ?? '').toString();
+        preview = null;
+        dataConfirmed = false;
+        finalConfirmed = false;
+        requestId = null;
+        message = 'Acquisto caricato. Puoi modificare data e importo totale.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => message = 'Caricamento non riuscito: $e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<bool> _acquireLock() async {
+    final result = await _call(step: 'acquire_lock', action: 'acquire_lock');
+    if (result['acquisito'] != true) {
+      throw Exception(result['messaggio'] ?? 'Blocco esclusivo non acquisito.');
+    }
+    lockHeld = true;
+    return true;
+  }
+
+  Future<void> _releaseLock() async {
+    try {
+      await _call(step: 'release_lock', action: 'release_lock');
+    } catch (_) {
+      // Il messaggio principale resta visibile; il runtime impedisce comunque scritture senza blocco valido.
+    } finally {
+      lockHeld = false;
+    }
+  }
+
+  Map<String, dynamic> _buildPayload({required bool confirmed, required bool finalSave}) {
+    final row = selected;
+    if (row == null) throw Exception('Seleziona prima un acquisto.');
+    final code = int.tryParse('${row['codice_acquisto']}');
+    if (code == null || code < 1) throw Exception('Codice acquisto non valido.');
+    final date = purchaseDate.text.trim();
+    final parsedDate = DateTime.tryParse(date);
+    if (parsedDate == null || date.length != 10) {
+      throw Exception('Inserisci la data nel formato AAAA-MM-GG.');
+    }
+    final amountText = total.text.trim().replaceAll(',', '.');
+    final amount = double.tryParse(amountText);
+    if (amount == null || !amount.isFinite || amount <= 0) {
+      throw Exception('L’importo totale deve essere maggiore di zero.');
+    }
+    return {
+      'operazioni': [{
+        'codice_acquisto': code,
+        'data_acquisto': date,
+        'importo_totale': amount,
+      }],
+      'dati_confermati': confirmed,
+      'conferma_finale': finalSave,
+      'altra_operazione': false,
+    };
+  }
+
+  Future<void> _preparePreview() async {
+    if (selected == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Seleziona prima un acquisto.')));
+      return;
+    }
+    setState(() { busy = true; message = 'Controllo preliminare in corso. Nessuna scrittura…'; });
+    try {
+      final payload = _buildPayload(confirmed: false, finalSave: false);
+      await _acquireLock();
+      requestId = _uuidV4();
+      final result = await _call(step: 'preview', payload: payload);
+      setState(() {
+        preview = result;
+        dataConfirmed = false;
+        finalConfirmed = false;
+        message = 'Anteprima pronta. Controlla i valori prima di confermare.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => message = 'Controllo non riuscito: $e');
+      if (lockHeld) await _releaseLock();
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _reviewFinal() async {
+    if (!dataConfirmed) return;
+    setState(() { busy = true; message = 'Preparazione della conferma finale…'; });
+    try {
+      final result = await _call(
+        step: 'review',
+        payload: _buildPayload(confirmed: true, finalSave: false),
+      );
+      setState(() {
+        preview = result;
+        finalConfirmed = false;
+        message = 'Riepilogo verificato. Il database non è ancora stato modificato.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => message = 'Revisione non riuscita: $e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _saveFinal() async {
+    if (!dataConfirmed || !finalConfirmed) return;
+    setState(() { busy = true; message = 'Salvataggio e verifica nel database TEST…'; });
+    try {
+      requestId ??= _uuidV4();
+      final result = await _call(
+        step: 'save',
+        payload: _buildPayload(confirmed: true, finalSave: true),
+      );
+      final saved = result['scrittura_eseguita'] == true &&
+          (result['stato'] == 'SALVATO_E_VERIFICATO' || result['verifica_database'] == true);
+      setState(() {
+        preview = result;
+        message = saved
+          ? 'Modifica salvata e verificata dal runtime. Controlla il risultato qui sotto.'
+          : 'Salvataggio non considerato completato: il runtime non ha confermato la verifica.';
+        if (saved) {
+          dataConfirmed = false;
+          finalConfirmed = false;
+          lockHeld = result['blocco_rilasciato_automaticamente'] != true ? lockHeld : false;
+          requestId = null;
+        }
+      });
+      if (saved) await _searchPurchases();
+    } catch (e) {
+      if (mounted) setState(() => message = 'Salvataggio non riuscito: $e. Nessun esito positivo viene dichiarato.');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('PR-05 · MODIFICA ACQUISTO')),
+    body: ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Card(child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Text('AMBIENTE TEST · La ricerca e l’anteprima non scrivono dati. La scrittura richiede conferma finale. Gli oggetti collegati non vengono modificati.'),
+        )),
+        const SizedBox(height: 12),
+        TextField(
+          controller: search,
+          decoration: InputDecoration(
+            labelText: 'Cerca per codice o descrizione',
+            hintText: 'Es. 46 oppure lotto LEGO',
+            suffixIcon: IconButton(
+              tooltip: 'Cerca',
+              onPressed: busy ? null : _searchPurchases,
+              icon: const Icon(Icons.search),
+            ),
+          ),
+          onSubmitted: (_) => busy ? null : _searchPurchases(),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: busy ? null : _searchPurchases,
+          icon: const Icon(Icons.list_alt),
+          label: const Text('MOSTRA ELENCO ACQUISTI'),
+        ),
+        if (purchases.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('RISULTATI: ${purchases.length}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          ...purchases.map((row) => Card(
+            child: ListTile(
+              title: Text('#${row['codice_acquisto']} · ${row['descrizione']?.toString().trim().isNotEmpty == true ? row['descrizione'] : 'Acquisto senza descrizione'}'),
+              subtitle: Text('${row['data_acquisto'] ?? 'Data non disponibile'} · ${row['importo_totale'] ?? '?'} ${row['valuta'] ?? 'EUR'}'),
+              trailing: const Icon(Icons.edit_outlined),
+              selected: selected?['codice_acquisto'] == row['codice_acquisto'],
+              onTap: busy ? null : () => _loadPurchase(row),
+            ),
+          )),
+        ],
+        if (selected != null) ...[
+          const Divider(height: 28),
+          Text('ACQUISTO SELEZIONATO #${selected!['codice_acquisto']}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text('Descrizione: ${selected!['descrizione'] ?? 'Non specificata'}'),
+          Text('Valuta: ${selected!['valuta'] ?? 'EUR'}'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: purchaseDate,
+            enabled: !busy,
+            keyboardType: TextInputType.datetime,
+            decoration: const InputDecoration(labelText: 'Data acquisto', hintText: 'AAAA-MM-GG'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: total,
+            enabled: !busy,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Importo totale', helperText: 'Deve coincidere con la somma degli oggetti inclusi nella quadratura. Se cambi solo la data, lascia invariato l’importo.'),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: busy ? null : _preparePreview,
+            icon: const Icon(Icons.fact_check_outlined),
+            label: const Text('1 · CONTROLLA E MOSTRA ANTEPRIMA'),
+          ),
+        ],
+        if (preview != null) ...[
+          const SizedBox(height: 12),
+          Card(child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('RIEPILOGO RUNTIME', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              SelectableText(const JsonEncoder.withIndent('  ').convert(preview)),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: dataConfirmed,
+                title: const Text('Confermo che codice, data e importo sono corretti'),
+                onChanged: busy ? null : (v) => setState(() { dataConfirmed = v ?? false; finalConfirmed = false; }),
+              ),
+              OutlinedButton(
+                onPressed: busy || !dataConfirmed ? null : _reviewFinal,
+                child: const Text('2 · RICONTROLLA PRIMA DEL SALVATAGGIO'),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: finalConfirmed,
+                title: const Text('Conferma definitiva: autorizzo la modifica nel database TEST'),
+                onChanged: busy || !dataConfirmed ? null : (v) => setState(() => finalConfirmed = v ?? false),
+              ),
+              FilledButton(
+                onPressed: busy || !dataConfirmed || !finalConfirmed ? null : _saveFinal,
+                child: Text(busy ? 'ATTENDI…' : '3 · CONFERMA DEFINITIVA E SALVA'),
+              ),
+              OutlinedButton(
+                onPressed: busy ? null : () async {
+                  if (lockHeld) await _releaseLock();
+                  setState(() { preview = null; dataConfirmed = false; finalConfirmed = false; requestId = null; message = 'Bozza annullata. Nessuna scrittura richiesta.'; });
+                },
+                child: const Text('ANNULLA BOZZA'),
+              ),
+            ]),
+          )),
+        ],
+        const SizedBox(height: 12),
+        Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(message))),
+      ],
+    ),
   );
 }
