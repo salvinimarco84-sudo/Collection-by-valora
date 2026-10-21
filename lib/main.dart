@@ -24,10 +24,14 @@ class ValoraAppearance extends ChangeNotifier {
   ValoraAppearance._();
   static final instance = ValoraAppearance._();
   static const Map<String, Color> defaults = {
-    'CATALOGO': Color(0xFF3978C5), 'ACQUISTI': Color(0xFF39875B),
-    'VENDITE': Color(0xFFC74444),
-    'VALUTAZIONI': Color(0xFF8556C7), 'REPORT': Color(0xFFE17D35),
-    'RICERCHE': Color(0xFF568DAD), 'CONTROLLO': Color(0xFF777777),
+    'CATALOGO': Color(0xFF3978C5),
+    'ACQUISTI': Color(0xFFC74444),
+    'VENDITE': Color(0xFF39875B),
+    'FLUSSI DI CASSA': Color(0xFFD6A83F),
+    'VALUTAZIONI': Color(0xFF8556C7),
+    'REPORT': Color(0xFFE17D35),
+    'RICERCHE': Color(0xFF252525),
+    'CONTROLLO': Color(0xFF777777),
   };
   static const List<Color> palette = [
     Color(0xFF3978C5),Color(0xFF39875B),Color(0xFFC74444),Color(0xFFD6A83F),
@@ -393,13 +397,14 @@ class DashboardSection {
 }
 
 const List<DashboardSection> dashboardSections = [
-  DashboardSection(title: 'CATALOGO', description: 'Consulta gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
-  DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti', icon: Icons.shopping_cart_outlined, color: Color(0xFF39875B)),
-  DashboardSection(title: 'VENDITE', description: 'Gestione vendite', icon: Icons.sell_outlined, color: Color(0xFFC74444)),
-  DashboardSection(title: 'VALUTAZIONI', description: 'Valore degli oggetti', icon: Icons.query_stats, color: Color(0xFF8556C7)),
+  DashboardSection(title: 'CATALOGO', description: 'Consulta e gestisci gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
+  DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti e allocazioni', icon: Icons.shopping_cart_outlined, color: Color(0xFFC74444)),
+  DashboardSection(title: 'VENDITE', description: 'Vendite e inserzioni', icon: Icons.sell_outlined, color: Color(0xFF39875B)),
+  DashboardSection(title: 'FLUSSI DI CASSA', description: 'Entrate, uscite e saldi', icon: Icons.account_balance_wallet_outlined, color: Color(0xFFD6A83F)),
+  DashboardSection(title: 'VALUTAZIONI', description: 'VALORA e valore collezione', icon: Icons.query_stats, color: Color(0xFF8556C7)),
   DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
-  DashboardSection(title: 'RICERCHE', description: 'Cerca dati e fonti', icon: Icons.search, color: Color(0xFF568DAD)),
-  DashboardSection(title: 'CONTROLLO', description: 'Stato e verifiche', icon: Icons.admin_panel_settings_outlined, color: Color(0xFF777777)),
+  DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFF252525)),
+  DashboardSection(title: 'CONTROLLO', description: 'Stato e verifiche del sistema', icon: Icons.admin_panel_settings_outlined, color: Color(0xFF777777)),
 ];
 
 class ProcedureEntry {
@@ -441,6 +446,9 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'VALORA', description: 'Valutazione completa di un singolo oggetto, preparazione delle inserzioni e report.', apiCode: 'LAUNCH-VALORA'),
     ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Consulta il valore complessivo della collezione e i relativi riepiloghi.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
     ProcedureEntry(title: 'VALUTA ACQUISTO', description: 'Analisi rapida di un acquisto prima di concluderlo. Motore in preparazione.', enabled: false),
+  ],
+  'FLUSSI DI CASSA': [
+    ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta entrate, uscite e saldi registrati.', apiCode: 'REPORT-CASH'),
   ],
   'REPORT': [
     ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta le entrate derivate dalle vendite e le uscite derivate dagli acquisti.', apiCode: 'REPORT-CASH'),
