@@ -1750,6 +1750,7 @@ class HomeDashboard extends StatefulWidget {
 
 class _HomeDashboardState extends State<HomeDashboard> {
   DashboardSection? selectedSection;
+  bool showCollection = false;
   bool _catalogLoading = true;
   List<Map<String, dynamic>> _catalogRows = [];
   String? _catalogError;
@@ -1910,15 +1911,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Future<void> logout() async {
     await Supabase.instance.client.auth.signOut();
-    if (mounted) setState(() => selectedSection = null);
+    if (mounted) setState(() { selectedSection = null; showCollection = false; });
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          leading: selectedSection == null ? null : IconButton(
+          leading: selectedSection == null && !showCollection ? null : IconButton(
             tooltip: 'Torna alla dashboard',
-            onPressed: () => setState(() => selectedSection = null),
+            onPressed: () => setState(() { selectedSection = null; showCollection = false; }),
             icon: const Icon(Icons.arrow_back),
           ),
           title: const Text('COLLECTION by VALORA', style: TextStyle(
@@ -1934,8 +1935,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
             IconButton(tooltip: 'Esci', onPressed: logout, icon: const Icon(Icons.logout)),
           ],
         ),
-        body: SafeArea(child: selectedSection == null
-            ? buildDashboard() : buildSection(selectedSection!)),
+        body: SafeArea(child: showCollection
+            ? buildCollection()
+            : selectedSection == null
+                ? buildDashboard()
+                : buildSection(selectedSection!)),
         floatingActionButton: FloatingActionButton.extended(
           heroTag: 'valora_global_assistant',
           onPressed: () => Navigator.of(context).push(MaterialPageRoute(
@@ -1946,109 +1950,119 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
       );
 
-  Widget buildDashboard() => LayoutBuilder(builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 900;
-        final categories = <Widget>[
-          _dashboardCategoryPanel('LEGO', 'Mattoncini, set, minifigure e collezioni', const Color(0xFFE31B23), Icons.extension),
-          _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth, personaggi e accessori', const Color(0xFF7137B8), Icons.shield_outlined),
-          _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
-          _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
-          _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
-          _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
-        ];
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
-          children: [
+  Widget _menuCard({
+    required String title,
+    required String subtitle,
+    required Color color,
+    required IconData icon,
+    required VoidCallback onTap,
+    String? trailingText,
+  }) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(
+      color: const Color(0xFF151515),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: color.withValues(alpha: 0.85), width: 1.25),
+    ),
+    child: Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          child: Row(children: [
             Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF242018), Color(0xFF3A2E12)]),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: goldColor, width: 1.5),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => setState(() => selectedSection = dashboardSections.firstWhere((v) => v.title == 'CATALOGO')),
-                child: Row(children: [
-                  const Icon(Icons.inventory_2, color: goldColor, size: 48),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('COLLEZIONE', style: TextStyle(color: goldColor, fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 3),
-                    const Text('Tutti i temi e tutti i record della tua collezione', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    const SizedBox(height: 5),
-                    Text(_catalogLoading ? 'Conteggio in aggiornamento…' : '${_catalogRows.length} record',
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                  ])),
-                  const Icon(Icons.chevron_right, color: goldColor, size: 30),
-                ]),
-              ),
+              width: 48, height: 48,
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
+              child: Icon(icon, color: color, size: 27),
             ),
-            if (_catalogError != null)
-              Container(
-                padding: const EdgeInsets.all(10), margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
-                child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
-              ),
-            if (wide)
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: Column(children: categories.take(3).toList())),
-                const SizedBox(width: 12),
-                Expanded(child: Column(children: categories.skip(3).toList())),
-              ])
-            else
-              ...categories,
-            const SizedBox(height: 12),
-            const Divider(color: Colors.white24),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('CENTRO OPERATIVO', style: TextStyle(color: goldColor, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-            ),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: dashboardSections.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: constraints.maxWidth >= 1000 ? 4 : constraints.maxWidth >= 600 ? 3 : 2,
-                crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1.15,
-              ),
-              itemBuilder: (context, index) {
-                final section = dashboardSections[index];
-                final color = ValoraAppearance.instance.colorFor(section.title);
-                return Material(
-                  color: const Color(0xFF171717),
-                  borderRadius: BorderRadius.circular(14),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(14),
-                    onTap: () => setState(() => selectedSection = section),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: color, width: 1.2),
-                      ),
-                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Container(width: 44, height: 44,
-                          decoration: BoxDecoration(color: color.withValues(alpha: 0.22), borderRadius: BorderRadius.circular(12)),
-                          child: Icon(section.icon, color: color, size: 25)),
-                        const SizedBox(height: 8),
-                        Text(section.menuTitle ?? section.title, textAlign: TextAlign.center,
-                          style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11.5)),
-                        const SizedBox(height: 4),
-                        Text(section.description, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                      ]),
-                    ),
-                  ),
-                );
-              },
-            ),
-            Padding(padding: const EdgeInsets.all(10), child: Center(child: Text('COLLECTION by VALORA',
-              style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1)))),
-          ],
-        );
-      });
+            const SizedBox(width: 13),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15)),
+              const SizedBox(height: 4),
+              Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12),
+                maxLines: 2, overflow: TextOverflow.ellipsis),
+            ])),
+            if (trailingText != null) ...[
+              const SizedBox(width: 6),
+              Text(trailingText, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+            ],
+            const SizedBox(width: 5),
+            Icon(Icons.chevron_right, color: color, size: 29),
+          ]),
+        ),
+      ),
+    ),
+  );
+
+  Widget buildDashboard() => ListView(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+    children: [
+      const Padding(
+        padding: EdgeInsets.fromLTRB(2, 4, 2, 14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('CENTRO OPERATIVO', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
+          SizedBox(height: 5),
+          Text('Scegli una sezione per accedere alle relative funzioni.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+        ]),
+      ),
+      _menuCard(
+        title: 'COLLEZIONE',
+        subtitle: 'Tutti i temi e tutti i record della tua collezione',
+        color: goldColor,
+        icon: Icons.inventory_2_outlined,
+        trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
+        onTap: () => setState(() => showCollection = true),
+      ),
+      ...dashboardSections.map((section) => _menuCard(
+        title: section.menuTitle ?? section.title,
+        subtitle: section.description,
+        color: ValoraAppearance.instance.colorFor(section.title),
+        icon: section.icon,
+        onTap: () => setState(() => selectedSection = section),
+      )),
+      if (_catalogError != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text('Conteggio catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
+        ),
+      const SizedBox(height: 12),
+      const Center(child: Text('COLLECTION by VALORA', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
+    ],
+  );
+
+  Widget buildCollection() => ListView(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+    children: [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Row(children: [
+          const Icon(Icons.inventory_2_outlined, color: goldColor, size: 34),
+          const SizedBox(width: 10),
+          const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('COLLEZIONE', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
+            SizedBox(height: 3),
+            Text('Seleziona un tema per consultare i relativi oggetti.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          ])),
+          Text(_catalogLoading ? '…' : '${_catalogRows.length}', style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
+        ]),
+      ),
+      if (_catalogError != null)
+        Container(
+          margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
+          child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
+        ),
+      _dashboardCategoryPanel('LEGO', 'Mattoncini, set, minifigure e collezioni', const Color(0xFFE31B23), Icons.extension),
+      _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth, personaggi e accessori', const Color(0xFF7137B8), Icons.shield_outlined),
+      _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
+      _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
+      _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
+      _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
+    ],
+  );
 
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
