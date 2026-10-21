@@ -2888,19 +2888,34 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       // Normalizza le terminazioni prima del parsing e rimuove il BOM UTF-8.
       var text = utf8.decode(bytes, allowMalformed: true).replaceFirst('\uFEFF','');
       text = text.replaceAll('\r\n','\n').replaceAll('\r','\n');
-      if (text.trim().isEmpty) throw Exception('Il file CSV è realmente vuoto.');
-      final table = CsvToListConverter(shouldParseNumbers:false, eol:'\n').convert(text);
-      if (table.length < 2) {
-        throw Exception('CSV letto ma senza righe dati: controlla separatore e terminazioni di riga.');
+      if (text.trim().isEmpty) throw Exception('Il file CSV è realmente vuoto (' + bytes.length.toString() + ' byte).');
+
+      // I CSV arrivano da Excel con virgola, punto e virgola o tabulazione.
+      final firstLine = text.split('\n').first;
+      final delimiters = <String>[',', ';', '\t'];
+      var delimiter = ',';
+      var bestCount = -1;
+      for (final candidate in delimiters) {
+        final count = candidate.allMatches(firstLine).length;
+        if (count > bestCount) { bestCount = count; delimiter = candidate; }
       }
-      final headers = table.first.map((e)=>e.toString().replaceFirst('\uFEFF','').trim().toLowerCase()).toList();
-      return table.skip(1).where((r)=>r.any((v)=>v.toString().trim().isNotEmpty)).map((r) {
+      final table = CsvToListConverter(shouldParseNumbers:false, eol:'\n', fieldDelimiter:delimiter).convert(text);
+      final nonEmptyRows = table.where((r)=>r.any((v)=>v.toString().trim().isNotEmpty)).toList();
+      if (nonEmptyRows.length < 2) {
+        final preview = firstLine.length > 100 ? firstLine.substring(0,100) : firstLine;
+        throw Exception('CSV ricevuto (' + bytes.length.toString() + ' byte), ma non riconosco righe dati. Separatore rilevato: "' + delimiter + '". Intestazione: ' + preview);
+      }
+      final headers = nonEmptyRows.first.map((e)=>e.toString().replaceFirst('\uFEFF','').trim().toLowerCase()).toList();
+      final parsed = <Map<String,dynamic>>[];
+      for (final r in nonEmptyRows.skip(1)) {
         final row=<String,dynamic>{};
-        for (var i=0;i<headers.length && i<r.length;i++) { row[headers[i]]=r[i]; }
+        for (var i=0;i<headers.length && i<r.length;i++) { final h=headers[i]; if(h.isNotEmpty) row[h]=r[i]; }
         row['descrizione_oggetto'] ??= row['descrizione'] ?? row['nome'] ?? '';
         row['quantita'] ??= row['quantita_importazione'] ?? row['quantità'] ?? '1';
-        return row;
-      }).toList();
+        parsed.add(row);
+      }
+      if (parsed.isEmpty) throw Exception('CSV letto: intestazione presente, ma nessun record importabile.');
+      return parsed;
     }
     throw Exception('Formato non supportato. Usa XLSX, CSV o JSON.');
   }
