@@ -615,11 +615,10 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'VALUTA ACQUISTO', description: 'Analisi rapida di un acquisto prima di concluderlo. Motore in preparazione.', enabled: false),
   ],
   'FLUSSI DI CASSA': [
-    ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta entrate, uscite e saldi registrati.', apiCode: 'REPORT-CASH'),
   ],
   'REPORT': [
     ProcedureEntry(title: 'Report per franchise / tema', description: 'Cerca in tutto il catalogo per descrizione, categoria collezionistica, tema e sottotema; esporta tutti i risultati.', apiCode: 'REPORT-COLLECTION-THEME'),
-    ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta le entrate derivate dalle vendite e le uscite derivate dagli acquisti.', apiCode: 'REPORT-CASH'),
+    ProcedureEntry(title: 'Flussi di cassa', description: 'Consulta entrate, uscite e saldo del periodo selezionato.', apiCode: 'REPORT-CASH'),
     ProcedureEntry(title: 'Report mattutino', description: 'Riepilogo operativo del mattino.', enabled: false),
   ],
   'RICERCHE': [
