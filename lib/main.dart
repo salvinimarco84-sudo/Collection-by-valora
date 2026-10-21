@@ -5617,7 +5617,8 @@ class EditPurchasePage extends StatefulWidget {
 class _EditPurchasePageState extends State<EditPurchasePage> {
   final _query=TextEditingController(), _date=TextEditingController(), _total=TextEditingController(), _description=TextEditingController();
   final _session=_uuid.v4();
-  bool _busy=false,_locked=false,_confirmed=false,String _status='Cerca un acquisto esistente.';
+  bool _busy=false,_locked=false,_confirmed=false;
+  String _status='Cerca un acquisto esistente.';
   List<Map<String,dynamic>> _found=[];
   Map<String,dynamic>? _purchase,_last;
   List<Map<String,dynamic>> _items=[];
