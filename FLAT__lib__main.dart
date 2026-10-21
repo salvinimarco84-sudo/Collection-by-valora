@@ -68,7 +68,7 @@ class ValoraAppearance extends ChangeNotifier {
   Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
-    whiteBackground = false; // Configurazione iniziale: sfondo nero.
+    whiteBackground = p.getBool('valora_white_background') ?? false; // Mantieni la scelta dell'utente.
     useBlockLayout = p.getBool('valora_block_layout') ?? false;
     imageUrls.clear();
     imagePaths.clear();
@@ -317,12 +317,14 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       const SizedBox(height:20),
       const Text('SFONDO',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:8),
-      const ListTile(
-        contentPadding:EdgeInsets.zero,
-        leading:Icon(Icons.dark_mode_outlined,color:goldColor),
-        title:Text('Nero'),
-        subtitle:Text('Sfondo predefinito VALORA'),
-        trailing:Icon(Icons.check_circle,color:goldColor),
+      SegmentedButton<bool>(
+        segments: const [
+          ButtonSegment<bool>(value:false, icon:Icon(Icons.dark_mode_outlined), label:Text('Nero')),
+          ButtonSegment<bool>(value:true, icon:Icon(Icons.light_mode_outlined), label:Text('Bianco')),
+        ],
+        selected: <bool>{a.whiteBackground},
+        onSelectionChanged:(values)=>a.setBackground(values.first),
+        showSelectedIcon:true,
       ),
       const SizedBox(height:12),
       const Text('COLORI DELLE SEZIONI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
