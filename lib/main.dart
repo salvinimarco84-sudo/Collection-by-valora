@@ -3258,7 +3258,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
       final maker = (clues['marchio'] ?? '').toString().trim();
       final code = (clues['codice_prodotto'] ?? '').toString().trim();
-      final category = (clues['categoria'] ?? '').toString().trim();
       setState(() {
         if (description.isNotEmpty) _description.text = description;
         if (maker.isNotEmpty) _producer.text = maker;
@@ -5397,7 +5396,6 @@ class _PurchaseItemDraft {
   String? photoUrl;
   String? metadataProducer;
   String? metadataCode;
-  String? metadataCategory;
   int? metadataYear;
   String? metadataSourceUrl;
   String photoStatus = 'Nessuna foto selezionata.';
@@ -5552,7 +5550,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         if (description.isNotEmpty) item.description.text = description;
         item.metadataProducer = maker.isEmpty ? null : maker;
         item.metadataCode = code.isEmpty ? null : code;
-        item.metadataCategory = category.isEmpty ? null : category;
         item.metadataYear = yearMatch == null ? null : int.tryParse(yearMatch.group(1)!);
         item.metadataSourceUrl = (selectedCandidate['url'] ?? '').toString().trim().isEmpty ? null : selectedCandidate['url'].toString();
         item.photoUrl = selectedUrl != null && (selectedUrl.startsWith('https://') || selectedUrl.startsWith('http://')) ? selectedUrl : null;
