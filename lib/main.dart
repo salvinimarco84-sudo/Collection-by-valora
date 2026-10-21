@@ -43,6 +43,9 @@ class ValoraAppearance extends ChangeNotifier {
   ];
   final Map<String, Color> colors = Map<String, Color>.from(defaults);
   bool whiteBackground = false;
+  bool useBlockLayout = false;
+  final Map<String, String> imageUrls = {};
+  final Map<String, String> imagePaths = {};
   Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
   Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
   Color get card => whiteBackground ? Colors.white : cardColor;
@@ -55,7 +58,16 @@ class ValoraAppearance extends ChangeNotifier {
   Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
-    whiteBackground = false; // VALORA: sfondo nero obbligatorio.
+    whiteBackground = false; // Configurazione iniziale: sfondo nero.
+    useBlockLayout = p.getBool('valora_block_layout') ?? false;
+    imageUrls.clear();
+    imagePaths.clear();
+    for (final k in defaults.keys) {
+      final url = p.getString('valora_image_url_$k');
+      final path = p.getString('valora_image_path_$k');
+      if (url != null && url.isNotEmpty) imageUrls[k] = url;
+      if (path != null && path.isNotEmpty) imagePaths[k] = path;
+    }
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
     final used=<int>{};
     for(final k in defaults.keys) {
@@ -63,6 +75,30 @@ class ValoraAppearance extends ChangeNotifier {
         final replacement=palette.firstWhere((c)=>used.add(c.value),orElse:()=>defaults[k]!);
         colors[k]=replacement;
       }
+    }
+    notifyListeners();
+  }
+  Future<void> setLayout(bool blocks) async {
+    useBlockLayout = blocks;
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('valora_block_layout', blocks);
+    notifyListeners();
+  }
+  Future<void> setSectionImage(String section, {String? url, String? path}) async {
+    final p = await SharedPreferences.getInstance();
+    if (url == null || url.trim().isEmpty) {
+      imageUrls.remove(section);
+      await p.remove('valora_image_url_$section');
+    } else {
+      imageUrls[section] = url.trim();
+      await p.setString('valora_image_url_$section', url.trim());
+    }
+    if (path == null || path.trim().isEmpty) {
+      imagePaths.remove(section);
+      await p.remove('valora_image_path_$section');
+    } else {
+      imagePaths[section] = path.trim();
+      await p.setString('valora_image_path_$section', path.trim());
     }
     notifyListeners();
   }
