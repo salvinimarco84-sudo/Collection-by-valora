@@ -68,19 +68,19 @@ Deno.serve(async (req: Request) => {
   };
 
   try {
-    const metadataUrl = new URL(base + "/rest/v1/master_metadati");
-    metadataUrl.searchParams.set("on_conflict", "codice_oggetto");
-    const metaResponse = await fetch(metadataUrl, { method: "POST", headers, body: JSON.stringify(record), signal: AbortSignal.timeout(12000) });
-    if (!metaResponse.ok) throw new Error("Salvataggio Master Metadati HTTP " + metaResponse.status + ": " + (await metaResponse.text()).slice(0, 300));
+    // Una sola RPC PostgreSQL aggiorna il Master Metadati e la descrizione in una transazione.
+    const response = await fetch(base + "/rest/v1/rpc/confirm_pr12_metadati", {
+      method: "POST",
+      headers: { apikey: key, Authorization: "Bearer " + key, "Content-Type": "application/json", "Content-Profile": "collection", "Accept-Profile": "collection" },
+      body: JSON.stringify({ p_record: record }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || payload?.ok !== true) {
+      throw new Error("Conferma atomica metadati HTTP " + response.status + ": " + JSON.stringify(payload).slice(0, 350));
+    }
+    return json(payload);
 
-    // La descrizione viene sostituita soltanto dopo la conferma esplicita e il salvataggio dei metadati.
-    const objectUrl = new URL(base + "/rest/v1/master_oggetti");
-    objectUrl.searchParams.set("codice_oggetto", "eq." + id);
-    const objectResponse = await fetch(objectUrl, { method: "PATCH", headers: { ...headers, Prefer: "return=representation" }, body: JSON.stringify({ descrizione_oggetto: officialName }), signal: AbortSignal.timeout(12000) });
-    if (!objectResponse.ok) throw new Error("Metadati salvati ma aggiornamento descrizione non riuscito (HTTP " + objectResponse.status + "). Ripetere la conferma per riallineare il record.");
-    const objects = await objectResponse.json();
-    if (!Array.isArray(objects) || objects.length !== 1) throw new Error("Metadati salvati ma record oggetto non trovato in modo univoco.");
-    return json({ ok: true, codice_oggetto: id, nome_ufficiale: officialName, descrizione_sostituita: true, master_metadati_salvato: true });
   } catch (error) {
     return json({ ok: false, error: error instanceof Error ? error.message : String(error), descrizione_originale_garantita_se_errore_precedente_al_patch: true }, 502);
   }
