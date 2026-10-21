@@ -5711,7 +5711,13 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
           icon: const Icon(Icons.camera_alt_outlined),
           label: const Text('SCATTA FOTO · RICONOSCIMENTO PR-12'),
         )),
-        if (item.photoBytes != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: ClipRRect(
+        if (item.photoUrl != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(item.photoUrl!, height: 130, width: double.infinity, fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => item.photoBytes != null
+              ? Image.memory(item.photoBytes!, height: 130, width: double.infinity, fit: BoxFit.contain)
+              : const Icon(Icons.broken_image_outlined)),
+        )) else if (item.photoBytes != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.memory(item.photoBytes!, height: 130, width: double.infinity, fit: BoxFit.contain),
         )),
