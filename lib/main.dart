@@ -4222,6 +4222,29 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     if (data is! Map) throw Exception('Scheda non disponibile per il codice $id.');
     final m = Map<String, dynamic>.from(data);
+    // OBJECT_MASTER restituisce i dati operativi; recupera separatamente i metadati
+    // del catalogo, perché l'URL dell'immagine risiede in master_metadati.
+    try {
+      final metadata = await Supabase.instance.client
+          .schema('collection')
+          .from('master_metadati')
+          .select('url_immagine, codice_identificativo, nome_ufficiale, produttore, anno_uscita, versione_variante, descrizione_ufficiale, tema, sezione, sottotema')
+          .eq('codice_oggetto', id)
+          .maybeSingle();
+      if (metadata != null) {
+        final md = Map<String, dynamic>.from(metadata);
+        m.addAll(md);
+        final imageUrl = (md['url_immagine'] ?? '').toString().trim();
+        if (imageUrl.isNotEmpty) {
+          // Uniforma le chiavi immagine attese dalla scheda e dal riquadro.
+          m['url_immagine'] = imageUrl;
+          m['image_url'] = imageUrl;
+        }
+      }
+    } catch (e) {
+      // La scheda operativa resta consultabile anche se i metadati non sono accessibili.
+      debugPrint('VALORA: metadati immagine non recuperati per oggetto $id: $e');
+    }
     String txt(List<String> keys, [String fallback = '']) {
       for (final k in keys) { if (m[k] != null) return m[k].toString(); }
       return fallback;
