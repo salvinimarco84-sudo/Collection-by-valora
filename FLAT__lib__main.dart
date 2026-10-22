@@ -7557,12 +7557,13 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
   final Set<String> _selectedIds = <String>{};
   final Set<String> _processedIds = <String>{};
   int _offset = 0;
+  int _queuePage = 0;
   String _status = 'Carica gli oggetti incompleti. Nessun dato verrà salvato.';
   String? _error;
 
   Future<void> _loadQueue() async {
     if (_loading || _running) return;
-    setState(() { _loading = true; _error = null; _status = 'Preparazione coda protetta PR-12…'; _results.clear(); _selectedIds.clear(); _processedIds.clear(); _offset = 0; });
+    setState(() { _loading = true; _error = null; _status = 'Preparazione coda protetta PR-12…'; _results.clear(); _selectedIds.clear(); _processedIds.clear(); _offset = 0; _queuePage = 0; });
     try {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
@@ -7602,13 +7603,14 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
     return 'COLLEZIONABILE';
   }
 
-  Future<void> _runBatch({List<Map<String, dynamic>>? selectedBatch}) async {
+  Future<void> _runBatch({List<Map<String, dynamic>>? selectedBatch, Map<String, dynamic>? singleRecord}) async {
     if (_running || _loading) return;
-    if (_queue.isEmpty || _offset >= _queue.length) { setState(() => _error = 'Carica la coda o tutti i lotti sono già stati elaborati.'); return; }
-    final batch = selectedBatch ?? _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).take(10).toList();
+    if (_queue.isEmpty) { setState(() => _error = 'Carica prima la coda degli oggetti incompleti.'); return; }
+    if (singleRecord == null && selectedBatch == null && _queue.every((row) => _processedIds.contains((row['codice_oggetto'] ?? '').toString()))) { setState(() => _error = 'Tutti i record sono già stati elaborati.'); return; }
+    final batch = singleRecord != null ? <Map<String, dynamic>>[singleRecord] : (selectedBatch ?? _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).skip(_queuePage * 10).take(10).toList());
     if (batch.isEmpty) { setState(() => _error = 'Seleziona almeno un oggetto.'); return; }
     if (batch.length > 10) { setState(() => _error = 'Puoi elaborare al massimo 10 oggetti per volta.'); return; }
-    setState(() { _running = true; _error = null; _status = 'PR-12 sta cercando fonti per ${batch.length} oggetti. Nessuna scrittura database.'; });
+    setState(() { _running = true; _error = null; _status = singleRecord != null ? 'Verifica singola dell’oggetto ${singleRecord['codice_oggetto']} in corso. Nessuna scrittura database.' : 'PR-12 sta cercando fonti per ${batch.length} oggetti. Nessuna scrittura database.'; });
     try {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
@@ -7676,34 +7678,65 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
         if (_queue.any((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString()))) ...[
           const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('OGGETTI IN CODA · SELEZIONE FACOLTATIVA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
           const Text('Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.', style: TextStyle(color: Colors.white70)),
-          ..._queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).take(50).map((v) {
+          Row(children: [
+            Expanded(child: Text('PAGINA ${_queuePage + 1} DI ${((_queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length) / 10).ceil().clamp(1, 9999)}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+            Text('${_selectedIds.length}/10 selezionati', style: const TextStyle(color: Colors.white70)),
+          ]),
+          const SizedBox(height: 6),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _running || _loading || _queuePage == 0 ? null : () => setState(() { _queuePage--; _selectedIds.clear(); }),
+              icon: const Icon(Icons.chevron_left), label: const Text('PRECEDENTE'),
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _running || _loading || (_queuePage + 1) * 10 >= _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length ? null : () => setState(() { _queuePage++; _selectedIds.clear(); }),
+              icon: const Icon(Icons.chevron_right), label: const Text('SUCCESSIVA'),
+            )),
+          ]),
+          const SizedBox(height: 8),
+          ..._queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).skip(_queuePage * 10).take(10).map((v) {
             final id = (v['codice_oggetto'] ?? '').toString();
             final checked = _selectedIds.contains(id);
-            return CheckboxListTile(
-              value: checked,
-              dense: true,
-              activeColor: goldColor,
-              checkColor: Colors.black,
-              contentPadding: EdgeInsets.zero,
-              title: Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString()),
-              subtitle: Text('ID $id · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}'),
-              onChanged: _running || _loading ? null : (value) => setState(() {
-                if (value == true) {
-                  if (_selectedIds.length < 10) {
-                    _selectedIds.add(id);
-                    _error = null;
-                  } else {
-                    _error = 'Massimo 10 oggetti selezionabili per ricerca.';
-                  }
-                } else {
-                  _selectedIds.remove(id);
-                  _error = null;
-                }
-              }),
+            return Card(
+              margin: const EdgeInsets.only(bottom: 6),
+              child: Row(children: [
+                Checkbox(
+                  value: checked, activeColor: goldColor, checkColor: Colors.black,
+                  onChanged: _running || _loading ? null : (value) => setState(() {
+                    if (value == true) {
+                      if (_selectedIds.length < 10) { _selectedIds.add(id); _error = null; }
+                      else { _error = 'Massimo 10 oggetti selezionabili per ricerca.'; }
+                    } else { _selectedIds.remove(id); _error = null; }
+                  }),
+                ),
+                Expanded(child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('ID $id · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  ]),
+                )),
+                IconButton(
+                  tooltip: 'Verifica solo questo record',
+                  onPressed: _running || _loading ? null : () => _runBatch(singleRecord: v),
+                  icon: const Icon(Icons.search, color: goldColor),
+                ),
+              ]),
             );
           }),
-          if (_queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length > 50)
-            Text('Visualizzati i primi 50 oggetti ancora in coda su ${_queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length}.'),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _running || _loading || _queuePage == 0 ? null : () => setState(() { _queuePage--; _selectedIds.clear(); }),
+              icon: const Icon(Icons.chevron_left), label: const Text('INDIETRO'),
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _running || _loading || (_queuePage + 1) * 10 >= _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length ? null : () => setState(() { _queuePage++; _selectedIds.clear(); }),
+              icon: const Icon(Icons.chevron_right), label: const Text('AVANTI'),
+            )),
+          ]),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _running || _loading || _selectedIds.isEmpty ? null : () {
