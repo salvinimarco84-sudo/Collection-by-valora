@@ -3044,72 +3044,223 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
 
   @override
   Widget build(BuildContext context) {
-    final color=ValoraAppearance.instance.colorFor('CATALOGO');
-    return Scaffold(appBar:AppBar(title:Text(widget.importMode?'IMPORTA OGGETTI':'ESPORTA OGGETTI')),
-      body:SafeArea(child:ListView(padding:const EdgeInsets.all(16),children:[
-        Text(widget.importMode
-          ? 'Importa file Excel (.xlsx), CSV (.csv) o JSON (.json). VALORA controlla i dati e mostra l’anteprima prima del salvataggio.'
-          : 'Esporta il catalogo TEST in Excel, CSV o JSON.',
-          style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
-        if(widget.importMode) ...[
-          const SizedBox(height:12),
-          Card(
-            child: ExpansionTile(
-              initiallyExpanded: true,
-              leading: const Icon(Icons.info_outline),
-              title: const Text('COME PREPARARE IL FILE'),
-              subtitle: const Text('Consigli per un’importazione corretta'),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('Per ottenere un’importazione corretta, prepara il file quanto più possibile simile al Master Oggetti di VALORA, mantenendo intestazioni e struttura dei dati coerenti.'),
-                      SizedBox(height:8),
-                      Text('• Usa le stesse intestazioni del Master Oggetti, quando possibile.'),
-                      Text('• Inserisci un oggetto per riga e un’informazione per colonna.'),
-                      Text('• Evita celle unite, titoli aggiuntivi e intestazioni duplicate.'),
-                      Text('• Se un dato non è disponibile, lascia il campo vuoto.'),
-                      Text('• Ogni oggetto deve avere una descrizione riconoscibile.'),
-                      SizedBox(height:8),
-                      Text('Formati supportati: Excel (.xlsx), CSV (.csv) e JSON (.json).'),
-                      Text('VALORA mostra l’anteprima e segnala i possibili duplicati prima del salvataggio. I record esistenti non vengono aggiornati.'),
-                    ],
+    final appearance = ValoraAppearance.instance;
+    final color = appearance.colorFor('CATALOGO');
+    final status = _status.trim();
+    final isError = status.toLowerCase().contains('non riuscita') ||
+        status.toLowerCase().contains('errore:') ||
+        status.toLowerCase().contains('errori:') ||
+        status.toLowerCase().contains('exception');
+    final isSuccess = status.toLowerCase().contains('importazione conclusa') ||
+        status.toLowerCase().contains('esportati ');
+    final statusColor = isError
+        ? const Color(0xFFE57373)
+        : isSuccess
+            ? const Color(0xFF81C784)
+            : appearance.textSecondary;
+
+    Widget sectionLabel(String label) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(label, style: TextStyle(
+        color: appearance.textSecondary,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.0,
+      )),
+    );
+
+    Widget tip(IconData icon, String title, String detail) => Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 19, color: color),
+          const SizedBox(width: 10),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              const SizedBox(height: 2),
+              Text(detail, style: TextStyle(
+                color: appearance.textSecondary,
+                fontSize: 13,
+                height: 1.35,
+              )),
+            ],
+          )),
+        ],
+      ),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.importMode ? 'IMPORTA OGGETTI' : 'ESPORTA OGGETTI'),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: [
+            Text(
+              widget.importMode
+                  ? 'Importa il catalogo da un file e controlla i dati prima di salvarli.'
+                  : 'Esporta una copia del catalogo nel formato che preferisci.',
+              style: TextStyle(
+                color: appearance.textSecondary,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            if (widget.importMode) ...[
+              const SizedBox(height: 16),
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: ExpansionTile(
+                  initiallyExpanded: false,
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  leading: Icon(Icons.tips_and_updates_outlined, color: color),
+                  title: const Text('Preparare il file', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Requisiti e consigli per l’importazione'),
+                  children: [
+                    Align(alignment: Alignment.centerLeft, child: sectionLabel('FORMATO E STRUTTURA')),
+                    tip(Icons.view_list_outlined, 'Una riga per oggetto', 'Usa una riga per ogni oggetto e una colonna per ogni informazione.'),
+                    tip(Icons.view_column_outlined, 'Intestazioni riconoscibili', 'Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.'),
+                    tip(Icons.cleaning_services_outlined, 'File pulito', 'Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.'),
+                    const Divider(height: 20),
+                    Row(
+                      children: [
+                        Icon(Icons.file_present_outlined, size: 18, color: color),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text('Formati supportati: XLSX, CSV e JSON', style: TextStyle(color: appearance.textSecondary, fontSize: 13))),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Prima del salvataggio vedrai l’anteprima e gli eventuali duplicati. I record già presenti non vengono aggiornati.',
+                      style: TextStyle(color: appearance.textMuted, fontSize: 12, height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            if (widget.importMode) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _busy ? null : _pickImport,
+                  icon: const Icon(Icons.file_open_outlined),
+                  label: Text(_busy ? 'ANALISI IN CORSO…' : 'SELEZIONA FILE E ANALIZZA'),
+                ),
+              ),
+              if (_rows.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(child: Text('ANTEPRIMA', style: TextStyle(color: appearance.textSecondary, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.0))),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('${_rows.length} record', style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ..._rows.take(50).toList().asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final row = entry.value;
+                  final desc = (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
+                  final invalid = _invalid.contains(i);
+                  final duplicate = _duplicates.contains(i);
+                  final warning = invalid || duplicate;
+                  final itemColor = warning ? const Color(0xFFFFB74D) : color;
+                  final label = invalid
+                      ? 'Escluso: descrizione mancante'
+                      : duplicate
+                          ? 'Possibile duplicato, escluso'
+                          : 'Pronto per l’importazione';
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      leading: Icon(warning ? Icons.warning_amber_rounded : Icons.inventory_2_outlined, color: itemColor),
+                      title: Text(
+                        desc.isEmpty ? 'Riga ${i + 2}' : desc,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(label, style: TextStyle(color: warning ? itemColor : appearance.textSecondary, fontSize: 12)),
+                      ),
+                    ),
+                  );
+                }),
+                if (_rows.length > 50)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text('Mostrate le prime 50 righe su ${_rows.length}.', style: TextStyle(color: appearance.textMuted, fontSize: 12)),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _busy ? null : _confirmImport,
+                    icon: const Icon(Icons.save_outlined),
+                    label: const Text('CONFERMA E IMPORTA'),
                   ),
                 ),
               ],
+            ] else ...[
+              SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _busy ? null : () => _export('xlsx'), icon: const Icon(Icons.table_view_outlined), label: const Text('ESPORTA EXCEL (.XLSX)'))),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : () => _export('csv'), icon: const Icon(Icons.description_outlined), label: const Text('ESPORTA CSV'))),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : () => _export('json'), icon: const Icon(Icons.data_object_outlined), label: const Text('ESPORTA JSON'))),
+            ],
+            if (_busy) ...[
+              const SizedBox(height: 16),
+              const LinearProgressIndicator(),
+            ],
+            const SizedBox(height: 18),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      isError ? Icons.error_outline : isSuccess ? Icons.check_circle_outline : Icons.info_outline,
+                      color: statusColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(status, style: TextStyle(color: statusColor, fontSize: 13, height: 1.4))),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ],
-        const SizedBox(height:16),
-        if(widget.importMode) ...[
-          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_pickImport,icon:const Icon(Icons.file_open),label:const Text('SELEZIONA FILE E ANALIZZA'))),
-          if(_rows.isNotEmpty) ...[
-            const SizedBox(height:10),
-            Text('Anteprima record: '+_rows.length.toString(),style:TextStyle(color:color,fontWeight:FontWeight.bold)),
-            ..._rows.take(50).toList().asMap().entries.map((entry){
-              final i=entry.key;final row=entry.value;
-              final desc=(row['descrizione_oggetto']??row['descrizione']??row['nome']??'').toString();
-              final warning=_invalid.contains(i)||_duplicates.contains(i);
-              final label=_invalid.contains(i)?'Escluso: manca la descrizione':_duplicates.contains(i)?'Possibile duplicato, escluso':'Pronto per l’importazione';
-              return Card(child:ListTile(leading:Icon(warning?Icons.warning_amber:Icons.inventory_2_outlined,color:warning?Colors.orange:color),title:Text(desc.isEmpty?'Riga '+(i+2).toString():desc,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text(label)));
-            }),
-            if(_rows.length>50)Text('Mostrate le prime 50 righe su '+_rows.length.toString()),
-            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_confirmImport,icon:const Icon(Icons.save_alt),label:const Text('CONFERMA E IMPORTA NUOVI OGGETTI')))
-          ]
-        ] else ...[
-          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('xlsx'),icon:const Icon(Icons.table_view),label:const Text('ESPORTA EXCEL (.XLSX)'))),
-          const SizedBox(height:8),
-          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('csv'),icon:const Icon(Icons.description_outlined),label:const Text('ESPORTA CSV'))),
-          const SizedBox(height:8),
-          SizedBox(width:double.infinity,child:OutlinedButton.icon(onPressed:_busy?null:()=>_export('json'),icon:const Icon(Icons.data_object),label:const Text('ESPORTA JSON')))
-        ],
-        if(_busy)const Padding(padding:EdgeInsets.all(16),child:Center(child:CircularProgressIndicator())),
-        const SizedBox(height:16),
-        Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
-        Text('Database TEST. L’importazione crea nuovi record e non aggiorna quelli esistenti.',style:TextStyle(color:ValoraAppearance.instance.textMuted,fontSize:12))
-      ])));
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.shield_outlined, size: 15, color: appearance.textMuted),
+                const SizedBox(width: 7),
+                Expanded(child: Text(
+                  'Ambiente TEST · L’importazione crea nuovi record e non modifica quelli esistenti.',
+                  style: TextStyle(color: appearance.textMuted, fontSize: 11, height: 1.35),
+                )),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
