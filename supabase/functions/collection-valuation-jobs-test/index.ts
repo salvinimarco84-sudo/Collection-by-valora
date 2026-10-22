@@ -74,7 +74,7 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: true, job: { ...job, processed_items: processed, priced_items: count("priced"), unpriced_items: count("unpriced"), failed_items: count("failed"), progress_percent: job.total_items ? Math.round(processed * 100 / job.total_items) : 0 }, report: { complete: processed === job.total_items && job.total_items > 0 && count("failed") === 0, items } });
     }
     if (action === "process") {
-      const items = await api("valuation_job_items?select=*&job_id=eq." + encodeURIComponent(id) + "&state=in.(queued,failed)&order=id.asc&limit=" + batchSize, auth.token, { headers: { "Accept-Profile": "collection" } });
+      const items = await api("valuation_job_items?select=*&job_id=eq." + encodeURIComponent(id) + "&state=eq.queued&order=id.asc&limit=" + batchSize, auth.token, { headers: { "Accept-Profile": "collection" } });
       if (!items.length) return reply({ ok: true, job_id: id, processed_batch: 0, remaining: 0 });
       await api("valuation_jobs?id=eq." + encodeURIComponent(id), auth.token, { method: "PATCH", headers: { "Content-Profile": "collection" }, body: JSON.stringify({ status: "running", started_at: job.started_at ?? new Date().toISOString(), updated_at: new Date().toISOString() }) });
       const c = config();
@@ -99,7 +99,7 @@ Deno.serve(async (req: Request) => {
           done.push({ object_code: item.object_code, state: "failed" });
         }
       }
-      const pending = await api("valuation_job_items?select=id&job_id=eq." + encodeURIComponent(id) + "&state=in.(queued,running,failed)&limit=10000", auth.token, { headers: { "Accept-Profile": "collection" } });
+      const pending = await api("valuation_job_items?select=id&job_id=eq." + encodeURIComponent(id) + "&state=in.(queued,running)&limit=10000", auth.token, { headers: { "Accept-Profile": "collection" } });
       if (!pending.length) {
         const all = await api("valuation_job_items?select=state&job_id=eq." + encodeURIComponent(id) + "&limit=10000", auth.token, { headers: { "Accept-Profile": "collection" } });
         const hasFailure = all.some((x: any) => x.state === "failed");
