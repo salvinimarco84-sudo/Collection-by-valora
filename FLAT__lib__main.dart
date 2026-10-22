@@ -3120,7 +3120,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
           'produttore': (row['produttore'] ?? '').toString().trim().isEmpty ? null : row['produttore'].toString().trim(),
           'anno_uscita': year,
           'codice_prodotto': (row['codice_prodotto'] ?? '').toString().trim().isEmpty ? null : row['codice_prodotto'].toString().trim(),
-          'condizione': _enumValue(row['condizione'], const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], 'USATO'),
+          'condizione': _enumValue(row['condizione'], const ['NUOVO','NUOVO IMBALLATO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], 'USATO'),
           'completezza': _enumValue(row['completezza'], const ['SIGILLATO','COMPLETO','INCOMPLETO'], 'COMPLETO'),
           'destinazione': _enumValue(row['destinazione'], const ['COLLEZIONE','RIVENDITA','ALTRO'], 'COLLEZIONE'),
           'quantita': qty < 1 ? 1 : qty,
@@ -4273,7 +4273,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _field(_family, 'Codice prodotto'),
             _detailFieldCard('fonte_dati_prodotto', _metadataSourceUrl ?? object['fonte_dati_prodotto']),
             _detailFieldCard('stato_verifica_dati', object['stato_verifica_dati'] ?? 'DA_VERIFICARE'),
-            _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+            _dropdown('Condizione', _condition, const ['NUOVO','NUOVO IMBALLATO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
             _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
             _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
             _field(_quantity, 'Quantità', type: TextInputType.number),
@@ -4599,7 +4599,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _line.text = txt(['anno_uscita']);
       _family.text = txt(['codice_prodotto']);
       final c = txt(['condizione'], _condition);
-      if (const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
+      if (const ['NUOVO','NUOVO IMBALLATO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
       final cp = txt(['completezza'], _completeness);
       if (const ['SIGILLATO','COMPLETO','INCOMPLETO'].contains(cp)) _completeness = cp;
       final d = txt(['destinazione'], _destination);
@@ -5949,7 +5949,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('DATI INSERIBILI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+                _dropdown('Condizione *', _condition, const ['NUOVO','NUOVO IMBALLATO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
                 _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
                 _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
                 _field(_quantity, 'Quantità', type: TextInputType.number),
