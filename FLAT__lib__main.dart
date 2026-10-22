@@ -2895,6 +2895,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       final table = CsvToListConverter(
         shouldParseNumbers: false,
         fieldDelimiter: delimiter,
+        eol: '\n',
       ).convert(csvText);
       final nonEmptyRows = table.where((row) =>
           row.any((value) => value.toString().trim().isNotEmpty)).toList();
