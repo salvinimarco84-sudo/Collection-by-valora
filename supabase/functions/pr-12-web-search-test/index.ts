@@ -948,7 +948,7 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
     let directResults: SearchResult[] = await searchKnownCatalogs(category, description + " " + theme + " " + extraClues);
     const errors: string[] = [...configured.warnings];
     // Query mirate alla categoria e al franchise.
-    const cleanDescription = description.replace(/["']/g, " ").replace(/\s+/g, " ").trim();
+    const cleanDescription = (description + " " + extraClues).replace(/["\']/g, " ").replace(/\s+/g, " ").trim();
     // Le fonti configurate dagli utenti vengono interrogate prima delle query generiche.
     // Limite per lotto per evitare costi/tempi incontrollati; le priorità arrivano dal registro.
     const franchiseQueries = thematicFranchiseQueries(cleanDescription, theme);
