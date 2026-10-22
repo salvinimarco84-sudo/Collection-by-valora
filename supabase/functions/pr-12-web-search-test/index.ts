@@ -129,12 +129,41 @@ async function searchKnownCatalogs(category: string, description: string): Promi
         html.match(/<h1\b[^>]*>([^<]*)<\/h1>/i)?.[1] ??
         html.match(/<title\b[^>]*>([^<]*)<\/title>/i)?.[1] ?? ""
       );
-      const image = html.match(/<meta\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1];
+      const image = html.match(/<meta\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1]
+        ?? html.match(/<meta\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1];
+      const readMeta = (...names: string[]) => {
+        for (const name of names) {
+          const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\      const image = html.match(/<meta\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1];
+      const text = cleanText(title + " " + html.slice(0, 18000));
+");
+          const patterns = [
+            new RegExp("<meta\\b[^>]*(?:name|property)=['\\"]" + escaped + "['\\"][^>]*content=['\\"]([^'\\"]+)['\\"]", "i"),
+            new RegExp("<meta\\b[^>]*content=['\\"]([^'\\"]+)['\\"][^>]*(?:name|property)=['\\"]" + escaped + "['\\"]", "i")
+          ];
+          for (const pattern of patterns) {
+            const match = html.match(pattern);
+            if (match?.[1]?.trim()) return cleanText(match[1]).slice(0, 180);
+          }
+        }
+        return "";
+      };
       const text = cleanText(title + " " + html.slice(0, 18000));
       if (!title || title.length < 4) { catalogDiagnostics.push(hostLabel + ": pagina raggiunta ma titolo prodotto assente; candidato scartato"); return; }
       if (!pattern.test(text)) { catalogDiagnostics.push(hostLabel + ": pagina raggiunta, codice non trovato nel contenuto; candidato scartato"); return; }
       if (/catalog result for|page not found|access denied|error|not found/i.test(title)) { catalogDiagnostics.push(hostLabel + ": titolo generico o errore; candidato scartato"); return; }
-      results.push({ title, url, snippet: "Titolo letto dalla pagina del catalogo " + hostLabel + "; verificare codice, edizione e variante prima di applicare i metadati.", source_query: canonical, motore: "CATALOGO_DIRETTO", ...(image ? { image_url: decodeEntities(image) } : {}) });
+      const manufacturer = readMeta("product:brand", "og:brand", "brand", "author", "publisher", "dc.publisher");
+      const productCode = readMeta("product:retailer_item_id", "product:sku", "sku", "mpn", "isbn", "product:isbn", "book:isbn");
+      const yearText = readMeta("article:published_time", "datePublished", "datepublished", "release_date", "product:release_date", "dc.date");
+      const yearMatch = yearText.match(/(?:19|20)\\d{2}/);
+      results.push({
+        title, url,
+        snippet: "Titolo letto dalla pagina del catalogo " + hostLabel + "; verificare codice, edizione e variante prima di applicare i metadati.",
+        source_query: canonical, motore: "CATALOGO_DIRETTO",
+        ...(image ? { image_url: decodeEntities(image) } : {}),
+        ...(manufacturer ? { produttore: manufacturer } : {}),
+        ...(productCode ? { codice_prodotto: productCode } : {}),
+        ...(yearMatch ? { anno_uscita: Number(yearMatch[0]) } : {})
+      });
     } catch (e) { catalogDiagnostics.push(hostLabel + ": errore recupero: " + (e instanceof Error ? e.message : String(e)).slice(0, 240)); }
   };
   if (category === "LEGO" || /\blego\b/i.test(canonical)) {
