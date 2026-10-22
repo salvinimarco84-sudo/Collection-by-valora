@@ -609,8 +609,8 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
   'VALUTAZIONI': [
-    ProcedureEntry(title: 'VALORA', description: 'Valutazione completa di un singolo oggetto, preparazione delle inserzioni e report.', apiCode: 'LAUNCH-VALORA'),
-    ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Consulta il valore complessivo della collezione e i relativi riepiloghi.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
+    ProcedureEntry(title: 'VALORA', description: 'Valutazione specialistica da fotografie o da un record; preparazione ed esportazione delle INSERZIONI in Word o PDF.', apiCode: 'LAUNCH-VALORA'),
+    ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Consulta il patrimonio e avvia la ricerca di mercato dedicata alla valutazione della collezione.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
     ProcedureEntry(title: 'VALUTA ACQUISTO', description: 'Analisi rapida di un acquisto prima di concluderlo. Motore in preparazione.', enabled: false),
   ],
   'FLUSSI DI CASSA': [
@@ -1485,16 +1485,56 @@ class ValoraServicePage extends StatefulWidget {
 class _ValoraServicePageState extends State<ValoraServicePage> {
   bool _loading = true;
   bool _preparing = false;
+  final TextEditingController _searchController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+  final List<XFile> _photos = <XFile>[];
   String? _error;
   List<Map<String, dynamic>> _objects = [];
   int? _selectedId;
   String _market = 'ITALIA';
   Map<String, dynamic>? _prepared;
+  bool _identifyingPhotos = false;
+  Map<String, dynamic>? _photoIdentification;
 
   @override
   void initState() {
     super.initState();
     _loadObjects();
+  }
+
+  @override
+  void dispose() { _searchController.dispose(); super.dispose(); }
+
+  Future<void> _capturePhoto() async {
+    try {
+      final image = await _imagePicker.pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
+      if (image != null && mounted) setState(() { if (_photos.length < 3) _photos.add(image); });
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Fotocamera non disponibile: $e');
+    }
+  }
+
+  Future<void> _choosePhotos() async {
+    try {
+      final images = await _imagePicker.pickMultiImage(imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
+      if (!mounted || images.isEmpty) return;
+      setState(() {
+        for (final image in images) {
+          if (_photos.length >= 3) break;
+          if (!_photos.any((p) => p.path == image.path)) _photos.add(image);
+        }
+        if (_photos.length >= 3 && images.length > 3) _error = 'VALORA usa al massimo 3 fotografie per oggetto.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Selezione fotografie non riuscita: $e');
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredObjects {
+    final q = _searchController.text.trim().toLowerCase();
+    if (q.isEmpty) return _objects;
+    return _objects.where((o) => [o['descrizione_oggetto'], o['produttore'], o['codice_prodotto'], o['codice_oggetto']]
+      .any((v) => (v ?? '').toString().toLowerCase().contains(q))).toList();
   }
 
   Future<void> _loadObjects() async {
@@ -1504,17 +1544,51 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           .from('master_oggetti')
           .select('codice_oggetto,descrizione_oggetto,produttore,codice_prodotto,stato,condizione,completezza')
           .eq('destinazione', 'COLLEZIONE')
-          .neq('archiviato_test', true)
+          .or('archiviato_test.is.null,archiviato_test.eq.false')
           .order('descrizione_oggetto')
           .limit(500);
       final rows = (data as List).map((e) => Map<String, dynamic>.from(e as Map))
           .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
               .contains((r['stato'] ?? '').toString().toUpperCase())).toList();
       if (!mounted) return;
-      setState(() { _objects = rows; _loading = false; });
+      setState(() { _objects = rows; _loading = false; _error = rows.isEmpty ? 'Caricamento completato: nessun record attivo trovato in COLLEZIONE. Verifica l’importazione in TEST.' : null; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = 'Impossibile caricare gli oggetti della collezione: $e'; _loading = false; });
+    }
+  }
+
+  Future<void> _identifyFromPhotos() async {
+    if (_photos.isEmpty) {
+      setState(() => _error = 'Scatta o seleziona almeno una fotografia.');
+      return;
+    }
+    setState(() { _identifyingPhotos = true; _error = null; _photoIdentification = null; });
+    try {
+      final encodedPhotos = <Map<String, String>>[];
+      for (final photo in _photos) {
+        final bytes = await photo.readAsBytes();
+        final lower = photo.name.toLowerCase();
+        final mime = lower.endsWith('.png') ? 'image/png' : lower.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+        encodedPhotos.add({'nome': photo.name, 'mime_type': mime, 'base64': base64Encode(bytes)});
+      }
+      final response = await _ValoraRuntimeApi.call('consultation', {
+        'session_id': null,
+        'consultation_code': 'VALORA_IDENTIFY_FROM_PHOTOS',
+        'arguments': {'mercato_riferimento': _market, 'fotografie': encodedPhotos},
+      });
+      if (!mounted) return;
+      final result = response['result'];
+      setState(() {
+        _photoIdentification = result is Map ? Map<String, dynamic>.from(result) : {'risultato': result};
+        _identifyingPhotos = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Identificazione fotografica non disponibile nel runtime TEST: $e';
+        _identifyingPhotos = false;
+      });
     }
   }
 
@@ -1563,17 +1637,65 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
               SizedBox(height: 12),
               Text('SERVIZIO VALORA', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
               SizedBox(height: 8),
-              Text('Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.'),
+              Text('VALORA identifica l’oggetto da fotografie oppure tramite ricerca per descrizione nell’archivio. Dopo la valutazione puoi scegliere ACQUISTO oppure INSERZIONI; le bozze vengono esportate in Word o PDF. La registrazione di una NUOVA VENDITA resta una procedura separata e facoltativa.'),
             ]),
           ),
           const SizedBox(height: 18),
-          Text('1. SELEZIONA L’OGGETTO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          Text('RAMO 1 · IDENTIFICA DA FOTOGRAFIE', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
+          const Text('Scatta una foto oppure scegli immagini dalla galleria. Puoi aggiungerne fino a 3.'),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(onPressed: _photos.length >= 3 ? null : _capturePhoto, icon: const Icon(Icons.camera_alt_outlined), label: const Text('SCATTA FOTO'))),
+            const SizedBox(width: 8),
+            Expanded(child: OutlinedButton.icon(onPressed: _photos.length >= 3 ? null : _choosePhotos, icon: const Icon(Icons.photo_library_outlined), label: const Text('GALLERIA'))),
+          ]),
+          if (_photos.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(height: 112, child: ListView(scrollDirection: Axis.horizontal, children: [
+              for (var i = 0; i < _photos.length; i++)
+                Padding(padding: const EdgeInsets.only(right: 8), child: Stack(children: [
+                  ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(_photos[i].path), width: 104, height: 104, fit: BoxFit.cover)),
+                  Positioned(right: 2, top: 2, child: IconButton.filledTonal(onPressed: () => setState(() => _photos.removeAt(i)), icon: const Icon(Icons.close, size: 16), tooltip: 'Rimuovi foto')),
+                ])),
+            ])),
+            Text('${_photos.length}/3 fotografie selezionate', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+          ],
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: _identifyingPhotos || _photos.isEmpty ? null : _identifyFromPhotos,
+            icon: _identifyingPhotos ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.auto_awesome),
+            label: Text(_identifyingPhotos ? 'IDENTIFICAZIONE IN CORSO…' : 'IDENTIFICA OGGETTO DALLE FOTO'),
+          ),
+          if (_photoIdentification != null) Card(
+            margin: const EdgeInsets.only(top: 10),
+            child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('RISULTATO IDENTIFICAZIONE', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              SelectableText(_photoIdentification.toString()),
+            ])),
+          ),
+          const SizedBox(height: 22),
+          Text('RAMO 2 · CERCA UN OGGETTO NELL’ARCHIVIO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _searchController,
+            textInputAction: TextInputAction.search,
+            onChanged: (_) => setState(() { _selectedId = null; _prepared = null; }),
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: 'Descrizione, produttore o codice',
+              hintText: 'Es. LEGO Batman 76139',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(onPressed: () => setState(() { _searchController.clear(); _selectedId = null; _prepared = null; }), icon: const Icon(Icons.clear)),
+            ),
+          ),
+          const SizedBox(height: 10),
           DropdownButtonFormField<int>(
             value: _selectedId,
             isExpanded: true,
             decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Oggetto da valutare'),
-            items: _objects.map((o) => DropdownMenuItem<int>(
+            items: _filteredObjects.map((o) => DropdownMenuItem<int>(
               value: (o['codice_oggetto'] as num).toInt(),
               child: Text('#${o['codice_oggetto']} · ${o['descrizione_oggetto'] ?? 'Senza descrizione'}', overflow: TextOverflow.ellipsis),
             )).toList(),
@@ -1581,7 +1703,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           ),
           if (_objects.isEmpty) const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text('Non risultano oggetti disponibili nella destinazione COLLEZIONE.'),
+            child: Text('Nessun oggetto caricato. Usa AGGIORNA OGGETTI; se resta vuoto, verifica l’importazione nel database TEST.'),
           ),
           if (selected != null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
@@ -1608,7 +1730,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           FilledButton.icon(
             onPressed: _preparing || _selectedId == null ? null : _prepareValuation,
             icon: _preparing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-            label: Text(_preparing ? 'Preparazione in corso…' : 'PREPARA VALUTAZIONE'),
+            label: Text(_preparing ? 'Ricerca in corso…' : 'AVVIA VALUTAZIONE DI MERCATO'),
           ),
           if (_error != null) Padding(
             padding: const EdgeInsets.only(top: 14),
@@ -1621,14 +1743,15 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
               children: [
                 const Text('ESITO PREPARAZIONE', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('La richiesta è stata inviata al runtime. Questo esito non rappresenta ancora una valutazione di mercato definitiva né genera automaticamente inserzioni.'),
+                const Text('Risposta del runtime VALORA. Verifica le fonti e i comparabili restituiti: questa risposta non registra vendite e non pubblica inserzioni.'),
                 const SizedBox(height: 8),
                 SelectableText(_prepared.toString()),
               ],
             )),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI')),
+          OutlinedButton.icon(onPressed: _loading ? null : _loadObjects, icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI')),
+          if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: _objects.isEmpty ? Colors.orangeAccent : Colors.redAccent))),
         ]),
     );
   }
@@ -1642,8 +1765,15 @@ class CollectionValuePage extends StatefulWidget {
 
 class _CollectionValuePageState extends State<CollectionValuePage> {
   bool _loading = true;
+  bool _researching = false;
   String? _error;
+  String _market = 'ITALIA';
+  String _query = '';
+  String _status = '';
   List<Map<String, dynamic>> _rows = [];
+  final Set<int> _selected = <int>{};
+  final Map<int, Map<String, dynamic>> _valuations = <int, Map<String, dynamic>>{};
+
   @override
   void initState() { super.initState(); _load(); }
 
@@ -1652,45 +1782,90 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
 
   String _eur(double value) => '€ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
 
+  List<Map<String, dynamic>> get _filteredRows {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _rows;
+    return _rows.where((r) => [
+      r['descrizione_oggetto'], r['codice_oggetto'], r['stato']
+    ].any((v) => (v ?? '').toString().toLowerCase().contains(q))).toList();
+  }
+
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() { _loading = true; _error = null; _status = ''; });
     try {
       final data = await Supabase.instance.client.schema('collection')
           .from('master_oggetti')
           .select('codice_oggetto,descrizione_oggetto,stato,quantita,valore_oggetto,valore_mercato')
           .eq('destinazione', 'COLLEZIONE')
-          .neq('archiviato_test', true)
-          .order('descrizione_oggetto');
+          .or('archiviato_test.is.null,archiviato_test.eq.false')
+          .order('descrizione_oggetto')
+          .limit(2000);
       final rows = (data as List).map((e) => Map<String,dynamic>.from(e as Map))
           .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
               .contains((r['stato'] ?? '').toString().toUpperCase())).toList();
       if (!mounted) return;
-      setState(() { _rows = rows; _loading = false; });
+      setState(() { _rows = rows; _loading = false; _selected.removeWhere((id) => !rows.any((r) => r['codice_oggetto'] == id)); });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = 'Impossibile leggere il catalogo: $e'; _loading = false; });
+      setState(() { _error = 'Impossibile leggere il catalogo TEST: $e'; _loading = false; });
     }
+  }
+
+  Future<void> _researchSelected() async {
+    final ids = _selected.toList();
+    if (ids.isEmpty) {
+      setState(() => _status = 'Seleziona almeno un oggetto da valutare.');
+      return;
+    }
+    setState(() { _researching = true; _error = null; _status = 'Avvio valutazione di mercato per ${ids.length} oggetti…'; _valuations.clear(); });
+    var completed = 0;
+    final failures = <String>[];
+    for (final id in ids) {
+      final row = _rows.where((r) => r['codice_oggetto'] == id).firstOrNull;
+      final name = (row?['descrizione_oggetto'] ?? 'Oggetto $id').toString();
+      try {
+        final response = await _ValoraRuntimeApi.call('consultation', {
+          'session_id': null,
+          'consultation_code': 'MARKET_VALUATION_PREPARE',
+          'arguments': {'codice_oggetto': id, 'mercato_riferimento': _market},
+        });
+        final result = response['result'];
+        if (result is Map) _valuations[id] = Map<String, dynamic>.from(result);
+        else _valuations[id] = {'risultato': result};
+        completed++;
+      } catch (e) {
+        failures.add('$name: $e');
+      }
+      if (mounted) setState(() => _status = 'Elaborati $completed di ${ids.length} oggetti…');
+    }
+    if (!mounted) return;
+    setState(() {
+      _researching = false;
+      _status = 'Valutazioni avviate con risposta per $completed di ${ids.length} oggetti.' +
+        (failures.isEmpty ? '' : '\nProblemi: ' + failures.join(' | '));
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    var market = 0.0, manual = 0.0;
+    var marketTotal = 0.0, manualTotal = 0.0;
     var units = 0, missing = 0;
     for (final r in _rows) {
       final q = (r['quantita'] as num?)?.toInt() ?? 1;
       units += q;
       final m = _num(r['valore_mercato']);
       final v = _num(r['valore_oggetto']);
-      if (m == null) { missing++; } else { market += m * q; }
-      if (v != null) manual += v * q;
+      if (m == null) { missing++; } else { marketTotal += m * q; }
+      if (v != null) manualTotal += v * q;
     }
+    final filtered = _filteredRows;
     Widget metric(String label, String value, IconData icon, Color color) => Card(
       child: ListTile(leading: Icon(icon, color: color), title: Text(label),
         subtitle: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18))),
     );
     return Scaffold(
       appBar: AppBar(title: const Text('VALORE COLLEZIONE'),
-        actions: [IconButton(tooltip: 'Aggiorna', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))]),
+        actions: [IconButton(tooltip: 'Aggiorna archivio', onPressed: _loading || _researching ? null : _load, icon: const Icon(Icons.refresh))]),
       body: _loading ? const Center(child: CircularProgressIndicator()) :
         _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(
           mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center),
@@ -1698,36 +1873,70 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
           const Text('RIEPILOGO DEL PATRIMONIO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
           const SizedBox(height: 6),
-          const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.'),
+          const Text('Valori già registrati e ricerca di mercato sono due operazioni distinte. Seleziona gli oggetti e avvia la valutazione per richiedere una nuova analisi al runtime VALORA.'),
           const SizedBox(height: 12),
-          metric('Valore di mercato noto', _eur(market), Icons.trending_up, const Color(0xFF39875B)),
-          metric('Valore manuale registrato', _eur(manual), Icons.edit_note, const Color(0xFF568DAD)),
+          metric('Valore di mercato registrato', _eur(marketTotal), Icons.trending_up, const Color(0xFF39875B)),
+          metric('Valore manuale registrato', _eur(manualTotal), Icons.edit_note, const Color(0xFF568DAD)),
           metric('Oggetti e unità', '${_rows.length} record · $units unità', Icons.inventory_2_outlined, const Color(0xFF8556C7)),
           metric('Oggetti senza stima di mercato', '$missing', Icons.hourglass_empty, const Color(0xFFE17D35)),
-          const SizedBox(height: 12),
-          const Text('DETTAGLIO OGGETTI', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
-          const SizedBox(height: 6),
-          if (_rows.isEmpty) const Card(child: ListTile(title: Text('Nessun oggetto destinato alla collezione.'))),
-          ..._rows.map((r) {
+          const SizedBox(height: 16),
+          const Text('NUOVA VALUTAZIONE DI MERCATO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _market,
+            decoration: const InputDecoration(labelText: 'Mercato di riferimento', border: OutlineInputBorder()),
+            items: const [
+              DropdownMenuItem(value: 'ITALIA', child: Text('Italia')),
+              DropdownMenuItem(value: 'EUROPA', child: Text('Europa')),
+              DropdownMenuItem(value: 'MONDO', child: Text('Mondo')),
+            ],
+            onChanged: _researching ? null : (value) => setState(() { if (value != null) _market = value; }),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            decoration: const InputDecoration(labelText: 'Filtra oggetti', hintText: 'Descrizione o codice', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+            onChanged: (value) => setState(() => _query = value),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: Text('${_selected.length} selezionati su ${filtered.length} visibili', style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
+            TextButton(onPressed: _researching || filtered.isEmpty ? null : () => setState(() {
+              if (filtered.every((r) => _selected.contains((r['codice_oggetto'] as num?)?.toInt()))) {
+                _selected.removeAll(filtered.map((r) => (r['codice_oggetto'] as num).toInt()));
+              } else {
+                for (final r in filtered) { final id = int.tryParse((r['codice_oggetto'] ?? '').toString()); if (id != null) _selected.add(id); }
+              }
+            }), child: const Text('SELEZIONA TUTTI')),
+          ]),
+          if (_rows.isEmpty) const Card(child: ListTile(leading: Icon(Icons.info_outline), title: Text('Archivio vuoto'), subtitle: Text('Importa prima gli oggetti nel database TEST oppure usa VALORA dalla sezione principale per identificare un oggetto da fotografie.'))),
+          ...filtered.map((r) {
+            final id = int.tryParse((r['codice_oggetto'] ?? '').toString());
             final q = (r['quantita'] as num?)?.toInt() ?? 1;
             final m = _num(r['valore_mercato']);
             final v = _num(r['valore_oggetto']);
-            final label = m != null ? 'Mercato: ${_eur(m*q)}' :
-                v != null ? 'Valore manuale: ${_eur(v*q)}' : 'Stima di mercato non disponibile';
-            return Card(child: ListTile(
+            final result = id == null ? null : _valuations[id];
+            return Card(child: CheckboxListTile(
+              value: id != null && _selected.contains(id),
+              onChanged: _researching || id == null ? null : (checked) => setState(() { if (checked == true) _selected.add(id); else _selected.remove(id); }),
               title: Text((r['descrizione_oggetto'] ?? 'Oggetto senza descrizione').toString()),
-              subtitle: Text('ID ${r['codice_oggetto']} · Quantità $q\n$label'),
+              subtitle: Text('ID $id · Quantità $q\n' + (m != null ? 'Mercato registrato: ${_eur(m*q)}' : v != null ? 'Valore manuale: ${_eur(v*q)}' : 'Nessuna stima registrata') + (result == null ? '' : '\nRisposta VALORA: ${result.toString()}')),
               isThreeLine: true,
+              controlAffinity: ListTileControlAffinity.leading,
             ));
           }),
-          const SizedBox(height: 10),
-          Text('Le stime automatiche e l’aggiornamento mensile saranno collegati al motore di valutazione in un passaggio separato, dopo il collaudo.',
-            style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _researching || _selected.isEmpty ? null : _researchSelected,
+            icon: _researching ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
+            label: Text(_researching ? 'RICERCA IN CORSO…' : 'AVVIA VALUTAZIONE DI MERCATO'),
+          ),
+          if (_status.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 10), child: SelectableText(_status)),
+          const SizedBox(height: 8),
+          Text('La valutazione richiede una risposta valida dal runtime VALORA. Questa schermata non registra vendite né pubblica inserzioni.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
         ])),
     );
   }
 }
-
 
 class ValoraAssistantPage extends StatefulWidget {
   const ValoraAssistantPage({super.key, this.screenContext = 'Dashboard'});
@@ -3023,7 +3232,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   Future<void> _pickImport() async {
     setState(() { _busy=true; _status='Seleziona un file da analizzare…'; _rows=[]; _duplicates.clear(); _invalid.clear(); _selectedRows.clear(); });
     try {
-      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true,withReadStream:true);
+      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],allowMultiple:false,withData:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
       final parsedRows=await _parse(picked.files.first);
       final rows=parsedRows.map(_normalizeImportRow).toList();
@@ -4869,10 +5078,32 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() => _pr12AiBatchStatus = 'Nessun campo vuoto aggiornabile per l’oggetto #$id. I dati presenti sono stati conservati.');
       return;
     }
-    await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
-    if (!mounted) return;
-    setState(() => _pr12AiBatchStatus = 'Metadati applicati all’oggetto #$id: ' + patch.keys.join(', ') + '. Sono stati aggiornati soltanto campi vuoti.');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato: ' + patch.keys.join(', '))));
+    try {
+      await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
+      // La scrittura è valida solo se il dato viene riletto dal database.
+      final verified = await client.schema('collection').from('master_oggetti')
+          .select('descrizione_oggetto,produttore,anno_uscita,codice_prodotto')
+          .eq('codice_oggetto', id).maybeSingle();
+      if (verified == null) throw Exception('Aggiornamento non verificabile: il record #$id non è leggibile dopo il salvataggio.');
+      final missing = <String>[];
+      for (final key in patch.keys) {
+        final expected = patch[key];
+        final actual = verified[key];
+        if (actual == null || actual.toString().trim().isEmpty || actual.toString() != expected.toString()) {
+          missing.add(key);
+        }
+      }
+      if (missing.isNotEmpty) {
+        throw Exception('Il database non conferma i campi: ${missing.join(', ')}. Verificare permessi RLS e schema TEST.');
+      }
+      if (!mounted) return;
+      setState(() => _pr12AiBatchStatus = 'Metadati salvati e riletti dal database per l’oggetto #$id: ' + patch.keys.join(', ') + '.');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato e verificato: ' + patch.keys.join(', '))));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _pr12AiBatchStatus = 'Salvataggio metadati non verificato per #$id: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Metadati NON confermati nel database: $e')));
+    }
   }
   String _pr12CategoryFromDescription(String description) {
     final v = description.toLowerCase();
@@ -5750,7 +5981,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                                     Row(children: [Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: selected ? sectionColor : null), const SizedBox(width: 5), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)))]),
                                     if (maker.isNotEmpty) Text('Produttore / editore: $maker'),
                                     if (year.isNotEmpty) Text('Anno: $year'),
-                                    if (productCode.isNotEmpty) Text('Codice / ISBN: $productCode'),
+                                    if (productCode.isNotEmpty) Text(
+                                      '${_pr12CategoryFromDescription((result['descrizione'] ?? '').toString()) == 'FUMETTI' ? 'ISBN / codice editoriale' : 'Codice prodotto'}: $productCode',
+                                    ),
                                     Text('Fonte: ${source.isEmpty ? 'sito non identificato' : source}', style: TextStyle(color: sectionColor, fontSize: 12)),
                                   ])),
                                 ]),
