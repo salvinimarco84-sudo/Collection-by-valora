@@ -2927,18 +2927,52 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
     throw Exception('Formato non supportato. Usa XLSX, CSV o JSON.');
   }
 
+  // Uniforma le intestazioni indipendentemente dal formato sorgente (CSV, XLSX, JSON).
+  Map<String, dynamic> _normalizeImportRow(Map<String, dynamic> source) {
+    String normalizeKey(String key) => key
+        .replaceAll(RegExp(r'([a-z0-9])([A-Z])'), r'$1_$2')
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[\\s\\-]+'), '_');
+    final row = <String, dynamic>{};
+    for (final entry in source.entries) {
+      final key = normalizeKey(entry.key);
+      if (key.isNotEmpty) row[key] = entry.value;
+    }
+    const aliases = <String, String>{
+      'nome_oggetto': 'descrizione_oggetto',
+      'descrizione': 'descrizione_oggetto',
+      'nome': 'descrizione_oggetto',
+      'codice': 'codice_oggetto',
+      'codice_prodotto': 'codice_oggetto',
+      'quantita_importazione': 'quantita',
+      'qty': 'quantita',
+      'stato': 'stato_oggetto',
+      'data_inserimento': 'data_inserimento',
+      'data_di_inserimento': 'data_inserimento',
+      'condizioni': 'condizione',
+      'note_oggetto': 'note',
+    };
+    for (final entry in aliases.entries) {
+      if (!row.containsKey(entry.value) && row.containsKey(entry.key)) {
+        row[entry.value] = row[entry.key];
+      }
+    }
+    return row;
+  }
+
   Future<void> _pickImport() async {
     setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
     try {
       final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true,withReadStream:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
-      final rows=await _parse(picked.files.first);
+      final parsedRows=await _parse(picked.files.first);\n      final rows=parsedRows.map(_normalizeImportRow).toList();
       final existing=await _catalog();
       final descriptions=existing.map((e)=>_norm(e['descrizione_oggetto'])).toSet();
       final codes=existing.map((e)=>_norm(e['codice_oggetto'])).toSet();
       for(var i=0;i<rows.length;i++) {
         final desc=_norm(rows[i]['descrizione_oggetto'] ?? rows[i]['descrizione'] ?? rows[i]['nome']);
-        final code=_norm(rows[i]['codice_oggetto']);
+        final code=_norm(rows[i]['codice_oggetto'] ?? rows[i]['codice_prodotto'] ?? rows[i]['codice']);
         if(desc.isEmpty) _invalid.add(i);
         else if(descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
           rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
