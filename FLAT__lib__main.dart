@@ -3120,7 +3120,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
           'produttore': (row['produttore'] ?? '').toString().trim().isEmpty ? null : row['produttore'].toString().trim(),
           'anno_uscita': year,
           'codice_prodotto': (row['codice_prodotto'] ?? '').toString().trim().isEmpty ? null : row['codice_prodotto'].toString().trim(),
-          'condizione': _enumValue(row['condizione'], const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], 'USATO'),
+          'condizione': _enumValue(row['condizione'], const ['NUOVO','NUOVO IMBALLATO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], 'USATO'),
           'completezza': _enumValue(row['completezza'], const ['SIGILLATO','COMPLETO','INCOMPLETO'], 'COMPLETO'),
           'destinazione': _enumValue(row['destinazione'], const ['COLLEZIONE','RIVENDITA','ALTRO'], 'COLLEZIONE'),
           'quantita': qty < 1 ? 1 : qty,
@@ -4273,7 +4273,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _field(_family, 'Codice prodotto'),
             _detailFieldCard('fonte_dati_prodotto', _metadataSourceUrl ?? object['fonte_dati_prodotto']),
             _detailFieldCard('stato_verifica_dati', object['stato_verifica_dati'] ?? 'DA_VERIFICARE'),
-            _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+            _dropdown('Condizione', _condition, const ['NUOVO','NUOVO IMBALLATO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
             _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
             _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
             _field(_quantity, 'Quantità', type: TextInputType.number),
@@ -4302,8 +4302,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() {
         _selectedImageBytes = bytes; _selectedImageName = file.name;
         _imageAcquisition = 'CARICAMENTO_FILE';
-        _imageStatus = 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
+        _imageStatus = 'Immagine caricata. Avvio il riconoscimento e la ricerca metadati con PR-12…';
       });
+      // Galleria e fotocamera devono avviare lo stesso flusso PR-12.
+      await _recognizeSelectedPhoto();
     } catch (e) {
       if (mounted) setState(() => _imageStatus = 'Caricamento immagine non riuscito: $e');
     }
@@ -4372,7 +4374,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (description.isNotEmpty) _description.text = description;
         if (maker.isNotEmpty) _producer.text = maker;
         if (code.isNotEmpty) _family.text = code;
-        if (category.isNotEmpty) _line.text = category;
+        // La categoria riconosciuta non è un anno di uscita: non inserirla in
+        // _line, che alimenta il campo anno_uscita del database.
         if (_description.text.trim().isEmpty && results.isNotEmpty) {
           final title = (results.first['title'] ?? '').toString().trim();
           if (title.isNotEmpty) _description.text = title;
@@ -4417,7 +4420,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('ASSISTENTE VALORA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 3),
-              Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.',
+              Text('Scatta una foto oppure scegli un’immagine dalla galleria: entrambi avviano lo stesso riconoscimento e la ricerca metadati PR-12. Poi confermi l’identità e completi i dati manuali.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
             ])),
           ]),
@@ -4596,7 +4599,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _line.text = txt(['anno_uscita']);
       _family.text = txt(['codice_prodotto']);
       final c = txt(['condizione'], _condition);
-      if (const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
+      if (const ['NUOVO','NUOVO IMBALLATO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
       final cp = txt(['completezza'], _completeness);
       if (const ['SIGILLATO','COMPLETO','INCOMPLETO'].contains(cp)) _completeness = cp;
       final d = txt(['destinazione'], _destination);
@@ -5946,7 +5949,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('DATI INSERIBILI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+                _dropdown('Condizione *', _condition, const ['NUOVO','NUOVO IMBALLATO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
                 _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
                 _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
                 _field(_quantity, 'Quantità', type: TextInputType.number),
