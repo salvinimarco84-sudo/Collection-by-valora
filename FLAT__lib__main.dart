@@ -3046,7 +3046,41 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
     final color=ValoraAppearance.instance.colorFor('CATALOGO');
     return Scaffold(appBar:AppBar(title:Text(widget.importMode?'IMPORTA OGGETTI':'ESPORTA OGGETTI')),
       body:SafeArea(child:ListView(padding:const EdgeInsets.all(16),children:[
-        Text(widget.importMode?'Importa Excel, CSV o JSON. VALORA controlla i dati e mostra l’anteprima prima del salvataggio.':'Esporta il catalogo TEST in Excel, CSV o JSON.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
+        Text(widget.importMode
+          ? 'Importa file Excel (.xlsx), CSV (.csv) o JSON (.json). VALORA controlla i dati e mostra l’anteprima prima del salvataggio.'
+          : 'Esporta il catalogo TEST in Excel, CSV o JSON.',
+          style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
+        if(widget.importMode) ...[
+          const SizedBox(height:12),
+          Card(
+            child: ExpansionTile(
+              initiallyExpanded: true,
+              leading: const Icon(Icons.info_outline),
+              title: const Text('COME PREPARARE IL FILE'),
+              subtitle: const Text('Consigli per un’importazione corretta'),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text('Per ottenere un’importazione corretta, prepara il file quanto più possibile simile al Master Oggetti di VALORA, mantenendo intestazioni e struttura dei dati coerenti.'),
+                      SizedBox(height:8),
+                      Text('• Usa le stesse intestazioni del Master Oggetti, quando possibile.'),
+                      Text('• Inserisci un oggetto per riga e un’informazione per colonna.'),
+                      Text('• Evita celle unite, titoli aggiuntivi e intestazioni duplicate.'),
+                      Text('• Se un dato non è disponibile, lascia il campo vuoto.'),
+                      Text('• Ogni oggetto deve avere una descrizione riconoscibile.'),
+                      SizedBox(height:8),
+                      Text('Formati supportati: Excel (.xlsx), CSV (.csv) e JSON (.json).'),
+                      Text('VALORA mostra l’anteprima e segnala i possibili duplicati prima del salvataggio. I record esistenti non vengono aggiornati.'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height:16),
         if(widget.importMode) ...[
           SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_pickImport,icon:const Icon(Icons.file_open),label:const Text('SELEZIONA FILE E ANALIZZA'))),
