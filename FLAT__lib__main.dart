@@ -1497,6 +1497,8 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   int? _selectedId;
   String _market = 'ITALIA';
   Map<String, dynamic>? _prepared;
+  bool _identifyingPhotos = false;
+  Map<String, dynamic>? _photoIdentification;
 
   @override
   void initState() {
@@ -1557,6 +1559,40 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = 'Impossibile caricare gli oggetti della collezione: $e'; _loading = false; });
+    }
+  }
+
+  Future<void> _identifyFromPhotos() async {
+    if (_photos.isEmpty) {
+      setState(() => _error = 'Scatta o seleziona almeno una fotografia.');
+      return;
+    }
+    setState(() { _identifyingPhotos = true; _error = null; _photoIdentification = null; });
+    try {
+      final encodedPhotos = <Map<String, String>>[];
+      for (final photo in _photos) {
+        final bytes = await photo.readAsBytes();
+        final lower = photo.name.toLowerCase();
+        final mime = lower.endsWith('.png') ? 'image/png' : lower.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+        encodedPhotos.add({'nome': photo.name, 'mime_type': mime, 'base64': base64Encode(bytes)});
+      }
+      final response = await _ValoraRuntimeApi.call('consultation', {
+        'session_id': null,
+        'consultation_code': 'VALORA_IDENTIFY_FROM_PHOTOS',
+        'arguments': {'mercato_riferimento': _market, 'fotografie': encodedPhotos},
+      });
+      if (!mounted) return;
+      final result = response['result'];
+      setState(() {
+        _photoIdentification = result is Map ? Map<String, dynamic>.from(result) : {'risultato': result};
+        _identifyingPhotos = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Identificazione fotografica non disponibile nel runtime TEST: $e';
+        _identifyingPhotos = false;
+      });
     }
   }
 
@@ -1629,6 +1665,20 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             ])),
             Text('${_photos.length}/3 fotografie selezionate', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
           ],
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: _identifyingPhotos || _photos.isEmpty ? null : _identifyFromPhotos,
+            icon: _identifyingPhotos ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.auto_awesome),
+            label: Text(_identifyingPhotos ? 'IDENTIFICAZIONE IN CORSO…' : 'IDENTIFICA OGGETTO DALLE FOTO'),
+          ),
+          if (_photoIdentification != null) Card(
+            margin: const EdgeInsets.only(top: 10),
+            child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('RISULTATO IDENTIFICAZIONE', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              SelectableText(_photoIdentification.toString()),
+            ])),
+          ),
           const SizedBox(height: 22),
           Text('RAMO 2 · CERCA UN OGGETTO NELL’ARCHIVIO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
