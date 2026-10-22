@@ -1947,7 +1947,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
           .map((row) => Map<String, dynamic>.from(row))
           // La HOME "COLLEZIONE" deve includere solo gli oggetti destinati
           // alla collezione. Gli oggetti per rivendita/altro non vanno contati qui.
-          .where((row) => (row['destinazione'] ?? '').toString().trim().toUpperCase() == 'COLLEZIONE')
+          .where((row) =>
+              (row['destinazione'] ?? '').toString().trim().toUpperCase() == 'COLLEZIONE' &&
+              row['archiviato_test'] != true &&
+              !['VENDUTO', 'PERSO', 'DISTRUTTO', 'USCITO', 'ACCORPATO']
+                  .contains((row['stato'] ?? '').toString().trim().toUpperCase()))
           .toList();
       if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
       await _loadDashboardImages(rows);
