@@ -2741,6 +2741,8 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   final Set<int> _duplicates = {};
   final Set<int> _invalid = {};
   final Set<int> _selectedRows = {};
+  int _importPage = 0;
+  static const int _importPageSize = 50;
   static const _headers = ['codice_oggetto','descrizione_oggetto','condizione','completezza','destinazione','stato','quantita','valore_oggetto','valuta_valore','totale_calcolato'];
 
   String _norm(dynamic value) => (value ?? '').toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
@@ -3032,7 +3034,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         else if(descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
           rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
       }
-      if(mounted)setState(() { _rows=rows; _selectedRows.clear(); _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Seleziona gli oggetti da importare. Nessun record salvato.'; });
+      if(mounted)setState(() { _rows=rows; _importPage=0; _selectedRows.clear(); _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Seleziona gli oggetti da importare. Nessun record salvato.'; });
     } catch(e) { if(mounted)setState(()=>_status='Importazione non riuscita: '+e.toString()); }
     finally { if(mounted)setState(()=>_busy=false); }
   }
@@ -3273,8 +3275,8 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                ..._rows.take(50).toList().asMap().entries.map((entry) {
-                  final i = entry.key;
+                ..._rows.skip(_importPage * _importPageSize).take(_importPageSize).toList().asMap().entries.map((entry) {
+                  final i = _importPage * _importPageSize + entry.key;
                   final row = entry.value;
                   final desc = (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
                   final invalid = _invalid.contains(i);
@@ -3316,10 +3318,30 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                     ),
                   );
                 }),
-                if (_rows.length > 50)
+                if (_rows.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('Mostrate le prime 50 righe su ${_rows.length}.', style: TextStyle(color: appearance.textMuted, fontSize: 12)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'Blocco precedente',
+                          onPressed: _busy || _importPage == 0 ? null : () => setState(() => _importPage--),
+                          icon: const Icon(Icons.arrow_back_ios_new),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${_importPage * _importPageSize + 1}–${((_importPage + 1) * _importPageSize) > _rows.length ? _rows.length : ((_importPage + 1) * _importPageSize)} di ${_rows.length} · Pagina ${_importPage + 1}/${((_rows.length - 1) ~/ _importPageSize) + 1}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: appearance.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Blocco successivo',
+                          onPressed: _busy || (_importPage + 1) * _importPageSize >= _rows.length ? null : () => setState(() => _importPage++),
+                          icon: const Icon(Icons.arrow_forward_ios),
+                        ),
+                      ],
+                    ),
                   ),
                 const SizedBox(height: 8),
                 SizedBox(
