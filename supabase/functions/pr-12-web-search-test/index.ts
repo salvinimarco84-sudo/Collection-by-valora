@@ -20,6 +20,39 @@ function codeFrom(description: string): string | undefined { return description.
 function isLego(category: string, description: string): boolean {
   return category === "LEGO" || /lego|minifig|brickheadz|technic|duplo|bricklink/i.test(description);
 }
+function metadataProfile(category: string, description: string): Record<string, unknown> {
+  const c = category.toUpperCase();
+  if (c.includes("LEGO") || /lego|bricklink|technic|duplo|brickheadz/i.test(description)) return {
+    categoria: "LEGO",
+    campi: ["nome_originale", "codice_linea_variante", "linea_serie", "data_prima_pubblicazione", "numero_pezzi", "contenuto_confezione", "edizione_variante", "paese_mercato"],
+    disambiguazione: ["distinguere set, polybag, box e minifigure", "verificare il codice set ufficiale", "non confondere varianti regionali o ristampe"],
+    fonti_prioritarie: ["LEGO.com", "BrickLink", "Rebrickable"]
+  };
+  if (c.includes("TRANSFORMER") || /transformers?|hasbro|takara tomy/i.test(description)) return {
+    categoria: "TRANSFORMERS",
+    campi: ["nome_originale", "personaggio_soggetto", "linea_serie", "codice_linea_variante", "edizione_variante", "data_prima_pubblicazione", "scala_prodotto", "paese_mercato", "identificativi_aggiuntivi"],
+    disambiguazione: ["distinguere personaggio, versione e classe", "separare codice prodotto e codice personaggio", "verificare edizione e produttore"],
+    fonti_prioritarie: ["Hasbro", "Transformers Wiki", "TFU.info"]
+  };
+  if (c.includes("SAINT") || /saint seiya|myth cloth|tamashii/i.test(description)) return {
+    categoria: "SAINT_SEIYA_MYTH_CLOTH",
+    campi: ["nome_originale", "personaggio_soggetto", "linea_serie", "edizione_variante", "data_prima_pubblicazione", "paese_mercato", "contenuto_confezione"],
+    disambiguazione: ["distinguere Myth Cloth, EX e altre linee", "identificare personaggio, armatura ed edizione", "verificare mercato e ristampa"],
+    fonti_prioritarie: ["Tamashii Nations", "Bandai"]
+  };
+  if (c.includes("FUMET") || c.includes("COMIC") || /fumetto|comics|isbn|panini comics|saldaPress/i.test(description)) return {
+    categoria: "FUMETTI",
+    campi: ["nome_originale", "linea_serie", "codice_linea_variante", "edizione_variante", "lingua_edizione", "paese_mercato", "data_prima_pubblicazione", "identificativi_aggiuntivi"],
+    disambiguazione: ["separare serie, numero albo e ristampa", "verificare editore, lingua, ISBN e copertina"],
+    fonti_prioritarie: ["editore ufficiale", "cataloghi bibliografici", "Grand Comics Database"]
+  };
+  return {
+    categoria: c || "NON_CLASSIFICATA",
+    campi: ["nome_originale", "categoria_prodotto", "linea_serie", "codice_linea_variante", "edizione_variante", "lingua_edizione", "paese_mercato", "identificativi_aggiuntivi", "fonti_campi", "livello_confidenza", "data_ultima_verifica"],
+    disambiguazione: ["non dedurre valori mancanti", "registrare la fonte per ogni campo verificato", "segnalare le ambiguità"],
+    fonti_prioritarie: []
+  };
+}
 function sourcesFor(category: string, query: string): string[] {
   query = canonicalSearchText(query);
   // Le linee specifiche hanno precedenza sulle categorie generiche: Saint Seiya,
@@ -500,7 +533,7 @@ function hasCrossCategoryTheme(description: string, theme = ""): boolean {
 }
 
 function makeQueries(category: string, description: string): string[] {
-  const code = codeFrom(description);
+  const code = codeFrom(description + " " + extraClues);
   const queries: string[] = [];
   const canonical = canonicalSearchText(description);
   const cleaned = canonical.replace(/["']/g, " ").replace(/\\s+/g, " ").trim();
@@ -900,14 +933,19 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
     const category = String(body.categoria ?? "").trim().toUpperCase().slice(0, 40);
     const theme = String(body.tema ?? body.franchise ?? body.franchise_tema ?? "").trim().slice(0, 120);
     const market = String(body.mercato ?? body.market ?? "Italia").trim().slice(0, 40) || "Italia";
+    const extraClues = [body.codice_prodotto, body.ean, body.upc, body.isbn, body.linea_serie, body.personaggio, body.variante, body.anno_uscita]
+      .filter((value: unknown) => value !== undefined && value !== null && String(value).trim().length > 0)
+      .map((value: unknown) => String(value).trim())
+      .join(" ").slice(0, 500);
+    const profile = metadataProfile(category, description);
     if (description.length < 2) return json({ ok: false, error: "Inserire una descrizione di almeno 2 caratteri." }, 400);
     const code = codeFrom(description);
-    const configured = await loadConfiguredSources(category, description, authenticatedUserId(req), theme, market);
-    const staticTargeted = sourcesFor(category, description + " " + theme);
+    const configured = await loadConfiguredSources(category, description + " " + extraClues, authenticatedUserId(req), theme, market);
+    const staticTargeted = sourcesFor(category, description + " " + theme + " " + extraClues);
     const targeted = [...new Set([...staticTargeted, ...configured.names])];
     // Interroga prima i cataloghi ufficiali direttamente (LEGO/BrickLink/Rebrickable e Tamashii);
     // le query web generiche restano un secondo livello e non sostituiscono il catalogo.
-    let directResults: SearchResult[] = await searchKnownCatalogs(category, description + " " + theme);
+    let directResults: SearchResult[] = await searchKnownCatalogs(category, description + " " + theme + " " + extraClues);
     const errors: string[] = [...configured.warnings];
     // Query mirate alla categoria e al franchise.
     const cleanDescription = description.replace(/["']/g, " ").replace(/\s+/g, " ").trim();
@@ -961,7 +999,7 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
 
     if (!results.length) return json({
       ok: true, procedura: "PR-12", modalita: "RICERCA_CATALOGO_E_WEB",
-      descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null,
+      descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null, profilo_metadati: profile,
       ...(comicAnchor ? { ricerca_serie: { titolo_serie_ipotizzato: comicAnchor.seriesTitle, numero_riferimento: 1, numero_albo_cercato: comicAnchor.issueNumber, funzione_numero_1: "identificazione_serie_non_valutazione_albo" } } : {}),
       risultati: [], numero_risultati: 0, ricerca_esterna_eseguita: true, metadati_confermati: false,
       avviso: "Nessuna corrispondenza verificabile trovata per il codice esatto. Nessun risultato generico non pertinente è stato mostrato.",
