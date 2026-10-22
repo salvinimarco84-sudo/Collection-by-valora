@@ -2822,9 +2822,15 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
     if (name.endsWith('.xlsx')) {
-      final workbook = xlsx.Excel.decodeBytes(bytes);
+      late final xlsx.Excel workbook;
+      try {
+        workbook = xlsx.Excel.decodeBytes(bytes);
+      } catch (e) {
+        throw Exception('Excel "${file.name}" letto (${bytes.length} byte), ma il contenuto XLSX non è decodificabile: $e');
+      }
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
-      final table = workbook.tables.values.first.rows;
+      final firstSheet = workbook.tables.values.first;
+      final table = firstSheet.rows;
       if (table.isEmpty) throw Exception('Il foglio Excel è vuoto o non contiene righe leggibili.');
 
       // I file esportati da app esterne possono avere righe introduttive prima dell'intestazione.
@@ -2848,6 +2854,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       }
 
       final parsed = <Map<String, dynamic>>[];
+      try {
       for (final sourceRow in table.skip(headerIndex + 1)) {
         if (!sourceRow.any((cell) => (cell?.value?.toString() ?? '').trim().isNotEmpty)) continue;
         final row = <String, dynamic>{};
@@ -2857,6 +2864,9 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
           row[header] = sourceRow[i]?.value?.toString() ?? '';
         }
         parsed.add(row);
+      }
+      } catch (e) {
+        throw Exception('Errore durante la lettura delle righe Excel (foglio: ${firstSheet.sheetName}, righe rilevate: ${table.length}): $e');
       }
       if (parsed.isEmpty) throw Exception('Intestazione trovata, ma non ci sono righe oggetto da importare.');
       return parsed;
