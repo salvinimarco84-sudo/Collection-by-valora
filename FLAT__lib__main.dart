@@ -1905,7 +1905,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           Row(children: [
             Expanded(child: Text('${_selected.length} selezionati su ${filtered.length} visibili', style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
             TextButton(onPressed: _researching || filtered.isEmpty ? null : () => setState(() {
-              if (filtered.every((r) => _selected.contains((r['codice_oggetto'] as num?)?.toInt())) {
+              if (filtered.every((r) => _selected.contains((r['codice_oggetto'] as num?)?.toInt()))) {
                 _selected.removeAll(filtered.map((r) => (r['codice_oggetto'] as num).toInt()));
               } else {
                 for (final r in filtered) { final id = int.tryParse((r['codice_oggetto'] ?? '').toString()); if (id != null) _selected.add(id); }
