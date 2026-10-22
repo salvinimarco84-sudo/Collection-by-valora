@@ -2967,7 +2967,10 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
     try {
       for(final row in eligible) {
         final description=(row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
-        final qty=int.tryParse((row['quantita'] ?? '1').toString()) ?? 1;
+        // Il master CSV usa "quantita_importazione"; il catalogo interno usa "quantita".
+        final qty=int.tryParse((row['quantita'] ?? row['quantita_importazione'] ?? '1').toString().trim()) ?? 1;
+        final importDate=(row['data_inserimento'] ?? '').toString().trim();
+        final objectStatus=(row['stato'] ?? row['stato_oggetto'] ?? '').toString().trim();
         final valueText=(row['valore_oggetto'] ?? '').toString().trim().replaceAll(',','.');
         final value=valueText.isEmpty?null:double.tryParse(valueText);
         final yearText=(row['anno_uscita'] ?? '').toString().trim();
@@ -2981,6 +2984,8 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
           'completezza':_enumValue(row['completezza'],const ['SIGILLATO','COMPLETO','INCOMPLETO'],'COMPLETO'),
           'destinazione':_enumValue(row['destinazione'],const ['COLLEZIONE','RIVENDITA','ALTRO'],'COLLEZIONE'),
           'quantita':qty<1?1:qty,
+          if(importDate.isNotEmpty)'data_inserimento':importDate,
+          if(objectStatus.isNotEmpty)'stato_oggetto':objectStatus,
           if(value!=null&&value>=0)'valore_oggetto':value,
           'note':(row['note'] ?? '').toString().trim().isEmpty?null:row['note'].toString().trim()
         }]};
