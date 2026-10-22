@@ -7476,6 +7476,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
   bool _loading = false, _running = false;
   List<Map<String, dynamic>> _queue = [];
   final List<Map<String, dynamic>> _results = [];
+  final Set<String> _selectedIds = <String>{};
   int _offset = 0;
   String _status = 'Carica gli oggetti incompleti. Nessun dato verrà salvato.';
   String? _error;
@@ -7522,10 +7523,12 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
     return 'COLLEZIONABILE';
   }
 
-  Future<void> _runBatch() async {
+  Future<void> _runBatch({List<Map<String, dynamic>>? selectedBatch}) async {
     if (_running || _loading) return;
     if (_queue.isEmpty || _offset >= _queue.length) { setState(() => _error = 'Carica la coda o tutti i lotti sono già stati elaborati.'); return; }
-    final batch = _queue.skip(_offset).take(10).toList();
+    final batch = selectedBatch ?? _queue.skip(_offset).take(10).toList();
+    if (batch.isEmpty) { setState(() => _error = 'Seleziona almeno un oggetto.'); return; }
+    if (batch.length > 10) { setState(() => _error = 'Puoi elaborare al massimo 10 oggetti per volta.'); return; }
     setState(() { _running = true; _error = null; _status = 'PR-12 sta cercando fonti per ${batch.length} oggetti. Nessuna scrittura database.'; });
     try {
       final session = Supabase.instance.client.auth.currentSession;
@@ -7551,9 +7554,20 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
       final rawResults = decoded['risultati_finali'];
       final batchResults = rawResults is List ? rawResults.whereType<Map>().map((v) => Map<String, dynamic>.from(v)).toList() : <Map<String, dynamic>>[];
       if (mounted) setState(() {
-        _results.addAll(batchResults); _offset += batch.length;
+        _results.addAll(batchResults);
+        if (selectedBatch == null) {
+          _offset += batch.length;
+        } else {
+          for (final row in batch) {
+            _selectedIds.remove((row['codice_oggetto'] ?? '').toString());
+            final id = (row['codice_oggetto'] ?? '').toString();
+            if (!_results.any((result) => (result['oggetto_id'] ?? '').toString() == id)) {
+              _offset += 0;
+            }
+          }
+        }
         final good = batchResults.where((v) => v['ok'] == true).length;
-        _status = 'Lotto concluso: $good riusciti, ${batchResults.length - good} errori. Avanzamento $_offset/${_queue.length}. Database invariato.';
+        _status = 'Ricerca conclusa: $good risultati riusciti, ${batchResults.length - good} errori. Elaborati nella coda: $_offset/${_queue.length}. Database invariato.';
       });
     } catch (e) {
       if (mounted) setState(() { _error = '$e'; _status = 'Lotto interrotto. Puoi riprovare.'; });
@@ -7582,13 +7596,46 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
           if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: $_offset · lotti: ${(_queue.length / 10).ceil()}'),
           if (_error != null) SelectableText(_error!, style: const TextStyle(color: Color(0xFFE35D5D))),
         ]))),
-        // Mostra l'anteprima del lotto soltanto prima della prima elaborazione.
-        // Dopo ogni lotto l'elenco operativo si svuota: restano visibili solo risultati già analizzati.
-        if (_queue.isNotEmpty && _results.isEmpty) ...[
-          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('ELENCO DEL LOTTO DA ANALIZZARE', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
-          ..._queue.skip(_offset).take(10).map((v) => ListTile(dense: true, leading: const Icon(Icons.inventory_2_outlined, color: goldColor),
-            title: Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString()),
-            subtitle: Text('ID ${v['codice_oggetto']} · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}'))),
+        if (_queue.isNotEmpty && _offset < _queue.length) ...[
+          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('OGGETTI IN CODA · SELEZIONE FACOLTATIVA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+          const Text('Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.', style: TextStyle(color: Colors.white70)),
+          ..._queue.skip(_offset).take(50).map((v) {
+            final id = (v['codice_oggetto'] ?? '').toString();
+            final checked = _selectedIds.contains(id);
+            return CheckboxListTile(
+              value: checked,
+              dense: true,
+              activeColor: goldColor,
+              checkColor: Colors.black,
+              contentPadding: EdgeInsets.zero,
+              title: Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString()),
+              subtitle: Text('ID $id · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}'),
+              onChanged: _running || _loading ? null : (value) => setState(() {
+                if (value == true) {
+                  if (_selectedIds.length < 10) {
+                    _selectedIds.add(id);
+                    _error = null;
+                  } else {
+                    _error = 'Massimo 10 oggetti selezionabili per ricerca.';
+                  }
+                } else {
+                  _selectedIds.remove(id);
+                  _error = null;
+                }
+              }),
+            );
+          }),
+          if (_queue.length - _offset > 50)
+            Text('Visualizzati i primi 50 oggetti ancora in coda su ${_queue.length - _offset}.'),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _running || _loading || _selectedIds.isEmpty ? null : () {
+              final chosen = _queue.where((row) => _selectedIds.contains((row['codice_oggetto'] ?? '').toString())).take(10).toList();
+              _runBatch(selectedBatch: chosen);
+            },
+            icon: const Icon(Icons.checklist),
+            label: Text('ELABORA SELEZIONATI (${_selectedIds.length}/10)'),
+          ),
         ],
         if (_results.isNotEmpty) ...[
           const Padding(padding: EdgeInsets.only(top: 16, bottom: 4), child: Text('RISULTATI · SOLA LETTURA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
