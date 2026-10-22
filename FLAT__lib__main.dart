@@ -7477,13 +7477,14 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
   List<Map<String, dynamic>> _queue = [];
   final List<Map<String, dynamic>> _results = [];
   final Set<String> _selectedIds = <String>{};
+  final Set<String> _processedIds = <String>{};
   int _offset = 0;
   String _status = 'Carica gli oggetti incompleti. Nessun dato verrà salvato.';
   String? _error;
 
   Future<void> _loadQueue() async {
     if (_loading || _running) return;
-    setState(() { _loading = true; _error = null; _status = 'Preparazione coda protetta PR-12…'; _results.clear(); _offset = 0; });
+    setState(() { _loading = true; _error = null; _status = 'Preparazione coda protetta PR-12…'; _results.clear(); _selectedIds.clear(); _processedIds.clear(); _offset = 0; });
     try {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
@@ -7526,7 +7527,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
   Future<void> _runBatch({List<Map<String, dynamic>>? selectedBatch}) async {
     if (_running || _loading) return;
     if (_queue.isEmpty || _offset >= _queue.length) { setState(() => _error = 'Carica la coda o tutti i lotti sono già stati elaborati.'); return; }
-    final batch = selectedBatch ?? _queue.skip(_offset).take(10).toList();
+    final batch = selectedBatch ?? _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).take(10).toList();
     if (batch.isEmpty) { setState(() => _error = 'Seleziona almeno un oggetto.'); return; }
     if (batch.length > 10) { setState(() => _error = 'Puoi elaborare al massimo 10 oggetti per volta.'); return; }
     setState(() { _running = true; _error = null; _status = 'PR-12 sta cercando fonti per ${batch.length} oggetti. Nessuna scrittura database.'; });
@@ -7555,19 +7556,17 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
       final batchResults = rawResults is List ? rawResults.whereType<Map>().map((v) => Map<String, dynamic>.from(v)).toList() : <Map<String, dynamic>>[];
       if (mounted) setState(() {
         _results.addAll(batchResults);
-        if (selectedBatch == null) {
-          _offset += batch.length;
-        } else {
-          for (final row in batch) {
-            _selectedIds.remove((row['codice_oggetto'] ?? '').toString());
-            final id = (row['codice_oggetto'] ?? '').toString();
-            if (!_results.any((result) => (result['oggetto_id'] ?? '').toString() == id)) {
-              _offset += 0;
-            }
+        for (final result in batchResults) {
+          if (result['ok'] == true) {
+            _processedIds.add((result['oggetto_id'] ?? '').toString());
           }
         }
+        for (final row in batch) {
+          _selectedIds.remove((row['codice_oggetto'] ?? '').toString());
+        }
+        _offset = _processedIds.length;
         final good = batchResults.where((v) => v['ok'] == true).length;
-        _status = 'Ricerca conclusa: $good risultati riusciti, ${batchResults.length - good} errori. Elaborati nella coda: $_offset/${_queue.length}. Database invariato.';
+        _status = 'Ricerca conclusa: $good risultati riusciti, ${batchResults.length - good} errori. Elaborati: $_offset/${_queue.length}. Database invariato.';
       });
     } catch (e) {
       if (mounted) setState(() { _error = '$e'; _status = 'Lotto interrotto. Puoi riprovare.'; });
@@ -7576,7 +7575,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = (_queue.length - _offset).clamp(0, 10);
+    final remaining = _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length.clamp(0, 10);
     return Scaffold(appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI')),
       body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
         const Card(child: Padding(padding: EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -7588,7 +7587,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
           icon: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
           label: const Text('CARICA OGGETTI INCOMPLETI')),
         const SizedBox(height: 8),
-        OutlinedButton.icon(onPressed: _running || _loading || _queue.isEmpty || _offset >= _queue.length ? null : _runBatch,
+        OutlinedButton.icon(onPressed: _running || _loading || _queue.every((row) => _processedIds.contains((row['codice_oggetto'] ?? '').toString())) ? null : _runBatch,
           icon: _running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
           label: Text(_running ? 'RICERCA IN CORSO…' : 'ELABORA PROSSIMO LOTTO ($remaining)')),
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -7596,10 +7595,10 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
           if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: $_offset · lotti: ${(_queue.length / 10).ceil()}'),
           if (_error != null) SelectableText(_error!, style: const TextStyle(color: Color(0xFFE35D5D))),
         ]))),
-        if (_queue.isNotEmpty && _offset < _queue.length) ...[
+        if (_queue.any((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString()))) ...[
           const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('OGGETTI IN CODA · SELEZIONE FACOLTATIVA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
           const Text('Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.', style: TextStyle(color: Colors.white70)),
-          ..._queue.skip(_offset).take(50).map((v) {
+          ..._queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).take(50).map((v) {
             final id = (v['codice_oggetto'] ?? '').toString();
             final checked = _selectedIds.contains(id);
             return CheckboxListTile(
@@ -7625,8 +7624,8 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
               }),
             );
           }),
-          if (_queue.length - _offset > 50)
-            Text('Visualizzati i primi 50 oggetti ancora in coda su ${_queue.length - _offset}.'),
+          if (_queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length > 50)
+            Text('Visualizzati i primi 50 oggetti ancora in coda su ${_queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length}.'),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _running || _loading || _selectedIds.isEmpty ? null : () {
