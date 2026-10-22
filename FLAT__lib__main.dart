@@ -3143,7 +3143,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   Future<void> _pickImport() async {
     setState(() { _busy=true; _status='Seleziona un file da analizzare…'; _rows=[]; _duplicates.clear(); _invalid.clear(); _selectedRows.clear(); });
     try {
-      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true,withReadStream:true);
+      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],allowMultiple:false,withData:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
       final parsedRows=await _parse(picked.files.first);
       final rows=parsedRows.map(_normalizeImportRow).toList();
