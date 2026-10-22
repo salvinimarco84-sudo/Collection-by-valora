@@ -3809,7 +3809,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'));
     final producer = valueFor(['produttore']);
     final year = valueFor(['anno_uscita', 'data_uscita', 'data_di_uscita']);
-    final productCode = valueFor(['codice_prodotto']);
+    final productCode = valueFor(['codice_prodotto', 'codice_identificativo']);
+    final theme = valueFor(['tema']);
+    final section = valueFor(['sezione']);
+    final subtheme = valueFor(['sottotema']);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -3834,6 +3837,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               _metadataValue('Data di uscita', year),
               const SizedBox(height: 8),
               _metadataValue('Codice prodotto', productCode),
+              const SizedBox(height: 8),
+              _metadataValue('Tema', theme),
+              const SizedBox(height: 8),
+              _metadataValue('Sezione', section),
+              const SizedBox(height: 8),
+              _metadataValue('Sottotema', subtheme),
             ])),
           ]),
           const SizedBox(height: 8),
@@ -4182,28 +4191,45 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Future<void> _loadExistingImage(int objectId) async {
+    String? imageUrl;
     try {
       final session = Supabase.instance.client.auth.currentSession;
-      if (session == null) return;
-      final response = await Supabase.instance.client.functions.invoke(
-        'collection-object-images-test',
-        headers: {'Authorization': 'Bearer ${session.accessToken}'},
-        body: {'action':'get','codice_oggetto':objectId},
-      );
-      if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
-      final data = Map<String, dynamic>.from(response.data as Map);
-      if (!mounted || _loadedObjectId != objectId) return;
-      setState(() {
-        _existingImageUrl = (data['signed_url'] ?? '').toString().trim().isEmpty ? null : data['signed_url'].toString();
-        _imageStatus = _existingImageUrl != null ? 'Immagine già associata all’oggetto.' : 'Nessuna immagine associata a questo oggetto.';
-      });
+      if (session != null) {
+        final response = await Supabase.instance.client.functions.invoke(
+          'collection-object-images-test',
+          headers: {'Authorization': 'Bearer ${session.accessToken}'},
+          body: {'action':'get','codice_oggetto':objectId},
+        );
+        if (response.status >= 200 && response.status < 300 && response.data is Map) {
+          final data = Map<String, dynamic>.from(response.data as Map);
+          final signed = (data['signed_url'] ?? '').toString().trim();
+          if (signed.startsWith('https://') || signed.startsWith('http://')) imageUrl = signed;
+        }
+      }
     } catch (e) {
-      if (!mounted || _loadedObjectId != objectId) return;
-      setState(() {
-        _existingImageUrl = null;
-        _imageStatus = 'Impossibile recuperare l’immagine: $e';
-      });
+      debugPrint('VALORA: archivio immagini non disponibile per $objectId: $e');
     }
+    // Fallback al catalogo: molte immagini PR-12 sono salvate nei metadati
+    // e non ancora registrate nell'archivio immagini privato.
+    if (imageUrl == null) {
+      try {
+        final metadata = await Supabase.instance.client
+            .schema('collection')
+            .from('master_metadati')
+            .select('url_immagine')
+            .eq('codice_oggetto', objectId)
+            .maybeSingle();
+        final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
+        if (candidate.startsWith('https://') || candidate.startsWith('http://')) imageUrl = candidate;
+      } catch (e) {
+        debugPrint('VALORA: URL immagine catalogo non disponibile per $objectId: $e');
+      }
+    }
+    if (!mounted || _loadedObjectId != objectId) return;
+    setState(() {
+      _existingImageUrl = imageUrl;
+      _imageStatus = imageUrl != null ? 'Immagine associata alla scheda.' : 'Nessuna immagine associata a questo oggetto.';
+    });
   }
 
   Future<void> _loadObject() async {
