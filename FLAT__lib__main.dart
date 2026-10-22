@@ -1489,6 +1489,7 @@ class ValoraServicePage extends StatefulWidget {
 class _ValoraServicePageState extends State<ValoraServicePage> {
   bool _loading = true;
   bool _preparing = false;
+  final TextEditingController _searchController = TextEditingController();
   String? _error;
   List<Map<String, dynamic>> _objects = [];
   int? _selectedId;
@@ -1501,6 +1502,16 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     _loadObjects();
   }
 
+  @override
+  void dispose() { _searchController.dispose(); super.dispose(); }
+
+  List<Map<String, dynamic>> get _filteredObjects {
+    final q = _searchController.text.trim().toLowerCase();
+    if (q.isEmpty) return _objects;
+    return _objects.where((o) => [o['descrizione_oggetto'], o['produttore'], o['codice_prodotto'], o['codice_oggetto']]
+      .any((v) => (v ?? '').toString().toLowerCase().contains(q))).toList();
+  }
+
   Future<void> _loadObjects() async {
     setState(() { _loading = true; _error = null; });
     try {
@@ -1508,14 +1519,14 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           .from('master_oggetti')
           .select('codice_oggetto,descrizione_oggetto,produttore,codice_prodotto,stato,condizione,completezza')
           .eq('destinazione', 'COLLEZIONE')
-          .neq('archiviato_test', true)
+          .or('archiviato_test.is.null,archiviato_test.eq.false')
           .order('descrizione_oggetto')
           .limit(500);
       final rows = (data as List).map((e) => Map<String, dynamic>.from(e as Map))
           .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
               .contains((r['stato'] ?? '').toString().toUpperCase())).toList();
       if (!mounted) return;
-      setState(() { _objects = rows; _loading = false; });
+      setState(() { _objects = rows; _loading = false; _error = rows.isEmpty ? 'Caricamento completato: nessun record attivo trovato in COLLEZIONE. Verifica l’importazione in TEST.' : null; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = 'Impossibile caricare gli oggetti della collezione: $e'; _loading = false; });
@@ -1571,13 +1582,26 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             ]),
           ),
           const SizedBox(height: 18),
-          Text('RAMO 2 · VALUTA DA ARCHIVIO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          Text('CERCA UN OGGETTO NELL’ARCHIVIO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
+          TextField(
+            controller: _searchController,
+            textInputAction: TextInputAction.search,
+            onChanged: (_) => setState(() { _selectedId = null; _prepared = null; }),
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: 'Descrizione, produttore o codice',
+              hintText: 'Es. LEGO Batman 76139',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: IconButton(onPressed: () => setState(() { _searchController.clear(); _selectedId = null; _prepared = null; }), icon: const Icon(Icons.clear)),
+            ),
+          ),
+          const SizedBox(height: 10),
           DropdownButtonFormField<int>(
             value: _selectedId,
             isExpanded: true,
             decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Oggetto da valutare'),
-            items: _objects.map((o) => DropdownMenuItem<int>(
+            items: _filteredObjects.map((o) => DropdownMenuItem<int>(
               value: (o['codice_oggetto'] as num).toInt(),
               child: Text('#${o['codice_oggetto']} · ${o['descrizione_oggetto'] ?? 'Senza descrizione'}', overflow: TextOverflow.ellipsis),
             )).toList(),
@@ -1585,7 +1609,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           ),
           if (_objects.isEmpty) const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text('Non risultano oggetti disponibili nella destinazione COLLEZIONE.'),
+            child: Text('Nessun oggetto caricato. Usa AGGIORNA OGGETTI; se resta vuoto, verifica l’importazione nel database TEST.'),
           ),
           if (selected != null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
@@ -1632,7 +1656,8 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             )),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI')),
+          OutlinedButton.icon(onPressed: _loading ? null : _loadObjects, icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI')),
+          if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: _objects.isEmpty ? Colors.orangeAccent : Colors.redAccent))),
         ]),
     );
   }
@@ -1663,7 +1688,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           .from('master_oggetti')
           .select('codice_oggetto,descrizione_oggetto,stato,quantita,valore_oggetto,valore_mercato')
           .eq('destinazione', 'COLLEZIONE')
-          .neq('archiviato_test', true)
+          .or('archiviato_test.is.null,archiviato_test.eq.false')
           .order('descrizione_oggetto');
       final rows = (data as List).map((e) => Map<String,dynamic>.from(e as Map))
           .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
