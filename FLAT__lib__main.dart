@@ -8,6 +8,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:csv/csv.dart';
 import 'package:excel/excel.dart' as xlsx;
+import 'package:archive/archive.dart' as archive;
+import 'package:xml/xml.dart' as xml;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart' as pw_core;
 import 'package:flutter/material.dart';
@@ -2822,12 +2824,63 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
+  List<Map<String, dynamic>> _readXlsxXmlFallback(Uint8List bytes) {
+    final zipped = archive.ZipDecoder().decodeBytes(bytes);
+    String? entry(String path) {
+      for (final file in zipped.files) {
+        if (file.name == path) {
+          final data = file.content;
+          if (data is List<int>) return utf8.decode(data);
+        }
+      }
+      return null;
+    }
+    final sheetXml = entry('xl/worksheets/sheet1.xml');
+    if (sheetXml == null) throw Exception('Il file XLSX non contiene il primo foglio.');
+    final shared = <String>[];
+    final sharedXml = entry('xl/sharedStrings.xml');
+    if (sharedXml != null) {
+      final doc = xml.XmlDocument.parse(sharedXml);
+      for (final si in doc.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == 'si')) {
+        shared.add(si.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == 't').map((e) => e.innerText).join());
+      }
+    }
+    final doc = xml.XmlDocument.parse(sheetXml);
+    final lines = <Map<int, String>>[];
+    for (final row in doc.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == 'row')) {
+      final values = <int, String>{};
+      for (final cell in row.children.whereType<xml.XmlElement>().where((e) => e.name.local == 'c')) {
+        final ref = cell.getAttribute('r') ?? '';
+        final letters = RegExp(r'^[A-Z]+').stringMatch(ref);
+        if (letters == null) continue;
+        var col = 0;
+        for (final unit in letters.codeUnits) { col = col * 26 + unit - 64; }
+        final type = cell.getAttribute('t') ?? '';
+        final raw = cell.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == (type == 'inlineStr' ? 't' : 'v')).map((e) => e.innerText).join();
+        values[col - 1] = type == 's' ? (int.tryParse(raw) != null && int.parse(raw) < shared.length ? shared[int.parse(raw)] : '') : raw;
+      }
+      lines.add(values);
+    }
+    final headerIndex = lines.indexWhere((row) => row.values.any((v) => const ['descrizione_oggetto', 'descrizione', 'nome'].contains(v.trim().toLowerCase())));
+    if (headerIndex < 0) throw Exception('Intestazione descrizione_oggetto non trovata nel foglio Excel.');
+    final headers = lines[headerIndex].map((k,v) => MapEntry(k,v.trim().toLowerCase()));
+    return lines.skip(headerIndex + 1).where((row) => row.values.any((v) => v.trim().isNotEmpty)).map((row) {
+      final result = <String, dynamic>{};
+      for (final h in headers.entries) { if (h.value.isNotEmpty) result[h.value] = row[h.key] ?? ''; }
+      return result;
+    }).toList();
+  }
+
     if (name.endsWith('.xlsx')) {
       late final xlsx.Excel workbook;
       try {
         workbook = xlsx.Excel.decodeBytes(bytes);
       } catch (e) {
-        throw Exception('Excel "${file.name}" letto (${bytes.length} byte), ma il contenuto XLSX non è decodificabile: $e');
+        try {
+          return _readXlsxXmlFallback(bytes);
+        } catch (fallbackError) {
+          throw Exception('Excel "${file.name}" letto (${bytes.length} byte), ma non decodificabile. Lettore standard: $e. Lettore alternativo: $fallbackError');
+        }
       }
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
       final firstSheet = workbook.tables.values.first;
