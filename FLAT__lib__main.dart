@@ -4302,8 +4302,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() {
         _selectedImageBytes = bytes; _selectedImageName = file.name;
         _imageAcquisition = 'CARICAMENTO_FILE';
-        _imageStatus = 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
+        _imageStatus = 'Immagine caricata. Avvio il riconoscimento e la ricerca metadati con PR-12…';
       });
+      // Galleria e fotocamera devono avviare lo stesso flusso PR-12.
+      await _recognizeSelectedPhoto();
     } catch (e) {
       if (mounted) setState(() => _imageStatus = 'Caricamento immagine non riuscito: $e');
     }
@@ -4372,7 +4374,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (description.isNotEmpty) _description.text = description;
         if (maker.isNotEmpty) _producer.text = maker;
         if (code.isNotEmpty) _family.text = code;
-        if (category.isNotEmpty) _line.text = category;
+        // La categoria riconosciuta non è un anno di uscita: non inserirla in
+        // _line, che alimenta il campo anno_uscita del database.
         if (_description.text.trim().isEmpty && results.isNotEmpty) {
           final title = (results.first['title'] ?? '').toString().trim();
           if (title.isNotEmpty) _description.text = title;
@@ -4417,7 +4420,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('ASSISTENTE VALORA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 3),
-              Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.',
+              Text('Scatta una foto oppure scegli un’immagine dalla galleria: entrambi avviano lo stesso riconoscimento e la ricerca metadati PR-12. Poi confermi l’identità e completi i dati manuali.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
             ])),
           ]),
