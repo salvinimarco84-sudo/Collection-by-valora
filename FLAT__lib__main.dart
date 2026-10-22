@@ -1490,6 +1490,8 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   bool _loading = true;
   bool _preparing = false;
   final TextEditingController _searchController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+  final List<XFile> _photos = <XFile>[];
   String? _error;
   List<Map<String, dynamic>> _objects = [];
   int? _selectedId;
@@ -1504,6 +1506,31 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
 
   @override
   void dispose() { _searchController.dispose(); super.dispose(); }
+
+  Future<void> _capturePhoto() async {
+    try {
+      final image = await _imagePicker.pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
+      if (image != null && mounted) setState(() { if (_photos.length < 3) _photos.add(image); });
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Fotocamera non disponibile: $e');
+    }
+  }
+
+  Future<void> _choosePhotos() async {
+    try {
+      final images = await _imagePicker.pickMultiImage(imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
+      if (!mounted || images.isEmpty) return;
+      setState(() {
+        for (final image in images) {
+          if (_photos.length >= 3) break;
+          if (!_photos.any((p) => p.path == image.path)) _photos.add(image);
+        }
+        if (_photos.length >= 3 && images.length > 3) _error = 'VALORA usa al massimo 3 fotografie per oggetto.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Selezione fotografie non riuscita: $e');
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredObjects {
     final q = _searchController.text.trim().toLowerCase();
@@ -1582,7 +1609,28 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             ]),
           ),
           const SizedBox(height: 18),
-          Text('CERCA UN OGGETTO NELL’ARCHIVIO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          Text('RAMO 1 · IDENTIFICA DA FOTOGRAFIE', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          const SizedBox(height: 8),
+          const Text('Scatta una foto oppure scegli immagini dalla galleria. Puoi aggiungerne fino a 3.'),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(onPressed: _photos.length >= 3 ? null : _capturePhoto, icon: const Icon(Icons.camera_alt_outlined), label: const Text('SCATTA FOTO'))),
+            const SizedBox(width: 8),
+            Expanded(child: OutlinedButton.icon(onPressed: _photos.length >= 3 ? null : _choosePhotos, icon: const Icon(Icons.photo_library_outlined), label: const Text('GALLERIA'))),
+          ]),
+          if (_photos.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            SizedBox(height: 112, child: ListView(scrollDirection: Axis.horizontal, children: [
+              for (var i = 0; i < _photos.length; i++)
+                Padding(padding: const EdgeInsets.only(right: 8), child: Stack(children: [
+                  ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(File(_photos[i].path), width: 104, height: 104, fit: BoxFit.cover)),
+                  Positioned(right: 2, top: 2, child: IconButton.filledTonal(onPressed: () => setState(() => _photos.removeAt(i)), icon: const Icon(Icons.close, size: 16), tooltip: 'Rimuovi foto')),
+                ])),
+            ])),
+            Text('${_photos.length}/3 fotografie selezionate', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+          ],
+          const SizedBox(height: 22),
+          Text('RAMO 2 · CERCA UN OGGETTO NELL’ARCHIVIO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
           TextField(
             controller: _searchController,
