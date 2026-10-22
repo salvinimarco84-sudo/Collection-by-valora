@@ -2738,6 +2738,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   List<Map<String, dynamic>> _rows = [];
   final Set<int> _duplicates = {};
   final Set<int> _invalid = {};
+  final Set<int> _selectedRows = {};
   static const _headers = ['codice_oggetto','descrizione_oggetto','condizione','completezza','destinazione','stato','quantita','valore_oggetto','valuta_valore','totale_calcolato'];
 
   String _norm(dynamic value) => (value ?? '').toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
@@ -2962,7 +2963,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<void> _pickImport() async {
-    setState(() { _busy=true; _status='Seleziona file CSV o JSON…'; _rows=[]; _duplicates.clear(); _invalid.clear(); });
+    setState(() { _busy=true; _status='Seleziona un file da analizzare…'; _rows=[]; _duplicates.clear(); _invalid.clear(); _selectedRows.clear(); });
     try {
       final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true,withReadStream:true);
       if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
@@ -2978,7 +2979,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         else if(descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
           rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
       }
-      if(mounted)setState(() { _rows=rows; _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Nessun record salvato.'; });
+      if(mounted)setState(() { _rows=rows; _selectedRows.clear(); _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Seleziona gli oggetti da importare. Nessun record salvato.'; });
     } catch(e) { if(mounted)setState(()=>_status='Importazione non riuscita: '+e.toString()); }
     finally { if(mounted)setState(()=>_busy=false); }
   }
@@ -2990,11 +2991,11 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
 
   Future<void> _confirmImport() async {
     final eligible=<Map<String,dynamic>>[];
-    for(var i=0;i<_rows.length;i++) { if(!_invalid.contains(i)&&!_duplicates.contains(i)) eligible.add(_rows[i]); }
-    if(eligible.isEmpty) { setState(()=>_status='Non ci sono record validi da importare.'); return; }
+    for(var i=0;i<_rows.length;i++) { if(_selectedRows.contains(i)&&!_invalid.contains(i)&&!_duplicates.contains(i)) eligible.add(_rows[i]); }
+    if(eligible.isEmpty) { setState(()=>_status='Seleziona almeno un record valido da importare.'); return; }
     final ok=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
       title:const Text('CONFERMA IMPORTAZIONE'),
-      content:Text('Saranno creati ' + eligible.length.toString() + ' nuovi oggetti in TEST. I possibili duplicati e le righe senza descrizione saranno esclusi. I codici saranno assegnati dal database. I record esistenti non saranno aggiornati. Procedere?'),
+      content:Text('Saranno creati ' + eligible.length.toString() + ' nuovi oggetti selezionati in TEST. I possibili duplicati e le righe senza descrizione saranno esclusi. I codici saranno assegnati dal database. I record esistenti non saranno aggiornati. Procedere?'),
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('IMPORTA'))]));
     if(ok!=true || !mounted)return;
     setState(()=>_busy=true);
@@ -3168,7 +3169,33 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
+                Text(
+                  'Selezionati: ${_selectedRows.where((i) => !_invalid.contains(i) && !_duplicates.contains(i)).length} · Esclusi: ${_invalid.length + _duplicates.length}',
+                  style: TextStyle(color: appearance.textSecondary, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : () => setState(() {
+                        _selectedRows
+                          ..clear()
+                          ..addAll(List<int>.generate(_rows.length, (i) => i).where((i) => !_invalid.contains(i) && !_duplicates.contains(i)));
+                      }),
+                      icon: const Icon(Icons.select_all, size: 18),
+                      label: const Text('SELEZIONA TUTTI I VALIDI'),
+                    ),
+                    TextButton.icon(
+                      onPressed: _busy ? null : () => setState(() => _selectedRows.clear()),
+                      icon: const Icon(Icons.deselect, size: 18),
+                      label: const Text('DESELEZIONA TUTTI'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 ..._rows.take(50).toList().asMap().entries.map((entry) {
                   final i = entry.key;
                   final row = entry.value;
@@ -3178,16 +3205,27 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                   final warning = invalid || duplicate;
                   final itemColor = warning ? const Color(0xFFFFB74D) : color;
                   final label = invalid
-                      ? 'Escluso: descrizione mancante'
+                      ? 'Non selezionabile: descrizione mancante'
                       : duplicate
-                          ? 'Possibile duplicato, escluso'
-                          : 'Pronto per l’importazione';
+                          ? 'Non selezionabile: possibile duplicato'
+                          : _selectedRows.contains(i)
+                              ? 'Selezionato per l’importazione'
+                              : 'Disponibile per la selezione';
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                      leading: Icon(warning ? Icons.warning_amber_rounded : Icons.inventory_2_outlined, color: itemColor),
+                    child: CheckboxListTile(
+                      value: !warning && _selectedRows.contains(i),
+                      onChanged: warning || _busy ? null : (checked) => setState(() {
+                        if (checked == true) {
+                          _selectedRows.add(i);
+                        } else {
+                          _selectedRows.remove(i);
+                        }
+                        _status = 'Selezionati: ' + _selectedRows.where((n) => !_invalid.contains(n) && !_duplicates.contains(n)).length.toString() + '. Nessun record salvato.';
+                      }),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: color,
+                      secondary: Icon(warning ? Icons.warning_amber_rounded : Icons.inventory_2_outlined, color: itemColor),
                       title: Text(
                         desc.isEmpty ? 'Riga ${i + 2}' : desc,
                         maxLines: 2,
@@ -3212,7 +3250,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                   child: FilledButton.icon(
                     onPressed: _busy ? null : _confirmImport,
                     icon: const Icon(Icons.save_outlined),
-                    label: const Text('CONFERMA E IMPORTA'),
+                    label: Text('IMPORTA ${_selectedRows.where((i) => !_invalid.contains(i) && !_duplicates.contains(i)).length} SELEZIONATI'),
                   ),
                 ),
               ],
