@@ -152,17 +152,25 @@ async function searchKnownCatalogs(category: string, description: string): Promi
       if (!pattern.test(text)) { catalogDiagnostics.push(hostLabel + ": pagina raggiunta, codice non trovato nel contenuto; candidato scartato"); return; }
       if (/catalog result for|page not found|access denied|error|not found/i.test(title)) { catalogDiagnostics.push(hostLabel + ": titolo generico o errore; candidato scartato"); return; }
       const manufacturer = readMeta("product:brand", "og:brand", "brand", "author", "publisher", "dc.publisher");
-      const productCode = readMeta("product:retailer_item_id", "product:sku", "sku", "mpn", "isbn", "product:isbn", "book:isbn");
+      const productCodeMeta = readMeta("product:retailer_item_id", "product:sku", "sku", "mpn", "isbn", "product:isbn", "book:isbn");
+      const visibleText = cleanText(html.replace(/<script\\b[\\s\\S]*?<\\/script>/gi, " ").replace(/<style\\b[\\s\\S]*?<\\/style>/gi, " ").replace(/<[^>]+>/g, " "));
       const yearText = readMeta("article:published_time", "datePublished", "datepublished", "release_date", "product:release_date", "dc.date");
-      const yearMatch = yearText.match(/(?:19|20)\\d{2}/);
+      const yearMatch = (yearText + " " + visibleText).match(/(?:year\\s*(?:released|published)|released|release(?:d)?|anno(?:\\s+di\\s+uscita)?|date\\s+published)[^0-9]{0,45}((?:19|20)\\d{2})/i)
+        ?? visibleText.match(/(?:19|20)\\d{2}/);
+      const productCode = productCodeMeta || (hostLabel === "BrickLink" || hostLabel === "Rebrickable" ? code + "-1" : code);
+      const extra = [
+        manufacturer ? "Produttore: " + manufacturer : "",
+        yearMatch ? "Anno rilevato nel testo pagina: " + yearMatch[1] : "",
+        "Codice candidato: " + productCode
+      ].filter(Boolean).join("; ");
       results.push({
         title, url,
-        snippet: "Titolo letto dalla pagina del catalogo " + hostLabel + "; verificare codice, edizione e variante prima di applicare i metadati.",
+        snippet: "Titolo letto dalla pagina del catalogo " + hostLabel + (extra ? ". " + extra : "") + "; verificare codice, edizione e variante prima di applicare i metadati.",
         source_query: canonical, motore: "CATALOGO_DIRETTO",
         ...(image ? { image_url: decodeEntities(image) } : {}),
         ...(manufacturer ? { produttore: manufacturer } : {}),
         ...(productCode ? { codice_prodotto: productCode } : {}),
-        ...(yearMatch ? { anno_uscita: Number(yearMatch[0]) } : {})
+        ...(yearMatch ? { anno_uscita: Number(yearMatch[1] ?? yearMatch[0]) } : {})
       });
     } catch (e) { catalogDiagnostics.push(hostLabel + ": errore recupero: " + (e instanceof Error ? e.message : String(e)).slice(0, 240)); }
   };
