@@ -3506,6 +3506,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<Map<String, dynamic>> _pr02SearchResults = [];
   List<Map<String, dynamic>> _pr12IncompleteRecords = [];
   int _pr12NextBatchOffset = 0;
+  int _pr12QueuePage = 0;
+  final Set<String> _pr12SelectedRecordIds = <String>{};
   bool _pr12AiBatchRunning = false;
   String _pr12AiBatchStatus = 'Ricerca multi-fonte non ancora avviata.';
   List<Map<String, dynamic>> _pr12AiResults = [];
@@ -4599,6 +4601,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _metadataResult = 'PR-12: analisi del catalogo in corso…';
       _output = _metadataResult;
       _pr12IncompleteRecords = [];
+      _pr12QueuePage = 0;
+      _pr12SelectedRecordIds.clear();
       _pr12AiResults = [];
       _pr12UnresolvedRecords = [];
       _pr12SelectedCandidates.clear();
@@ -4667,11 +4671,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
-  Future<void> _runPr12AiBatch({bool retryUnresolved = false, Map<String, dynamic>? singleRecord}) async {
+  Future<void> _runPr12AiBatch({bool retryUnresolved = false, Map<String, dynamic>? singleRecord, List<Map<String, dynamic>>? selectedRecords}) async {
     if (singleRecord == null && _pr12IncompleteRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Prima esegui ANALIZZA CATALOGO.'); return; }
     final List<Map<String, dynamic>> batch;
     if (singleRecord != null) {
       batch = [singleRecord];
+    } else if (selectedRecords != null) {
+      batch = selectedRecords.take(10).toList();
+      if (batch.isEmpty) { setState(() => _pr12AiBatchStatus = 'Seleziona almeno un record nella pagina corrente.'); return; }
     } else if (retryUnresolved) {
       if (_pr12UnresolvedRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Non ci sono record da riprovare.'); return; }
       batch = _pr12UnresolvedRecords.take(10).toList();
@@ -4679,7 +4686,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_pr12NextBatchOffset >= _pr12IncompleteRecords.length) { setState(() => _pr12AiBatchStatus = 'Prima passata completata. I record irrisolti restano disponibili per una nuova ricerca.'); return; }
       batch = _pr12IncompleteRecords.skip(_pr12NextBatchOffset).take(10).toList();
     }
-    setState(() { _pr12AiBatchRunning = true; _pr12RetryRunning = retryUnresolved; _pr12AiBatchStatus = singleRecord != null ? 'Ricerca singola per l’oggetto ${singleRecord['codice_oggetto']}…' : (retryUnresolved ? 'Nuovo tentativo sui record irrisolti…' : 'Ricerca multi-fonte del lotto in corso…'); });
+    setState(() { _pr12AiBatchRunning = true; _pr12RetryRunning = retryUnresolved; _pr12AiBatchStatus = singleRecord != null ? 'Ricerca singola per l’oggetto ${singleRecord['codice_oggetto']}…' : (selectedRecords != null ? 'Ricerca su ${batch.length} record selezionati…' : (retryUnresolved ? 'Nuovo tentativo sui record irrisolti…' : 'Ricerca multi-fonte del lotto in corso…')); });
     try {
       final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
         'modalita_ia': 'TEST',
@@ -5758,27 +5765,98 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         ])));
                       }),
                     ],                    if (_pr12IncompleteRecords.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text('RECORD INCOMPLETI · PAGINA ${_pr12QueuePage + 1} DI ${(_pr12IncompleteRecords.length / 10).ceil()}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('Mostro 10 record alla volta. Puoi verificare un singolo oggetto oppure selezionarne fino a 10 per una ricerca combinata.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                       const SizedBox(height: 8),
-                      ..._pr12IncompleteRecords.take(30).map((row) {
+                      Row(children: [
+                        Expanded(child: OutlinedButton.icon(
+                          onPressed: _pr12AiBatchRunning || _pr12QueuePage == 0 ? null : () => setState(() { _pr12QueuePage--; _pr12SelectedRecordIds.clear(); }),
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text('PRECEDENTE'),
+                        )),
+                        const SizedBox(width: 10),
+                        Expanded(child: OutlinedButton.icon(
+                          onPressed: _pr12AiBatchRunning || (_pr12QueuePage + 1) * 10 >= _pr12IncompleteRecords.length ? null : () => setState(() { _pr12QueuePage++; _pr12SelectedRecordIds.clear(); }),
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text('SUCCESSIVA'),
+                        )),
+                      ]),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        Expanded(child: Text('Selezionati: ${_pr12SelectedRecordIds.length}/10', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
+                        TextButton(onPressed: _pr12SelectedRecordIds.isEmpty ? null : () => setState(() => _pr12SelectedRecordIds.clear()), child: const Text('ANNULLA SELEZIONE')),
+                      ]),
+                      SizedBox(width: double.infinity, child: FilledButton.icon(
+                        onPressed: _pr12AiBatchRunning || _pr12SelectedRecordIds.isEmpty ? null : () {
+                          final selected = _pr12IncompleteRecords.where((row) => _pr12SelectedRecordIds.contains((row['codice_oggetto'] ?? '').toString())).take(10).toList();
+                          _runPr12AiBatch(selectedRecords: selected);
+                        },
+                        icon: const Icon(Icons.travel_explore),
+                        label: Text('VERIFICA ${_pr12SelectedRecordIds.length} SELEZIONATI'),
+                      )),
+                      const SizedBox(height: 8),
+                      ..._pr12IncompleteRecords.skip(_pr12QueuePage * 10).take(10).map((row) {
+                        final id = (row['codice_oggetto'] ?? '').toString();
                         final missing = <String>[
                           if ((row['produttore'] ?? '').toString().trim().isEmpty) 'produttore',
                           if (row['anno_uscita'] == null) 'anno',
                           if ((row['codice_prodotto'] ?? '').toString().trim().isEmpty) 'codice prodotto',
                         ];
-                        return ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('#${row['codice_oggetto']} · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}'),
-                          subtitle: Text('Mancano: ${missing.join(', ')}'),
-                          trailing: IconButton(
-                            tooltip: 'Cerca metadati per questo singolo record',
-                            onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(singleRecord: row),
-                            icon: const Icon(Icons.manage_search),
+                        final selected = _pr12SelectedRecordIds.contains(id);
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Checkbox(
+                                value: selected,
+                                activeColor: sectionColor,
+                                onChanged: _pr12AiBatchRunning ? null : (value) => setState(() {
+                                  if (value == true) {
+                                    if (_pr12SelectedRecordIds.length < 10) {
+                                      _pr12SelectedRecordIds.add(id);
+                                      _pr12AiBatchStatus = 'Selezionato il record $id.';
+                                    } else {
+                                      _pr12AiBatchStatus = 'Puoi selezionare al massimo 10 record.';
+                                    }
+                                  } else {
+                                    _pr12SelectedRecordIds.remove(id);
+                                  }
+                                }),
+                              ),
+                              Expanded(child: Padding(
+                                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text('#$id · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text('Mancano: ${missing.join(', ')}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                                ]),
+                              )),
+                              IconButton(
+                                tooltip: 'Verifica solo questo record',
+                                onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(singleRecord: row),
+                                icon: const Icon(Icons.search),
+                              ),
+                            ]),
                           ),
                         );
                       }),
-                      if (_pr12IncompleteRecords.length > 30)
-                        Text('Visualizzati i primi 30 record su ${_pr12IncompleteRecords.length}.'),
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        Expanded(child: OutlinedButton.icon(
+                          onPressed: _pr12AiBatchRunning || _pr12QueuePage == 0 ? null : () => setState(() { _pr12QueuePage--; _pr12SelectedRecordIds.clear(); }),
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text('INDIETRO'),
+                        )),
+                        const SizedBox(width: 10),
+                        Expanded(child: OutlinedButton.icon(
+                          onPressed: _pr12AiBatchRunning || (_pr12QueuePage + 1) * 10 >= _pr12IncompleteRecords.length ? null : () => setState(() { _pr12QueuePage++; _pr12SelectedRecordIds.clear(); }),
+                          icon: const Icon(Icons.arrow_forward),
+                          label: const Text('AVANTI'),
+                        )),
+                      ]),
                     ],
                   ],
                 ),
