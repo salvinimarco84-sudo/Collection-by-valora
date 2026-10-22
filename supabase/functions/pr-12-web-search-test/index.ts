@@ -1011,7 +1011,7 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
     });
     return json({
       ok: true, procedura: "PR-12", modalita: "RICERCA_CATALOGO_E_WEB",
-      descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null,
+      descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null, profilo_metadati: profile,
       ...(comicAnchor ? { ricerca_serie: { titolo_serie_ipotizzato: comicAnchor.seriesTitle, numero_riferimento: 1, numero_albo_cercato: comicAnchor.issueNumber, funzione_numero_1: "identificazione_serie_non_valutazione_albo" } } : {}),
       risultati: results.slice(0, 15), numero_risultati: Math.min(results.length, 15),
       ricerca_esterna_eseguita: true, metadati_confermati: false,
