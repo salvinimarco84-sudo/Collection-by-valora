@@ -1960,8 +1960,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
     // Le anteprime visibili interrogano il registro immagini ufficiale:
     // immagini_oggetto + Storage privato, tramite URL firmati a scadenza.
     final selected = <Map<String, dynamic>>[];
+    final activeCategories = rows.map(_dashboardCategory).toSet();
     for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
-      selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
+      if (activeCategories.contains(category)) {
+        selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
+      }
     }
     final ids = selected.map((row) => int.tryParse(
       (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
@@ -2391,13 +2394,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
           decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
           child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
         ),
-      _dashboardCategoryPanel('LEGO', 'Mattoncini, set, minifigure e collezioni', const Color(0xFFE31B23), Icons.extension),
-      _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth, personaggi e accessori', const Color(0xFF7137B8), Icons.shield_outlined),
-      _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
-      _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
-      _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
-      _dashboardCategoryPanel('TRANSFORMERS', 'Autobot, Decepticon e personaggi', const Color(0xFF2476C8), Icons.smart_toy_outlined),
-      _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
+      if (!_catalogLoading) ...[
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'LEGO'))
+          _dashboardCategoryPanel('LEGO', 'Mattoncini, set, minifigure e collezioni', const Color(0xFFE31B23), Icons.extension),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'SAINT SEIYA'))
+          _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth, personaggi e accessori', const Color(0xFF7137B8), Icons.shield_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'MOTO DIE-CAST'))
+          _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'FUMETTI'))
+          _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'GUNDAM'))
+          _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'TRANSFORMERS'))
+          _dashboardCategoryPanel('TRANSFORMERS', 'Autobot, Decepticon e personaggi', const Color(0xFF2476C8), Icons.smart_toy_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'ALTRE COLLEZIONI'))
+          _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
+      ],
     ],
   );
 
