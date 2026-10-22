@@ -1945,6 +1945,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
       final rows = (payload['oggetti'] as List)
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
+          // La HOME "COLLEZIONE" deve includere solo gli oggetti destinati
+          // alla collezione. Gli oggetti per rivendita/altro non vanno contati qui.
+          .where((row) => (row['destinazione'] ?? '').toString().trim().toUpperCase() == 'COLLEZIONE')
           .toList();
       if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
       await _loadDashboardImages(rows);
