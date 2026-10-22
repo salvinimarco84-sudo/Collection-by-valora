@@ -3045,80 +3045,117 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<void> _confirmImport() async {
-    final eligible=<Map<String,dynamic>>[];
-    for(var i=0;i<_rows.length;i++) { if(_selectedRows.contains(i)&&!_invalid.contains(i)&&!_duplicates.contains(i)) eligible.add(_rows[i]); }
-    if(eligible.isEmpty) { setState(()=>_status='Seleziona almeno un record valido da importare.'); return; }
-    final ok=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
-      title:const Text('CONFERMA IMPORTAZIONE'),
-      content:Text('Saranno creati ' + eligible.length.toString() + ' nuovi oggetti selezionati in TEST. I possibili duplicati e le righe senza descrizione saranno esclusi. I codici saranno assegnati dal database. I record esistenti non saranno aggiornati. Procedere?'),
-      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('IMPORTA'))]));
-    if(ok!=true || !mounted)return;
-    setState(()=>_busy=true);
-    var saved=0; var failed=0; final errors=<String>[];
-    final session=_uuid.v4();
-    var lockAcquired=false;
+    final eligible = <Map<String, dynamic>>[];
+    for (var i = 0; i < _rows.length; i++) {
+      if (_selectedRows.contains(i) && !_invalid.contains(i) && !_duplicates.contains(i)) {
+        eligible.add(_rows[i]);
+      }
+    }
+    if (eligible.isEmpty) {
+      setState(() => _status = 'Seleziona almeno un record valido da importare.');
+      return;
+    }
+
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('CONFERMA IMPORTAZIONE'),
+        content: Text(
+          'Saranno caricati e verificati ${eligible.length} oggetti selezionati, poi salvati con un’unica operazione SQL in TEST. Se un oggetto non supera la validazione, l’intero lotto sarà annullato. I possibili duplicati e le righe senza descrizione saranno esclusi. Procedere?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('IMPORTA')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    setState(() {
+      _busy = true;
+      _status = 'Preparazione di ${eligible.length} record. Nessuna scrittura ancora eseguita.';
+    });
+
+    final session = _uuid.v4();
+    var lockAcquired = false;
     try {
-      // Acquisire il blocco una sola volta per l'intero lotto. Creare una sessione per ogni riga
-      // lasciava il lotto vulnerabile se una richiesta falliva prima del rilascio del blocco.
-      final lock=await _ValoraRuntimeApi.call('acquire_lock',{'session_id':session});
-      final lockResult=lock['result'];
-      if(lockResult is! Map || lockResult['acquisito']!=true) {
-        final message=lockResult is Map ? (lockResult['messaggio'] ?? lockResult['stato'] ?? 'Blocco archivio non acquisito').toString() : 'Blocco archivio non acquisito';
+      final lock = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': session});
+      final lockResult = lock['result'];
+      if (lockResult is! Map || lockResult['acquisito'] != true) {
+        final message = lockResult is Map
+            ? (lockResult['messaggio'] ?? lockResult['stato'] ?? 'Blocco archivio non acquisito').toString()
+            : 'Blocco archivio non acquisito';
         throw Exception(message);
       }
-      lockAcquired=true;
-      for(final row in eligible) {
-        final description=(row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
+      lockAcquired = true;
+
+      // Preparare il lotto in memoria. Il runtime SQL rilascia il blocco dopo una scrittura riuscita:
+      // per questo PR-01 save deve essere chiamata una sola volta per tutto il lotto.
+      final objects = <Map<String, dynamic>>[];
+      for (final row in eligible) {
+        final description = (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
+        final qty = int.tryParse((row['quantita'] ?? row['quantita_importazione'] ?? '1').toString().trim()) ?? 1;
+        final valueText = (row['valore_oggetto'] ?? '').toString().trim().replaceAll(',', '.');
+        final value = valueText.isEmpty ? null : double.tryParse(valueText);
+        final yearText = (row['anno_uscita'] ?? '').toString().trim();
+        final year = yearText.isEmpty ? null : int.tryParse(yearText);
+        objects.add({
+          'descrizione': description,
+          'produttore': (row['produttore'] ?? '').toString().trim().isEmpty ? null : row['produttore'].toString().trim(),
+          'anno_uscita': year,
+          'codice_prodotto': (row['codice_prodotto'] ?? '').toString().trim().isEmpty ? null : row['codice_prodotto'].toString().trim(),
+          'condizione': _enumValue(row['condizione'], const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], 'USATO'),
+          'completezza': _enumValue(row['completezza'], const ['SIGILLATO','COMPLETO','INCOMPLETO'], 'COMPLETO'),
+          'destinazione': _enumValue(row['destinazione'], const ['COLLEZIONE','RIVENDITA','ALTRO'], 'COLLEZIONE'),
+          'quantita': qty < 1 ? 1 : qty,
+          if (value != null && value >= 0) 'valore_oggetto': value,
+          'note': (row['note'] ?? '').toString().trim().isEmpty ? null : row['note'].toString().trim(),
+        });
+      }
+
+      final payload = <String, dynamic>{'oggetti': objects};
+      if (mounted) setState(() => _status = 'Lotto preparato: ${objects.length} record. Verifica e salvataggio unico in corso…');
+
+      await _ValoraRuntimeApi.procedure('PR-01', 'preview', payload, sessionId: session);
+      final review = Map<String, dynamic>.from(payload)
+        ..['dati_confermati'] = true
+        ..['altra_operazione'] = false
+        ..['conferma_finale'] = false;
+      await _ValoraRuntimeApi.procedure('PR-01', 'review', review, sessionId: session);
+
+      final save = Map<String, dynamic>.from(payload)
+        ..['dati_confermati'] = true
+        ..['altra_operazione'] = false
+        ..['conferma_finale'] = true;
+      final result = await _ValoraRuntimeApi.procedure(
+        'PR-01', 'save', save, sessionId: session, requestId: _uuid.v4(),
+      );
+      if (result['scrittura_eseguita'] != true) {
+        throw Exception('Il database non ha confermato il salvataggio del lotto.');
+      }
+      final results = result['risultati'];
+      final savedCount = results is List ? results.length : 0;
+      if (savedCount != eligible.length) {
+        throw Exception('Verifica incompleta: richiesti ${eligible.length}, confermati ${savedCount}. Controllare il database prima di riprovare.');
+      }
+      if (mounted) {
+        setState(() => _status = 'Importazione conclusa. Lotto salvato e verificato: ${savedCount} record su ${eligible.length}.');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _status = 'Importazione non completata: ${e.toString()}');
+      }
+    } finally {
+      // Il runtime SQL può aver rilasciato automaticamente il blocco dopo il commit.
+      if (lockAcquired) {
         try {
-          final heartbeat=await _ValoraRuntimeApi.call('heartbeat',{'session_id':session});
-          final heartbeatResult=heartbeat['result'];
-          if(heartbeatResult is Map && heartbeatResult['ok']==false) throw Exception((heartbeatResult['messaggio'] ?? 'Heartbeat del blocco non riuscito').toString());
-          // Il master CSV usa "quantita_importazione"; il catalogo interno usa "quantita".
-          final qty=int.tryParse((row['quantita'] ?? row['quantita_importazione'] ?? '1').toString().trim()) ?? 1;
-          final valueText=(row['valore_oggetto'] ?? '').toString().trim().replaceAll(',','.');
-          final value=valueText.isEmpty?null:double.tryParse(valueText);
-          final yearText=(row['anno_uscita'] ?? '').toString().trim();
-          final year=yearText.isEmpty?null:int.tryParse(yearText);
-          final payload={'oggetti':[{
-            'descrizione':description,
-            'produttore':(row['produttore'] ?? '').toString().trim().isEmpty?null:row['produttore'].toString().trim(),
-            'anno_uscita':year,
-            'codice_prodotto':(row['codice_prodotto'] ?? '').toString().trim().isEmpty?null:row['codice_prodotto'].toString().trim(),
-            'condizione':_enumValue(row['condizione'],const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'],'USATO'),
-            'completezza':_enumValue(row['completezza'],const ['SIGILLATO','COMPLETO','INCOMPLETO'],'COMPLETO'),
-            'destinazione':_enumValue(row['destinazione'],const ['COLLEZIONE','RIVENDITA','ALTRO'],'COLLEZIONE'),
-            'quantita':qty<1?1:qty,
-            if(value!=null&&value>=0)'valore_oggetto':value,
-            'note':(row['note'] ?? '').toString().trim().isEmpty?null:row['note'].toString().trim()
-          }]};
-          await _ValoraRuntimeApi.procedure('PR-01','preview',payload,sessionId:session);
-          final review=Map<String,dynamic>.from(payload)..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=false;
-          await _ValoraRuntimeApi.procedure('PR-01','review',review,sessionId:session);
-          final save=Map<String,dynamic>.from(payload)..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=true;
-          final result=await _ValoraRuntimeApi.procedure('PR-01','save',save,sessionId:session,requestId:_uuid.v4());
-          if(result['scrittura_eseguita']!=true) throw Exception('Scrittura non confermata dal runtime.');
-          saved++;
-        } catch(e) {
-          failed++;
-          if(errors.length<8) errors.add(description+': '+e.toString());
-          // Un errore di connessione DNS/Socket rende inutile martellare il server con centinaia
-          // di richieste consecutive. Interrompere il lotto e lasciare i record restanti da riprendere.
-          final err=e.toString().toLowerCase();
-          if(err.contains('failed host lookup') || err.contains('socketexception') || err.contains('connection abort') || err.contains('blocco archivio non acquisito')) {
-            final remaining=eligible.length-saved-failed;
-            if(remaining>0) errors.add('Lotto interrotto per errore di connessione/blocco; '+remaining.toString()+' righe non tentate. Ricaricare l’anteprima e riprendere dopo la correzione.');
-            break;
-          }
+          await _ValoraRuntimeApi.call('release_lock', {'session_id': session});
+        } catch (_) {
+          // Il blocco potrebbe essere già stato rilasciato dal runtime dopo il commit.
         }
       }
-      if(mounted)setState(()=>_status='Importazione conclusa. Salvati: '+saved.toString()+'. Errori: '+failed.toString()+(errors.isEmpty?'':'\n'+errors.join('\n')));
-    } catch(e) {
-      if(mounted)setState(()=>_status='Importazione non avviata: '+e.toString());
-    } finally {
-      if(lockAcquired) {
-        try { await _ValoraRuntimeApi.call('release_lock', {'session_id':session}); } catch (_) { /* il blocco potrà essere recuperato dal runtime se la rete cade */ }
-      }
-      if(mounted)setState(()=>_busy=false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
