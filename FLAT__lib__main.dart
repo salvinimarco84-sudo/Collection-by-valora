@@ -7640,44 +7640,104 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
           const Padding(padding: EdgeInsets.only(top: 16, bottom: 4), child: Text('RISULTATI · SOLA LETTURA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
           ..._results.map((v) {
             final candidates = v['risultati'] is List ? (v['risultati'] as List).whereType<Map>().toList() : <Map>[];
-            return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${v['oggetto_id'] ?? ''} · ${v['descrizione'] ?? ''}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text(v['ok'] == true ? 'Candidati: ${candidates.length} · nessuna scrittura' : 'ERRORE: ${v['error'] ?? 'non specificato'}'),
-              ...candidates.take(4).map((c) => ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.link, color: goldColor),
-                title: Text((c['title'] ?? 'Risultato senza titolo').toString(), style: const TextStyle(fontSize: 13)),
-                subtitle: Text('${c['url'] ?? ''}\n${c['snippet'] ?? ''}', maxLines: 4, overflow: TextOverflow.ellipsis),
-                onTap: () {
-                  final rawUrl = (c['url'] ?? '').toString().trim();
-                  final uri = Uri.tryParse(rawUrl);
-                  if (uri != null && (uri.scheme == 'https' || uri.scheme == 'http') && uri.host.isNotEmpty) {
-                    launchUrl(uri, mode: LaunchMode.externalApplication);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link candidato non valido.')));
-                  }
-                },
-                trailing: IconButton(
-                  tooltip: 'Prepara proposta metadati',
-                  icon: const Icon(Icons.fact_check_outlined, color: goldColor),
-                  onPressed: () {
-                    final fields = <String, String>{
-                      "Oggetto": (v["descrizione"] ?? "").toString(),
-                      "Candidato": (c["title"] ?? "").toString(),
-                      "Produttore proposto": (c["produttore"] ?? "").toString(),
-                      "Anno proposto": (c["anno_uscita"] ?? "").toString(),
-                      "Codice prodotto proposto": (c["codice_prodotto"] ?? c["isbn"] ?? "").toString(),
-                      "Fonte": (c["url"] ?? "").toString(),
-                    };
-                    showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
-                      title: const Text('Proposta metadati · sola lettura'),
-                      content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
-                        children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? 'non disponibile' : e.value}'))).toList())),
-                      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
-                    ));
-                  },
-                ))),
-              if (v['diagnostica_ricerca'] is Map) SelectableText('Diagnostica: ${jsonEncode(v['diagnostica_ricerca'])}', style: const TextStyle(fontSize: 11, color: Colors.white54)),
-            ])));
+            return Card(
+              margin: const EdgeInsets.only(bottom: 14),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(width: 42, height: 42,
+                      decoration: BoxDecoration(color: goldColor.withOpacity(.14), borderRadius: BorderRadius.circular(10)),
+                      child: const Icon(Icons.inventory_2_outlined, color: goldColor)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('OGGETTO ${v['oggetto_id'] ?? ''}', style: const TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 3),
+                      Text((v['descrizione'] ?? 'Oggetto senza descrizione').toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Text(v['ok'] == true ? '${candidates.length} proposte trovate · nessuna scrittura' : 'Ricerca da verificare: ${v['error'] ?? 'errore non specificato'}',
+                        style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                    ])),
+                  ]),
+                  if (candidates.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const Text('PROPOSTE TROVATE', style: TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: .7)),
+                    const SizedBox(height: 8),
+                    ...candidates.take(6).map((c) {
+                      final rawImage = (c['image_url'] ?? c['immagine_url'] ?? '').toString().trim();
+                      final rawUrl = (c['url'] ?? '').toString().trim();
+                      final uri = Uri.tryParse(rawUrl);
+                      final validUrl = uri != null && (uri.scheme == 'https' || uri.scheme == 'http') && uri.host.isNotEmpty;
+                      final values = <String, String>{
+                        'Produttore': (c['produttore'] ?? '').toString(),
+                        'Anno': (c['anno_uscita'] ?? '').toString(),
+                        'Codice / ISBN': (c['codice_prodotto'] ?? c['isbn'] ?? '').toString(),
+                        'Editore': (c['editore'] ?? '').toString(),
+                        'Lingua': (c['lingua'] ?? '').toString(),
+                      };
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.black.withOpacity(.18), borderRadius: BorderRadius.circular(12), border: Border.all(color: goldColor.withOpacity(.22))),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            ClipRRect(borderRadius: BorderRadius.circular(8), child: SizedBox(width: 88, height: 100,
+                              child: rawImage.startsWith('https://') || rawImage.startsWith('http://')
+                                ? Image.network(rawImage, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Container(color: Colors.white10, child: const Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 30)))
+                                : Container(color: Colors.white10, child: const Icon(Icons.image_search_outlined, color: goldColor, size: 30)))),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text((c['title'] ?? 'Candidato senza titolo').toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 5),
+                              Text((c['motore'] ?? c['tipologia_candidata'] ?? 'Fonte catalogo').toString().replaceAll('_', ' '), style: const TextStyle(fontSize: 11, color: goldColor)),
+                              if ((c['snippet'] ?? '').toString().trim().isNotEmpty) ...[
+                                const SizedBox(height: 5),
+                                Text((c['snippet'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                              ],
+                              const SizedBox(height: 7),
+                              const Text('Proposta da verificare prima di usarla', style: TextStyle(fontSize: 11, color: Colors.white54)),
+                            ])),
+                          ]),
+                          ...values.entries.where((e) => e.value.trim().isNotEmpty).map((e) =>
+                            Padding(padding: const EdgeInsets.only(top: 4), child: Text('${e.key}: ${e.value}', style: const TextStyle(fontSize: 12)))),
+                          if (validUrl) Row(children: [
+                            Expanded(child: Text(uri!.host, style: const TextStyle(fontSize: 11, color: Colors.white54), overflow: TextOverflow.ellipsis)),
+                            TextButton.icon(onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication),
+                              icon: const Icon(Icons.open_in_new, size: 16), label: const Text('APRI FONTE')),
+                            IconButton(tooltip: 'Esamina proposta', icon: const Icon(Icons.fact_check_outlined, color: goldColor),
+                              onPressed: () {
+                                final fields = <String, String>{
+                                  'Oggetto': (v['descrizione'] ?? '').toString(),
+                                  'Candidato': (c['title'] ?? '').toString(),
+                                  'Produttore proposto': (c['produttore'] ?? '').toString(),
+                                  'Anno proposto': (c['anno_uscita'] ?? '').toString(),
+                                  'Codice prodotto / ISBN': (c['codice_prodotto'] ?? c['isbn'] ?? '').toString(),
+                                  'Editore': (c['editore'] ?? '').toString(),
+                                  'Lingua': (c['lingua'] ?? '').toString(),
+                                  'Fonte': rawUrl,
+                                };
+                                showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
+                                  title: const Text('Scheda proposta · da verificare'),
+                                  content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+                                    children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? 'Non disponibile' : e.value}'))).toList())),
+                                  actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
+                                ));
+                              }),
+                          ]),
+                        ]),
+                      );
+                    }),
+                  ] else if (v['ok'] == true) ...[
+                    const SizedBox(height: 10),
+                    const Text('Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                  ],
+                  if (v['diagnostica_ricerca'] is Map)
+                    ExpansionTile(tilePadding: EdgeInsets.zero, title: const Text('Dettagli tecnici', style: TextStyle(fontSize: 12, color: Colors.white54)),
+                      children: [SelectableText(jsonEncode(v['diagnostica_ricerca']), style: const TextStyle(fontSize: 11, color: Colors.white54))]),
+                ]),
+              ),
+            );
           }),
         ],
       ])));
