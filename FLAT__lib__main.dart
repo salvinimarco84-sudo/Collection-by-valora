@@ -3260,6 +3260,19 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                   children: [
                     OutlinedButton.icon(
                       onPressed: _busy ? null : () => setState(() {
+                        final start = _importPage * _importPageSize;
+                        final end = (start + _importPageSize) < _rows.length ? start + _importPageSize : _rows.length;
+                        for (var i = start; i < end; i++) {
+                          if (!_invalid.contains(i) && !_duplicates.contains(i)) {
+                            _selectedRows.add(i);
+                          }
+                        }
+                      }),
+                      icon: const Icon(Icons.library_add_check, size: 18),
+                      label: const Text('SELEZIONA PAGINA'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : () => setState(() {
                         _selectedRows
                           ..clear()
                           ..addAll(List<int>.generate(_rows.length, (i) => i).where((i) => !_invalid.contains(i) && !_duplicates.contains(i)));
