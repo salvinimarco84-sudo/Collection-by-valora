@@ -3091,6 +3091,10 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
           if(result['scrittura_eseguita']!=true) throw Exception('Scrittura non confermata dal runtime.');
           saved++;
         } catch(e) { failed++; errors.add(description+': '+e.toString()); }
+        finally {
+          // Il blocco è per-sessione: rilasciarlo sempre, anche in caso di errore, per non bloccare le importazioni successive.
+          try { await _ValoraRuntimeApi.call('release_lock', {'session_id':session}); } catch (_) { /* la diagnostica principale resta l'errore dell'operazione */ }
+        }
       }
       if(mounted)setState(()=>_status='Importazione conclusa. Salvati: '+saved.toString()+'. Errori: '+failed.toString()+(errors.isEmpty?'':'\n'+errors.take(5).join('\n')));
     } finally { if(mounted)setState(()=>_busy=false); }
