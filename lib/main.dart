@@ -4521,10 +4521,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final yearText = valueFor(['anno_uscita', 'anno', 'release_year', 'year']);
     final productCode = valueFor(['codice_prodotto', 'codice', 'product_code', 'set_num', 'isbn', 'item_number']);
     final title = valueFor(['titolo_prodotto', 'nome_prodotto', 'product_name', 'title', 'titolo']);
+    final imageCandidate = valueFor(['url_immagine', 'image_url', 'immagine_url', 'foto_url', 'main_image_url', 'image']);
+    final imageUrl = (imageCandidate.startsWith('https://') || imageCandidate.startsWith('http://')) ? imageCandidate : '';
+    final sourceUrl = valueFor(['url_fonte', 'url', 'source_url', 'source']);
+    final theme = valueFor(['tema', 'theme', 'franchise']);
+    final section = valueFor(['sezione', 'section', 'categoria', 'category']);
+    final subtheme = valueFor(['sottotema', 'subtheme', 'linea', 'line', 'serie']);
+    final officialDescription = valueFor(['descrizione_ufficiale', 'descrizione', 'description', 'snippet']);
+    final version = valueFor(['versione_variante', 'variante', 'version', 'variant']);
     final year = int.tryParse(yearText);
     final genericTitles = <String>{'home', 'homepage', 'official website', 'search results', 'catalogo', 'risultati della ricerca'};
     final usefulTitle = title.length >= 5 && !genericTitles.contains(title.toLowerCase());
-    if (maker.isEmpty && year == null && productCode.isEmpty && !usefulTitle) {
+    if (maker.isEmpty && year == null && productCode.isEmpty && !usefulTitle && imageUrl.isEmpty && theme.isEmpty && section.isEmpty && subtheme.isEmpty && officialDescription.isEmpty && version.isEmpty) {
       setState(() => _pr12AiBatchStatus = 'La fonte non contiene metadati strutturati o un titolo prodotto utilizzabile. Nessun dato modificato.');
       return;
     }
@@ -4534,6 +4542,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         .eq('codice_oggetto', id).maybeSingle();
     if (current == null) throw Exception('Oggetto #$id non trovato nel catalogo TEST.');
     final currentDescription = (current['descrizione_oggetto'] ?? '').toString().trim();
+    final existingMetadata = await client.schema('collection').from('master_metadati')
+        .select('codice_identificativo,nome_ufficiale,produttore,anno_uscita,versione_variante,descrizione_ufficiale,tema,sezione,sottotema,isbn,editore,url_fonte,url_immagine,stato_verifica')
+        .eq('codice_oggetto', id).maybeSingle();
+    String existingValue(String key) => (existingMetadata?[key] ?? '').toString().trim();
     final appendTitle = usefulTitle && !currentDescription.toLowerCase().contains(title.toLowerCase());
     final proposedDescription = appendTitle
         ? (currentDescription.isEmpty ? title : currentDescription + ' · ' + title)
@@ -4547,8 +4559,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'Descrizione proposta: ' + (proposedDescription.isEmpty ? 'nessuna modifica' : proposedDescription) + '\n'
           'Produttore: ' + (maker.isEmpty ? 'non trovato' : maker) + '\n'
           'Anno: ' + (year?.toString() ?? 'non trovato') + '\n'
-          'Codice prodotto: ' + (productCode.isEmpty ? 'non trovato' : productCode) + '\n\n'
-          'La descrizione esistente viene conservata e integrata con il titolo candidato. Gli altri campi vengono compilati soltanto se vuoti. Verifica che il candidato identifichi proprio questo oggetto.',
+          'Codice prodotto: ' + (productCode.isEmpty ? 'non trovato' : productCode) + '\n'
+          + (imageUrl.isEmpty ? '' : 'URL immagine candidato disponibile.\n')
+          + (theme.isEmpty ? '' : 'Tema: ' + theme + '\n')
+          + (section.isEmpty ? '' : 'Sezione: ' + section + '\n')
+          + (subtheme.isEmpty ? '' : 'Sottotema: ' + subtheme + '\n\n')
+          + 'I campi già compilati vengono conservati. Dopo la conferma verranno salvati anche URL immagine e tassonomia disponibili.',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
@@ -4562,14 +4578,42 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if ((current['produttore'] ?? '').toString().trim().isEmpty && maker.isNotEmpty) patch['produttore'] = maker;
     if (current['anno_uscita'] == null && year != null && year >= 1800 && year <= DateTime.now().year + 2) patch['anno_uscita'] = year;
     if ((current['codice_prodotto'] ?? '').toString().trim().isEmpty && productCode.isNotEmpty) patch['codice_prodotto'] = productCode;
-    if (patch.isEmpty) {
-      setState(() => _pr12AiBatchStatus = 'Nessun campo vuoto aggiornabile per l’oggetto #$id. I dati presenti sono stati conservati.');
-      return;
+    final metadataPatch = <String, dynamic>{};
+    void addIfMissing(String key, String value) {
+      if (value.isNotEmpty && existingValue(key).isEmpty) metadataPatch[key] = value;
     }
-    await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
+    addIfMissing('codice_identificativo', productCode);
+    addIfMissing('nome_ufficiale', usefulTitle ? title : '');
+    addIfMissing('produttore', maker);
+    if (existingMetadata?['anno_uscita'] == null && year != null && year >= 1800 && year <= DateTime.now().year + 2) metadataPatch['anno_uscita'] = year;
+    addIfMissing('versione_variante', version);
+    addIfMissing('descrizione_ufficiale', officialDescription);
+    addIfMissing('tema', theme);
+    addIfMissing('sezione', section);
+    addIfMissing('sottotema', subtheme);
+    addIfMissing('isbn', valueFor(['isbn']));
+    addIfMissing('editore', valueFor(['editore', 'publisher']));
+    addIfMissing('url_fonte', sourceUrl);
+    addIfMissing('url_immagine', imageUrl);
+    if (metadataPatch.isNotEmpty) {
+      metadataPatch['stato_verifica'] = 'PARZIALMENTE_VERIFICATO';
+      metadataPatch['aggiornato_il'] = DateTime.now().toUtc().toIso8601String();
+      if (existingMetadata == null) {
+        await client.schema('collection').from('master_metadati').insert({'codice_oggetto': id, ...metadataPatch});
+      } else {
+        await client.schema('collection').from('master_metadati').update(metadataPatch).eq('codice_oggetto', id);
+      }
+    }
+    if (patch.isNotEmpty) await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
+    final savedMetadata = await client.schema('collection').from('master_metadati')
+        .select('url_immagine,tema,sezione,sottotema')
+        .eq('codice_oggetto', id).maybeSingle();
+    final savedImage = (savedMetadata?['url_immagine'] ?? '').toString().trim();
+    final imagePersisted = savedImage.startsWith('https://') || savedImage.startsWith('http://');
+    final taxonomy = ['tema', 'sezione', 'sottotema'].where((key) => (savedMetadata?[key] ?? '').toString().trim().isNotEmpty).toList();
     if (!mounted) return;
-    setState(() => _pr12AiBatchStatus = 'Metadati applicati all’oggetto #$id: ' + patch.keys.join(', ') + '. Sono stati aggiornati soltanto campi vuoti.');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato: ' + patch.keys.join(', '))));
+    setState(() => _pr12AiBatchStatus = 'Salvataggio verificato per oggetto #$id. Campi aggiornati: ' + [...patch.keys, ...metadataPatch.keys.where((key) => key != 'stato_verifica' && key != 'aggiornato_il')].join(', ') + '. URL immagine presente: ' + (imagePersisted ? 'sì' : 'no') + '. Tassonomia presente: ' + (taxonomy.isEmpty ? 'no' : taxonomy.join(', ')) + '.');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PR-12: salvataggio verificato per oggetto #$id')));
   }
   String _pr12CategoryFromDescription(String description) {
     final v = description.toLowerCase();
