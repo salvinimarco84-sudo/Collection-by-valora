@@ -4560,7 +4560,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'Produttore: ' + (maker.isEmpty ? 'non trovato' : maker) + '\n'
           'Anno: ' + (year?.toString() ?? 'non trovato') + '\n'
           'Codice prodotto: ' + (productCode.isEmpty ? 'non trovato' : productCode) + '\n'
-          + (imageUrl.isEmpty ? '' : 'URL immagine candidato disponibile.\n')
+          + (imageUrl.isEmpty ? 'Nessuna immagine valida in questo candidato: immagine invariata.\n' : 'Immagine scelta da salvare:\n' + imageUrl + '\n')
           + (theme.isEmpty ? '' : 'Tema: ' + theme + '\n')
           + (section.isEmpty ? '' : 'Sezione: ' + section + '\n')
           + (subtheme.isEmpty ? '' : 'Sottotema: ' + subtheme + '\n\n')
@@ -4594,7 +4594,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     addIfMissing('isbn', valueFor(['isbn']));
     addIfMissing('editore', valueFor(['editore', 'publisher']));
     addIfMissing('url_fonte', sourceUrl);
-    addIfMissing('url_immagine', imageUrl);
+    // La conferma del candidato è una scelta esplicita dell'utente: se questo
+    // candidato contiene un URL immagine valido, salva proprio quello anche
+    // quando esiste già una foto diversa. Se non c'è URL valido, non toccare la foto.
+    if (imageUrl.isNotEmpty) metadataPatch['url_immagine'] = imageUrl;
     if (metadataPatch.isNotEmpty) {
       metadataPatch['stato_verifica'] = 'PARZIALMENTE_VERIFICATO';
       metadataPatch['aggiornato_il'] = DateTime.now().toUtc().toIso8601String();
@@ -4610,9 +4613,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         .eq('codice_oggetto', id).maybeSingle();
     final savedImage = (savedMetadata?['url_immagine'] ?? '').toString().trim();
     final imagePersisted = savedImage.startsWith('https://') || savedImage.startsWith('http://');
+    final selectedImagePersisted = imageUrl.isEmpty || savedImage == imageUrl;
     final taxonomy = ['tema', 'sezione', 'sottotema'].where((key) => (savedMetadata?[key] ?? '').toString().trim().isNotEmpty).toList();
     if (!mounted) return;
-    setState(() => _pr12AiBatchStatus = 'Salvataggio verificato per oggetto #$id. Campi aggiornati: ' + [...patch.keys, ...metadataPatch.keys.where((key) => key != 'stato_verifica' && key != 'aggiornato_il')].join(', ') + '. URL immagine presente: ' + (imagePersisted ? 'sì' : 'no') + '. Tassonomia presente: ' + (taxonomy.isEmpty ? 'no' : taxonomy.join(', ')) + '.');
+    setState(() => _pr12AiBatchStatus = 'Salvataggio verificato per oggetto #$id. Campi aggiornati: ' + [...patch.keys, ...metadataPatch.keys.where((key) => key != 'stato_verifica' && key != 'aggiornato_il')].join(', ') + '. URL immagine presente: ' + (imagePersisted ? 'sì' : 'no') + '. Immagine scelta salvata: ' + (selectedImagePersisted ? 'sì' : 'NO, verificare') + '. Tassonomia presente: ' + (taxonomy.isEmpty ? 'no' : taxonomy.join(', ')) + '.');
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PR-12: salvataggio verificato per oggetto #$id')));
   }
   String _pr12CategoryFromDescription(String description) {
