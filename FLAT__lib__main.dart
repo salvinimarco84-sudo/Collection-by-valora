@@ -2933,7 +2933,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         .replaceAll(RegExp(r'([a-z0-9])([A-Z])'), r'$1_$2')
         .trim()
         .toLowerCase()
-        .replaceAll(RegExp(r'[\\s\\-]+'), '_');
+        .replaceAll(RegExp(r'[\s\-]+'), '_');
     final row = <String, dynamic>{};
     for (final entry in source.entries) {
       final key = normalizeKey(entry.key);
