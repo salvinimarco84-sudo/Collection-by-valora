@@ -2866,7 +2866,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
         parsed.add(row);
       }
       } catch (e) {
-        throw Exception('Errore durante la lettura delle righe Excel (foglio: ${firstSheet.sheetName}, righe rilevate: ${table.length}): $e');
+        throw Exception('Errore durante la lettura delle righe Excel (righe rilevate: ${table.length}): $e');
       }
       if (parsed.isEmpty) throw Exception('Intestazione trovata, ma non ci sono righe oggetto da importare.');
       return parsed;
