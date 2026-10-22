@@ -4972,10 +4972,32 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() => _pr12AiBatchStatus = 'Nessun campo vuoto aggiornabile per l’oggetto #$id. I dati presenti sono stati conservati.');
       return;
     }
-    await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
-    if (!mounted) return;
-    setState(() => _pr12AiBatchStatus = 'Metadati applicati all’oggetto #$id: ' + patch.keys.join(', ') + '. Sono stati aggiornati soltanto campi vuoti.');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato: ' + patch.keys.join(', '))));
+    try {
+      await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
+      // La scrittura è valida solo se il dato viene riletto dal database.
+      final verified = await client.schema('collection').from('master_oggetti')
+          .select('descrizione_oggetto,produttore,anno_uscita,codice_prodotto')
+          .eq('codice_oggetto', id).maybeSingle();
+      if (verified == null) throw Exception('Aggiornamento non verificabile: il record #$id non è leggibile dopo il salvataggio.');
+      final missing = <String>[];
+      for (final key in patch.keys) {
+        final expected = patch[key];
+        final actual = verified[key];
+        if (actual == null || actual.toString().trim().isEmpty || actual.toString() != expected.toString()) {
+          missing.add(key);
+        }
+      }
+      if (missing.isNotEmpty) {
+        throw Exception('Il database non conferma i campi: ${missing.join(', ')}. Verificare permessi RLS e schema TEST.');
+      }
+      if (!mounted) return;
+      setState(() => _pr12AiBatchStatus = 'Metadati salvati e riletti dal database per l’oggetto #$id: ' + patch.keys.join(', ') + '.');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato e verificato: ' + patch.keys.join(', '))));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _pr12AiBatchStatus = 'Salvataggio metadati non verificato per #$id: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Metadati NON confermati nel database: $e')));
+    }
   }
   String _pr12CategoryFromDescription(String description) {
     final v = description.toLowerCase();
