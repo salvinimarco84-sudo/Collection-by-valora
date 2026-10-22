@@ -613,8 +613,8 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate.', apiCode: 'REPORT-SALES'),
   ],
   'VALUTAZIONI': [
-    ProcedureEntry(title: 'VALORA', description: 'Valutazione completa di un singolo oggetto, preparazione delle inserzioni e report.', apiCode: 'LAUNCH-VALORA'),
-    ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Consulta il valore complessivo della collezione e i relativi riepiloghi.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
+    ProcedureEntry(title: 'VALORA', description: 'Valutazione specialistica da fotografie o da un record; preparazione ed esportazione delle INSERZIONI in Word o PDF.', apiCode: 'LAUNCH-VALORA'),
+    ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Consulta il patrimonio e avvia la ricerca di mercato dedicata alla valutazione della collezione.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
     ProcedureEntry(title: 'VALUTA ACQUISTO', description: 'Analisi rapida di un acquisto prima di concluderlo. Motore in preparazione.', enabled: false),
   ],
   'FLUSSI DI CASSA': [
@@ -1567,11 +1567,11 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
               SizedBox(height: 12),
               Text('SERVIZIO VALORA', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
               SizedBox(height: 8),
-              Text('Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.'),
+              Text('VALORA identifica l’oggetto da fotografie oppure tramite ricerca per descrizione nell’archivio. Dopo la valutazione puoi scegliere ACQUISTO oppure INSERZIONI; le bozze vengono esportate in Word o PDF. La registrazione di una NUOVA VENDITA resta una procedura separata e facoltativa.'),
             ]),
           ),
           const SizedBox(height: 18),
-          Text('1. SELEZIONA L’OGGETTO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          Text('RAMO 2 · VALUTA DA ARCHIVIO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
             value: _selectedId,
@@ -1612,7 +1612,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           FilledButton.icon(
             onPressed: _preparing || _selectedId == null ? null : _prepareValuation,
             icon: _preparing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-            label: Text(_preparing ? 'Preparazione in corso…' : 'PREPARA VALUTAZIONE'),
+            label: Text(_preparing ? 'Ricerca in corso…' : 'AVVIA VALUTAZIONE DI MERCATO'),
           ),
           if (_error != null) Padding(
             padding: const EdgeInsets.only(top: 14),
@@ -1625,7 +1625,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
               children: [
                 const Text('ESITO PREPARAZIONE', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('La richiesta è stata inviata al runtime. Questo esito non rappresenta ancora una valutazione di mercato definitiva né genera automaticamente inserzioni.'),
+                const Text('Risposta del runtime VALORA. Verifica le fonti e i comparabili restituiti: questa risposta non registra vendite e non pubblica inserzioni.'),
                 const SizedBox(height: 8),
                 SelectableText(_prepared.toString()),
               ],
@@ -1725,7 +1725,9 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
             ));
           }),
           const SizedBox(height: 10),
-          Text('Le stime automatiche e l’aggiornamento mensile saranno collegati al motore di valutazione in un passaggio separato, dopo il collaudo.',
+          FilledButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage())), icon: const Icon(Icons.travel_explore), label: const Text('AVVIA VALUTAZIONE DI MERCATO')),
+           const SizedBox(height: 8),
+           Text('Il riepilogo resta una consultazione dei valori registrati. Il pulsante apre VALORA per la valutazione specialistica.',
             style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
         ])),
     );
