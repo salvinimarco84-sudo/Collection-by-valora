@@ -5875,7 +5875,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                                     Row(children: [Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: selected ? sectionColor : null), const SizedBox(width: 5), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)))]),
                                     if (maker.isNotEmpty) Text('Produttore / editore: $maker'),
                                     if (year.isNotEmpty) Text('Anno: $year'),
-                                    if (productCode.isNotEmpty) Text('Codice / ISBN: $productCode'),
+                                    if (productCode.isNotEmpty) Text(
+                                      '${_pr12CategoryFromDescription((result['descrizione'] ?? '').toString()) == 'FUMETTI' ? 'ISBN / codice editoriale' : 'Codice prodotto'}: $productCode',
+                                    ),
                                     Text('Fonte: ${source.isEmpty ? 'sito non identificato' : source}', style: TextStyle(color: sectionColor, fontSize: 12)),
                                   ])),
                                 ]),
