@@ -1769,8 +1769,15 @@ class CollectionValuePage extends StatefulWidget {
 
 class _CollectionValuePageState extends State<CollectionValuePage> {
   bool _loading = true;
+  bool _researching = false;
   String? _error;
+  String _market = 'ITALIA';
+  String _query = '';
+  String _status = '';
   List<Map<String, dynamic>> _rows = [];
+  final Set<int> _selected = <int>{};
+  final Map<int, Map<String, dynamic>> _valuations = <int, Map<String, dynamic>>{};
+
   @override
   void initState() { super.initState(); _load(); }
 
@@ -1779,45 +1786,90 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
 
   String _eur(double value) => '€ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
 
+  List<Map<String, dynamic>> get _filteredRows {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _rows;
+    return _rows.where((r) => [
+      r['descrizione_oggetto'], r['codice_oggetto'], r['stato']
+    ].any((v) => (v ?? '').toString().toLowerCase().contains(q))).toList();
+  }
+
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() { _loading = true; _error = null; _status = ''; });
     try {
       final data = await Supabase.instance.client.schema('collection')
           .from('master_oggetti')
           .select('codice_oggetto,descrizione_oggetto,stato,quantita,valore_oggetto,valore_mercato')
           .eq('destinazione', 'COLLEZIONE')
           .or('archiviato_test.is.null,archiviato_test.eq.false')
-          .order('descrizione_oggetto');
+          .order('descrizione_oggetto')
+          .limit(2000);
       final rows = (data as List).map((e) => Map<String,dynamic>.from(e as Map))
           .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
               .contains((r['stato'] ?? '').toString().toUpperCase())).toList();
       if (!mounted) return;
-      setState(() { _rows = rows; _loading = false; });
+      setState(() { _rows = rows; _loading = false; _selected.removeWhere((id) => !rows.any((r) => r['codice_oggetto'] == id)); });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = 'Impossibile leggere il catalogo: $e'; _loading = false; });
+      setState(() { _error = 'Impossibile leggere il catalogo TEST: $e'; _loading = false; });
     }
+  }
+
+  Future<void> _researchSelected() async {
+    final ids = _selected.toList();
+    if (ids.isEmpty) {
+      setState(() => _status = 'Seleziona almeno un oggetto da valutare.');
+      return;
+    }
+    setState(() { _researching = true; _error = null; _status = 'Avvio valutazione di mercato per ${ids.length} oggetti…'; _valuations.clear(); });
+    var completed = 0;
+    final failures = <String>[];
+    for (final id in ids) {
+      final row = _rows.where((r) => r['codice_oggetto'] == id).firstOrNull;
+      final name = (row?['descrizione_oggetto'] ?? 'Oggetto $id').toString();
+      try {
+        final response = await _ValoraRuntimeApi.call('consultation', {
+          'session_id': null,
+          'consultation_code': 'MARKET_VALUATION_PREPARE',
+          'arguments': {'codice_oggetto': id, 'mercato_riferimento': _market},
+        });
+        final result = response['result'];
+        if (result is Map) _valuations[id] = Map<String, dynamic>.from(result);
+        else _valuations[id] = {'risultato': result};
+        completed++;
+      } catch (e) {
+        failures.add('$name: $e');
+      }
+      if (mounted) setState(() => _status = 'Elaborati $completed di ${ids.length} oggetti…');
+    }
+    if (!mounted) return;
+    setState(() {
+      _researching = false;
+      _status = 'Valutazioni avviate con risposta per $completed di ${ids.length} oggetti.' +
+        (failures.isEmpty ? '' : '\nProblemi: ' + failures.join(' | '));
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    var market = 0.0, manual = 0.0;
+    var marketTotal = 0.0, manualTotal = 0.0;
     var units = 0, missing = 0;
     for (final r in _rows) {
       final q = (r['quantita'] as num?)?.toInt() ?? 1;
       units += q;
       final m = _num(r['valore_mercato']);
       final v = _num(r['valore_oggetto']);
-      if (m == null) { missing++; } else { market += m * q; }
-      if (v != null) manual += v * q;
+      if (m == null) { missing++; } else { marketTotal += m * q; }
+      if (v != null) manualTotal += v * q;
     }
+    final filtered = _filteredRows;
     Widget metric(String label, String value, IconData icon, Color color) => Card(
       child: ListTile(leading: Icon(icon, color: color), title: Text(label),
         subtitle: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18))),
     );
     return Scaffold(
       appBar: AppBar(title: const Text('VALORE COLLEZIONE'),
-        actions: [IconButton(tooltip: 'Aggiorna', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))]),
+        actions: [IconButton(tooltip: 'Aggiorna archivio', onPressed: _loading || _researching ? null : _load, icon: const Icon(Icons.refresh))]),
       body: _loading ? const Center(child: CircularProgressIndicator()) :
         _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(
           mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center),
@@ -1825,38 +1877,70 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
           const Text('RIEPILOGO DEL PATRIMONIO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
           const SizedBox(height: 6),
-          const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.'),
+          const Text('Valori già registrati e ricerca di mercato sono due operazioni distinte. Seleziona gli oggetti e avvia la valutazione per richiedere una nuova analisi al runtime VALORA.'),
           const SizedBox(height: 12),
-          metric('Valore di mercato noto', _eur(market), Icons.trending_up, const Color(0xFF39875B)),
-          metric('Valore manuale registrato', _eur(manual), Icons.edit_note, const Color(0xFF568DAD)),
+          metric('Valore di mercato registrato', _eur(marketTotal), Icons.trending_up, const Color(0xFF39875B)),
+          metric('Valore manuale registrato', _eur(manualTotal), Icons.edit_note, const Color(0xFF568DAD)),
           metric('Oggetti e unità', '${_rows.length} record · $units unità', Icons.inventory_2_outlined, const Color(0xFF8556C7)),
           metric('Oggetti senza stima di mercato', '$missing', Icons.hourglass_empty, const Color(0xFFE17D35)),
-          const SizedBox(height: 12),
-          const Text('DETTAGLIO OGGETTI', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
-          const SizedBox(height: 6),
-          if (_rows.isEmpty) const Card(child: ListTile(title: Text('Nessun oggetto destinato alla collezione.'))),
-          ..._rows.map((r) {
+          const SizedBox(height: 16),
+          const Text('NUOVA VALUTAZIONE DI MERCATO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _market,
+            decoration: const InputDecoration(labelText: 'Mercato di riferimento', border: OutlineInputBorder()),
+            items: const [
+              DropdownMenuItem(value: 'ITALIA', child: Text('Italia')),
+              DropdownMenuItem(value: 'EUROPA', child: Text('Europa')),
+              DropdownMenuItem(value: 'MONDO', child: Text('Mondo')),
+            ],
+            onChanged: _researching ? null : (value) => setState(() { if (value != null) _market = value; }),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            decoration: const InputDecoration(labelText: 'Filtra oggetti', hintText: 'Descrizione o codice', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+            onChanged: (value) => setState(() => _query = value),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: Text('${_selected.length} selezionati su ${filtered.length} visibili', style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
+            TextButton(onPressed: _researching || filtered.isEmpty ? null : () => setState(() {
+              if (filtered.every((r) => _selected.contains((r['codice_oggetto'] as num?)?.toInt())) {
+                _selected.removeAll(filtered.map((r) => (r['codice_oggetto'] as num).toInt()));
+              } else {
+                for (final r in filtered) { final id = int.tryParse((r['codice_oggetto'] ?? '').toString()); if (id != null) _selected.add(id); }
+              }
+            }), child: const Text('SELEZIONA TUTTI')),
+          ]),
+          if (_rows.isEmpty) const Card(child: ListTile(leading: Icon(Icons.info_outline), title: Text('Archivio vuoto'), subtitle: Text('Importa prima gli oggetti nel database TEST oppure usa VALORA dalla sezione principale per identificare un oggetto da fotografie.'))),
+          ...filtered.map((r) {
+            final id = int.tryParse((r['codice_oggetto'] ?? '').toString());
             final q = (r['quantita'] as num?)?.toInt() ?? 1;
             final m = _num(r['valore_mercato']);
             final v = _num(r['valore_oggetto']);
-            final label = m != null ? 'Mercato: ${_eur(m*q)}' :
-                v != null ? 'Valore manuale: ${_eur(v*q)}' : 'Stima di mercato non disponibile';
-            return Card(child: ListTile(
+            final result = id == null ? null : _valuations[id];
+            return Card(child: CheckboxListTile(
+              value: id != null && _selected.contains(id),
+              onChanged: _researching || id == null ? null : (checked) => setState(() { if (checked == true) _selected.add(id); else _selected.remove(id); }),
               title: Text((r['descrizione_oggetto'] ?? 'Oggetto senza descrizione').toString()),
-              subtitle: Text('ID ${r['codice_oggetto']} · Quantità $q\n$label'),
+              subtitle: Text('ID $id · Quantità $q\n' + (m != null ? 'Mercato registrato: ${_eur(m*q)}' : v != null ? 'Valore manuale: ${_eur(v*q)}' : 'Nessuna stima registrata') + (result == null ? '' : '\nRisposta VALORA: ${result.toString()}')),
               isThreeLine: true,
+              controlAffinity: ListTileControlAffinity.leading,
             ));
           }),
-          const SizedBox(height: 10),
-          FilledButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage())), icon: const Icon(Icons.travel_explore), label: const Text('AVVIA VALUTAZIONE DI MERCATO')),
-           const SizedBox(height: 8),
-           Text('Il riepilogo resta una consultazione dei valori registrati. Il pulsante apre VALORA per la valutazione specialistica.',
-            style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _researching || _selected.isEmpty ? null : _researchSelected,
+            icon: _researching ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
+            label: Text(_researching ? 'RICERCA IN CORSO…' : 'AVVIA VALUTAZIONE DI MERCATO'),
+          ),
+          if (_status.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 10), child: SelectableText(_status)),
+          const SizedBox(height: 8),
+          Text('La valutazione richiede una risposta valida dal runtime VALORA. Questa schermata non registra vendite né pubblica inserzioni.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
         ])),
     );
   }
 }
-
 
 class ValoraAssistantPage extends StatefulWidget {
   const ValoraAssistantPage({super.key, this.screenContext = 'Dashboard'});
