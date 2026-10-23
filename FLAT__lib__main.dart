@@ -4545,28 +4545,74 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Future<void> _loadExistingImage(int objectId) async {
+    String? imageUrl;
+    bool isHttpUrl(String value) =>
+        value.startsWith('https://') || value.startsWith('http://');
+
+    // 1) Archivio immagini applicativo: preferisce l'immagine principale confermata.
     try {
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session == null) return;
-      final response = await Supabase.instance.client.functions.invoke(
-        'collection-object-images-test',
-        headers: {'Authorization': 'Bearer ${session.accessToken}'},
-        body: {'action':'get','codice_oggetto':objectId},
-      );
-      if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
-      final data = Map<String, dynamic>.from(response.data as Map);
-      if (!mounted || _loadedObjectId != objectId) return;
-      setState(() {
-        _existingImageUrl = (data['signed_url'] ?? '').toString().trim().isEmpty ? null : data['signed_url'].toString();
-        _imageStatus = _existingImageUrl != null ? 'Immagine già associata all’oggetto.' : 'Nessuna immagine associata a questo oggetto.';
-      });
+      final rows = await Supabase.instance.client
+          .schema('collection')
+          .from('immagini_oggetto')
+          .select('riferimento_immagine, tipo_immagine, immagine_principale, stato_verifica')
+          .eq('codice_oggetto', objectId)
+          .order('immagine_principale', ascending: false)
+          .limit(10);
+      for (final row in rows) {
+        final candidate = (row['riferimento_immagine'] ?? '').toString().trim();
+        if (isHttpUrl(candidate)) {
+          imageUrl = candidate;
+          break;
+        }
+      }
     } catch (e) {
-      if (!mounted || _loadedObjectId != objectId) return;
-      setState(() {
-        _existingImageUrl = null;
-        _imageStatus = 'Impossibile recuperare l’immagine: $e';
-      });
+      debugPrint('VALORA: tabella immagini non disponibile per $objectId: $e');
     }
+
+    // 2) Endpoint immagini: può trasformare un percorso Storage in URL firmato.
+    if (imageUrl == null) {
+      try {
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session != null) {
+          final response = await Supabase.instance.client.functions.invoke(
+            'collection-object-images-test',
+            headers: {'Authorization': 'Bearer ${session.accessToken}'},
+            body: {'action':'get','codice_oggetto':objectId},
+          );
+          if (response.status >= 200 && response.status < 300 && response.data is Map) {
+            final data = Map<String, dynamic>.from(response.data as Map);
+            final signed = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
+            if (isHttpUrl(signed)) imageUrl = signed;
+          }
+        }
+      } catch (e) {
+        debugPrint('VALORA: endpoint immagini non disponibile per $objectId: $e');
+      }
+    }
+
+    // 3) Fallback ai metadati catalografici salvati da PR-12.
+    if (imageUrl == null) {
+      try {
+        final metadata = await Supabase.instance.client
+            .schema('collection')
+            .from('master_metadati')
+            .select('url_immagine')
+            .eq('codice_oggetto', objectId)
+            .maybeSingle();
+        final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
+        if (isHttpUrl(candidate)) imageUrl = candidate;
+      } catch (e) {
+        debugPrint('VALORA: URL immagine catalogo non disponibile per $objectId: $e');
+      }
+    }
+
+    if (!mounted || _loadedObjectId != objectId) return;
+    setState(() {
+      _existingImageUrl = imageUrl;
+      _imageStatus = imageUrl != null
+          ? 'Immagine associata alla scheda.'
+          : 'Nessuna immagine associata a questo oggetto.';
+    });
   }
 
   Future<void> _loadObject() async {
