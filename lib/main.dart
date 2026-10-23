@@ -3174,6 +3174,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String? _existingImageUrl;
   String _imageStatus = 'Nessuna immagine selezionata.';
   final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
+  final Set<String> _failedImageFallbacks = {};
 
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
@@ -4165,11 +4166,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 loadingBuilder: (context, child, progress) => progress == null
                   ? child
                   : SizedBox(height: 180, child: Center(child: CircularProgressIndicator(value: progress.expectedTotalBytes == null ? null : progress.cumulativeBytesLoaded / progress.expectedTotalBytes!))),
-                errorBuilder: (_, __, ___) => Column(children: [
+                errorBuilder: (_, __, ___) {
+                  _retryImageAfterFailure(imageUrl);
+                  return Column(children: [
                   Icon(Icons.broken_image_outlined, size: 42, color: ValoraAppearance.instance.textFaint),
                   const SizedBox(height: 6),
                   Text('Immagine registrata, ma anteprima non disponibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                ]),
+                ]);
+                },
               ),
             )
           else
@@ -4231,26 +4235,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     bool isHttpUrl(String value) =>
         value.startsWith('https://') || value.startsWith('http://');
 
-    // 1) Prima prova l'immagine catalografica già salvata da PR-12.
-    // Una vecchia riga in immagini_oggetto può contenere un URL non più valido:
-    // non deve impedire di usare un URL catalografico disponibile.
-    try {
-      if (!skipCatalogUrl) {
+    // 1) Prima prova l'immagine catalografica, tranne quando è proprio quella
+    // che il widget ha appena segnalato come non caricabile.
+    if (!skipCatalogUrl) {
+      try {
         final metadata = await Supabase.instance.client
-          .schema('collection')
-          .from('master_metadati')
-          .select('url_immagine')
-          .eq('codice_oggetto', objectId)
-          .maybeSingle();
-      final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
+            .schema('collection')
+            .from('master_metadati')
+            .select('url_immagine')
+            .eq('codice_oggetto', objectId)
+            .maybeSingle();
+        final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
         if (isHttpUrl(candidate) && candidate != failedUrl) imageUrl = candidate;
+      } catch (e) {
+        debugPrint('VALORA: URL immagine catalogo non recuperato per $objectId: $e');
       }
-    } catch (e) {
-      debugPrint('VALORA: URL immagine catalogo non recuperato per $objectId: $e');
     }
 
-    // 2) Se manca il link catalografico, chiedi al servizio immagini.
-    // L'endpoint restituisce URL firmati quando l'immagine è nello Storage privato.
+    // 2) Chiede al servizio immagini un eventuale URL alternativo / Storage.
     if (imageUrl == null) {
       try {
         final session = Supabase.instance.client.auth.currentSession;
@@ -4260,14 +4262,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             headers: {'Authorization': 'Bearer ${session.accessToken}'},
             body: {'action': 'get', 'codice_oggetto': objectId},
           );
-          if (response.status >= 200 &&
-              response.status < 300 &&
-              response.data is Map) {
+          if (response.status >= 200 && response.status < 300 && response.data is Map) {
             final data = Map<String, dynamic>.from(response.data as Map);
-            final signed = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '')
-                .toString()
-                .trim();
-            if (isHttpUrl(signed) && signed != failedUrl) imageUrl = signed;
+            final candidate = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
+            if (isHttpUrl(candidate) && candidate != failedUrl) imageUrl = candidate;
           }
         }
       } catch (e) {
@@ -4275,8 +4273,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }
     }
 
-    // 3) Ultimo fallback: riferimenti HTTP presenti nel registro immagini.
-    // Non trattare nomi file o percorsi Storage come URL navigabili.
+    // 3) Ultimo fallback: URL HTTP distinti presenti nel registro immagini.
     if (imageUrl == null) {
       try {
         final rows = await Supabase.instance.client
@@ -4306,8 +4303,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _existingImageUrl = imageUrl;
       _imageStatus = imageUrl != null
           ? 'Immagine associata alla scheda.'
-          : 'Nessuna immagine associata a questo oggetto.';
+          : 'Anteprima non disponibile: nessun URL alternativo valido.';
     });
+  }
+
+  Future<void> _retryImageAfterFailure(String failedUrl) async {
+    final objectId = _loadedObjectId;
+    if (objectId == null || failedUrl.isEmpty || !_failedImageFallbacks.add(failedUrl)) return;
+    await _loadExistingImage(objectId, skipCatalogUrl: true, failedUrl: failedUrl);
   }
 
   Future<void> _loadObject() async {
