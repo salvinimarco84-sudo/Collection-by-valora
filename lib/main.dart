@@ -1952,8 +1952,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows) async {
-    // Le anteprime visibili interrogano il registro immagini ufficiale:
-    // immagini_oggetto + Storage privato, tramite URL firmati a scadenza.
+    // Prima usa l'URL catalografico di PR-12 salvato in master_metadati.
+    // Il registro immagini/Storage è un fallback, non l'unica sorgente:
+    // i record catalografici senza foto caricata dall'utente devono comunque
+    // mostrare la propria immagine di prodotto.
     final selected = <Map<String, dynamic>>[];
     for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
       selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
@@ -1963,20 +1965,39 @@ class _HomeDashboardState extends State<HomeDashboard> {
     )).whereType<int>().where((id) => id > 0 && !_dashboardImageLookups.contains(id)).toSet();
     if (ids.isEmpty) return;
     _dashboardImageLookups.addAll(ids);
+
     await Future.wait(ids.map((id) async {
       try {
+        final metadata = await Supabase.instance.client
+            .schema('collection')
+            .from('master_metadati')
+            .select('url_immagine')
+            .eq('codice_oggetto', id)
+            .maybeSingle();
+        final catalogUrl = (metadata?['url_immagine'] ?? '').toString().trim();
+        if (catalogUrl.startsWith('https://') || catalogUrl.startsWith('http://')) {
+          _dashboardImageUrls[id] = catalogUrl;
+          return;
+        }
+      } catch (e) {
+        debugPrint('VALORA: URL catalografico non disponibile per $id: $e');
+      }
+
+      try {
+        final session = Supabase.instance.client.auth.currentSession;
         final response = await Supabase.instance.client.functions.invoke(
           'collection-object-images-test',
+          headers: session == null ? null : {'Authorization': 'Bearer ${session.accessToken}'},
           body: {'action': 'get', 'codice_oggetto': id},
         );
         if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
         final data = Map<String, dynamic>.from(response.data as Map);
-        final url = (data['signed_url'] ?? '').toString().trim();
+        final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
         if (url.startsWith('https://') || url.startsWith('http://')) {
           _dashboardImageUrls[id] = url;
         }
-      } catch (_) {
-        // L'assenza di foto o un permesso mancante non deve bloccare la HOME.
+      } catch (e) {
+        debugPrint('VALORA: immagine registro non disponibile per $id: $e');
       }
     }));
     if (mounted) setState(() {});
