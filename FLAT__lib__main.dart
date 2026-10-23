@@ -4648,7 +4648,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _existingImageUrl = null; _selectedImageBytes = null; _selectedImageName = null;
       _imageStatus = 'Verifica immagine associata…';
     });
-    if (widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER') await _loadExistingImage(id);
+    if (widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER') {
+      await _loadExistingImage(id);
+      if (mounted && _loadedObjectId == id && _existingImageUrl == null) {
+        final catalogImage = (_pr11CategoryValues['url_immagine'] ??
+            _pr11CategoryValues['image_url'] ??
+            _currentObject?['url_immagine'] ??
+            _currentObject?['image_url'] ??
+            '').toString().trim();
+        if (catalogImage.startsWith('https://') || catalogImage.startsWith('http://')) {
+          setState(() {
+            _existingImageUrl = catalogImage;
+            _imageStatus = 'Immagine caricata dal catalogo metadati.';
+          });
+        }
+      }
+    }
   }
 
   Future<void> _loadIncompleteMetadataCatalog() async {
