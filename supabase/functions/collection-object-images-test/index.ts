@@ -128,7 +128,7 @@ Deno.serve(async (req: Request) => {
       const { data: metadata, error: metadataError } = await admin.from("master_metadati").select("url_immagine").eq("codice_oggetto", objectId).maybeSingle();
       if (metadataError) throw metadataError;
       const catalogUrl = String(metadata?.url_immagine || "");
-      return reply({ ok: true, signed_url: /^https?:\\/\\//i.test(catalogUrl) ? catalogUrl : null, immagine: null, fonte: "catalogo" });
+      return reply({ ok: true, signed_url: (catalogUrl.startsWith("https://") || catalogUrl.startsWith("http://")) ? catalogUrl : null, immagine: null, fonte: "catalogo" });
     }
 
     const image = images[0];
