@@ -4621,7 +4621,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (specific != null) {
         categoryCode = specific['codice_categoria']?.toString() ?? categoryCode;
         final rawValues = specific['valori'];
-        if (rawValues is Map) categoryValues = Map<String, dynamic>.from(rawValues);
+        if (rawValues is Map) categoryValues.addAll(Map<String, dynamic>.from(rawValues));
       }
     } catch (error) {
       debugPrint('VALORA: valori specifici categoria non recuperati per $id: $error');
