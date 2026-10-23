@@ -4226,7 +4226,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     return signedUrl;
   }
 
-  Future<void> _loadExistingImage(int objectId) async {
+  Future<void> _loadExistingImage(int objectId, {bool skipCatalogUrl = false, String? failedUrl}) async {
     String? imageUrl;
     bool isHttpUrl(String value) =>
         value.startsWith('https://') || value.startsWith('http://');
@@ -4235,14 +4235,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // Una vecchia riga in immagini_oggetto può contenere un URL non più valido:
     // non deve impedire di usare un URL catalografico disponibile.
     try {
-      final metadata = await Supabase.instance.client
+      if (!skipCatalogUrl) {
+        final metadata = await Supabase.instance.client
           .schema('collection')
           .from('master_metadati')
           .select('url_immagine')
           .eq('codice_oggetto', objectId)
           .maybeSingle();
       final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
-      if (isHttpUrl(candidate)) imageUrl = candidate;
+        if (isHttpUrl(candidate) && candidate != failedUrl) imageUrl = candidate;
+      }
     } catch (e) {
       debugPrint('VALORA: URL immagine catalogo non recuperato per $objectId: $e');
     }
@@ -4265,7 +4267,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             final signed = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '')
                 .toString()
                 .trim();
-            if (isHttpUrl(signed)) imageUrl = signed;
+            if (isHttpUrl(signed) && signed != failedUrl) imageUrl = signed;
           }
         }
       } catch (e) {
@@ -4287,7 +4289,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         for (final row in rows) {
           for (final key in ['riferimento_immagine', 'url_fonte']) {
             final candidate = (row[key] ?? '').toString().trim();
-            if (isHttpUrl(candidate)) {
+            if (isHttpUrl(candidate) && candidate != failedUrl) {
               imageUrl = candidate;
               break;
             }
