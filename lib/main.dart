@@ -5025,9 +5025,27 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       'record_id', 'deleted_at', 'versione_record',
     };
 
-    final entries = object.entries.where((e) =>
-      !imageKeys.contains(e.key) && !summaryKeys.contains(e.key)
-    ).toList();
+    // La scheda OGGETTO contiene solo i dati inseriti e gestionali.
+    // I dati identificativi del prodotto sono mostrati esclusivamente in METADATI.
+    const metadataKeys = {
+      'produttore', 'marca', 'brand', 'linea', 'famiglia', 'categoria',
+      'anno_uscita', 'anno', 'data_uscita', 'data_di_uscita',
+      'codice_prodotto', 'ean', 'gtin', 'upc', 'isbn', 'issn', 'mpn', 'sku',
+      'serie', 'licenza', 'franchise', 'tema', 'materiale', 'scala',
+      'edizione', 'numero_serie', 'fonte', 'fonte_dati_prodotto',
+      'fonte_dati', 'url_fonte', 'url_prodotto', 'fonte_campi',
+      'metadati', 'metadata',
+    };
+    final entries = object.entries.where((e) {
+      final key = e.key.toLowerCase();
+      final metadataLike = metadataKeys.contains(key) ||
+          key.contains('metad') || key.contains('produttore') ||
+          key.contains('fonte') || key.contains('anno_uscita') ||
+          key == 'codice_prodotto';
+      return !imageKeys.contains(e.key) &&
+          !summaryKeys.contains(e.key) &&
+          !metadataLike;
+    }).toList();
     List<MapEntry<String, dynamic>> group(Set<String> keys) =>
       entries.where((e) => keys.contains(e.key)).toList();
     final identity = group(identityKeys);
