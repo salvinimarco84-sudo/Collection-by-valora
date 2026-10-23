@@ -4664,7 +4664,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     try {
       final catalog = await Supabase.instance.client.schema('collection')
           .from('master_metadati')
-          .select('codice_categoria, url_immagine, produttore, anno_uscita, codice_identificativo, nome_ufficiale, tema, sezione, sottotema, numero_pezzi, numero_minifigure, dettagli_pezzi, contenuto_confezione, caratteristiche_tecniche, identificativi_aggiuntivi, modalita_alternative, prezzo_lancio, valuta_prezzo_lancio, mercato_riferimento_uscita, stato_verifica, attributi_specifici')
+          // Select * evita che un campo specifico non presente nello schema
+          // faccia fallire l'intera query e svuoti tutti i metadati.
+          .select('*')
           .eq('codice_oggetto', id)
           .maybeSingle();
       if (catalog != null) {
@@ -4777,20 +4779,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _existingImageUrl = null; _selectedImageBytes = null; _selectedImageName = null;
       _imageStatus = 'Verifica immagine associata…';
     });
-    if (widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER') {
-      await _loadExistingImage(id);
-      if (mounted && _loadedObjectId == id && _existingImageUrl == null) {
-        final catalogImage = (_pr11CategoryValues['url_immagine'] ??
-            _pr11CategoryValues['image_url'] ??
-            _currentObject?['url_immagine'] ??
-            _currentObject?['image_url'] ??
-            '').toString().trim();
-        if (catalogImage.startsWith('https://') || catalogImage.startsWith('http://')) {
-          setState(() {
-            _existingImageUrl = catalogImage;
-            _imageStatus = 'Immagine caricata dal catalogo metadati.';
-          });
-        }
+    // La scheda di consultazione deve caricare l'immagine indipendentemente
+    // dal codice procedura che l'ha aperta (PR-11, PR-02 o accesso diretto).
+    await _loadExistingImage(id);
+    if (mounted && _loadedObjectId == id && _existingImageUrl == null) {
+      final catalogImage = (_pr11CategoryValues['url_immagine'] ??
+          _pr11CategoryValues['image_url'] ??
+          _currentObject?['url_immagine'] ??
+          _currentObject?['image_url'] ??
+          '').toString().trim();
+      if (catalogImage.startsWith('https://') || catalogImage.startsWith('http://')) {
+        setState(() {
+          _existingImageUrl = catalogImage;
+          _imageStatus = 'Immagine caricata dal catalogo metadati.';
+        });
       }
     }
   }
