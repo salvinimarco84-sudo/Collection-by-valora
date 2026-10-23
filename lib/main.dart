@@ -4196,27 +4196,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     bool isHttpUrl(String value) =>
         value.startsWith('https://') || value.startsWith('http://');
 
-    // 1) Archivio immagini applicativo: preferisce l'immagine principale confermata.
+    // 1) Prima prova l'immagine catalografica già salvata da PR-12.
+    // Una vecchia riga in immagini_oggetto può contenere un URL non più valido:
+    // non deve impedire di usare un URL catalografico disponibile.
     try {
-      final rows = await Supabase.instance.client
+      final metadata = await Supabase.instance.client
           .schema('collection')
-          .from('immagini_oggetto')
-          .select('riferimento_immagine, tipo_immagine, immagine_principale, stato_verifica')
+          .from('master_metadati')
+          .select('url_immagine')
           .eq('codice_oggetto', objectId)
-          .order('immagine_principale', ascending: false)
-          .limit(10);
-      for (final row in rows) {
-        final candidate = (row['riferimento_immagine'] ?? '').toString().trim();
-        if (isHttpUrl(candidate)) {
-          imageUrl = candidate;
-          break;
-        }
-      }
+          .maybeSingle();
+      final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
+      if (isHttpUrl(candidate)) imageUrl = candidate;
     } catch (e) {
-      debugPrint('VALORA: tabella immagini non disponibile per $objectId: $e');
+      debugPrint('VALORA: URL immagine catalogo non recuperato per $objectId: $e');
     }
 
-    // 2) Endpoint immagini: può trasformare un percorso Storage in URL firmato.
+    // 2) Se manca il link catalografico, chiedi al servizio immagini.
+    // L'endpoint restituisce URL firmati quando l'immagine è nello Storage privato.
     if (imageUrl == null) {
       try {
         final session = Supabase.instance.client.auth.currentSession;
@@ -4224,32 +4221,46 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           final response = await Supabase.instance.client.functions.invoke(
             'collection-object-images-test',
             headers: {'Authorization': 'Bearer ${session.accessToken}'},
-            body: {'action':'get','codice_oggetto':objectId},
+            body: {'action': 'get', 'codice_oggetto': objectId},
           );
-          if (response.status >= 200 && response.status < 300 && response.data is Map) {
+          if (response.status >= 200 &&
+              response.status < 300 &&
+              response.data is Map) {
             final data = Map<String, dynamic>.from(response.data as Map);
-            final signed = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
+            final signed = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '')
+                .toString()
+                .trim();
             if (isHttpUrl(signed)) imageUrl = signed;
           }
         }
       } catch (e) {
-        debugPrint('VALORA: endpoint immagini non disponibile per $objectId: $e');
+        debugPrint('VALORA: servizio immagini non disponibile per $objectId: $e');
       }
     }
 
-    // 3) Fallback ai metadati catalografici salvati da PR-12.
+    // 3) Ultimo fallback: riferimenti HTTP presenti nel registro immagini.
+    // Non trattare nomi file o percorsi Storage come URL navigabili.
     if (imageUrl == null) {
       try {
-        final metadata = await Supabase.instance.client
+        final rows = await Supabase.instance.client
             .schema('collection')
-            .from('master_metadati')
-            .select('url_immagine')
+            .from('immagini_oggetto')
+            .select('riferimento_immagine, url_fonte, immagine_principale, stato_verifica')
             .eq('codice_oggetto', objectId)
-            .maybeSingle();
-        final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
-        if (isHttpUrl(candidate)) imageUrl = candidate;
+            .order('immagine_principale', ascending: false)
+            .limit(10);
+        for (final row in rows) {
+          for (final key in ['riferimento_immagine', 'url_fonte']) {
+            final candidate = (row[key] ?? '').toString().trim();
+            if (isHttpUrl(candidate)) {
+              imageUrl = candidate;
+              break;
+            }
+          }
+          if (imageUrl != null) break;
+        }
       } catch (e) {
-        debugPrint('VALORA: URL immagine catalogo non disponibile per $objectId: $e');
+        debugPrint('VALORA: registro immagini non disponibile per $objectId: $e');
       }
     }
 
