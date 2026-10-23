@@ -2037,6 +2037,68 @@ class _HomeDashboardState extends State<HomeDashboard> {
     await _loadDashboardImages(_catalogRows, retryFailed: true);
   }
 
+  // Se l'URL catalografico fallisce nella UI, prova le sorgenti alternative
+  // senza riproporre lo stesso URL non funzionante.
+  Future<void> _retryDashboardImageAfterFailure(
+    Map<String, dynamic> row, String failedUrl,
+  ) async {
+    final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
+    if (id == null || id <= 0 || failedUrl.isEmpty) return;
+    if (_dashboardImageUrls[id] != failedUrl) return;
+
+    var replacementUrl = '';
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      final response = await Supabase.instance.client.functions.invoke(
+        'collection-object-images-test',
+        headers: session == null ? null : {'Authorization': 'Bearer ${session.accessToken}'},
+        body: {'action': 'get', 'codice_oggetto': id},
+      );
+      if (response.status >= 200 && response.status < 300 && response.data is Map) {
+        final data = Map<String, dynamic>.from(response.data as Map);
+        final candidate = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
+        if ((candidate.startsWith('https://') || candidate.startsWith('http://')) &&
+            candidate != failedUrl) {
+          replacementUrl = candidate;
+        }
+      }
+    } catch (e) {
+      debugPrint('VALORA: fallback immagine dashboard non disponibile per $id: $e');
+    }
+
+    // Ultimo tentativo con il registro immagini, ignorando l'URL che ha fallito.
+    if (replacementUrl.isEmpty) {
+      try {
+        final rows = await Supabase.instance.client
+            .schema('collection')
+            .from('immagini_oggetto')
+            .select('riferimento_immagine, url_fonte, immagine_principale')
+            .eq('codice_oggetto', id)
+            .order('immagine_principale', ascending: false)
+            .limit(10);
+        for (final imageRow in rows) {
+          for (final key in ['riferimento_immagine', 'url_fonte']) {
+            final candidate = (imageRow[key] ?? '').toString().trim();
+            if ((candidate.startsWith('https://') || candidate.startsWith('http://')) &&
+                candidate != failedUrl) {
+              replacementUrl = candidate;
+              break;
+            }
+          }
+          if (replacementUrl.isNotEmpty) break;
+        }
+      } catch (e) {
+        debugPrint('VALORA: registro immagini dashboard non disponibile per $id: $e');
+      }
+    }
+
+    if (!mounted || replacementUrl.isEmpty || _dashboardImageUrls[id] != failedUrl) return;
+    setState(() {
+      _dashboardImageUrls[id] = replacementUrl;
+      _dashboardImageLookups.add(id);
+    });
+  }
+
   String _dashboardDescription(Map<String, dynamic> row) =>
       (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString();
 
@@ -2216,7 +2278,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       child: url == null
                         ? Icon(icon, color: color.withValues(alpha: 0.9), size: 34)
                         : Image.network(_valoraImageProxyUrl(url), fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 34))),
+                            errorBuilder: (_, __, ___) {
+                              _retryDashboardImageAfterFailure(row, url);
+                              return Icon(icon, color: color, size: 34);
+                            })),
                     const SizedBox(height: 4),
                     Text(_dashboardDescription(row), maxLines: 2, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: Colors.white, fontSize: 10, height: 1.1)),
