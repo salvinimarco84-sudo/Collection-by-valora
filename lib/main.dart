@@ -1964,6 +1964,33 @@ class _HomeDashboardState extends State<HomeDashboard> {
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
+
+      // La sezione viene letta dai metadati SQL, non dedotta dalla descrizione.
+      final ids = rows.map((row) => int.tryParse(
+        (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
+      )).whereType<int>().where((id) => id > 0).toSet().toList();
+      if (ids.isNotEmpty) {
+        try {
+          final metadataRows = await Supabase.instance.client
+              .schema('collection')
+              .from('master_metadati')
+              .select('codice_oggetto,sezione')
+              .inFilter('codice_oggetto', ids);
+          final sectionById = <int, String>{};
+          for (final item in metadataRows) {
+            final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
+            final section = (item['sezione'] ?? '').toString().trim();
+            if (id != null && section.isNotEmpty) sectionById[id] = section;
+          }
+          for (final row in rows) {
+            final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
+            row['_valora_sezione'] = id == null ? '' : (sectionById[id] ?? '');
+          }
+        } catch (e) {
+          debugPrint('VALORA: sezioni catalogo non disponibili: $e');
+          for (final row in rows) { row['_valora_sezione'] = ''; }
+        }
+      }
       if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
       await _loadDashboardImages(rows);
     } catch (e) {
@@ -1975,7 +2002,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
     // Prima usa l'URL catalografico di PR-12 salvato in master_metadati.
     // Il registro immagini/Storage è un fallback, non l'unica sorgente.
     final selected = <Map<String, dynamic>>[];
-    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
+    final categories = rows.map(_dashboardCategory).where((value) => value.isNotEmpty).toSet();
+    for (final category in categories) {
       selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
     }
     final ids = selected.map((row) => int.tryParse(
@@ -2041,14 +2069,41 @@ class _HomeDashboardState extends State<HomeDashboard> {
       (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString();
 
   String _dashboardCategory(Map<String, dynamic> row) {
-    final d = _dashboardDescription(row).toLowerCase();
-    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d)) return 'LEGO';
-    if (RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d)) return 'SAINT SEIYA';
-    if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
-    if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman').hasMatch(d)) return 'FUMETTI';
-    if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
-    if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
-    return 'ALTRE COLLEZIONI';
+    final section = (row['_valora_sezione'] ?? '').toString().trim();
+    if (section.isNotEmpty) return section;
+    return 'DA CLASSIFICARE';
+  }
+
+  List<String> _collectionSections() {
+    final sections = _catalogRows
+        .map((row) => _dashboardCategory(row).trim())
+        .where((section) => section.isNotEmpty)
+        .toSet()
+        .toList();
+    sections.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return sections;
+  }
+
+  Color _sectionColor(String section) {
+    final palette = <Color>[
+      const Color(0xFFE31B23), const Color(0xFF7137B8),
+      const Color(0xFFDD741D), const Color(0xFF008C4A),
+      const Color(0xFF2476C8), const Color(0xFFB58A19),
+      const Color(0xFF466B87), const Color(0xFFAD4777),
+    ];
+    var hash = 0;
+    for (final unit in section.codeUnits) { hash = (hash * 31 + unit) & 0x7fffffff; }
+    return palette[hash % palette.length];
+  }
+
+  IconData _sectionIcon(String section) {
+    final value = section.toLowerCase();
+    if (value.contains('lego')) return Icons.extension;
+    if (value.contains('fumett') || value.contains('comic') || value.contains('manga')) return Icons.menu_book_outlined;
+    if (value.contains('moto') || value.contains('die-cast')) return Icons.two_wheeler;
+    if (value.contains('saint seiya') || value.contains('myth cloth')) return Icons.shield_outlined;
+    if (value.contains('transformer') || value.contains('gundam')) return Icons.smart_toy_outlined;
+    return Icons.category_outlined;
   }
 
   String? _dashboardImageUrl(Map<String, dynamic> row) {
@@ -2441,13 +2496,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
           decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
           child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
         ),
-      _dashboardCategoryPanel('LEGO', 'Mattoncini, set, minifigure e collezioni', const Color(0xFFE31B23), Icons.extension),
-      _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth, personaggi e accessori', const Color(0xFF7137B8), Icons.shield_outlined),
-      _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
-      _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
-      _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
-      _dashboardCategoryPanel('TRANSFORMERS', 'Autobot, Decepticon e personaggi', const Color(0xFF2476C8), Icons.smart_toy_outlined),
-      _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
+      if (!_catalogLoading && _catalogRows.isNotEmpty)
+        ..._collectionSections().map((section) => _dashboardCategoryPanel(
+          section,
+          section == 'DA CLASSIFICARE' ? 'Oggetti senza sezione nei metadati' : 'Tutti gli oggetti della sezione',
+          _sectionColor(section),
+          _sectionIcon(section),
+        )),
+      if (!_catalogLoading && _catalogRows.isEmpty && _catalogError == null)
+        const Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('Nessun oggetto presente nel catalogo.', style: TextStyle(color: Colors.white70)),
+        ),
     ],
   );
 
@@ -2596,26 +2656,11 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
 
   bool _matchesInitialCategory(Map<String, dynamic> row, String category) {
-    final d = _description(row).toLowerCase();
-    switch (category.toUpperCase()) {
-      case 'LEGO':
-        return RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d);
-      case 'SAINT SEIYA':
-        return RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d);
-      case 'MOTO DIE-CAST':
-        return RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja|aprilia rsv|honda vtr').hasMatch(d);
-      case 'FUMETTI':
-        return RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman').hasMatch(d);
-      case 'GUNDAM':
-        return RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d);
-      case 'TRANSFORMERS':
-        return RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d);
-      case 'ALTRE COLLEZIONI':
-        return !['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS']
-            .any((name) => _matchesInitialCategory(row, name));
-      default:
-        return d.contains(category.toLowerCase());
+    final metadataSection = (row['_valora_sezione'] ?? '').toString().trim();
+    if (metadataSection.isNotEmpty) {
+      return metadataSection.toLowerCase() == category.trim().toLowerCase();
     }
+    return category.trim().toUpperCase() == 'DA CLASSIFICARE';
   }
 
   Future<void> _search() async {
@@ -2649,6 +2694,26 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       final rows = (payload['oggetti'] as List)
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+      final ids = rows.map((row) => int.tryParse(_code(row))).whereType<int>().where((id) => id > 0).toSet().toList();
+      if (ids.isNotEmpty) {
+        final metadataRows = await Supabase.instance.client
+            .schema('collection')
+            .from('master_metadati')
+            .select('codice_oggetto,sezione')
+            .inFilter('codice_oggetto', ids);
+        final sectionById = <int, String>{};
+        for (final item in metadataRows) {
+          final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
+          final section = (item['sezione'] ?? '').toString().trim();
+          if (id != null && section.isNotEmpty) sectionById[id] = section;
+        }
+        for (final row in rows) {
+          final id = int.tryParse(_code(row));
+          row['_valora_sezione'] = id == null ? '' : (sectionById[id] ?? '');
+        }
+      }
+      final filteredRows = rows
           .where((row) => categoryMode
               ? _matchesInitialCategory(row, widget.initialQuery!.trim())
               : _description(row).toLowerCase().contains(normalizedQuery))
@@ -2667,13 +2732,13 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
         throw Exception('Impossibile calcolare il totale della collezione.');
       }
       final total = (allPayload['oggetti'] as List).length;
-      final percentage = total == 0 ? 0.0 : rows.length * 100 / total;
+      final percentage = total == 0 ? 0.0 : filteredRows.length * 100 / total;
       if (!mounted) return;
       setState(() {
-        _results = rows;
-        _message = rows.isEmpty
+        _results = filteredRows;
+        _message = filteredRows.isEmpty
             ? 'Nessun record contiene “$query”. Prova una dicitura più breve.'
-            : 'Trovati ${rows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
+            : 'Trovati ${filteredRows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
       });
     } catch (e) {
       if (!mounted) return;
