@@ -5985,30 +5985,46 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             const SizedBox(height: 12),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Row(children: [
-                  for (final tab in const [
-                    (label: 'OGGETTO', icon: Icons.inventory_2_outlined),
-                    (label: 'METADATI', icon: Icons.fact_check_outlined),
-                    (label: 'DATI TECNICI', icon: Icons.analytics_outlined),
-                  ]) ...[
-                    if (tab != const (label: 'OGGETTO', icon: Icons.inventory_2_outlined))
-                      const SizedBox(width: 4),
-                    Expanded(child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-                        backgroundColor: _pr11MasterTabIndex == (tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2)
-                            ? sectionColor : ValoraAppearance.instance.card,
-                        foregroundColor: _pr11MasterTabIndex == (tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2)
-                            ? Colors.black : ValoraAppearance.instance.textPrimary,
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
+                          backgroundColor: _pr11MasterTabIndex == 0 ? sectionColor : ValoraAppearance.instance.card,
+                          foregroundColor: _pr11MasterTabIndex == 0 ? Colors.black : ValoraAppearance.instance.textPrimary,
+                        ),
+                        onPressed: () => setState(() => _pr11MasterTabIndex = 0),
+                        child: const Text('OGGETTO', textAlign: TextAlign.center, maxLines: 1, softWrap: false),
                       ),
-                      onPressed: () => setState(() => _pr11MasterTabIndex = tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2),
-                      child: FittedBox(fit: BoxFit.scaleDown, child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(tab.icon, size: 16), const SizedBox(width: 5), Text(tab.label),
-                      ])),
-                    )),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
+                          backgroundColor: _pr11MasterTabIndex == 1 ? sectionColor : ValoraAppearance.instance.card,
+                          foregroundColor: _pr11MasterTabIndex == 1 ? Colors.black : ValoraAppearance.instance.textPrimary,
+                        ),
+                        onPressed: () => setState(() => _pr11MasterTabIndex = 1),
+                        child: const Text('METADATI', textAlign: TextAlign.center, maxLines: 1, softWrap: false),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
+                          backgroundColor: _pr11MasterTabIndex == 2 ? sectionColor : ValoraAppearance.instance.card,
+                          foregroundColor: _pr11MasterTabIndex == 2 ? Colors.black : ValoraAppearance.instance.textPrimary,
+                        ),
+                        onPressed: () => setState(() => _pr11MasterTabIndex = 2),
+                        child: const Text('DATI TECNICI', textAlign: TextAlign.center, maxLines: 1, softWrap: false),
+                      ),
+                    ),
                   ],
-                ]),
+                ),
               ),
             ),
             const SizedBox(height: 8),
