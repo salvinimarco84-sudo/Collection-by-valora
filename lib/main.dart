@@ -1971,16 +1971,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
       )).whereType<int>().where((id) => id > 0).toSet().toList();
       if (ids.isNotEmpty) {
         try {
-          final metadataRows = await Supabase.instance.client
-              .schema('collection')
-              .from('master_metadati')
-              .select('codice_oggetto,sezione')
-              .inFilter('codice_oggetto', ids);
           final sectionById = <int, String>{};
-          for (final item in metadataRows) {
-            final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
-            final section = (item['sezione'] ?? '').toString().trim();
-            if (id != null && section.isNotEmpty) sectionById[id] = section;
+          // Suddividi gli ID in blocchi piccoli: una singola richiesta con
+          // oltre 1.000 ID può superare i limiti URL/PostgREST e lasciare
+          // tutte le schede senza sezione.
+          for (var start = 0; start < ids.length; start += 100) {
+            final chunk = ids.skip(start).take(100).toList();
+            final metadataRows = await Supabase.instance.client
+                .schema('collection')
+                .from('master_metadati')
+                .select('codice_oggetto,sezione')
+                .inFilter('codice_oggetto', chunk);
+            for (final item in metadataRows) {
+              final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
+              final section = (item['sezione'] ?? '').toString().trim();
+              if (id != null && section.isNotEmpty) sectionById[id] = section;
+            }
           }
           for (final row in rows) {
             final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
