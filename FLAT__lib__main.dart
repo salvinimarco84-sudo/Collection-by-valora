@@ -1979,12 +1979,28 @@ class _HomeDashboardState extends State<HomeDashboard> {
         );
         if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
         final data = Map<String, dynamic>.from(response.data as Map);
-        final url = (data['signed_url'] ?? '').toString().trim();
+        final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? data['url_immagine'] ?? '').toString().trim();
+        if (url.startsWith('https://') || url.startsWith('http://')) {
+          _dashboardImageUrls[id] = url;
+          return;
+        }
+      } catch (_) {
+        // Se il registro immagini non restituisce una foto, proviamo il catalogo.
+      }
+      // Fallback al catalogo metadati: le anteprime della HOME non devono
+      // dipendere esclusivamente dall'archivio immagini/URL firmato.
+      try {
+        final metadata = await Supabase.instance.client.schema('collection')
+            .from('master_metadati')
+            .select('url_immagine')
+            .eq('codice_oggetto', id)
+            .maybeSingle();
+        final url = (metadata?['url_immagine'] ?? '').toString().trim();
         if (url.startsWith('https://') || url.startsWith('http://')) {
           _dashboardImageUrls[id] = url;
         }
-      } catch (_) {
-        // L'assenza di foto o un permesso mancante non deve bloccare la HOME.
+      } catch (e) {
+        debugPrint('VALORA: immagine catalogo HOME non recuperata per $id: $e');
       }
     }));
     if (mounted) setState(() {});
