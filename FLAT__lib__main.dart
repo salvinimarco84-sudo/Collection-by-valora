@@ -4662,49 +4662,37 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // Fonte autorevole per categoria e URL immagine: record catalogo master_metadati.
     // La scheda oggetto può non includere questi campi nella risposta OBJECT_MASTER.
     try {
-      final catalog = await Supabase.instance.client.schema('collection')
-          .from('master_metadati')
-          // Select * evita che un campo specifico non presente nello schema
-          // faccia fallire l'intera query e svuoti tutti i metadati.
-          .select('*')
-          .eq('codice_oggetto', id)
-          .maybeSingle();
-      if (catalog != null) {
-        categoryCode = catalog['codice_categoria']?.toString() ?? categoryCode;
-        for (final entry in Map<String, dynamic>.from(catalog).entries) {
-          if (entry.value != null && entry.value.toString().trim().isNotEmpty) {
-            categoryValues[entry.key] = entry.value;
-          }
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) throw Exception('Sessione non valida per i metadati.');
+      final response = await Supabase.instance.client.functions.invoke(
+        'collection-object-images-test',
+        headers: {'Authorization': 'Bearer ${session.accessToken}'},
+        body: {'action': 'metadata', 'codice_oggetto': id},
+      );
+      if (response.status < 200 || response.status >= 300 || response.data is! Map) {
+        throw Exception('Endpoint metadati HTTP ${response.status}');
+      }
+      final payload = Map<String, dynamic>.from(response.data as Map);
+      final catalog = payload['metadata'];
+      if (catalog is Map) {
+        final row = Map<String, dynamic>.from(catalog);
+        categoryCode = row['codice_categoria']?.toString() ?? categoryCode;
+        for (final entry in row.entries) {
+          if (entry.value != null && entry.value.toString().trim().isNotEmpty) categoryValues[entry.key] = entry.value;
         }
       }
-    } catch (error) {
-      debugPrint('VALORA: record catalogo/immagine non recuperato per $id: $error');
-    }
-    try {
-      final specific = await Supabase.instance.client.schema('collection')
-          .from('metadati_specifici_oggetto')
-          .select('codice_categoria, valori')
-          .eq('codice_oggetto', id)
-          .maybeSingle();
-      if (specific != null) {
-        categoryCode = specific['codice_categoria']?.toString() ?? categoryCode;
-        final rawValues = specific['valori'];
+      final specific = payload['specific'];
+      if (specific is Map) {
+        final row = Map<String, dynamic>.from(specific);
+        categoryCode = row['codice_categoria']?.toString() ?? categoryCode;
+        final rawValues = row['valori'];
         if (rawValues is Map) categoryValues.addAll(Map<String, dynamic>.from(rawValues));
       }
-    } catch (error) {
-      debugPrint('VALORA: valori specifici categoria non recuperati per $id: $error');
-    }
-    if (categoryCode != null && categoryCode.isNotEmpty) {
-      try {
-        final rawFields = await Supabase.instance.client.schema('collection')
-            .from('campi_metadati_categoria')
-            .select('codice_campo, nome_campo, tipo_dato, obbligatorio, applicabilita, ordine_visualizzazione, descrizione')
-            .eq('codice_categoria', categoryCode)
-            .order('ordine_visualizzazione');
-        categoryDefinitions = List<Map<String, dynamic>>.from(rawFields);
-      } catch (error) {
-        debugPrint('VALORA: definizioni campi categoria $categoryCode non recuperate: $error');
+      if (payload['fields'] is List) {
+        categoryDefinitions = List<Map<String, dynamic>>.from((payload['fields'] as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)));
       }
+    } catch (error) {
+      debugPrint('VALORA: endpoint metadati non disponibile per $id: $error');
     }
 
     // Fallback di presentazione: le definizioni a database possono essere

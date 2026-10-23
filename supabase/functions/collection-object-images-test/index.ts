@@ -52,6 +52,21 @@ Deno.serve(async (req: Request) => {
     if (objectError) throw objectError;
     if (!objectRow) return reply({ ok: false, error: "Oggetto non trovato nel database TEST." }, 404);
 
+    if (action === "metadata") {
+      const { data: metadata, error: metadataError } = await admin.from("master_metadati").select("*").eq("codice_oggetto", objectId).maybeSingle();
+      if (metadataError) throw metadataError;
+      const { data: specific, error: specificError } = await admin.from("metadati_specifici_oggetto").select("codice_categoria,valori").eq("codice_oggetto", objectId).maybeSingle();
+      if (specificError) throw specificError;
+      const categoryCode = specific?.codice_categoria || metadata?.codice_categoria || null;
+      let fields: unknown[] = [];
+      if (categoryCode) {
+        const { data: defs, error: defsError } = await admin.from("campi_metadati_categoria").select("codice_campo,nome_campo,tipo_dato,obbligatorio,applicabilita,ordine_visualizzazione,descrizione").eq("codice_categoria", categoryCode).order("ordine_visualizzazione");
+        if (defsError) throw defsError;
+        fields = defs || [];
+      }
+      return reply({ ok: true, metadata: metadata || {}, specific: specific || {}, fields });
+    }
+
     if (action === "register") {
       const path = String(body.path || "");
       const fileName = String(body.file_name || "").trim();
@@ -109,7 +124,12 @@ Deno.serve(async (req: Request) => {
       .order("data_registrazione", { ascending: false })
       .limit(1);
     if (imagesError) throw imagesError;
-    if (!images || images.length === 0) return reply({ ok: true, signed_url: null, immagine: null });
+    if (!images || images.length === 0) {
+      const { data: metadata, error: metadataError } = await admin.from("master_metadati").select("url_immagine").eq("codice_oggetto", objectId).maybeSingle();
+      if (metadataError) throw metadataError;
+      const catalogUrl = String(metadata?.url_immagine || "");
+      return reply({ ok: true, signed_url: /^https?:\\/\\//i.test(catalogUrl) ? catalogUrl : null, immagine: null, fonte: "catalogo" });
+    }
 
     const image = images[0];
     const prefix = `storage://${BUCKET}/`;
