@@ -27,7 +27,6 @@ String _valoraImageProxyUrl(String rawUrl) {
   if (uri == null || uri.scheme != 'https') return value;
   const proxyHosts = {
     'www.gunpla-italia.com',
-    'bandai-a.akamaihd.net',
     'cdn.media.amplience.net',
     'www.hasbropulse.com',
     'tf.takaratomy.co.jp',
