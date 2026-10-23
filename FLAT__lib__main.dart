@@ -5542,7 +5542,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     for (final key in baseKeys) {
       if (object.containsKey(key) && object[key] != null) values[key] = object[key];
     }
-    values.addAll(_pr11CategoryValues);
+    // Il record OBJECT_MASTER spesso contiene chiavi nulle o placeholder:
+    // i valori del catalogo e del JSON specifico sono la fonte più completa.
+    for (final entry in _pr11CategoryValues.entries) {
+      final value = entry.value;
+      if (value != null && value.toString().trim().isNotEmpty) {
+        values[entry.key] = value;
+      }
+    }
+    // Alcuni import hanno inserito i campi LEGO sotto attributi_specifici.
+    // Espandere questi valori prima di mostrare "Da completare".
+    final rawSpecific = _pr11CategoryValues['attributi_specifici'];
+    if (rawSpecific is Map) {
+      for (final entry in Map<String, dynamic>.from(rawSpecific).entries) {
+        if (entry.value != null && entry.value.toString().trim().isNotEmpty) {
+          values.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+    }
     for (final definition in _pr11CategoryFieldDefinitions) {
       final key = definition['nome_campo']?.toString();
       if (key != null && key.isNotEmpty && !values.containsKey(key)) {
