@@ -4594,6 +4594,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // Usarla come fallback evita che un errore nella lettura dei valori specifici
     // nasconda anche le definizioni dei campi della categoria.
     String? categoryCode = m['codice_categoria']?.toString();
+    // Fonte autorevole per categoria e URL immagine: record catalogo master_metadati.
+    // La scheda oggetto può non includere questi campi nella risposta OBJECT_MASTER.
+    try {
+      final catalog = await Supabase.instance.client.schema('collection')
+          .from('master_metadati')
+          .select('codice_categoria, url_immagine')
+          .eq('codice_oggetto', id)
+          .maybeSingle();
+      if (catalog != null) {
+        categoryCode = catalog['codice_categoria']?.toString() ?? categoryCode;
+        final image = catalog['url_immagine']?.toString().trim() ?? '';
+        if (image.startsWith('https://') || image.startsWith('http://')) {
+          categoryValues['url_immagine'] = image;
+        }
+      }
+    } catch (error) {
+      debugPrint('VALORA: record catalogo/immagine non recuperato per $id: $error');
+    }
     try {
       final specific = await Supabase.instance.client.schema('collection')
           .from('metadati_specifici_oggetto')
