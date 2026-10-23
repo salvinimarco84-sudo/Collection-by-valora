@@ -5566,7 +5566,34 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         .map((d) => d['nome_campo']?.toString() ?? '')
         .where((k) => k.isNotEmpty)
         .toSet();
-    final common = values.keys.where((k) => !categoryFields.contains(k)).toList();
+    // I campi specifici di altre categorie non devono finire nella sezione
+    // "IDENTIFICAZIONE" come se fossero metadati generali (es. personaggi
+    // secondari nei fumetti, contenuti musicali nei CD, parti intercambiabili
+    // nelle Myth Cloth). Restano disponibili solo nella rispettiva categoria.
+    const fieldsOwnedByOtherCategories = <String>{
+      'fazione', 'gruppo_sottogruppo', 'tipo_opera_provenienza',
+      'titolo_opera_provenienza', 'continuita_universo', 'classe_scala',
+      'tipo_variante', 'genere_fumetto', 'numero_ristampa',
+      'tipologia_ristampa', 'autore_storia', 'disegnatore',
+      'personaggio_soggetto', 'personaggi_secondari', 'titolo_storia',
+      'colorista', 'grade', 'mobile_suit_modello', 'serie_provenienza',
+      'scala', 'tipo_kit', 'versione_modello', 'materiali_caratteristiche',
+      'accessori_inclusi', 'materiale', 'altezza', 'opera_provenienza',
+      'numero_collezione_edicola', 'confezione_presente', 'linea_serie',
+      'articolazioni', 'numero_pop', 'licenza_universo', 'linea_funko',
+      'variante_funko', 'formato_funko', 'modalita_catalogazione',
+      'serie_completa', 'numero_componenti_serie', 'dettagli_componenti',
+      'linea_prodotto', 'rango_personaggio', 'costellazione_simbolo',
+      'tipo_armatura_cloth', 'versione_narrativa', 'versione_variante',
+      'configurazione_armatura', 'parti_intercambiabili', 'artista_interprete',
+      'titolo_album_contenuto', 'genere_musicale', 'tipo_edizione_musicale',
+      'numero_supporti', 'contenuti_extra_musicali', 'titolo_concerto',
+      'tour_concerto', 'data_registrazione', 'luogo_registrazione',
+      'durata_minuti', 'formato_video',
+    };
+    final common = values.keys.where((k) =>
+        !categoryFields.contains(k) &&
+        !fieldsOwnedByOtherCategories.contains(k)).toList();
     final category = _pr11CategoryFieldDefinitions
         .map((d) => d['nome_campo']?.toString() ?? '')
         .where((k) => k.isNotEmpty)
