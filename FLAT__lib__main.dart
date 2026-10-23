@@ -4645,14 +4645,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     try {
       final catalog = await Supabase.instance.client.schema('collection')
           .from('master_metadati')
-          .select('codice_categoria, url_immagine')
+          .select('codice_categoria, url_immagine, produttore, anno_uscita, codice_identificativo, nome_ufficiale, tema, sezione, sottotema, numero_pezzi, numero_minifigure, dettagli_pezzi, contenuto_confezione, caratteristiche_tecniche, identificativi_aggiuntivi, modalita_alternative, prezzo_lancio, valuta_prezzo_lancio, mercato_riferimento_uscita, stato_verifica, attributi_specifici')
           .eq('codice_oggetto', id)
           .maybeSingle();
       if (catalog != null) {
         categoryCode = catalog['codice_categoria']?.toString() ?? categoryCode;
-        final image = catalog['url_immagine']?.toString().trim() ?? '';
-        if (image.startsWith('https://') || image.startsWith('http://')) {
-          categoryValues['url_immagine'] = image;
+        for (final entry in Map<String, dynamic>.from(catalog).entries) {
+          if (entry.value != null && entry.value.toString().trim().isNotEmpty) {
+            categoryValues[entry.key] = entry.value;
+          }
         }
       }
     } catch (error) {
@@ -4683,6 +4684,51 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       } catch (error) {
         debugPrint('VALORA: definizioni campi categoria $categoryCode non recuperate: $error');
       }
+    }
+
+    // Fallback di presentazione: le definizioni a database possono essere
+    // incomplete rispetto ai metadati già salvati da PR-12. Non nascondere
+    // campi LEGO disponibili solo perché il registro della categoria è parziale.
+    if (categoryCode == 'CAT-001' ||
+        (m['produttore']?.toString().toUpperCase() == 'LEGO') ||
+        (categoryValues['produttore']?.toString().toUpperCase() == 'LEGO')) {
+      const legoFields = <String, String>{
+        'tema': 'Tema LEGO',
+        'sezione': 'Sezione LEGO',
+        'sottotema': 'Sottotema LEGO',
+        'numero_pezzi': 'Numero di pezzi del set',
+        'numero_minifigure': 'Numero di minifigure',
+        'dettagli_pezzi': 'Dettaglio pezzi',
+        'contenuto_confezione': 'Contenuto della confezione',
+        'caratteristiche_tecniche': 'Caratteristiche tecniche',
+        'identificativi_aggiuntivi': 'Identificativi aggiuntivi',
+        'modalita_alternative': 'Modalità alternative',
+        'prezzo_lancio': 'Prezzo di lancio',
+        'valuta_prezzo_lancio': 'Valuta prezzo di lancio',
+        'mercato_riferimento_uscita': 'Mercato di riferimento',
+        'stato_verifica': 'Stato verifica metadati',
+      };
+      final existing = categoryDefinitions
+          .map((d) => d['nome_campo']?.toString())
+          .whereType<String>().toSet();
+      var order = categoryDefinitions.length * 10 + 10;
+      for (final entry in legoFields.entries) {
+        if (existing.add(entry.key)) {
+          categoryDefinitions.add({
+            'codice_campo': 'LEGO-FALLBACK-${entry.key}',
+            'nome_campo': entry.key,
+            'tipo_dato': 'text',
+            'obbligatorio': false,
+            'applicabilita': 'metadato disponibile',
+            'ordine_visualizzazione': order,
+            'descrizione': entry.value,
+          });
+          order += 10;
+        }
+      }
+      categoryDefinitions.sort((a, b) =>
+          ((a['ordine_visualizzazione'] as num?)?.toInt() ?? 9999)
+              .compareTo(((b['ordine_visualizzazione'] as num?)?.toInt() ?? 9999)));
     }
 
     String txt(List<String> keys, [String fallback = '']) {
