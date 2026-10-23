@@ -21,6 +21,26 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
+String _valoraImageProxyUrl(String rawUrl) {
+  final value = rawUrl.trim();
+  final uri = Uri.tryParse(value);
+  if (uri == null || uri.scheme != 'https') return value;
+  const proxyHosts = {
+    'www.gunpla-italia.com',
+    'bandai-a.akamaihd.net',
+    'cdn.media.amplience.net',
+    'www.hasbropulse.com',
+    'tf.takaratomy.co.jp',
+    'www.hasbro.com',
+    'www.fantamagus.com',
+    'www.gamelife.it',
+    'kurogami.com',
+    'www.kurogami.com',
+  };
+  if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
+  return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
+}
+
 const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
