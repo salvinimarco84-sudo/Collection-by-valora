@@ -19,6 +19,26 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
+String _valoraImageProxyUrl(String rawUrl) {
+  final value = rawUrl.trim();
+  final uri = Uri.tryParse(value);
+  if (uri == null || uri.scheme != 'https') return value;
+  const proxyHosts = {
+    'www.gunpla-italia.com',
+    'bandai-a.akamaihd.net',
+    'cdn.media.amplience.net',
+    'www.hasbropulse.com',
+    'tf.takaratomy.co.jp',
+    'www.hasbro.com',
+    'www.fantamagus.com',
+    'www.gamelife.it',
+    'kurogami.com',
+    'www.kurogami.com',
+  };
+  if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
+  return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
+}
+
 const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
@@ -276,7 +296,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
           Row(children:[
             Container(width:44,height:44,decoration:BoxDecoration(color:color.withValues(alpha:0.2),borderRadius:BorderRadius.circular(9)),
               clipBehavior:Clip.antiAlias,
-              child:url==null?Icon(Icons.image_outlined,color:color,size:26):Image.network(url,fit:BoxFit.cover,errorBuilder:(_,__,___)=>Icon(Icons.broken_image_outlined,color:color))),
+              child:url==null?Icon(Icons.image_outlined,color:color,size:26):Image.network(_valoraImageProxyUrl(url),fit:BoxFit.cover,errorBuilder:(_,__,___)=>Icon(Icons.broken_image_outlined,color:color))),
             const SizedBox(width:10),
             Expanded(child:Text(section,style:TextStyle(color:color,fontWeight:FontWeight.bold))),
             IconButton(tooltip:'Carica immagine',onPressed:_uploading?null:()=>_uploadSectionImage(section),icon:const Icon(Icons.upload_file)),
@@ -2195,7 +2215,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       clipBehavior: Clip.antiAlias,
                       child: url == null
                         ? Icon(icon, color: color.withValues(alpha: 0.9), size: 34)
-                        : Image.network(url, fit: BoxFit.contain,
+                        : Image.network(_valoraImageProxyUrl(url), fit: BoxFit.contain,
                             errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 34))),
                     const SizedBox(height: 4),
                     Text(_dashboardDescription(row), maxLines: 2, overflow: TextOverflow.ellipsis,
@@ -2346,7 +2366,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     Expanded(child:ClipRRect(
                       borderRadius:BorderRadius.circular(11),
                       child:url!=null && url.isNotEmpty
-                        ? Image.network(url,fit:BoxFit.contain,width:double.infinity,errorBuilder:(_,__,___)=>Icon(icon,color:color,size:42))
+                        ? Image.network(_valoraImageProxyUrl(url),fit:BoxFit.contain,width:double.infinity,errorBuilder:(_,__,___)=>Icon(icon,color:color,size:42))
                         : Icon(icon,color:color,size:42),
                     )),
                     const SizedBox(height:8),
@@ -3863,7 +3883,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(8)),
               clipBehavior: Clip.antiAlias,
               child: hasImage
-                  ? Image.network(imageUrl, fit: BoxFit.contain,
+                  ? Image.network(_valoraImageProxyUrl(imageUrl), fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported_outlined, color: ValoraAppearance.instance.textFaint, size: 36))
                   : Icon(Icons.image_outlined, color: ValoraAppearance.instance.textFaint, size: 36),
             ),
@@ -4127,7 +4147,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ] else if (_existingImageUrl != null && _existingImageUrl!.startsWith('http')) ...[
             const SizedBox(height: 10),
             ClipRRect(borderRadius: BorderRadius.circular(10),
-              child: Image.network(_existingImageUrl!, height: 160, width: double.infinity, fit: BoxFit.contain,
+              child: Image.network(_valoraImageProxyUrl(_existingImageUrl!), height: 160, width: double.infinity, fit: BoxFit.contain,
                 errorBuilder: (_, __, ___) => _imagePlaceholder(size: 100))),
           ],
           const SizedBox(height: 8),
@@ -5406,7 +5426,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: imageUrl.startsWith('http')
-                  ? Image.network(imageUrl, width: imageSize, height: imageSize, fit: BoxFit.cover,
+                  ? Image.network(_valoraImageProxyUrl(imageUrl), width: imageSize, height: imageSize, fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize))
                   : _imagePlaceholder(size: imageSize),
               ),
