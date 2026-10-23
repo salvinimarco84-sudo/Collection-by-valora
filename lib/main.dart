@@ -4179,7 +4179,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
-                imageUrl,
+                _valoraImageProxyUrl(imageUrl),
                 width: double.infinity,
                 height: 240,
                 fit: BoxFit.contain,
