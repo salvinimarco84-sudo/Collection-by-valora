@@ -3527,6 +3527,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final Map<String, int> _pr12SelectedCandidates = {};
   bool _pr12RetryRunning = false;
   bool _showPr02TechnicalTab = false;
+  int _pr11MasterTabIndex = 0;
   bool _pr02SearchCompleted = false;
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
@@ -5340,6 +5341,37 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     );
   }
 
+  Widget _pr11MetadataTab(Map<String, dynamic> object) {
+    const keys = {
+      'produttore','marca','brand','linea','famiglia','categoria','anno_uscita',
+      'anno','data_uscita','data_di_uscita','codice_prodotto','ean','gtin','upc',
+      'isbn','issn','mpn','sku','serie','licenza','franchise','tema','materiale',
+      'scala','edizione','numero_serie','fonte','fonte_dati_prodotto','fonte_dati',
+      'url_fonte','url_prodotto','fonte_campi','metadati','metadata',
+    };
+    const excluded = {
+      'url_immagine','immagine_url','foto_url','image_url','immagine_principale',
+      'url_foto','foto','immagine','image','imageUrl','photo_url','main_image_url',
+      'id','codice_oggetto','descrizione_oggetto','descrizione','nome','destinazione',
+      'condizione','stato','stato_oggetto','valore_oggetto','valore','valore_stimato',
+      'prezzo_acquisto','prezzo_vendita','quantita','created_at','updated_at',
+    };
+    final fields = object.entries.where((e) {
+      final k = e.key.toLowerCase();
+      return !excluded.contains(e.key) && (keys.contains(k) || k.contains('metad') ||
+        k.contains('fonte') || k.contains('produttore') || k.contains('anno') ||
+        k.contains('codice_prodotto'));
+    }).toList();
+    return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('METADATI DEL PRODOTTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 8),
+        if (fields.isEmpty) const Text('Nessun metadato disponibile nel record caricato.'),
+        ...fields.map((e) => _detailFieldCard(e.key, e.value)),
+      ],
+    )));
+  }
+
   Widget _pr11TechnicalDetails(Map<String, dynamic> object) {
     const technicalKeys = {
       'collegato_vendita', 'modificabile_pr02', 'motivo_esclusione',
@@ -6217,26 +6249,47 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Row(children: [
-                  Expanded(child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: !_showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
-                      foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
-                    ),
-                    onPressed: () => setState(() => _showPr02TechnicalTab = false),
-                    child: Text('SCHEDA OGGETTO'),
-                  )),
-                  const SizedBox(width: 8),
-                  Expanded(child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
-                      foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
-                    ),
-                    onPressed: () => setState(() => _showPr02TechnicalTab = true),
-                    child: Text('DATI TECNICI'),
-                  )),
+                  for (final tab in const [
+                    (label: 'OGGETTO', icon: Icons.inventory_2_outlined),
+                    (label: 'METADATI', icon: Icons.fact_check_outlined),
+                    (label: 'DATI TECNICI', icon: Icons.analytics_outlined),
+                  ]) ...[
+                    if (tab.label != 'OGGETTO') const SizedBox(width: 4),
+                    Expanded(child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
+                        backgroundColor: _pr11MasterTabIndex == (tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2)
+                            ? sectionColor : ValoraAppearance.instance.card,
+                        foregroundColor: _pr11MasterTabIndex == (tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2)
+                            ? Colors.black : ValoraAppearance.instance.textPrimary,
+                      ),
+                      onPressed: () => setState(() => _pr11MasterTabIndex = tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2),
+                      child: FittedBox(fit: BoxFit.scaleDown, child: Text(tab.label, maxLines: 1, softWrap: false)),
+                    )),
+                  ],
                 ]),
               ),
             ),
+            const SizedBox(height: 8),
+            if (_pr11MasterTabIndex == 0) ...[
+              _readOnlyImageCard(),
+              _pr11HeaderCard(_currentObject!),
+              Card(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('DATI DELL’OGGETTO',
+                      style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    _masterDetails(_currentObject!),
+                  ]),
+                ),
+              ),
+            ] else if (_pr11MasterTabIndex == 1)
+              _pr11MetadataTab(_currentObject!)
+            else
+              _pr11TechnicalDetails(_currentObject!),
             const SizedBox(height: 8),
             if (!_showPr02TechnicalTab) ...[
               _readOnlyImageCard(),
