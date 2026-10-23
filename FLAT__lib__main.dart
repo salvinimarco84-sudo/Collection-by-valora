@@ -1973,8 +1973,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
     _dashboardImageLookups.addAll(ids);
     await Future.wait(ids.map((id) async {
       try {
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session == null) return;
         final response = await Supabase.instance.client.functions.invoke(
           'collection-object-images-test',
+          headers: {'Authorization': 'Bearer ${session.accessToken}'},
           body: {'action': 'get', 'codice_oggetto': id},
         );
         if (response.status >= 200 && response.status < 300 && response.data is Map) {
