@@ -1951,22 +1951,23 @@ class _HomeDashboardState extends State<HomeDashboard> {
     }
   }
 
-  Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows) async {
+  Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows, {bool retryFailed = false}) async {
     // Prima usa l'URL catalografico di PR-12 salvato in master_metadati.
-    // Il registro immagini/Storage è un fallback, non l'unica sorgente:
-    // i record catalografici senza foto caricata dall'utente devono comunque
-    // mostrare la propria immagine di prodotto.
+    // Il registro immagini/Storage è un fallback, non l'unica sorgente.
     final selected = <Map<String, dynamic>>[];
     for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
       selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
     }
     final ids = selected.map((row) => int.tryParse(
       (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
-    )).whereType<int>().where((id) => id > 0 && !_dashboardImageLookups.contains(id)).toSet();
+    )).whereType<int>().where((id) => id > 0 &&
+      (retryFailed || !_dashboardImageLookups.contains(id))).toSet();
     if (ids.isEmpty) return;
-    _dashboardImageLookups.addAll(ids);
 
+    // Segna come tentati solo dopo il tentativo. Un errore non deve bloccare
+    // futuri recuperi quando la schermata viene aggiornata.
     await Future.wait(ids.map((id) async {
+      var resolved = false;
       try {
         final metadata = await Supabase.instance.client
             .schema('collection')
@@ -1977,30 +1978,43 @@ class _HomeDashboardState extends State<HomeDashboard> {
         final catalogUrl = (metadata?['url_immagine'] ?? '').toString().trim();
         if (catalogUrl.startsWith('https://') || catalogUrl.startsWith('http://')) {
           _dashboardImageUrls[id] = catalogUrl;
-          return;
+          resolved = true;
         }
       } catch (e) {
         debugPrint('VALORA: URL catalografico non disponibile per $id: $e');
       }
 
-      try {
-        final session = Supabase.instance.client.auth.currentSession;
-        final response = await Supabase.instance.client.functions.invoke(
-          'collection-object-images-test',
-          headers: session == null ? null : {'Authorization': 'Bearer ${session.accessToken}'},
-          body: {'action': 'get', 'codice_oggetto': id},
-        );
-        if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
-        final data = Map<String, dynamic>.from(response.data as Map);
-        final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
-        if (url.startsWith('https://') || url.startsWith('http://')) {
-          _dashboardImageUrls[id] = url;
+      if (!resolved) {
+        try {
+          final session = Supabase.instance.client.auth.currentSession;
+          final response = await Supabase.instance.client.functions.invoke(
+            'collection-object-images-test',
+            headers: session == null ? null : {'Authorization': 'Bearer ${session.accessToken}'},
+            body: {'action': 'get', 'codice_oggetto': id},
+          );
+          if (response.status >= 200 && response.status < 300 && response.data is Map) {
+            final data = Map<String, dynamic>.from(response.data as Map);
+            final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
+            if (url.startsWith('https://') || url.startsWith('http://')) {
+              _dashboardImageUrls[id] = url;
+              resolved = true;
+            }
+          }
+        } catch (e) {
+          debugPrint('VALORA: immagine registro non disponibile per $id: $e');
         }
-      } catch (e) {
-        debugPrint('VALORA: immagine registro non disponibile per $id: $e');
+      }
+      if (resolved) {
+        _dashboardImageLookups.add(id);
+      } else {
+        _dashboardImageLookups.remove(id);
       }
     }));
     if (mounted) setState(() {});
+  }
+
+  Future<void> _retryDashboardImages() async {
+    await _loadDashboardImages(_catalogRows, retryFailed: true);
   }
 
   String _dashboardDescription(Map<String, dynamic> row) =>
