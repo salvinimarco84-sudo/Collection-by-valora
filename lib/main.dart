@@ -2002,7 +2002,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
     // Prima usa l'URL catalografico di PR-12 salvato in master_metadati.
     // Il registro immagini/Storage è un fallback, non l'unica sorgente.
     final selected = <Map<String, dynamic>>[];
-    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
+    final categories = rows.map(_dashboardCategory).where((value) => value.isNotEmpty).toSet();
+    for (final category in categories) {
       selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
     }
     final ids = selected.map((row) => int.tryParse(
@@ -2693,6 +2694,26 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       final rows = (payload['oggetti'] as List)
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+      final ids = rows.map((row) => int.tryParse(_code(row))).whereType<int>().where((id) => id > 0).toSet().toList();
+      if (ids.isNotEmpty) {
+        final metadataRows = await Supabase.instance.client
+            .schema('collection')
+            .from('master_metadati')
+            .select('codice_oggetto,sezione')
+            .inFilter('codice_oggetto', ids);
+        final sectionById = <int, String>{};
+        for (final item in metadataRows) {
+          final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
+          final section = (item['sezione'] ?? '').toString().trim();
+          if (id != null && section.isNotEmpty) sectionById[id] = section;
+        }
+        for (final row in rows) {
+          final id = int.tryParse(_code(row));
+          row['_valora_sezione'] = id == null ? '' : (sectionById[id] ?? '');
+        }
+      }
+      final filteredRows = rows
           .where((row) => categoryMode
               ? _matchesInitialCategory(row, widget.initialQuery!.trim())
               : _description(row).toLowerCase().contains(normalizedQuery))
@@ -2711,13 +2732,13 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
         throw Exception('Impossibile calcolare il totale della collezione.');
       }
       final total = (allPayload['oggetti'] as List).length;
-      final percentage = total == 0 ? 0.0 : rows.length * 100 / total;
+      final percentage = total == 0 ? 0.0 : filteredRows.length * 100 / total;
       if (!mounted) return;
       setState(() {
-        _results = rows;
-        _message = rows.isEmpty
+        _results = filteredRows;
+        _message = filteredRows.isEmpty
             ? 'Nessun record contiene “$query”. Prova una dicitura più breve.'
-            : 'Trovati ${rows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
+            : 'Trovati ${filteredRows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
       });
     } catch (e) {
       if (!mounted) return;
