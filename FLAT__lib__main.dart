@@ -4590,7 +4590,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // Le letture sono in sola lettura e non modificano i record.
     List<Map<String, dynamic>> categoryDefinitions = [];
     Map<String, dynamic> categoryValues = {};
-    String? categoryCode;
+    // La categoria è già disponibile nel record di catalogo master_metadati.
+    // Usarla come fallback evita che un errore nella lettura dei valori specifici
+    // nasconda anche le definizioni dei campi della categoria.
+    String? categoryCode = m['codice_categoria']?.toString();
     try {
       final specific = await Supabase.instance.client.schema('collection')
           .from('metadati_specifici_oggetto')
@@ -4598,41 +4601,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           .eq('codice_oggetto', id)
           .maybeSingle();
       if (specific != null) {
-        categoryCode = specific['codice_categoria']?.toString();
+        categoryCode = specific['codice_categoria']?.toString() ?? categoryCode;
         final rawValues = specific['valori'];
         if (rawValues is Map) categoryValues = Map<String, dynamic>.from(rawValues);
       }
-      if (categoryCode != null && categoryCode!.isNotEmpty) {
+    } catch (error) {
+      debugPrint('VALORA: valori specifici categoria non recuperati per $id: $error');
+    }
+    if (categoryCode != null && categoryCode.isNotEmpty) {
+      try {
         final rawFields = await Supabase.instance.client.schema('collection')
             .from('campi_metadati_categoria')
             .select('codice_campo, nome_campo, tipo_dato, obbligatorio, applicabilita, ordine_visualizzazione, descrizione')
-            .eq('codice_categoria', categoryCode!)
+            .eq('codice_categoria', categoryCode)
             .order('ordine_visualizzazione');
         categoryDefinitions = List<Map<String, dynamic>>.from(rawFields);
+      } catch (error) {
+        debugPrint('VALORA: definizioni campi categoria $categoryCode non recuperate: $error');
       }
-    } catch (error) {
-      debugPrint('VALORA: metadati specifici categoria non recuperati per $id: $error');
-    }
-
-    // OBJECT_MASTER restituisce master_oggetti. L'immagine di catalogo
-    // risiede in master_metadati: uniamo i campi alla scheda prima del render.
-    try {
-      final metadata = await Supabase.instance.client.schema('collection')
-          .from('master_metadati')
-          .select()
-          .eq('codice_oggetto', id)
-          .maybeSingle();
-      if (metadata != null) {
-        final metadataMap = Map<String, dynamic>.from(metadata);
-        for (final entry in metadataMap.entries) {
-          final current = m[entry.key];
-          if (current == null || current.toString().trim().isEmpty) {
-            m[entry.key] = entry.value;
-          }
-        }
-      }
-    } catch (error) {
-      debugPrint('VALORA: metadati immagine non recuperati per $id: $error');
     }
 
     String txt(List<String> keys, [String fallback = '']) {
