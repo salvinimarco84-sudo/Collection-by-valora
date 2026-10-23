@@ -6290,24 +6290,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               _pr11MetadataTab(_currentObject!)
             else
               _pr11TechnicalDetails(_currentObject!),
-            const SizedBox(height: 8),
-            if (!_showPr02TechnicalTab) ...[
-              _readOnlyImageCard(),
-              _pr11HeaderCard(_currentObject!),
-              Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('DATI DELL’OGGETTO',
-                      style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    _masterDetails(_currentObject!),
-                  ]),
-                ),
-              ),
-            ] else
-              _pr11TechnicalDetails(_currentObject!),
           ] else if (isHistory) ...[
             Text(
               _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
