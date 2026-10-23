@@ -3260,6 +3260,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _imageStatus = 'Nessuna immagine selezionata.';
   final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
   final Set<String> _failedImageFallbacks = {};
+  final Map<int, String> _objectCardImageFallbacks = {};
+  final Set<String> _objectCardImageRetries = {};
 
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
@@ -5417,6 +5419,58 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       onChanged: onChanged,
     ));
 
+  Future<void> _retryObjectCardImage(Map<String, dynamic> item, String failedUrl) async {
+    final id = int.tryParse((item['codice_oggetto'] ?? item['id'] ?? '').toString());
+    if (id == null || id <= 0 || failedUrl.isEmpty) return;
+    final retryKey = '$id|$failedUrl';
+    if (!_objectCardImageRetries.add(retryKey)) return;
+
+    String? alternative;
+    try {
+      final rows = await Supabase.instance.client
+          .schema('collection')
+          .from('immagini_oggetto')
+          .select('riferimento_immagine, url_fonte, immagine_principale')
+          .eq('codice_oggetto', id)
+          .order('immagine_principale', ascending: false)
+          .limit(20);
+      for (final imageRow in rows) {
+        for (final key in ['riferimento_immagine', 'url_fonte']) {
+          final candidate = (imageRow[key] ?? '').toString().trim();
+          if ((candidate.startsWith('https://') || candidate.startsWith('http://')) &&
+              candidate != failedUrl) {
+            alternative = candidate;
+            break;
+          }
+        }
+        if (alternative != null) break;
+      }
+    } catch (e) {
+      debugPrint('VALORA: fallback immagine scheda/lista non disponibile per $id: $e');
+    }
+
+    if (alternative == null) {
+      try {
+        final metadata = await Supabase.instance.client
+            .schema('collection')
+            .from('master_metadati')
+            .select('url_immagine')
+            .eq('codice_oggetto', id)
+            .maybeSingle();
+        final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
+        if ((candidate.startsWith('https://') || candidate.startsWith('http://')) &&
+            candidate != failedUrl) {
+          alternative = candidate;
+        }
+      } catch (e) {
+        debugPrint('VALORA: URL catalografico alternativo non disponibile per $id: $e');
+      }
+    }
+
+    if (!mounted || alternative == null || alternative == failedUrl) return;
+    setState(() => _objectCardImageFallbacks[id] = alternative!);
+  }
+
   Widget _objectCard(
     Map<String, dynamic> item, {
     VoidCallback? onTap, bool availableStyle = false, bool showImagePlaceholder = true,
@@ -5453,7 +5507,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }
       return '';
     }
-    final imageUrl = firstImage(item);
+    final itemId = int.tryParse((item['codice_oggetto'] ?? item['id'] ?? '').toString());
+    final imageUrl = (itemId == null ? null : _objectCardImageFallbacks[itemId]) ?? firstImage(item);
     final destination = _valueFor(item, ['destinazione'], 'Non indicata');
     final condition = _valueFor(item, ['condizione'], 'Non indicata');
     final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
@@ -5492,7 +5547,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 borderRadius: BorderRadius.circular(10),
                 child: imageUrl.startsWith('http')
                   ? Image.network(_valoraImageProxyUrl(imageUrl), width: imageSize, height: imageSize, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize))
+                      errorBuilder: (_, __, ___) {
+                        _retryObjectCardImage(item, imageUrl);
+                        return _imagePlaceholder(size: imageSize);
+                      })
                   : _imagePlaceholder(size: imageSize),
               ),
               const SizedBox(width: 12),
