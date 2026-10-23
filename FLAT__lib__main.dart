@@ -1977,13 +1977,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
           'collection-object-images-test',
           body: {'action': 'get', 'codice_oggetto': id},
         );
-        if (response.status < 200 || response.status >= 300 || response.data is! Map) return;
-        final data = Map<String, dynamic>.from(response.data as Map);
-        final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? data['url_immagine'] ?? '').toString().trim();
-        if (url.startsWith('https://') || url.startsWith('http://')) {
-          _dashboardImageUrls[id] = url;
-          return;
+        if (response.status >= 200 && response.status < 300 && response.data is Map) {
+          final data = Map<String, dynamic>.from(response.data as Map);
+          final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? data['url_immagine'] ?? '').toString().trim();
+          if (url.startsWith('https://') || url.startsWith('http://')) {
+            _dashboardImageUrls[id] = url;
+            return;
+          }
         }
+        // Una risposta non valida dal servizio immagini non deve interrompere
+        // la funzione: deve proseguire al fallback master_metadati sottostante.
       } catch (_) {
         // Se il registro immagini non restituisce una foto, proviamo il catalogo.
       }
