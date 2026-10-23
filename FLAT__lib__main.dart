@@ -4582,6 +4582,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     if (data is! Map) throw Exception('Scheda non disponibile per il codice $id.');
     final m = Map<String, dynamic>.from(data);
+
+    // OBJECT_MASTER restituisce master_oggetti. L'immagine di catalogo
+    // risiede in master_metadati: uniamo i campi alla scheda prima del render.
+    try {
+      final metadata = await Supabase.instance.client.schema('collection')
+          .from('master_metadati')
+          .select()
+          .eq('codice_oggetto', id)
+          .maybeSingle();
+      if (metadata != null) {
+        final metadataMap = Map<String, dynamic>.from(metadata);
+        for (final entry in metadataMap.entries) {
+          final current = m[entry.key];
+          if (current == null || current.toString().trim().isEmpty) {
+            m[entry.key] = entry.value;
+          }
+        }
+      }
+    } catch (error) {
+      debugPrint('VALORA: metadati immagine non recuperati per $id: $error');
+    }
+
     String txt(List<String> keys, [String fallback = '']) {
       for (final k in keys) { if (m[k] != null) return m[k].toString(); }
       return fallback;
