@@ -3528,6 +3528,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   bool _pr12RetryRunning = false;
   bool _showPr02TechnicalTab = false;
   int _pr11MasterTabIndex = 0;
+  List<Map<String, dynamic>> _pr11CategoryFieldDefinitions = [];
+  Map<String, dynamic> _pr11CategoryValues = {};
+  String? _pr11CategoryCode;
   bool _pr02SearchCompleted = false;
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
@@ -4583,6 +4586,34 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (data is! Map) throw Exception('Scheda non disponibile per il codice $id.');
     final m = Map<String, dynamic>.from(data);
 
+    // Carica anche i metadati di catalogo e i campi specifici della categoria.
+    // Le letture sono in sola lettura e non modificano i record.
+    List<Map<String, dynamic>> categoryDefinitions = [];
+    Map<String, dynamic> categoryValues = {};
+    String? categoryCode;
+    try {
+      final specific = await Supabase.instance.client.schema('collection')
+          .from('metadati_specifici_oggetto')
+          .select('codice_categoria, valori')
+          .eq('codice_oggetto', id)
+          .maybeSingle();
+      if (specific != null) {
+        categoryCode = specific['codice_categoria']?.toString();
+        final rawValues = specific['valori'];
+        if (rawValues is Map) categoryValues = Map<String, dynamic>.from(rawValues);
+      }
+      if (categoryCode != null && categoryCode!.isNotEmpty) {
+        final rawFields = await Supabase.instance.client.schema('collection')
+            .from('campi_metadati_categoria')
+            .select('codice_campo, nome_campo, tipo_dato, obbligatorio, applicabilita, ordine_visualizzazione, descrizione')
+            .eq('codice_categoria', categoryCode!)
+            .order('ordine_visualizzazione');
+        categoryDefinitions = List<Map<String, dynamic>>.from(rawFields);
+      }
+    } catch (error) {
+      debugPrint('VALORA: metadati specifici categoria non recuperati per $id: $error');
+    }
+
     // OBJECT_MASTER restituisce master_oggetti. L'immagine di catalogo
     // risiede in master_metadati: uniamo i campi alla scheda prima del render.
     try {
@@ -4609,6 +4640,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       return fallback;
     }
     setState(() {
+      _pr11CategoryFieldDefinitions = categoryDefinitions;
+      _pr11CategoryValues = categoryValues;
+      _pr11CategoryCode = categoryCode;
       _currentObject = m;
       _loadedObjectId = id;
       _description.text = txt(['descrizione_oggetto', 'descrizione']);
@@ -5364,32 +5398,102 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Widget _pr11MetadataTab(Map<String, dynamic> object) {
-    const keys = {
-      'produttore','marca','brand','linea','famiglia','categoria','anno_uscita',
-      'anno','data_uscita','data_di_uscita','codice_prodotto','ean','gtin','upc',
-      'isbn','issn','mpn','sku','serie','licenza','franchise','tema','materiale',
-      'scala','edizione','numero_serie','fonte','fonte_dati_prodotto','fonte_dati',
-      'url_fonte','url_prodotto','fonte_campi','metadati','metadata',
+    const baseKeys = [
+      'produttore', 'anno_uscita', 'codice_prodotto', 'categoria', 'tema',
+      'sezione', 'sottotema', 'nome_ufficiale', 'numero_pezzi',
+      'numero_minifigure', 'dettagli_pezzi', 'contenuto_confezione',
+      'modalita_altern', 'attributi_specifici', 'url_fonte', 'url_immagine',
+      'stato_verifica', 'prezzo_lancio',
+    ];
+    String labelFor(String key) => key
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0].toUpperCase() + part.substring(1))
+        .join(' ');
+    final values = <String, dynamic>{};
+    for (final key in baseKeys) {
+      if (object.containsKey(key) && object[key] != null) values[key] = object[key];
+    }
+    values.addAll(_pr11CategoryValues);
+    for (final definition in _pr11CategoryFieldDefinitions) {
+      final key = definition['nome_campo']?.toString();
+      if (key != null && key.isNotEmpty && !values.containsKey(key)) {
+        values[key] = null;
+      }
+    }
+    final categoryFields = _pr11CategoryFieldDefinitions
+        .map((d) => d['nome_campo']?.toString() ?? '')
+        .where((k) => k.isNotEmpty)
+        .toSet();
+    final common = values.keys.where((k) => !categoryFields.contains(k)).toList();
+    final category = _pr11CategoryFieldDefinitions
+        .map((d) => d['nome_campo']?.toString() ?? '')
+        .where((k) => k.isNotEmpty)
+        .toList();
+    Widget field(String key, {Map<String, dynamic>? definition}) {
+      final value = values[key];
+      final required = definition?['obbligatorio'] == true;
+      final applicability = definition?['applicabilita']?.toString();
+      final shown = value == null || value.toString().trim().isEmpty
+          ? 'Da completare'
+          : value is Map || value is List
+              ? const JsonEncoder.withIndent('  ').convert(value)
+              : value.toString();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${labelFor(key)}${required ? ' · OBBLIGATORIO' : ''}',
+                style: TextStyle(color: sectionColor, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              SelectableText(shown),
+              if (definition?['descrizione'] != null &&
+                  definition!['descrizione'].toString().trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(definition['descrizione'].toString(),
+                    style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 12)),
+                ),
+              if (applicability != null && applicability.isNotEmpty)
+                Text('Applicabilità: $applicability',
+                  style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+            ]),
+          ),
+        ),
+      );
+    }
+    final definitionsByName = <String, Map<String, dynamic>>{
+      for (final d in _pr11CategoryFieldDefinitions)
+        if (d['nome_campo'] != null) d['nome_campo'].toString(): d,
     };
-    const excluded = {
-      'url_immagine','immagine_url','foto_url','image_url','immagine_principale',
-      'url_foto','foto','immagine','image','imageUrl','photo_url','main_image_url',
-      'id','codice_oggetto','descrizione_oggetto','descrizione','nome','destinazione',
-      'condizione','stato','stato_oggetto','valore_oggetto','valore','valore_stimato',
-      'prezzo_acquisto','prezzo_vendita','quantita','created_at','updated_at',
-    };
-    final fields = object.entries.where((e) {
-      final k = e.key.toLowerCase();
-      return !excluded.contains(e.key) && (keys.contains(k) || k.contains('metad') ||
-        k.contains('fonte') || k.contains('produttore') || k.contains('anno') ||
-        k.contains('codice_prodotto'));
-    }).toList();
     return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
       crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('METADATI DEL PRODOTTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+        Text('METADATI DEL PRODOTTO',
+          style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 4),
+        Text(_pr11CategoryCode == null
+            ? 'Categoria non assegnata: sono mostrati i metadati generali disponibili.'
+            : 'Categoria: $_pr11CategoryCode · campi specifici caricati dal catalogo VALORA.',
+          style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 12)),
+        const SizedBox(height: 12),
+        Text('IDENTIFICAZIONE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        if (fields.isEmpty) const Text('Nessun metadato disponibile nel record caricato.'),
-        ...fields.map((e) => _detailFieldCard(e.key, e.value)),
+        ...common.map((key) => field(key)),
+        if (_pr11CategoryFieldDefinitions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('CAMPI SPECIFICI DELLA CATEGORIA',
+            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...category.map((key) => field(key, definition: definitionsByName[key])),
+        ] else
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('Non risultano definizioni di campi specifici per questa categoria.'),
+          ),
       ],
     )));
   }
