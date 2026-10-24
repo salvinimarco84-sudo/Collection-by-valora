@@ -1488,7 +1488,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 controller: _emailController,
                 readOnly: true,
                 decoration: _fieldDecoration('Email', suffixIcon: const Icon(Icons.lock_outline),
-                  helper: 'Gestita dal sistema di autenticazione')),
+                  helper: 'Gestita dal sistema di autenticazione'),
               ),
               const SizedBox(height: 12),
               TextField(controller: _newPassword, obscureText: !_showNewPassword,
