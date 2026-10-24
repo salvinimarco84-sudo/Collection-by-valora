@@ -55,7 +55,7 @@ class ValoraAppearance extends ChangeNotifier {
     'FLUSSI DI CASSA': Color(0xFFD6A83F),
     'VALUTAZIONI': Color(0xFF8556C7),
     'REPORT': Color(0xFFE17D35),
-    'RICERCHE': Color(0xFF252525),
+    'RICERCHE': Color(0xFFD6A83F),
     'CONTROLLO': Color(0xFF777777),
     'COLLEZIONE': Color(0xFFD6B45C),
     'LEGO': Color(0xFFE31B23),
@@ -588,10 +588,9 @@ const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'CATALOGO', description: 'Consulta e gestisci gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
   DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti e allocazioni', icon: Icons.shopping_cart_outlined, color: Color(0xFFC74444)),
   DashboardSection(title: 'VENDITE', menuTitle: 'VENDITE E INSERZIONI', description: 'Vendite e inserzioni', icon: Icons.sell_outlined, color: Color(0xFF39875B)),
-  DashboardSection(title: 'FLUSSI DI CASSA', description: 'Entrate, uscite e saldi', icon: Icons.account_balance_wallet_outlined, color: Color(0xFFD6A83F)),
   DashboardSection(title: 'VALUTAZIONI', description: 'VALORA e valore collezione', icon: Icons.query_stats, color: Color(0xFF8556C7)),
   DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
-  DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFF252525)),
+  DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFFD6A83F)),
   DashboardSection(title: 'CONTROLLO', description: 'Stato e verifiche del sistema', icon: Icons.admin_panel_settings_outlined, color: Color(0xFF777777)),
 ];
 
