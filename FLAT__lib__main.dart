@@ -229,137 +229,42 @@ class ValoraI18n extends ChangeNotifier {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  String? startupError;
 
-  // In release builds Flutter otherwise replaces a widget build exception
-  // with an uninformative grey box. Keep the failure visible on-device so
-  // startup/rendering faults can be diagnosed without guessing.
-  ErrorWidget.builder = (FlutterErrorDetails details) {
-    final errorText = details.exceptionAsString();
-    debugPrint('VALORA WIDGET BUILD ERROR: $errorText');
-    debugPrintStack(stackTrace: details.stack);
-    return Material(
-      color: const Color(0xFF171717),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.error_outline, color: Color(0xFFFFC857), size: 42),
-              const SizedBox(height: 12),
-              const Text(
-                'ERRORE DI VISUALIZZAZIONE VALORA',
-                style: TextStyle(
-                  color: Color(0xFFFFC857),
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Un componente non è riuscito a essere visualizzato. Dettaglio tecnico:',
-                style: TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 12),
-              SelectableText(
-                errorText,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-            ],
-          ),
-        ),
+  // Carica le preferenze prima della schermata principale, ma non lasciare
+  // che un errore locale impedisca all'app di aprirsi.
+  try {
+    await ValoraAppearance.instance.load().timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => throw TimeoutException(
+        'Caricamento delle preferenze locali non completato entro 8 secondi.',
       ),
     );
-  };
-
-  // Render Flutter immediately: keep Android's native splash from remaining
-
-  // Render Flutter immediately: keep Android's native splash from remaining
-  // visible while preferences or Supabase initialization is pending.
-  runApp(const ValoraBootstrapApp());
-}
-
-class ValoraBootstrapApp extends StatefulWidget {
-  const ValoraBootstrapApp({super.key});
-  @override
-  State<ValoraBootstrapApp> createState() => _ValoraBootstrapAppState();
-}
-
-class _ValoraBootstrapAppState extends State<ValoraBootstrapApp> {
-  bool _ready = false;
-  String? _startupError;
-
-  @override
-  void initState() {
-    super.initState();
-    _initialize();
+  } catch (error, stackTrace) {
+    startupError = 'Preferenze locali: $error';
+    debugPrint('VALORA appearance initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 
-  Future<void> _initialize() async {
-    String? errorMessage;
-    try {
-      await ValoraAppearance.instance.load().timeout(
-        const Duration(seconds: 8),
-        onTimeout: () => throw TimeoutException(
-          'Caricamento delle preferenze locali non completato entro 8 secondi.',
-        ),
-      );
-    } catch (error, stackTrace) {
-      errorMessage = 'Preferenze locali: $error';
-      debugPrint('VALORA appearance initialization failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
-    try {
-      await Supabase.initialize(
-        url: supabaseUrl,
-        publishableKey: publishableKey,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw TimeoutException(
-          'Connessione a Supabase non completata entro 15 secondi. Verifica la connessione Internet e riprova ad aprire VALORA.',
-        ),
-      );
-    } catch (error, stackTrace) {
-      errorMessage = errorMessage == null ? '$error' : '$errorMessage\\nSupabase: $error';
-      debugPrint('VALORA startup initialization failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
-    if (!mounted) return;
-    setState(() {
-      _startupError = errorMessage;
-      _ready = true;
-    });
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      publishableKey: publishableKey,
+    ).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () => throw TimeoutException(
+        'Connessione a Supabase non completata entro 15 secondi.',
+      ),
+    );
+  } catch (error, stackTrace) {
+    startupError = startupError == null
+        ? '$error'
+        : '$startupError\\nSupabase: $error';
+    debugPrint('VALORA startup initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (!_ready) {
-      return MaterialApp(
-        title: 'COLLECTION by VALORA',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: backgroundColor,
-          colorScheme: ColorScheme.dark(primary: goldColor, secondary: goldColor),
-        ),
-        home: const Scaffold(
-          body: SafeArea(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(width: 72, height: 72, child: CircularProgressIndicator()),
-                  SizedBox(height: 20),
-                  Text('Avvio di COLLECTION by VALORA…'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-    return CollectionValoraApp(startupError: _startupError);
-  }
+  runApp(CollectionValoraApp(startupError: startupError));
 }
 
 class CollectionValoraApp extends StatefulWidget {
