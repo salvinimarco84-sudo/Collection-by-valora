@@ -235,6 +235,11 @@ Future<void> main() async {
     await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: publishableKey,
+    ).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () => throw TimeoutException(
+        'Connessione a Supabase non completata entro 15 secondi. Verifica la connessione Internet e riprova ad aprire VALORA.',
+      ),
     );
   } catch (error, stackTrace) {
     startupError = '$error';
