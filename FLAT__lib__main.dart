@@ -252,13 +252,15 @@ class CollectionValoraApp extends StatefulWidget {
 }
 class _CollectionValoraAppState extends State<CollectionValoraApp> {
   @override
-  void initState(){super.initState();ValoraAppearance.instance.addListener(_refresh);}
+  void initState(){super.initState();ValoraAppearance.instance.addListener(_refresh);ValoraI18n.instance.addListener(_refresh);}
   void _refresh(){if(mounted)setState((){});}
   @override
-  void dispose(){ValoraAppearance.instance.removeListener(_refresh);super.dispose();}
+  void dispose(){ValoraAppearance.instance.removeListener(_refresh);ValoraI18n.instance.removeListener(_refresh);super.dispose();}
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'COLLECTION by VALORA',
+        locale: Locale(ValoraI18n.instance.code),
+        supportedLocales: const [Locale('it'),Locale('en'),Locale('fr'),Locale('de'),Locale('es'),Locale('pt'),Locale('zh'),Locale('ja'),Locale('ru')],
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
