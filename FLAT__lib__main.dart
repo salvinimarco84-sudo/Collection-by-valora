@@ -212,7 +212,19 @@ class ValoraI18n extends ChangeNotifier {
     'ru': {'Nome utente':'Имя пользователя','Email':'Электронная почта','Gestita dal sistema di autenticazione':'Управляется системой аутентификации','Nuova password':'Новый пароль','Nascondi password':'Скрыть пароль','Mostra password':'Показать пароль','Almeno 8 caratteri':'Не менее 8 символов','Conferma nuova password':'Подтвердите новый пароль','AGGIORNAMENTO...':'ОБНОВЛЕНИЕ...','CAMBIA PASSWORD':'ИЗМЕНИТЬ ПАРОЛЬ','Nome assistente':'Имя ассистента','PREFERENZE GENERALI':'ОБЩИЕ НАСТРОЙКИ','Mercato principale':'Основной рынок','Valuta predefinita':'Валюта по умолчанию','Lingua interfaccia':'Язык интерфейса','Formato data':'Формат даты','STATO ACCOUNT':'СОСТОЯНИЕ УЧЁТНОЙ ЗАПИСИ','Data creazione account':'Дата создания учётной записи','Non disponibile':'Недоступно','Torna alla dashboard':'Назад на главную'}
   };
 
-  static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? _sections[language ?? instance.code]?[source] ?? _profile[language ?? instance.code]?[source] ?? source;
+
+  static const Map<String, Map<String, String>> _workflow = {
+    'en': {'REGISTRO FONTI':'SOURCE REGISTRY','AGGIUNGI FONTE':'ADD SOURCE','LE MIE PIATTAFORME':'MY MARKETPLACES','VALORE COLLEZIONE':'COLLECTION VALUE','RIEPILOGO DEL PATRIMONIO':'COLLECTION SUMMARY','DETTAGLIO OGGETTI':'ITEM DETAILS','Nessun oggetto destinato alla collezione.':'No items assigned to the collection.','Le stime automatiche e l’aggiornamento mensile saranno collegati al motore di valutazione in un passaggio separato, dopo il collaudo.':'Automatic estimates and monthly updates will be connected to the valuation engine in a separate step after testing.','PR-12 · RICERCA METADATI':'PR-12 · METADATA SEARCH','RICERCA MULTIPLA IN LOTTI':'BATCH MULTI-ITEM SEARCH','PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.':'PR-12 processes up to 10 items per batch and shows sources, candidates, and errors. Read-only trial: no metadata is written or overwritten.','CARICA OGGETTI INCOMPLETI':'LOAD INCOMPLETE ITEMS','RICERCA IN CORSO…':'SEARCHING…','STATO':'STATUS','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'QUEUED ITEMS · OPTIONAL SELECTION','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Process the automatic batch or select up to 10 specific items.','PRECEDENTE':'PREVIOUS','SUCCESSIVA':'NEXT','INDIETRO':'BACK','AVANTI':'FORWARD','ELABORA SELEZIONATI':'PROCESS SELECTED','Verifica solo questo record':'Check this record only','Massimo 10 oggetti selezionabili per ricerca.':'You can select up to 10 items per search.','CONFERMA DATI':'CONFIRM DETAILS','IDENTIFICAZIONE':'IDENTIFICATION','CAMPI SPECIFICI DELLA CATEGORIA':'CATEGORY-SPECIFIC FIELDS','DATI TECNICI E DI SISTEMA':'TECHNICAL AND SYSTEM DATA','DATI IDENTIFICATIVI · INSERIMENTO MANUALE':'IDENTIFICATION DATA · MANUAL ENTRY','DATI INSERIBILI':'EDITABLE DATA','VALORI DETERMINATI DA ALTRE PROCEDURE':'VALUES SET BY OTHER PROCEDURES','CERCA E SELEZIONA OGGETTO':'SEARCH AND SELECT ITEM','SCHEDA OGGETTO':'ITEM RECORD','DATI TECNICI':'TECHNICAL DATA','RIEPILOGO FLUSSI DI CASSA':'CASH FLOW SUMMARY','TOTALE ENTRATE':'TOTAL INCOME','TOTALE USCITE':'TOTAL EXPENSES','SALDO (ENTRATE − USCITE)':'BALANCE (INCOME − EXPENSES)','CREA FILE EXCEL':'CREATE EXCEL FILE','CREA FILE PDF':'CREATE PDF FILE','OGGETTI DISPONIBILI':'AVAILABLE ITEMS','ESITO RUNTIME':'RUNTIME RESULT','CONFERMA E SALVA':'CONFIRM AND SAVE','Oggetto salvato':'Item saved','CONFERMA CHIUSURA':'CONFIRM CLOSURE','RIEPILOGO FINALE':'FINAL SUMMARY','SALVA TUTTO':'SAVE ALL','PR-12 · Verifica oggetto e immagine':'PR-12 · Check item and image','APPLICA METADATI SE DISPONIBILI':'APPLY AVAILABLE METADATA','RECORD INCOMPLETI':'INCOMPLETE RECORDS','PREPARA IL FILE':'PREPARE FILE','REQUISITI E CONSIGLI PER L’IMPORTAZIONE':'IMPORT REQUIREMENTS AND TIPS','Formati supportati: XLSX, CSV e JSON':'Supported formats: XLSX, CSV, and JSON','ANTEPRIMA':'PREVIEW','SELEZIONA TUTTI I VALIDI':'SELECT ALL VALID','DESELEZIONA TUTTI':'DESELECT ALL','ESPORTA EXCEL (.XLSX)':'EXPORT EXCEL (.XLSX)','ESPORTA CSV':'EXPORT CSV','ESPORTA JSON':'EXPORT JSON','NESSUN RISULTATO':'NO RESULTS','RIPROVA':'RETRY'},
+    'fr': {'REGISTRO FONTI':'REGISTRE DES SOURCES','AGGIUNGI FONTE':'AJOUTER UNE SOURCE','LE MIE PIATTAFORME':'MES PLATEFORMES','VALORE COLLEZIONE':'VALEUR DE LA COLLECTION','RIEPILOGO DEL PATRIMONIO':'RÉSUMÉ DE LA COLLECTION','DETTAGLIO OGGETTI':'DÉTAIL DES OBJETS','Nessun oggetto destinato alla collezione.':'Aucun objet attribué à la collection.','PR-12 · RICERCA METADATI':'PR-12 · RECHERCHE DE MÉTADONNÉES','RICERCA MULTIPLA IN LOTTI':'RECHERCHE MULTIPLE PAR LOTS','CARICA OGGETTI INCOMPLETI':'CHARGER LES OBJETS INCOMPLETS','RICERCA IN CORSO…':'RECHERCHE EN COURS…','STATO':'ÉTAT','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'OBJETS EN ATTENTE · SÉLECTION FACULTATIVE','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Traitez le lot automatique ou sélectionnez jusqu’à 10 objets.','PRECEDENTE':'PRÉCÉDENT','SUCCESSIVA':'SUIVANT','INDIETRO':'RETOUR','AVANTI':'SUIVANT','ELABORA SELEZIONATI':'TRAITER LA SÉLECTION','Verifica solo questo record':'Vérifier uniquement cet enregistrement','Massimo 10 oggetti selezionabili per ricerca.':'10 objets maximum par recherche.','IDENTIFICAZIONE':'IDENTIFICATION','CAMPI SPECIFICI DELLA CATEGORIA':'CHAMPS SPÉCIFIQUES À LA CATÉGORIE','DATI TECNICI E DI SISTEMA':'DONNÉES TECHNIQUES ET SYSTÈME','DATI TECNICI':'DONNÉES TECHNIQUES','RIEPILOGO FLUSSI DI CASSA':'RÉSUMÉ DES FLUX DE TRÉSORERIE','TOTALE ENTRATE':'TOTAL DES ENTRÉES','TOTALE USCITE':'TOTAL DES SORTIES','CREA FILE EXCEL':'CRÉER UN FICHIER EXCEL','CREA FILE PDF':'CRÉER UN FICHIER PDF','OGGETTI DISPONIBILI':'OBJETS DISPONIBLES','ESITO RUNTIME':'RÉSULTAT DU RUNTIME','CONFERMA E SALVA':'CONFIRMER ET ENREGISTRER','APPLICA METADATI SE DISPONIBILI':'APPLIQUER LES MÉTADONNÉES DISPONIBLES','ANTEPRIMA':'APERÇU','SELEZIONA TUTTI I VALIDI':'SÉLECTIONNER LES VALIDES','DESELEZIONA TUTTI':'TOUT DÉSÉLECTIONNER','NESSUN RISULTATO':'AUCUN RÉSULTAT','RIPROVA':'RÉESSAYER'},
+    'de': {'REGISTRO FONTI':'QUELLENREGISTER','AGGIUNGI FONTE':'QUELLE HINZUFÜGEN','LE MIE PIATTAFORME':'MEINE MARKTPLÄTZE','VALORE COLLEZIONE':'SAMMLUNGSWERT','RIEPILOGO DEL PATRIMONIO':'SAMMLUNGSÜBERSICHT','DETTAGLIO OGGETTI':'OBJEKTDETAILS','Nessun oggetto destinato alla collezione.':'Keine Objekte der Sammlung zugewiesen.','PR-12 · RICERCA METADATI':'PR-12 · METADATENSUCHE','RICERCA MULTIPLA IN LOTTI':'MEHRFACH-SUCHE IN STAPELN','CARICA OGGETTI INCOMPLETI':'UNVOLLSTÄNDIGE OBJEKTE LADEN','RICERCA IN CORSO…':'SUCHE LÄUFT…','STATO':'STATUS','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'WARTENDE OBJEKTE · OPTIONALE AUSWAHL','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Verarbeiten Sie den automatischen Stapel oder wählen Sie bis zu 10 Objekte aus.','PRECEDENTE':'ZURÜCK','SUCCESSIVA':'WEITER','INDIETRO':'ZURÜCK','AVANTI':'WEITER','ELABORA SELEZIONATI':'AUSGEWÄHLTE VERARBEITEN','Verifica solo questo record':'Nur diesen Datensatz prüfen','Massimo 10 oggetti selezionabili per ricerca.':'Maximal 10 Objekte pro Suche.','IDENTIFICAZIONE':'IDENTIFIKATION','CAMPI SPECIFICI DELLA CATEGORIA':'KATEGORIESPEZIFISCHE FELDER','DATI TECNICI E DI SISTEMA':'TECHNISCHE UND SYSTEMDATEN','DATI TECNICI':'TECHNISCHE DATEN','RIEPILOGO FLUSSI DI CASSA':'KASSENÜBERSICHT','TOTALE ENTRATE':'GESAMTEINNAHMEN','TOTALE USCITE':'GESAMTAUSGABEN','CREA FILE EXCEL':'EXCEL-DATEI ERSTELLEN','CREA FILE PDF':'PDF ERSTELLEN','OGGETTI DISPONIBILI':'VERFÜGBARE OBJEKTE','ESITO RUNTIME':'RUNTIME-ERGEBNIS','CONFERMA E SALVA':'BESTÄTIGEN UND SPEICHERN','APPLICA METADATI SE DISPONIBILI':'VERFÜGBARE METADATEN ANWENDEN','ANTEPRIMA':'VORSCHAU','SELEZIONA TUTTI I VALIDI':'ALLE GÜLTIGEN AUSWÄHLEN','DESELEZIONA TUTTI':'AUSWAHL AUFHEBEN','NESSUN RISULTATO':'KEINE ERGEBNISSE','RIPROVA':'ERNEUT VERSUCHEN'},
+    'es': {'REGISTRO FONTI':'REGISTRO DE FUENTES','AGGIUNGI FONTE':'AÑADIR FUENTE','LE MIE PIATTAFORME':'MIS PLATAFORMAS','VALORE COLLEZIONE':'VALOR DE LA COLECCIÓN','RIEPILOGO DEL PATRIMONIO':'RESUMEN DE LA COLECCIÓN','DETTAGLIO OGGETTI':'DETALLE DE OBJETOS','Nessun oggetto destinato alla collezione.':'No hay objetos asignados a la colección.','PR-12 · RICERCA METADATI':'PR-12 · BÚSQUEDA DE METADATOS','RICERCA MULTIPLA IN LOTTI':'BÚSQUEDA MÚLTIPLE POR LOTES','CARICA OGGETTI INCOMPLETI':'CARGAR OBJETOS INCOMPLETOS','RICERCA IN CORSO…':'BUSCANDO…','STATO':'ESTADO','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'OBJETOS EN COLA · SELECCIÓN OPCIONAL','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Procesa el lote automático o selecciona hasta 10 objetos.','PRECEDENTE':'ANTERIOR','SUCCESSIVA':'SIGUIENTE','INDIETRO':'ATRÁS','AVANTI':'SIGUIENTE','ELABORA SELEZIONATI':'PROCESAR SELECCIONADOS','Verifica solo questo record':'Verificar solo este registro','Massimo 10 oggetti selezionabili per ricerca.':'Máximo 10 objetos por búsqueda.','IDENTIFICAZIONE':'IDENTIFICACIÓN','CAMPI SPECIFICI DELLA CATEGORIA':'CAMPOS ESPECÍFICOS DE LA CATEGORÍA','DATI TECNICI E DI SISTEMA':'DATOS TÉCNICOS Y DEL SISTEMA','DATI TECNICI':'DATOS TÉCNICOS','RIEPILOGO FLUSSI DI CASSA':'RESUMEN DE FLUJOS DE CAJA','TOTALE ENTRATE':'INGRESOS TOTALES','TOTALE USCITE':'GASTOS TOTALES','CREA FILE EXCEL':'CREAR ARCHIVO EXCEL','CREA FILE PDF':'CREAR ARCHIVO PDF','OGGETTI DISPONIBILI':'OBJETOS DISPONIBLES','ESITO RUNTIME':'RESULTADO DEL RUNTIME','CONFERMA E SALVA':'CONFIRMAR Y GUARDAR','APPLICA METADATI SE DISPONIBILI':'APLICAR METADATOS DISPONIBLES','ANTEPRIMA':'VISTA PREVIA','SELEZIONA TUTTI I VALIDI':'SELECCIONAR TODOS LOS VÁLIDOS','DESELEZIONA TUTTI':'DESELECCIONAR TODO','NESSUN RISULTATO':'SIN RESULTADOS','RIPROVA':'REINTENTAR'},
+    'pt': {'REGISTRO FONTI':'REGISTO DE FONTES','AGGIUNGI FONTE':'ADICIONAR FONTE','LE MIE PIATTAFORME':'AS MINHAS PLATAFORMAS','VALORE COLLEZIONE':'VALOR DA COLEÇÃO','RIEPILOGO DEL PATRIMONIO':'RESUMO DA COLEÇÃO','DETTAGLIO OGGETTI':'DETALHES DOS OBJETOS','Nessun oggetto destinato alla collezione.':'Não existem objetos atribuídos à coleção.','PR-12 · RICERCA METADATI':'PR-12 · PESQUISA DE METADADOS','RICERCA MULTIPLA IN LOTTI':'PESQUISA MÚLTIPLA POR LOTES','CARICA OGGETTI INCOMPLETI':'CARREGAR OBJETOS INCOMPLETOS','RICERCA IN CORSO…':'A PESQUISAR…','STATO':'ESTADO','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'OBJETOS EM FILA · SELEÇÃO OPCIONAL','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Processe o lote automático ou selecione até 10 objetos.','PRECEDENTE':'ANTERIOR','SUCCESSIVA':'SEGUINTE','INDIETRO':'VOLTAR','AVANTI':'AVANÇAR','ELABORA SELEZIONATI':'PROCESSAR SELECIONADOS','Verifica solo questo record':'Verificar apenas este registo','Massimo 10 oggetti selezionabili per ricerca.':'Máximo de 10 objetos por pesquisa.','IDENTIFICAZIONE':'IDENTIFICAÇÃO','CAMPI SPECIFICI DELLA CATEGORIA':'CAMPOS ESPECÍFICOS DA CATEGORIA','DATI TECNICI E DI SISTEMA':'DADOS TÉCNICOS E DO SISTEMA','DATI TECNICI':'DADOS TÉCNICOS','RIEPILOGO FLUSSI DI CASSA':'RESUMO DOS FLUXOS DE CAIXA','TOTALE ENTRATE':'TOTAL DE ENTRADAS','TOTALE USCITE':'TOTAL DE SAÍDAS','CREA FILE EXCEL':'CRIAR FICHEIRO EXCEL','CREA FILE PDF':'CRIAR FICHEIRO PDF','OGGETTI DISPONIBILI':'OBJETOS DISPONÍVEIS','ESITO RUNTIME':'RESULTADO DO RUNTIME','CONFERMA E SALVA':'CONFIRMAR E GUARDAR','APPLICA METADATI SE DISPONIBILI':'APLICAR METADADOS DISPONÍVEIS','ANTEPRIMA':'PRÉ-VISUALIZAÇÃO','SELEZIONA TUTTI I VALIDI':'SELECIONAR TODOS OS VÁLIDOS','DESELEZIONA TUTTI':'DESSELECIONAR TODOS','NESSUN RISULTATO':'SEM RESULTADOS','RIPROVA':'TENTAR NOVAMENTE'},
+    'zh': {'REGISTRO FONTI':'来源登记','AGGIUNGI FONTE':'添加来源','LE MIE PIATTAFORME':'我的平台','VALORE COLLEZIONE':'收藏估值','RIEPILOGO DEL PATRIMONIO':'收藏概览','DETTAGLIO OGGETTI':'物品详情','Nessun oggetto destinato alla collezione.':'没有分配到收藏的物品。','PR-12 · RICERCA METADATI':'PR-12 · 元数据搜索','RICERCA MULTIPLA IN LOTTI':'批量多物品搜索','CARICA OGGETTI INCOMPLETI':'加载不完整物品','RICERCA IN CORSO…':'正在搜索…','STATO':'状态','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'待处理物品 · 可选选择','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'可以处理自动批次，也可以选择最多 10 件物品。','PRECEDENTE':'上一页','SUCCESSIVA':'下一页','INDIETRO':'返回','AVANTI':'继续','ELABORA SELEZIONATI':'处理所选项目','Verifica solo questo record':'仅检查此记录','Massimo 10 oggetti selezionabili per ricerca.':'每次搜索最多选择 10 件物品。','IDENTIFICAZIONE':'识别信息','CAMPI SPECIFICI DELLA CATEGORIA':'类别专属字段','DATI TECNICI E DI SISTEMA':'技术与系统数据','DATI TECNICI':'技术数据','RIEPILOGO FLUSSI DI CASSA':'现金流汇总','TOTALE ENTRATE':'总收入','TOTALE USCITE':'总支出','CREA FILE EXCEL':'创建 Excel 文件','CREA FILE PDF':'创建 PDF 文件','OGGETTI DISPONIBILI':'可用物品','ESITO RUNTIME':'运行结果','CONFERMA E SALVA':'确认并保存','APPLICA METADATI SE DISPONIBILI':'应用可用元数据','ANTEPRIMA':'预览','SELEZIONA TUTTI I VALIDI':'选择所有有效项','DESELEZIONA TUTTI':'取消全选','NESSUN RISULTATO':'没有结果','RIPROVA':'重试'},
+    'ja': {'REGISTRO FONTI':'情報源一覧','AGGIUNGI FONTE':'情報源を追加','LE MIE PIATTAFORME':'マイプラットフォーム','VALORE COLLEZIONE':'コレクション価値','RIEPILOGO DEL PATRIMONIO':'コレクション概要','DETTAGLIO OGGETTI':'アイテム詳細','Nessun oggetto destinato alla collezione.':'コレクションに割り当てられたアイテムはありません。','PR-12 · RICERCA METADATI':'PR-12 · メタデータ検索','RICERCA MULTIPLA IN LOTTI':'複数アイテムの一括検索','CARICA OGGETTI INCOMPLETI':'不完全なアイテムを読み込む','RICERCA IN CORSO…':'検索中…','STATO':'状態','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'待機中のアイテム · 任意選択','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'自動バッチを処理するか、最大10件のアイテムを選択できます。','PRECEDENTE':'前へ','SUCCESSIVA':'次へ','INDIETRO':'戻る','AVANTI':'進む','ELABORA SELEZIONATI':'選択項目を処理','Verifica solo questo record':'このレコードのみ確認','Massimo 10 oggetti selezionabili per ricerca.':'検索ごとに選択できるのは最大10件です。','IDENTIFICAZIONE':'識別情報','CAMPI SPECIFICI DELLA CATEGORIA':'カテゴリ固有の項目','DATI TECNICI E DI SISTEMA':'技術・システム情報','DATI TECNICI':'技術情報','RIEPILOGO FLUSSI DI CASSA':'キャッシュフロー概要','TOTALE ENTRATE':'収入合計','TOTALE USCITE':'支出合計','CREA FILE EXCEL':'Excelファイルを作成','CREA FILE PDF':'PDFファイルを作成','OGGETTI DISPONIBILI':'利用可能なアイテム','ESITO RUNTIME':'実行結果','CONFERMA E SALVA':'確認して保存','APPLICA METADATI SE DISPONIBILI':'利用可能なメタデータを適用','ANTEPRIMA':'プレビュー','SELEZIONA TUTTI I VALIDI':'有効な項目をすべて選択','DESELEZIONA TUTTI':'すべて選択解除','NESSUN RISULTATO':'結果なし','RIPROVA':'再試行'},
+    'ru': {'REGISTRO FONTI':'РЕЕСТР ИСТОЧНИКОВ','AGGIUNGI FONTE':'ДОБАВИТЬ ИСТОЧНИК','LE MIE PIATTAFORME':'МОИ ПЛАТФОРМЫ','VALORE COLLEZIONE':'СТОИМОСТЬ КОЛЛЕКЦИИ','RIEPILOGO DEL PATRIMONIO':'ОБЗОР КОЛЛЕКЦИИ','DETTAGLIO OGGETTI':'ДЕТАЛИ ПРЕДМЕТОВ','Nessun oggetto destinato alla collezione.':'Нет предметов, добавленных в коллекцию.','PR-12 · RICERCA METADATI':'PR-12 · ПОИСК МЕТАДАННЫХ','RICERCA MULTIPLA IN LOTTI':'ПАКЕТНЫЙ ПОИСК НЕСКОЛЬКИХ ПРЕДМЕТОВ','CARICA OGGETTI INCOMPLETI':'ЗАГРУЗИТЬ НЕПОЛНЫЕ ЗАПИСИ','RICERCA IN CORSO…':'ВЫПОЛНЯЕТСЯ ПОИСК…','STATO':'СТАТУС','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'ОЧЕРЕДЬ · НЕОБЯЗАТЕЛЬНЫЙ ВЫБОР','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Обработайте автоматический пакет или выберите до 10 предметов.','PRECEDENTE':'НАЗАД','SUCCESSIVA':'ДАЛЕЕ','INDIETRO':'НАЗАД','AVANTI':'ВПЕРЁД','ELABORA SELEZIONATI':'ОБРАБОТАТЬ ВЫБРАННОЕ','Verifica solo questo record':'Проверить только эту запись','Massimo 10 oggetti selezionabili per ricerca.':'Не более 10 предметов за один поиск.','IDENTIFICAZIONE':'ИДЕНТИФИКАЦИЯ','CAMPI SPECIFICI DELLA CATEGORIA':'ПОЛЯ КАТЕГОРИИ','DATI TECNICI E DI SISTEMA':'ТЕХНИЧЕСКИЕ ДАННЫЕ И СИСТЕМА','DATI TECNICI':'ТЕХНИЧЕСКИЕ ДАННЫЕ','RIEPILOGO FLUSSI DI CASSA':'СВОДКА ДЕНЕЖНЫХ ПОТОКОВ','TOTALE ENTRATE':'ОБЩИЙ ДОХОД','TOTALE USCITE':'ОБЩИЕ РАСХОДЫ','CREA FILE EXCEL':'СОЗДАТЬ ФАЙЛ EXCEL','CREA FILE PDF':'СОЗДАТЬ PDF','OGGETTI DISPONIBILI':'ДОСТУПНЫЕ ПРЕДМЕТЫ','ESITO RUNTIME':'РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ','CONFERMA E SALVA':'ПОДТВЕРДИТЬ И СОХРАНИТЬ','APPLICA METADATI SE DISPONIBILI':'ПРИМЕНИТЬ ДОСТУПНЫЕ МЕТАДАННЫЕ','ANTEPRIMA':'ПРЕДПРОСМОТР','SELEZIONA TUTTI I VALIDI':'ВЫБРАТЬ ВСЁ ДОПУСТИМОЕ','DESELEZIONA TUTTI':'СНЯТЬ ВЫБОР СО ВСЕГО','NESSUN RISULTATO':'НЕТ РЕЗУЛЬТАТОВ','RIPROVA':'ПОВТОРИТЬ'}
+  };
+
+  static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? _sections[language ?? instance.code]?[source] ?? _profile[language ?? instance.code]?[source] ?? _workflow[language ?? instance.code]?[source] ?? source;
 }
 
 Future<void> main() async {
@@ -1775,25 +1787,25 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         subtitle: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18))),
     );
     return Scaffold(
-      appBar: AppBar(title: const Text('VALORE COLLEZIONE'),
+      appBar: AppBar(title: Text(ValoraI18n.tr('VALORE COLLEZIONE')),
         actions: [IconButton(tooltip: 'Aggiorna', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))]),
       body: _loading ? const Center(child: CircularProgressIndicator()) :
         _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(
           mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center),
             const SizedBox(height: 12), FilledButton(onPressed: _load, child: const Text('Riprova'))])))
         : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('RIEPILOGO DEL PATRIMONIO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+          Text(ValoraI18n.tr('RIEPILOGO DEL PATRIMONIO'), style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
           const SizedBox(height: 6),
-          const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.'),
+          Text(ValoraI18n.tr('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.')), 
           const SizedBox(height: 12),
           metric('Valore di mercato noto', _eur(market), Icons.trending_up, const Color(0xFF39875B)),
           metric('Valore manuale registrato', _eur(manual), Icons.edit_note, const Color(0xFF568DAD)),
           metric('Oggetti e unità', '${_rows.length} record · $units unità', Icons.inventory_2_outlined, const Color(0xFF8556C7)),
           metric('Oggetti senza stima di mercato', '$missing', Icons.hourglass_empty, const Color(0xFFE17D35)),
           const SizedBox(height: 12),
-          const Text('DETTAGLIO OGGETTI', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+          Text(ValoraI18n.tr('DETTAGLIO OGGETTI'), style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
           const SizedBox(height: 6),
-          if (_rows.isEmpty) const Card(child: ListTile(title: Text('Nessun oggetto destinato alla collezione.'))),
+          if (_rows.isEmpty) Card(child: ListTile(title: Text(ValoraI18n.tr('Nessun oggetto destinato alla collezione.')))), 
           ..._rows.map((r) {
             final q = (r['quantita'] as num?)?.toInt() ?? 1;
             final m = _num(r['valore_mercato']);
@@ -6218,13 +6230,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         Expanded(child: OutlinedButton.icon(
                           onPressed: _pr12AiBatchRunning || _pr12QueuePage == 0 ? null : () => setState(() { _pr12QueuePage--; _pr12SelectedRecordIds.clear(); }),
                           icon: const Icon(Icons.arrow_back),
-                          label: const Text('PRECEDENTE'),
+                          label: Text(ValoraI18n.tr('PRECEDENTE')),
                         )),
                         const SizedBox(width: 10),
                         Expanded(child: OutlinedButton.icon(
                           onPressed: _pr12AiBatchRunning || (_pr12QueuePage + 1) * 10 >= _pr12IncompleteRecords.length ? null : () => setState(() { _pr12QueuePage++; _pr12SelectedRecordIds.clear(); }),
                           icon: const Icon(Icons.arrow_forward),
-                          label: const Text('SUCCESSIVA'),
+                          label: Text(ValoraI18n.tr('SUCCESSIVA')),
                         )),
                       ]),
                       const SizedBox(height: 8),
@@ -6279,7 +6291,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                                 ]),
                               )),
                               IconButton(
-                                tooltip: 'Verifica solo questo record',
+                                tooltip: ValoraI18n.tr('Verifica solo questo record'),
                                 onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(singleRecord: row),
                                 icon: const Icon(Icons.search),
                               ),
@@ -6292,13 +6304,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         Expanded(child: OutlinedButton.icon(
                           onPressed: _pr12AiBatchRunning || _pr12QueuePage == 0 ? null : () => setState(() { _pr12QueuePage--; _pr12SelectedRecordIds.clear(); }),
                           icon: const Icon(Icons.arrow_back),
-                          label: const Text('INDIETRO'),
+                          label: Text(ValoraI18n.tr('INDIETRO')),
                         )),
                         const SizedBox(width: 10),
                         Expanded(child: OutlinedButton.icon(
                           onPressed: _pr12AiBatchRunning || (_pr12QueuePage + 1) * 10 >= _pr12IncompleteRecords.length ? null : () => setState(() { _pr12QueuePage++; _pr12SelectedRecordIds.clear(); }),
                           icon: const Icon(Icons.arrow_forward),
-                          label: const Text('AVANTI'),
+                          label: Text(ValoraI18n.tr('AVANTI')),
                         )),
                       ]),
                     ],
@@ -8103,28 +8115,28 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
   @override
   Widget build(BuildContext context) {
     final remaining = _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length.clamp(0, 10);
-    return Scaffold(appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI')),
+    return Scaffold(appBar: AppBar(title: Text(ValoraI18n.tr('PR-12 · RICERCA METADATI'))),
       body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
-        const Card(child: Padding(padding: EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('RICERCA MULTIPLA IN LOTTI', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8), Text('PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.'),
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(ValoraI18n.tr('RICERCA MULTIPLA IN LOTTI'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8), Text(ValoraI18n.tr('PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.')), 
         ]))),
         const SizedBox(height: 8),
         FilledButton.icon(onPressed: _loading || _running ? null : _loadQueue,
           icon: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
-          label: const Text('CARICA OGGETTI INCOMPLETI')),
+          label: Text(ValoraI18n.tr('CARICA OGGETTI INCOMPLETI'))),
         const SizedBox(height: 8),
         OutlinedButton.icon(onPressed: _running || _loading || _queue.every((row) => _processedIds.contains((row['codice_oggetto'] ?? '').toString())) ? null : _runBatch,
           icon: _running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-          label: Text(_running ? 'RICERCA IN CORSO…' : 'ELABORA PROSSIMO LOTTO ($remaining)')),
+          label: Text(_running ? ValoraI18n.tr('RICERCA IN CORSO…') : '${ValoraI18n.tr('ELABORA PROSSIMO LOTTO')} ($remaining)')),
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('STATO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text(_status),
+          Text(ValoraI18n.tr('STATO'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text(_status),
           if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: $_offset · lotti: ${(_queue.length / 10).ceil()}'),
           if (_error != null) SelectableText(_error!, style: const TextStyle(color: Color(0xFFE35D5D))),
         ]))),
         if (_queue.any((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString()))) ...[
-          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('OGGETTI IN CODA · SELEZIONE FACOLTATIVA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
-          const Text('Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.', style: TextStyle(color: Colors.white70)),
+          Padding(padding: const EdgeInsets.only(top: 12, bottom: 4), child: Text(ValoraI18n.tr('OGGETTI IN CODA · SELEZIONE FACOLTATIVA'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+          Text(ValoraI18n.tr('Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.'), style: TextStyle(color: Colors.white70)),
           Row(children: [
             Expanded(child: Text('PAGINA ${_queuePage + 1} DI ${((_queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length) / 10).ceil().clamp(1, 9999)}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
             Text('${_selectedIds.length}/10 selezionati', style: const TextStyle(color: Colors.white70)),
@@ -8191,7 +8203,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
               _runBatch(selectedBatch: chosen);
             },
             icon: const Icon(Icons.checklist),
-            label: Text('ELABORA SELEZIONATI (${_selectedIds.length}/10)'),
+            label: Text('${ValoraI18n.tr('ELABORA SELEZIONATI')} (${_selectedIds.length}/10)'),
           ),
         ],
         if (_results.isNotEmpty) ...[
