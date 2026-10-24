@@ -159,7 +159,7 @@ class ValoraI18n extends ChangeNotifier {
   ValoraI18n._();
   static final instance = ValoraI18n._();
   String code = 'it';
-  static const supportedCodes = <String>['it','en','fr','de','es','pt','zh','ja','ru'];
+  static const supportedCodes = <String>['it','en','fr','es'];
   void setLanguage(String value) {
     final next = supportedCodes.contains(value) ? value : 'it';
     if (code == next) return;
@@ -260,7 +260,7 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
   Widget build(BuildContext context) => MaterialApp(
         title: 'COLLECTION by VALORA',
         locale: Locale(ValoraI18n.instance.code),
-        supportedLocales: const [Locale('it'),Locale('en'),Locale('fr'),Locale('de'),Locale('es'),Locale('pt'),Locale('zh'),Locale('ja'),Locale('ru')],
+        supportedLocales: const [Locale('it'),Locale('en'),Locale('fr'),Locale('es')],
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
@@ -1331,7 +1331,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   String _currencyFor(String code) => const {'EUR':'EUR - Euro (€)','USD':'USD - Dollaro USA (\$)','GBP':'GBP - Sterlina (£)'}[code] ?? 'EUR - Euro (€)';
-  String _languageFor(String code) => const {'it':'Italiano','en':'English','fr':'Français','de':'Deutsch','es':'Español','pt':'Português','zh':'中文（普通话）','ja':'日本語','ru':'Русский'}[code] ?? 'Italiano';
+  String _languageFor(String code) => const {'it':'Italiano','en':'English','fr':'Français','es':'Español'}[code] ?? 'Italiano';
 
   Future<void> _saveProfile() async {
     final client = Supabase.instance.client;
@@ -1365,7 +1365,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         'nome_utente': _name.text.trim(),
         'mercato_nazionale_principale': market['codice_mercato'],
         'valuta_predefinita': _currency.substring(0, 3),
-        'lingua_interfaccia': const {'Italiano':'it','English':'en','Français':'fr','Deutsch':'de','Español':'es','Português':'pt','中文（普通话）':'zh','日本語':'ja','Русский':'ru'}[_language] ?? 'it',
+        'lingua_interfaccia': const {'Italiano':'it','English':'en','Français':'fr','Español':'es'}[_language] ?? 'it',
         'formato_data': _dateFormat,
         'nome_assistente': _assistant.text.trim().isEmpty ? null : _assistant.text.trim(),
         'foto_profilo': profileImagePath,
@@ -1560,7 +1560,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               DropdownButtonFormField<String>(
                 value: _language,
                 decoration: _fieldDecoration('Lingua interfaccia'),
-                items: const ['Italiano', 'English', 'Français', 'Deutsch', 'Español', 'Português', '中文（普通话）', '日本語', 'Русский'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                items: const ['Italiano', 'English', 'Français', 'Español'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
                 onChanged: (v) { if (v != null) setState(() => _language = v); },
               ),
               const SizedBox(height: 12),
