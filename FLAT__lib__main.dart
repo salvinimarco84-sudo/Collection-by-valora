@@ -227,12 +227,20 @@ class ValoraI18n extends ChangeNotifier {
   static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? _sections[language ?? instance.code]?[source] ?? _profile[language ?? instance.code]?[source] ?? _workflow[language ?? instance.code]?[source] ?? source;
 }
 
+final ValueNotifier<bool> _startupComplete = ValueNotifier<bool>(false);
+final ValueNotifier<String?> _startupError = ValueNotifier<String?>(null);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  String? startupError;
 
-  // Carica le preferenze prima della schermata principale, ma non lasciare
-  // che un errore locale impedisca all'app di aprirsi.
+  // Avvia Flutter subito: l'inizializzazione non deve lasciare Android
+  // bloccato sulla sola schermata nativa con il logo.
+  runApp(const CollectionValoraApp());
+  unawaited(_initializeValoraStartup());
+}
+
+Future<void> _initializeValoraStartup() async {
+  String? errorMessage;
   try {
     await ValoraAppearance.instance.load().timeout(
       const Duration(seconds: 8),
@@ -241,7 +249,7 @@ Future<void> main() async {
       ),
     );
   } catch (error, stackTrace) {
-    startupError = 'Preferenze locali: $error';
+    errorMessage = 'Preferenze locali: $error';
     debugPrint('VALORA appearance initialization failed: $error');
     debugPrintStack(stackTrace: stackTrace);
   }
@@ -257,19 +265,19 @@ Future<void> main() async {
       ),
     );
   } catch (error, stackTrace) {
-    startupError = startupError == null
-        ? '$error'
-        : '$startupError\\nSupabase: $error';
+    errorMessage = errorMessage == null
+        ? 'Supabase: $error'
+        : '$errorMessage\\nSupabase: $error';
     debugPrint('VALORA startup initialization failed: $error');
     debugPrintStack(stackTrace: stackTrace);
   }
 
-  runApp(CollectionValoraApp(startupError: startupError));
+  _startupError.value = errorMessage;
+  _startupComplete.value = true;
 }
 
 class CollectionValoraApp extends StatefulWidget {
-  const CollectionValoraApp({super.key, this.startupError});
-  final String? startupError;
+  const CollectionValoraApp({super.key});
   @override
   State<CollectionValoraApp> createState() => _CollectionValoraAppState();
 }
@@ -319,9 +327,18 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
             ),
           ),
         ),
-        home: widget.startupError == null
-            ? const AuthenticationGate()
-            : StartupFailurePage(error: widget.startupError!),
+        home: ValueListenableBuilder<bool>(
+          valueListenable: _startupComplete,
+          builder: (context, ready, _) {
+            if (!ready) return const StartupLoadingPage();
+            return ValueListenableBuilder<String?>(
+              valueListenable: _startupError,
+              builder: (context, error, _) => error == null
+                  ? const AuthenticationGate()
+                  : StartupFailurePage(error: error),
+            );
+          },
+        ),
       );
 }
 
@@ -488,6 +505,37 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
         if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Ripristinata la configurazione iniziale: Schede, sfondo nero.')));
       },icon:const Icon(Icons.restart_alt),label:const Text('RIPRISTINA CONFIGURAZIONE INIZIALE')),
     ]));
+}
+
+class StartupLoadingPage extends StatelessWidget {
+  const StartupLoadingPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.inventory_2_outlined, color: goldColor, size: 64),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'COLLECTION by VALORA',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: goldColor, fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  const CircularProgressIndicator(color: goldColor),
+                  const SizedBox(height: 14),
+                  const Text('Inizializzazione dell’app in corso…', textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class StartupFailurePage extends StatelessWidget {
