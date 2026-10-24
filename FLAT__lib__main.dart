@@ -228,26 +228,53 @@ class ValoraI18n extends ChangeNotifier {
   static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? _sections[language ?? instance.code]?[source] ?? _profile[language ?? instance.code]?[source] ?? _workflow[language ?? instance.code]?[source] ?? source;
 }
 
+final ValueNotifier<bool> _startupComplete = ValueNotifier<bool>(false);
+final ValueNotifier<String?> _startupError = ValueNotifier<String?>(null);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ValoraAppearance.instance.load();
-  String? startupError;
+  // Mostra subito l'interfaccia Flutter: preferenze o rete lente non devono
+  // lasciare l'app bloccata sulla sola schermata nativa con il logo.
+  runApp(const CollectionValoraApp());
+  unawaited(_initializeValoraStartup());
+}
+
+Future<void> _initializeValoraStartup() async {
+  try {
+    await ValoraAppearance.instance.load().timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => throw TimeoutException(
+        'Caricamento delle preferenze locali non completato entro 8 secondi.',
+      ),
+    );
+  } catch (error, stackTrace) {
+    debugPrint('VALORA appearance initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+
+  String? errorMessage;
   try {
     await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: publishableKey,
+    ).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () => throw TimeoutException(
+        'Connessione a Supabase non completata entro 15 secondi.',
+      ),
     );
   } catch (error, stackTrace) {
-    startupError = '$error';
+    errorMessage = 'Supabase: $error';
     debugPrint('VALORA startup initialization failed: $error');
     debugPrintStack(stackTrace: stackTrace);
   }
-  runApp(CollectionValoraApp(startupError: startupError));
+
+  _startupError.value = errorMessage;
+  _startupComplete.value = true;
 }
 
 class CollectionValoraApp extends StatefulWidget {
-  const CollectionValoraApp({super.key, this.startupError});
-  final String? startupError;
+  const CollectionValoraApp({super.key});
   @override
   State<CollectionValoraApp> createState() => _CollectionValoraAppState();
 }
@@ -297,9 +324,44 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
             ),
           ),
         ),
-        home: widget.startupError == null
-            ? const AuthenticationGate()
-            : StartupFailurePage(error: widget.startupError!),
+        home: ValueListenableBuilder<bool>(
+          valueListenable: _startupComplete,
+          builder: (context, ready, _) {
+            if (!ready) {
+              return Scaffold(
+                backgroundColor: ValoraAppearance.instance.background,
+                body: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: goldColor),
+                      const SizedBox(height: 20),
+                      Text(
+                        'COLLECTION by VALORA',
+                        style: TextStyle(
+                          color: ValoraAppearance.instance.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Inizializzazione in corso…',
+                        style: TextStyle(color: ValoraAppearance.instance.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return ValueListenableBuilder<String?>(
+              valueListenable: _startupError,
+              builder: (context, error, _) => error == null
+                  ? const AuthenticationGate()
+                  : StartupFailurePage(error: error),
+            );
+          },
+        ),
       );
 }
 
