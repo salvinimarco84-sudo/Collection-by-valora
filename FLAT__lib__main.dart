@@ -200,7 +200,19 @@ class ValoraI18n extends ChangeNotifier {
     'ru': {'VENDITE E INSERZIONI':'ПРОДАЖИ И ОБЪЯВЛЕНИЯ','Consulta e gestisci gli oggetti':'Просмотр и управление предметами','Gestione acquisti e allocazioni':'Управление покупками и распределением','Vendite e inserzioni':'Продажи и объявления','VALORA e valore collezione':'VALORA и стоимость коллекции','Riepiloghi e risultati':'Сводки и результаты','Ricerca oggetti e fonti':'Поиск предметов и источников','Stato e verifiche del sistema':'Состояние и проверки системы','Nuovo oggetto':'Новый предмет','Modifica oggetto':'Изменить предмет','Chiudi oggetto':'Закрыть предмет','Visualizza scheda':'Открыть карточку','Elenco oggetti disponibili':'Доступные предметы','Storico oggetto':'История предмета','Importa oggetti':'Импорт предметов','Esporta oggetti':'Экспорт предметов','Nuovo acquisto':'Новая покупка','Modifica acquisto':'Изменить покупку','Acquisti comparati':'Сравнить покупки','Report acquisti':'Отчёт о покупках','Nuova vendita':'Новая продажа','Chiudi vendita':'Закрыть продажу','Report vendite':'Отчёт о продажах','VALORA':'VALORA','VALORE COLLEZIONE':'СТОИМОСТЬ КОЛЛЕКЦИИ','VALUTA ACQUISTO':'ОЦЕНИТЬ ПОКУПКУ','TORNA ALLA DASHBOARD':'НАЗАД НА ГЛАВНУЮ'}
   };
 
-  static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? _sections[language ?? instance.code]?[source] ?? source;
+
+  static const Map<String, Map<String, String>> _profile = {
+    'en': {'Nome utente':'Username','Email':'Email','Gestita dal sistema di autenticazione':'Managed by the authentication system','Nuova password':'New password','Nascondi password':'Hide password','Mostra password':'Show password','Almeno 8 caratteri':'At least 8 characters','Conferma nuova password':'Confirm new password','AGGIORNAMENTO...':'UPDATING...','CAMBIA PASSWORD':'CHANGE PASSWORD','Nome assistente':'Assistant name','PREFERENZE GENERALI':'GENERAL PREFERENCES','Mercato principale':'Primary market','Valuta predefinita':'Default currency','Lingua interfaccia':'Interface language','Formato data':'Date format','STATO ACCOUNT':'ACCOUNT STATUS','Data creazione account':'Account creation date','Non disponibile':'Not available','Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.':'The profile is read and saved in master_utente in the TEST database. Visual preferences remain separate and local.','Torna alla dashboard':'Back to dashboard'},
+    'fr': {'Nome utente':'Nom d’utilisateur','Email':'E-mail','Gestita dal sistema di autenticazione':'Géré par le système d’authentification','Nuova password':'Nouveau mot de passe','Nascondi password':'Masquer le mot de passe','Mostra password':'Afficher le mot de passe','Almeno 8 caratteri':'Au moins 8 caractères','Conferma nuova password':'Confirmer le nouveau mot de passe','AGGIORNAMENTO...':'MISE À JOUR...','CAMBIA PASSWORD':'CHANGER LE MOT DE PASSE','Nome assistente':'Nom de l’assistant','PREFERENZE GENERALI':'PRÉFÉRENCES GÉNÉRALES','Mercato principale':'Marché principal','Valuta predefinita':'Devise par défaut','Lingua interfaccia':'Langue de l’interface','Formato data':'Format de date','STATO ACCOUNT':'ÉTAT DU COMPTE','Data creazione account':'Date de création du compte','Non disponibile':'Indisponible','Torna alla dashboard':'Retour au tableau de bord'},
+    'de': {'Nome utente':'Benutzername','Email':'E-Mail','Gestita dal sistema di autenticazione':'Wird vom Authentifizierungssystem verwaltet','Nuova password':'Neues Passwort','Nascondi password':'Passwort ausblenden','Mostra password':'Passwort anzeigen','Almeno 8 caratteri':'Mindestens 8 Zeichen','Conferma nuova password':'Neues Passwort bestätigen','AGGIORNAMENTO...':'AKTUALISIERUNG...','CAMBIA PASSWORD':'PASSWORT ÄNDERN','Nome assistente':'Assistentenname','PREFERENZE GENERALI':'ALLGEMEINE EINSTELLUNGEN','Mercato principale':'Hauptmarkt','Valuta predefinita':'Standardwährung','Lingua interfaccia':'Oberflächensprache','Formato data':'Datumsformat','STATO ACCOUNT':'KONTOSTATUS','Data creazione account':'Kontoerstellungsdatum','Non disponibile':'Nicht verfügbar','Torna alla dashboard':'Zurück zur Übersicht'},
+    'es': {'Nome utente':'Nombre de usuario','Email':'Correo electrónico','Gestita dal sistema di autenticazione':'Gestionado por el sistema de autenticación','Nuova password':'Nueva contraseña','Nascondi password':'Ocultar contraseña','Mostra password':'Mostrar contraseña','Almeno 8 caratteri':'Al menos 8 caracteres','Conferma nuova password':'Confirmar nueva contraseña','AGGIORNAMENTO...':'ACTUALIZANDO...','CAMBIA PASSWORD':'CAMBIAR CONTRASEÑA','Nome assistente':'Nombre del asistente','PREFERENZE GENERALI':'PREFERENCIAS GENERALES','Mercato principale':'Mercado principal','Valuta predefinita':'Moneda predeterminada','Lingua interfaccia':'Idioma de la interfaz','Formato data':'Formato de fecha','STATO ACCOUNT':'ESTADO DE LA CUENTA','Data creazione account':'Fecha de creación de la cuenta','Non disponibile':'No disponible','Torna alla dashboard':'Volver al panel'},
+    'pt': {'Nome utente':'Nome de utilizador','Email':'E-mail','Gestita dal sistema di autenticazione':'Gerido pelo sistema de autenticação','Nuova password':'Nova palavra-passe','Nascondi password':'Ocultar palavra-passe','Mostra password':'Mostrar palavra-passe','Almeno 8 caratteri':'Pelo menos 8 caracteres','Conferma nuova password':'Confirmar nova palavra-passe','AGGIORNAMENTO...':'A ATUALIZAR...','CAMBIA PASSWORD':'ALTERAR PALAVRA-PASSE','Nome assistente':'Nome do assistente','PREFERENZE GENERALI':'PREFERÊNCIAS GERAIS','Mercato principale':'Mercado principal','Valuta predefinita':'Moeda predefinida','Lingua interfaccia':'Idioma da interface','Formato data':'Formato da data','STATO ACCOUNT':'ESTADO DA CONTA','Data creazione account':'Data de criação da conta','Non disponibile':'Indisponível','Torna alla dashboard':'Voltar ao painel'},
+    'zh': {'Nome utente':'用户名','Email':'电子邮箱','Gestita dal sistema di autenticazione':'由身份验证系统管理','Nuova password':'新密码','Nascondi password':'隐藏密码','Mostra password':'显示密码','Almeno 8 caratteri':'至少 8 个字符','Conferma nuova password':'确认新密码','AGGIORNAMENTO...':'正在更新…','CAMBIA PASSWORD':'修改密码','Nome assistente':'助手名称','PREFERENZE GENERALI':'常规偏好设置','Mercato principale':'主要市场','Valuta predefinita':'默认货币','Lingua interfaccia':'界面语言','Formato data':'日期格式','STATO ACCOUNT':'账户状态','Data creazione account':'账户创建日期','Non disponibile':'不可用','Torna alla dashboard':'返回主页'},
+    'ja': {'Nome utente':'ユーザー名','Email':'メールアドレス','Gestita dal sistema di autenticazione':'認証システムで管理','Nuova password':'新しいパスワード','Nascondi password':'パスワードを隠す','Mostra password':'パスワードを表示','Almeno 8 caratteri':'8文字以上','Conferma nuova password':'新しいパスワードを確認','AGGIORNAMENTO...':'更新中…','CAMBIA PASSWORD':'パスワードを変更','Nome assistente':'アシスタント名','PREFERENZE GENERALI':'一般設定','Mercato principale':'主要市場','Valuta predefinita':'既定の通貨','Lingua interfaccia':'インターフェース言語','Formato data':'日付形式','STATO ACCOUNT':'アカウント状態','Data creazione account':'アカウント作成日','Non disponibile':'利用不可','Torna alla dashboard':'ダッシュボードに戻る'},
+    'ru': {'Nome utente':'Имя пользователя','Email':'Электронная почта','Gestita dal sistema di autenticazione':'Управляется системой аутентификации','Nuova password':'Новый пароль','Nascondi password':'Скрыть пароль','Mostra password':'Показать пароль','Almeno 8 caratteri':'Не менее 8 символов','Conferma nuova password':'Подтвердите новый пароль','AGGIORNAMENTO...':'ОБНОВЛЕНИЕ...','CAMBIA PASSWORD':'ИЗМЕНИТЬ ПАРОЛЬ','Nome assistente':'Имя ассистента','PREFERENZE GENERALI':'ОБЩИЕ НАСТРОЙКИ','Mercato principale':'Основной рынок','Valuta predefinita':'Валюта по умолчанию','Lingua interfaccia':'Язык интерфейса','Formato data':'Формат даты','STATO ACCOUNT':'СОСТОЯНИЕ УЧЁТНОЙ ЗАПИСИ','Data creazione account':'Дата создания учётной записи','Non disponibile':'Недоступно','Torna alla dashboard':'Назад на главную'}
+  };
+
+  static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? _sections[language ?? instance.code]?[source] ?? _profile[language ?? instance.code]?[source] ?? source;
 }
 
 Future<void> main() async {
@@ -1411,7 +1423,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         Row(children: [
           Icon(icon, color: Colors.blueAccent),
           const SizedBox(width: 10),
-          Text(title, style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+          Text(ValoraI18n.tr(title), style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(height: 14),
         ...children,
@@ -1420,7 +1432,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   );
 
   InputDecoration _fieldDecoration(String label, {Widget? suffixIcon, String? helper}) =>
-      InputDecoration(labelText: label, helperText: helper, suffixIcon: suffixIcon);
+      InputDecoration(labelText: ValoraI18n.tr(label), helperText: helper == null ? null : ValoraI18n.tr(helper), suffixIcon: suffixIcon);
 
   @override
   Widget build(BuildContext context) {
@@ -1428,9 +1440,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final created = user?.createdAt;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profilo utente'),
+        title: Text(ValoraI18n.tr('Profilo utente')),
         leading: IconButton(
-          tooltip: 'Torna alla dashboard',
+          tooltip: ValoraI18n.tr('Torna alla dashboard'),
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -1470,7 +1482,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               TextField(controller: _newPassword, obscureText: !_showNewPassword,
                 decoration: _fieldDecoration('Nuova password',
                   suffixIcon: IconButton(
-                    tooltip: _showNewPassword ? 'Nascondi password' : 'Mostra password',
+                    tooltip: ValoraI18n.tr(_showNewPassword ? 'Nascondi password' : 'Mostra password'),
                     onPressed: () => setState(() => _showNewPassword = !_showNewPassword),
                     icon: Icon(_showNewPassword ? Icons.visibility_off : Icons.visibility),
                   ),
@@ -1482,7 +1494,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               SizedBox(width: double.infinity, child: OutlinedButton.icon(
                 onPressed: _busy ? null : _changePassword,
                 icon: const Icon(Icons.lock_reset),
-                label: Text(_busy ? 'AGGIORNAMENTO...' : 'CAMBIA PASSWORD'),
+                label: Text(ValoraI18n.tr(_busy ? 'AGGIORNAMENTO...' : 'CAMBIA PASSWORD')),
               )),
               const SizedBox(height: 12),
               TextField(controller: _assistant, decoration: _fieldDecoration('Nome assistente')),
@@ -1517,14 +1529,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
             ]),
             _section('STATO ACCOUNT', Icons.info_outline, [
-              const ListTile(contentPadding: EdgeInsets.zero, title: Text('Stato'), trailing: Chip(label: Text('Autenticato'))),
-              ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data creazione account'), subtitle: Text(created ?? 'Non disponibile')),
+              ListTile(contentPadding: EdgeInsets.zero, title: Text(ValoraI18n.tr('Stato')), trailing: Chip(label: Text(ValoraI18n.tr('Autenticato')))),
+              ListTile(contentPadding: EdgeInsets.zero, title: Text(ValoraI18n.tr('Data creazione account')), subtitle: Text(created ?? ValoraI18n.tr('Non disponibile'))),
             ]),
             Card(
               color: ValoraAppearance.instance.card,
-              child: const Padding(
-                padding: EdgeInsets.all(14),
-                child: Text('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.'),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Text(ValoraI18n.tr('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.'),
               ),
             ),
           ];
