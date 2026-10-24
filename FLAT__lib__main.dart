@@ -2422,12 +2422,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
     return ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
     children: [
-      const Padding(
-        padding: EdgeInsets.fromLTRB(2, 4, 2, 14),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(2, 4, 2, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('CENTRO OPERATIVO', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
+          Text(ValoraI18n.tr('CENTRO OPERATIVO'), style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
           SizedBox(height: 5),
-          Text('Scegli una sezione per accedere alle relative funzioni.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'), style: TextStyle(color: Colors.white70, fontSize: 13)),
         ]),
       ),
       _menuCard(
@@ -2451,7 +2451,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           child: Text('Conteggio catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
         ),
       const SizedBox(height: 12),
-      const Center(child: Text('COLLECTION by VALORA', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
+      Center(child: Text('COLLECTION by VALORA', style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
     ],
   );
   }
@@ -2465,9 +2465,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
           const Icon(Icons.inventory_2_outlined, color: goldColor, size: 34),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('COLLEZIONE', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
+            Text(ValoraI18n.tr('COLLEZIONE'), style: const TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
             SizedBox(height: 3),
-            Text('Seleziona un tema per consultare i relativi oggetti.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(ValoraI18n.tr('Seleziona un tema per consultare i relativi oggetti.'), style: TextStyle(color: Colors.white70, fontSize: 12)),
           ])),
           Text(_catalogLoading ? '…' : '${_catalogRows.length}', style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
         ]),
