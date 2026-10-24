@@ -1224,7 +1224,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   String _currencyFor(String code) => const {'EUR':'EUR - Euro (€)','USD':'USD - Dollaro USA (\$)','GBP':'GBP - Sterlina (£)'}[code] ?? 'EUR - Euro (€)';
-  String _languageFor(String code) => const {'it':'Italiano','en':'English','es':'Español','fr':'Français'}[code] ?? 'Italiano';
+  String _languageFor(String code) => const {'it':'Italiano','en':'English','fr':'Français','de':'Deutsch','es':'Español','pt':'Português','zh':'中文（普通话）','ja':'日本語','ru':'Русский'}[code] ?? 'Italiano';
 
   Future<void> _saveProfile() async {
     final client = Supabase.instance.client;
@@ -1258,7 +1258,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         'nome_utente': _name.text.trim(),
         'mercato_nazionale_principale': market['codice_mercato'],
         'valuta_predefinita': _currency.substring(0, 3),
-        'lingua_interfaccia': const {'Italiano':'it','English':'en','Español':'es','Français':'fr'}[_language] ?? 'it',
+        'lingua_interfaccia': const {'Italiano':'it','English':'en','Français':'fr','Deutsch':'de','Español':'es','Português':'pt','中文（普通话）':'zh','日本語':'ja','Русский':'ru'}[_language] ?? 'it',
         'formato_data': _dateFormat,
         'nome_assistente': _assistant.text.trim().isEmpty ? null : _assistant.text.trim(),
         'foto_profilo': profileImagePath,
@@ -1452,7 +1452,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               DropdownButtonFormField<String>(
                 value: _language,
                 decoration: _fieldDecoration('Lingua interfaccia'),
-                items: const ['Italiano', 'English', 'Español', 'Français'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                items: const ['Italiano', 'English', 'Français', 'Deutsch', 'Español', 'Português', '中文（普通话）', '日本語', 'Русский'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
                 onChanged: (v) { if (v != null) setState(() => _language = v); },
               ),
               const SizedBox(height: 12),
