@@ -828,7 +828,7 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rimuovere la piattaforma?'),
+        title: Text(ValoraI18n.tr('Rimuovere la piattaforma?')),
         content: Text('Vuoi eliminare “${platform['nome_piattaforma']}” dal tuo elenco? Se vuoi solo sospenderla, disattiva il flag Utilizzata.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('ANNULLA')),
@@ -851,7 +851,7 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
   Widget build(BuildContext context) {
     final a = ValoraAppearance.instance;
     return Scaffold(
-      appBar: AppBar(title: const Text('LE MIE PIATTAFORME')),
+      appBar: AppBar(title: Text(ValoraI18n.tr('LE MIE PIATTAFORME'))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Text('Aggiungi soltanto i marketplace che utilizzi. VALORA preparerà le inserzioni solo per le piattaforme attive nel tuo elenco.',
           style: TextStyle(color: a.textSecondary)),
@@ -882,7 +882,7 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
             subtitle: Text(used ? 'Utilizzata: sì' : 'Utilizzata: no'),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               Switch(value: used, onChanged: (value) => _toggle(p, value)),
-              IconButton(tooltip: 'Rimuovi', icon: const Icon(Icons.delete_outline), onPressed: () => _delete(p)),
+              IconButton(tooltip: ValoraI18n.tr('RIMUOVI'), icon: const Icon(Icons.delete_outline), onPressed: () => _delete(p)),
             ]),
           ));
         }),
@@ -1056,18 +1056,18 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
     final query = _search.text.trim().toLowerCase();
     final visible = _sources.where((s) => query.isEmpty || ['nome','categoria','marchio_editore','franchise','mercato','url_base'].any((k) => (s[k] ?? '').toString().toLowerCase().contains(query))).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('REGISTRO FONTI'), actions: [
-        IconButton(tooltip: 'Gestisci categorie e campi specialistici', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())), icon: const Icon(Icons.category_outlined)),
-        IconButton(tooltip: 'Aggiorna', onPressed: _load, icon: const Icon(Icons.refresh)),
-        IconButton(tooltip: 'Aggiungi fonte', onPressed: () => _editSource(), icon: const Icon(Icons.add_link)),
+      appBar: AppBar(title: Text(ValoraI18n.tr('REGISTRO FONTI')), actions: [
+        IconButton(tooltip: ValoraI18n.tr('Gestisci categorie e campi specialistici'), onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())), icon: const Icon(Icons.category_outlined)),
+        IconButton(tooltip: ValoraI18n.tr('Aggiorna'), onPressed: _load, icon: const Icon(Icons.refresh)),
+        IconButton(tooltip: ValoraI18n.tr('Aggiungi fonte'), onPressed: () => _editSource(), icon: const Icon(Icons.add_link)),
       ]),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => _editSource(), icon: const Icon(Icons.add), label: const Text('AGGIUNGI FONTE')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: () => _editSource(), icon: const Icon(Icons.add), label: Text(ValoraI18n.tr('AGGIUNGI FONTE'))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : _error != null
         ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.info_outline, size: 42), const SizedBox(height: 12),
             const Text('Registro non ancora disponibile'), const SizedBox(height: 8),
             SelectableText(_error!), const SizedBox(height: 12),
-            FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('RIPROVA')),
+            FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: Text(ValoraI18n.tr('RIPROVA'))),
           ])))
         : Column(children: [
             Padding(padding: const EdgeInsets.all(12), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Cerca fonte, marchio, categoria o mercato', border: OutlineInputBorder()))),
