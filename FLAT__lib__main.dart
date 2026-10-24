@@ -52,7 +52,6 @@ class ValoraAppearance extends ChangeNotifier {
     'CATALOGO': Color(0xFF3978C5),
     'ACQUISTI': Color(0xFFC74444),
     'VENDITE': Color(0xFF39875B),
-    'FLUSSI DI CASSA': Color(0xFFD6A83F),
     'VALUTAZIONI': Color(0xFF8556C7),
     'REPORT': Color(0xFFE17D35),
     'RICERCHE': Color(0xFFD6A83F),
@@ -102,6 +101,9 @@ class ValoraAppearance extends ChangeNotifier {
       if (path != null && path.isNotEmpty) imagePaths[k] = path;
     }
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
+    // RICERCHE eredita stabilmente il colore oro, anche sui dispositivi con preferenze precedenti.
+    colors['RICERCHE'] = defaults['RICERCHE']!;
+    await p.setInt('valora_color_RICERCHE', defaults['RICERCHE']!.value);
     final used=<int>{};
     for(final k in defaults.keys) {
       if(!used.add(colors[k]!.value)) {
@@ -241,7 +243,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
     }
   }
   static const List<String> _allPersonalizableSections = [
-    'COLLEZIONE','CATALOGO','ACQUISTI','VENDITE','FLUSSI DI CASSA',
+    'COLLEZIONE','CATALOGO','ACQUISTI','VENDITE',
     'VALUTAZIONI','REPORT','RICERCHE','CONTROLLO','LEGO','SAINT SEIYA',
     'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','ALTRE COLLEZIONI'
   ];
