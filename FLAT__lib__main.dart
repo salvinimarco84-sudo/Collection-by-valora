@@ -229,38 +229,92 @@ class ValoraI18n extends ChangeNotifier {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  String? startupError;
-  try {
-    // Nessun errore di preferenze locali deve impedire a Flutter di mostrare
-    // una schermata utilizzabile al posto della splash nativa.
-    await ValoraAppearance.instance.load().timeout(
-      const Duration(seconds: 8),
-      onTimeout: () => throw TimeoutException(
-        'Caricamento delle preferenze locali non completato entro 8 secondi.',
-      ),
-    );
-  } catch (error, stackTrace) {
-    startupError = 'Preferenze locali: $error';
-    debugPrint('VALORA appearance initialization failed: $error');
-    debugPrintStack(stackTrace: stackTrace);
+  // Render Flutter immediately: keep Android's native splash from remaining
+  // visible while preferences or Supabase initialization is pending.
+  runApp(const ValoraBootstrapApp());
+}
+
+class ValoraBootstrapApp extends StatefulWidget {
+  const ValoraBootstrapApp({super.key});
+  @override
+  State<ValoraBootstrapApp> createState() => _ValoraBootstrapAppState();
+}
+
+class _ValoraBootstrapAppState extends State<ValoraBootstrapApp> {
+  bool _ready = false;
+  String? _startupError;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
   }
-  try {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      publishableKey: publishableKey,
-    ).timeout(
-      const Duration(seconds: 15),
-      onTimeout: () => throw TimeoutException(
-        'Connessione a Supabase non completata entro 15 secondi. Verifica la connessione Internet e riprova ad aprire VALORA.',
-      ),
-    );
-  } catch (error, stackTrace) {
-    startupError = startupError == null ? '$error' : '$startupError\\nSupabase: $error';
-    debugPrint('VALORA startup initialization failed: $error');
-    debugPrintStack(stackTrace: stackTrace);
+
+  Future<void> _initialize() async {
+    String? errorMessage;
+    try {
+      await ValoraAppearance.instance.load().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw TimeoutException(
+          'Caricamento delle preferenze locali non completato entro 8 secondi.',
+        ),
+      );
+    } catch (error, stackTrace) {
+      errorMessage = 'Preferenze locali: $error';
+      debugPrint('VALORA appearance initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: publishableKey,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException(
+          'Connessione a Supabase non completata entro 15 secondi. Verifica la connessione Internet e riprova ad aprire VALORA.',
+        ),
+      );
+    } catch (error, stackTrace) {
+      errorMessage = errorMessage == null ? '$error' : '$errorMessage\\nSupabase: $error';
+      debugPrint('VALORA startup initialization failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+    if (!mounted) return;
+    setState(() {
+      _startupError = errorMessage;
+      _ready = true;
+    });
   }
-  // Avvia sempre Flutter, anche se un servizio di inizializzazione fallisce.
-  runApp(CollectionValoraApp(startupError: startupError));
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_ready) {
+      return MaterialApp(
+        title: 'COLLECTION by VALORA',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: backgroundColor,
+          colorScheme: ColorScheme.dark(primary: goldColor, secondary: goldColor),
+        ),
+        home: const Scaffold(
+          body: SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(width: 72, height: 72, child: CircularProgressIndicator()),
+                  SizedBox(height: 20),
+                  Text('Avvio di COLLECTION by VALORA…'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return CollectionValoraApp(startupError: _startupError);
+  }
 }
 
 class CollectionValoraApp extends StatefulWidget {
