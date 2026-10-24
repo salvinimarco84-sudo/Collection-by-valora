@@ -664,7 +664,10 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: SafeArea(
+        backgroundColor: const Color(0xFF101010),
+        body: ColoredBox(
+          color: const Color(0xFF101010),
+          child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -741,6 +744,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
+        ),
         ),
       );
 }
