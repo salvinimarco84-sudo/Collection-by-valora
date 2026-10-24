@@ -1548,7 +1548,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               color: ValoraAppearance.instance.card,
               child: Padding(
                 padding: const EdgeInsets.all(14),
-                child: Text(ValoraI18n.tr('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.'),
+                child: Text(ValoraI18n.tr('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.')),
               ),
             ),
           ];
