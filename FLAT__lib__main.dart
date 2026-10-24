@@ -5193,41 +5193,46 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<void> _consult() async {
     if (widget.apiCode == 'REPORT-COLLECTION-THEME') {
       final term = _search.text.trim();
-      if (term.isEmpty) throw Exception('Inserisci un franchise o tema, ad esempio Batman, LEGO City o Saint Seiya.');
-      final normalized = term.toLowerCase();
+      if (term.isEmpty) {
+        throw Exception('Inserisci un franchise o tema, ad esempio Batman, LEGO City o Saint Seiya.');
+      }
+
+      // La ricerca passa dal runtime autenticato e dalla RPC autorizzata.
+      // Nessuna lettura diretta della tabella master_oggetti dal client.
       final all = <Map<String, dynamic>>[];
       const batchSize = 500;
       var offset = 0;
       while (true) {
-        final page = await Supabase.instance.client.schema('collection')
-            .from('master_oggetti').select('*')
-            .range(offset, offset + batchSize - 1);
-        final rows = (page as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+        final response = await _ValoraRuntimeApi.call('consultation', {
+          'session_id': _sessionId,
+          'consultation_code': 'REPORT-COLLECTION-THEME',
+          'arguments': {
+            'cerca': term,
+            'limite': batchSize,
+            'offset': offset,
+          },
+        });
+        final envelope = response['result'];
+        final dynamic resultRows =
+            envelope is Map ? envelope['risultato'] : envelope;
+        if (resultRows is! List) {
+          throw Exception('Il runtime non ha restituito un elenco valido per la ricerca per tema.');
+        }
+        final rows = resultRows
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row))
+            .toList();
         all.addAll(rows);
         if (rows.length < batchSize) break;
         offset += batchSize;
-        if (offset >= 100000) throw Exception('Il catalogo supera il limite di sicurezza della ricerca. Riduci il perimetro o usa un indice server.');
-      }
-      // Cerca ricorsivamente in TUTTI i campi del record, inclusi metadati JSON
-      // e colonne non note in anticipo. Non dipende da nomi ipotizzati come "tema".
-      String flattenSearchable(dynamic value) {
-        if (value == null) return '';
-        if (value is Map) {
-          return value.entries
-              .map((entry) => '${entry.key} ${flattenSearchable(entry.value)}')
-              .join(' ');
+        if (offset >= 100000) {
+          throw Exception('Il catalogo supera il limite di sicurezza della ricerca.');
         }
-        if (value is Iterable) {
-          return value.map(flattenSearchable).join(' ');
-        }
-        return value.toString();
       }
 
-      final matched = <Map<String, dynamic>>[];
       final seen = <String>{};
+      final matched = <Map<String, dynamic>>[];
       for (final row in all) {
-        final searchable = flattenSearchable(row).toLowerCase();
-        if (!searchable.contains(normalized)) continue;
         final id = (row['codice_oggetto'] ?? row['id'] ?? '').toString();
         final uniqueKey = id.isNotEmpty ? id : jsonEncode(row);
         if (seen.add(uniqueKey)) matched.add(row);
@@ -5240,6 +5245,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       });
       return;
     }
+
     if (widget.apiCode == 'EXPLORE_RECORDS') {
       final id = int.tryParse(_code.text.trim());
       if (id == null || id <= 0) throw Exception('Inserisci il codice dell’oggetto di cui vuoi leggere lo storico.');
