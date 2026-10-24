@@ -1859,13 +1859,37 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
       if (mounted) setState(() {
         _speechReady = ready;
         _status = ready
-          ? 'Assistente pronto. Puoi parlare in italiano.'
+          ? 'Assistente pronto. Puoi parlare in $_speechLanguageName.'
           : 'Riconoscimento vocale non disponibile: puoi comunque scrivere il comando.';
       });
     } catch (e) {
       if (mounted) setState(() => _status = 'Microfono non disponibile: $e');
     }
   }
+
+  String get _speechLocaleId => switch (ValoraI18n.instance.code) {
+    'en' => 'en_US',
+    'fr' => 'fr_FR',
+    'de' => 'de_DE',
+    'es' => 'es_ES',
+    'pt' => 'pt_BR',
+    'zh' => 'zh_CN',
+    'ja' => 'ja_JP',
+    'ru' => 'ru_RU',
+    _ => 'it_IT',
+  };
+
+  String get _speechLanguageName => switch (ValoraI18n.instance.code) {
+    'en' => 'English',
+    'fr' => 'français',
+    'de' => 'Deutsch',
+    'es' => 'español',
+    'pt' => 'português',
+    'zh' => '普通话',
+    'ja' => '日本語',
+    'ru' => 'русский',
+    _ => 'italiano',
+  };
 
   Future<void> _toggleListening() async {
     if (_listening) {
@@ -1879,7 +1903,7 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
     }
     setState(() { _status = 'Ti ascolto…'; _listening = true; });
     await _speech.listen(
-      localeId: 'it_IT',
+      localeId: _speechLocaleId,
       listenFor: const Duration(seconds: 45),
       pauseFor: const Duration(seconds: 4),
       onResult: (result) {
