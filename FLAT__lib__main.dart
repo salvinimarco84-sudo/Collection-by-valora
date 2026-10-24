@@ -2357,8 +2357,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
         final entries = <Map<String, dynamic>>[
           {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
           ...dashboardSections.map((section)=> {
-            'title':section.menuTitle ?? section.title,
-            'subtitle':section.description,
+            'title':ValoraI18n.tr(section.menuTitle ?? section.title),
+            'subtitle':ValoraI18n.tr(section.description),
             'color':ValoraAppearance.instance.colorFor(section.title),
             'icon':section.icon,
             'tap':() => setState(()=>selectedSection=section),
@@ -2427,8 +2427,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
         onTap: () => setState(() => showCollection = true),
       ),
       ...dashboardSections.map((section) => _menuCard(
-        title: section.menuTitle ?? section.title,
-        subtitle: section.description,
+        title: ValoraI18n.tr(section.menuTitle ?? section.title),
+        subtitle: ValoraI18n.tr(section.description),
         color: ValoraAppearance.instance.colorFor(section.title),
         icon: section.icon,
         onTap: () => setState(() => selectedSection = section),
@@ -2493,7 +2493,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       Text(section.title, textAlign: TextAlign.center, style: TextStyle(
         color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
       const SizedBox(height: 6),
-      Text(section.description, textAlign: TextAlign.center,
+      Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
         style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
       const SizedBox(height: 20),
       ...procedures.map((procedure) => Card(
@@ -4491,7 +4491,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             Icon(Icons.auto_awesome, color: sectionColor, size: 26),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('ASSISTENTE VALORA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(ValoraI18n.tr('ASSISTENTE VALORA'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 3),
               Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
