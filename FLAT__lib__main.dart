@@ -1634,15 +1634,15 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           DropdownButtonFormField<int>(
             value: _selectedId,
             isExpanded: true,
-            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: ValoraI18n.tr('Oggetto da valutare')),
+            decoration: InputDecoration(border: const OutlineInputBorder(), labelText: ValoraI18n.tr('Oggetto da valutare')),
             items: _objects.map((o) => DropdownMenuItem<int>(
               value: (o['codice_oggetto'] as num).toInt(),
               child: Text('#${o['codice_oggetto']} · ${o['descrizione_oggetto'] ?? 'Senza descrizione'}', overflow: TextOverflow.ellipsis),
             )).toList(),
             onChanged: (value) => setState(() { _selectedId = value; _prepared = null; }),
           ),
-          if (_objects.isEmpty) const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
+          if (_objects.isEmpty) Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(ValoraI18n.tr('Non risultano oggetti disponibili nella destinazione COLLEZIONE.')), 
           ),
           if (selected != null) Card(child: Padding(
@@ -1659,7 +1659,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           DropdownButtonFormField<String>(
             value: _market,
             decoration: InputDecoration(border: const OutlineInputBorder(), labelText: ValoraI18n.tr('Mercato di riferimento')), 
-            items: const [
+            items: [
               DropdownMenuItem(value: 'ITALIA', child: Text(ValoraI18n.tr('Italia'))),
               DropdownMenuItem(value: 'EUROPA', child: Text(ValoraI18n.tr('Europa'))),
               DropdownMenuItem(value: 'MONDO', child: Text(ValoraI18n.tr('Mondo'))),
