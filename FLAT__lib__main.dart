@@ -1776,90 +1776,131 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _rows = [];
+  Map<String, dynamic>? _latest;
+  double? _latestTotal;
+  double? _previousTotal;
+  int _evaluated = 0;
+
   @override
   void initState() { super.initState(); _load(); }
 
-  double? _num(dynamic value) => value == null ? null :
-      value is num ? value.toDouble() : double.tryParse(value.toString());
-
-  String _eur(double value) => '€ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+  double? _num(dynamic v) => v == null ? null : v is num ? v.toDouble() : double.tryParse(v.toString());
+  String _eur(double v) => '€ ${v.toStringAsFixed(2).replaceAll('.', ',')}';
+  String _date(dynamic v) {
+    final d = v == null ? null : DateTime.tryParse(v.toString())?.toLocal();
+    return d == null ? 'Data non disponibile' : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await Supabase.instance.client.schema('collection')
-          .from('master_oggetti')
-          .select('codice_oggetto,descrizione_oggetto,stato,quantita,valore_oggetto,valore_mercato')
-          .eq('destinazione', 'COLLEZIONE')
-          .neq('archiviato_test', true)
-          .order('descrizione_oggetto');
+      final data = await Supabase.instance.client.schema('collection').from('master_oggetti')
+        .select('codice_oggetto,descrizione_oggetto,stato,quantita,valore_oggetto,valore_mercato')
+        .eq('destinazione', 'COLLEZIONE').neq('archiviato_test', true).order('descrizione_oggetto');
       final rows = (data as List).map((e) => Map<String,dynamic>.from(e as Map))
-          .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
-              .contains((r['stato'] ?? '').toString().toUpperCase())).toList();
+        .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO'].contains((r['stato'] ?? '').toString().toUpperCase())).toList();
+
+      Map<String,dynamic>? latest;
+      double? latestTotal, previousTotal;
+      var evaluated = 0;
+      final evalData = await Supabase.instance.client.schema('collection').from('valutazioni_mercato')
+        .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima')
+        .inFilter('stato_esecuzione', ['COMPLETATA','COMPLETATA_PARZIALE'])
+        .order('avviata_il', ascending: false).limit(1);
+      if ((evalData as List).isNotEmpty) {
+        latest = Map<String,dynamic>.from(evalData.first as Map);
+        final id = latest['codice_valutazione'];
+        final currentData = await Supabase.instance.client.schema('collection').from('storico_valori_mercato')
+          .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
+          .eq('codice_valutazione', id).eq('stato_stima','VALIDA')
+          .not('valore_mercato','is',null).order('rilevato_il',ascending:false);
+        final currentById = <String,Map<String,dynamic>>{};
+        for (final e in (currentData as List).map((x) => Map<String,dynamic>.from(x as Map))) {
+          currentById.putIfAbsent(e['codice_oggetto'].toString(), () => e);
+        }
+        final quantities = <String,int>{};
+        for (final r in rows) { quantities[r['codice_oggetto'].toString()] = (r['quantita'] as num?)?.toInt() ?? 1; }
+        final ids = currentById.keys.map((x) => int.tryParse(x)).whereType<int>().toList();
+        var sumNow = 0.0, sumOld = 0.0;
+        var hasOld = false;
+        if (ids.isNotEmpty) {
+          final oldData = await Supabase.instance.client.schema('collection').from('storico_valori_mercato')
+            .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
+            .inFilter('codice_oggetto', ids).eq('stato_stima','VALIDA').not('valore_mercato','is',null)
+            .lt('rilevato_il', latest['avviata_il'].toString()).order('rilevato_il',ascending:false);
+          final oldById = <String,Map<String,dynamic>>{};
+          for (final e in (oldData as List).map((x) => Map<String,dynamic>.from(x as Map))) {
+            oldById.putIfAbsent(e['codice_oggetto'].toString(), () => e);
+          }
+          for (final e in currentById.entries) {
+            final q = quantities[e.key] ?? 1;
+            final now = _num(e.value['valore_mercato']);
+            if (now != null) { sumNow += now*q; evaluated++; }
+            final old = _num(oldById[e.key]?['valore_mercato']);
+            if (old != null) { sumOld += old*q; hasOld = true; }
+          }
+          latestTotal = sumNow;
+          if (hasOld) previousTotal = sumOld;
+        }
+      }
       if (!mounted) return;
-      setState(() { _rows = rows; _loading = false; });
+      setState(() { _rows=rows; _latest=latest; _latestTotal=latestTotal; _previousTotal=previousTotal; _evaluated=evaluated; _loading=false; });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = 'Impossibile leggere il catalogo: $e'; _loading = false; });
+      setState(() { _error='Impossibile leggere il catalogo e lo storico valutazioni: $e'; _loading=false; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    var market = 0.0, manual = 0.0;
-    var units = 0, missing = 0;
+    var market=0.0, manual=0.0, units=0, missing=0;
     for (final r in _rows) {
-      final q = (r['quantita'] as num?)?.toInt() ?? 1;
-      units += q;
-      final m = _num(r['valore_mercato']);
-      final v = _num(r['valore_oggetto']);
-      if (m == null) { missing++; } else { market += m * q; }
-      if (v != null) manual += v * q;
+      final q=(r['quantita'] as num?)?.toInt() ?? 1; units+=q;
+      final m=_num(r['valore_mercato']), v=_num(r['valore_oggetto']);
+      if (m==null) { missing++; } else { market+=m*q; }
+      if (v!=null) manual+=v*q;
     }
-    Widget metric(String label, String value, IconData icon, Color color) => Card(
-      child: ListTile(leading: Icon(icon, color: color), title: Text(label),
-        subtitle: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18))),
-    );
+    final delta = _latestTotal != null && _previousTotal != null ? _latestTotal! - _previousTotal! : null;
+    final color = delta == null ? Colors.blueGrey : delta > 0.004 ? const Color(0xFF39875B) : delta < -0.004 ? const Color(0xFFE35D5D) : Colors.blueGrey;
+    final icon = delta == null ? Icons.compare_arrows : delta > 0.004 ? Icons.trending_up : delta < -0.004 ? Icons.trending_down : Icons.trending_flat;
+    final trend = delta == null ? 'Confronto con la valutazione precedente non disponibile' : delta > 0.004 ? 'Aumento di ${_eur(delta)} rispetto alla precedente' : delta < -0.004 ? 'Diminuzione di ${_eur(delta.abs())} rispetto alla precedente' : 'Valore invariato rispetto alla precedente';
+    Widget metric(String label,String value,IconData icon,Color color) => Card(child: ListTile(leading:Icon(icon,color:color),title:Text(label),subtitle:Text(value,style:TextStyle(color:color,fontWeight:FontWeight.bold,fontSize:18))));
     return Scaffold(
-      appBar: AppBar(title: Text(ValoraI18n.tr('VALORE COLLEZIONE')),
-        actions: [IconButton(tooltip: 'Aggiorna', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))]),
-      body: _loading ? const Center(child: CircularProgressIndicator()) :
-        _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(
-          mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center),
-            const SizedBox(height: 12), FilledButton(onPressed: _load, child: const Text('Riprova'))])))
-        : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
-          Text(ValoraI18n.tr('RIEPILOGO DEL PATRIMONIO'), style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
-          const SizedBox(height: 6),
-          Text(ValoraI18n.tr('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.')), 
-          const SizedBox(height: 12),
-          metric('Valore di mercato noto', _eur(market), Icons.trending_up, const Color(0xFF39875B)),
-          metric('Valore manuale registrato', _eur(manual), Icons.edit_note, const Color(0xFF568DAD)),
-          metric('Oggetti e unità', '${_rows.length} record · $units unità', Icons.inventory_2_outlined, const Color(0xFF8556C7)),
-          metric('Oggetti senza stima di mercato', '$missing', Icons.hourglass_empty, const Color(0xFFE17D35)),
-          const SizedBox(height: 12),
-          Text(ValoraI18n.tr('DETTAGLIO OGGETTI'), style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
-          const SizedBox(height: 6),
-          if (_rows.isEmpty) Card(child: ListTile(title: Text(ValoraI18n.tr('Nessun oggetto destinato alla collezione.')))), 
-          ..._rows.map((r) {
-            final q = (r['quantita'] as num?)?.toInt() ?? 1;
-            final m = _num(r['valore_mercato']);
-            final v = _num(r['valore_oggetto']);
-            final label = m != null ? 'Mercato: ${_eur(m*q)}' :
-                v != null ? 'Valore manuale: ${_eur(v*q)}' : 'Stima di mercato non disponibile';
-            return Card(child: ListTile(
-              title: Text((r['descrizione_oggetto'] ?? 'Oggetto senza descrizione').toString()),
-              subtitle: Text('ID ${r['codice_oggetto']} · Quantità $q\n$label'),
-              isThreeLine: true,
-            ));
-          }),
-          const SizedBox(height: 10),
-          Text('Le stime automatiche e l’aggiornamento mensile saranno collegati al motore di valutazione in un passaggio separato, dopo il collaudo.',
-            style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+      appBar: AppBar(title:Text(ValoraI18n.tr('VALORE COLLEZIONE')),actions:[IconButton(tooltip:'Aggiorna',onPressed:_loading?null:_load,icon:const Icon(Icons.refresh))]),
+      body:_loading ? const Center(child:CircularProgressIndicator()) : _error!=null
+        ? Center(child:Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,children:[Text(_error!,textAlign:TextAlign.center),const SizedBox(height:12),FilledButton(onPressed:_load,child:const Text('Riprova'))])))
+        : RefreshIndicator(onRefresh:_load,child:ListView(padding:const EdgeInsets.all(16),children:[
+          Text(ValoraI18n.tr('RIEPILOGO DEL PATRIMONIO'),style:const TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
+          const SizedBox(height:6),
+          Text(ValoraI18n.tr('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.')),
+          const SizedBox(height:12),
+          metric('Valore di mercato noto',_eur(market),Icons.trending_up,const Color(0xFF39875B)),
+          metric('Valore manuale registrato',_eur(manual),Icons.edit_note,const Color(0xFF568DAD)),
+          metric('Oggetti e unità','${_rows.length} record · $units unità',Icons.inventory_2_outlined,const Color(0xFF8556C7)),
+          metric('Oggetti senza stima di mercato','$missing',Icons.hourglass_empty,const Color(0xFFE17D35)),
+          const SizedBox(height:16),
+          Text('ULTIMA VALUTAZIONE',style:const TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
+          const SizedBox(height:6),
+          Card(child:Padding(padding:const EdgeInsets.all(16),child:_latest==null
+            ? const Text('Non sono ancora presenti valutazioni completate.')
+            : Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+              Text(_date(_latest!['data_riferimento']),style:TextStyle(color:ValoraAppearance.instance.textSecondary,fontSize:13)),
+              const SizedBox(height:8),
+              Text(_latestTotal==null?'Importo non disponibile':_eur(_latestTotal!),style:const TextStyle(fontSize:28,fontWeight:FontWeight.bold,color:Color(0xFFD5B45B))),
+              const SizedBox(height:6),
+              Text('$_evaluated oggetti con stima valida nella rilevazione'),
+              const SizedBox(height:12),
+              Row(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:color,size:28),const SizedBox(width:8),Expanded(child:Text(trend,style:TextStyle(color:color,fontWeight:FontWeight.w600)))]),
+              if (_previousTotal!=null) ...[const SizedBox(height:6),Text('Valore precedente degli stessi oggetti: ${_eur(_previousTotal!)}',style:TextStyle(color:ValoraAppearance.instance.textSecondary,fontSize:12))],
+              const SizedBox(height:8),
+              Text('Valutazione n. ${_latest!['codice_valutazione']} · ${_latest!['stato_esecuzione']}',style:TextStyle(color:ValoraAppearance.instance.textSubtle,fontSize:11)),
+            ]))),
+          const SizedBox(height:10),
+          Text('Il confronto considera soltanto oggetti con una rilevazione valida attuale e precedente; quando manca uno storico confrontabile, la variazione non viene stimata.',style:TextStyle(color:ValoraAppearance.instance.textSubtle,fontSize:11)),
         ])),
     );
   }
 }
-
 
 class ValoraAssistantPage extends StatefulWidget {
   const ValoraAssistantPage({super.key, this.screenContext = 'Dashboard'});
