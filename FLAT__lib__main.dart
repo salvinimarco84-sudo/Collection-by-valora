@@ -176,7 +176,19 @@ class ValoraI18n extends ChangeNotifier {
     'ja': {'Profilo utente':'ユーザープロフィール','ASSISTENTE VALORA':'VALORAアシスタント','ASSISTENTE':'アシスタント','COLLEZIONE':'コレクション','ACQUISTI':'購入','VENDITE':'販売','CATALOGO':'カタログ','VALUTAZIONI':'評価額','REPORT':'レポート','RICERCHE':'検索','CONTROLLO':'管理','ANNULLA':'キャンセル','ACCEDI':'ログイン','SALVA':'保存','MODIFICA':'編集','ELIMINA':'削除','RIPROVA':'再試行','Italia':'イタリア','Europa':'ヨーロッパ','Mondo':'世界','Nero':'黒','Bianco':'白','Carica immagine':'画像をアップロード','Personalizza VALORA':'VALORAをカスタマイズ','Schede':'カード','Blocchi':'ブロック'},
     'ru': {'Profilo utente':'Профиль пользователя','ASSISTENTE VALORA':'АССИСТЕНТ VALORA','ASSISTENTE':'АССИСТЕНТ','COLLEZIONE':'КОЛЛЕКЦИЯ','ACQUISTI':'ПОКУПКИ','VENDITE':'ПРОДАЖИ','CATALOGO':'КАТАЛОГ','VALUTAZIONI':'ОЦЕНКИ','REPORT':'ОТЧЁТЫ','RICERCHE':'ПОИСК','CONTROLLO':'УПРАВЛЕНИЕ','ANNULLA':'ОТМЕНА','ACCEDI':'ВОЙТИ','SALVA':'СОХРАНИТЬ','MODIFICA':'ИЗМЕНИТЬ','ELIMINA':'УДАЛИТЬ','RIPROVA':'ПОВТОРИТЬ','Italia':'Италия','Europa':'Европа','Mondo':'Мир','Nero':'Чёрный','Bianco':'Белый','Carica immagine':'Загрузить изображение','Personalizza VALORA':'Настроить VALORA','Schede':'Карточки','Blocchi':'Блоки'},
   };
-  static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? source;
+
+  static const Map<String, Map<String, String>> _common = {
+    'en': {'CENTRO OPERATIVO':'OPERATIONS CENTER','Scegli una sezione per accedere alle relative funzioni.':'Choose a section to access its features.','Tutti i temi e tutti i record della tua collezione':'All themes and records in your collection','Seleziona un tema per consultare i relativi oggetti.':'Select a theme to browse its items.','SERVIZIO VALORA':'VALORA SERVICE','Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.':'Select an item from your collection and prepare a specialist valuation request. Preparation is not a completed market valuation.','1. SELEZIONA L’OGGETTO':'1. SELECT ITEM','Oggetto da valutare':'Item to value','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'No items are available in the COLLECTION destination.','Mercato di riferimento':'Reference market','Preparazione in corso…':'Preparing…','PREPARA VALUTAZIONE':'PREPARE VALUATION','ESITO PREPARAZIONE':'PREPARATION RESULT','AGGIORNA OGGETTI':'REFRESH ITEMS','RIEPILOGO DEL PATRIMONIO':'COLLECTION SUMMARY','DETTAGLIO OGGETTI':'ITEM DETAILS','Nessun oggetto destinato alla collezione.':'No items assigned to the collection.','TORNA ALLA DASHBOARD':'BACK TO DASHBOARD','RICERCA OGGETTI PER CATEGORIA':'SEARCH ITEMS BY CATEGORY','CHIUDI':'CLOSE','IMPORTA':'IMPORT','ANTEPRIMA':'PREVIEW','CONFERMA':'CONFIRM','CONFERMA IMPORTAZIONE':'CONFIRM IMPORT','ESPORTA EXCEL (.XLSX)':'EXPORT EXCEL (.XLSX)','ESPORTA CSV':'EXPORT CSV','ESPORTA JSON':'EXPORT JSON','NESSUN RISULTATO':'NO RESULTS','RISULTATI RICERCA (':'SEARCH RESULTS (','CONFERMA CHIUSURA':'CONFIRM CLOSURE','METADATI DEL PRODOTTO':'PRODUCT METADATA','DATI TECNICI · SOLA LETTURA':'TECHNICAL DATA · READ ONLY','IMMAGINE OGGETTO':'ITEM IMAGE','CONFERMA APPLICAZIONE METADATI':'CONFIRM APPLYING METADATA','CONFERMO':'I CONFIRM','RIEPILOGO FINALE':'FINAL SUMMARY','SALVA TUTTO':'SAVE ALL'},
+    'fr': {'CENTRO OPERATIVO':'CENTRE OPÉRATIONNEL','Scegli una sezione per accedere alle relative funzioni.':'Choisissez une section pour accéder à ses fonctions.','Tutti i temi e tutti i record della tua collezione':'Tous les thèmes et objets de votre collection','Seleziona un tema per consultare i relativi oggetti.':'Sélectionnez un thème pour consulter les objets correspondants.','SERVIZIO VALORA':'SERVICE VALORA','1. SELEZIONA L’OGGETTO':'1. SÉLECTIONNER UN OBJET','Oggetto da valutare':'Objet à évaluer','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'Aucun objet disponible dans la destination COLLECTION.','Mercato di riferimento':'Marché de référence','Preparazione in corso…':'Préparation en cours…','PREPARA VALUTAZIONE':'PRÉPARER L’ÉVALUATION','ESITO PREPARAZIONE':'RÉSULTAT DE PRÉPARATION','AGGIORNA OGGETTI':'ACTUALISER LES OBJETS','RIEPILOGO DEL PATRIMONIO':'RÉCAPITULATIF DE LA COLLECTION','DETTAGLIO OGGETTI':'DÉTAIL DES OBJETS','Nessun oggetto destinato alla collezione.':'Aucun objet destiné à la collection.','TORNA ALLA DASHBOARD':'RETOUR AU TABLEAU DE BORD','RICERCA OGGETTI PER CATEGORIA':'RECHERCHER DES OBJETS PAR CATÉGORIE','CHIUDI':'FERMER','IMPORTA':'IMPORTER','ANTEPRIMA':'APERÇU','CONFERMA':'CONFIRMER','CONFERMA IMPORTAZIONE':'CONFIRMER L’IMPORTATION','ESPORTA EXCEL (.XLSX)':'EXPORTER EXCEL (.XLSX)','ESPORTA CSV':'EXPORTER CSV','ESPORTA JSON':'EXPORTER JSON','NESSUN RISULTATO':'AUCUN RÉSULTAT','CONFERMA CHIUSURA':'CONFIRMER LA CLÔTURE','METADATI DEL PRODOTTO':'MÉTADONNÉES DU PRODUIT','DATI TECNICI · SOLA LETTURA':'DONNÉES TECHNIQUES · LECTURE SEULE','IMMAGINE OGGETTO':'IMAGE DE L’OBJET','CONFERMO':'JE CONFIRME','RIEPILOGO FINALE':'RÉCAPITULATIF FINAL','SALVA TUTTO':'TOUT ENREGISTRER'},
+    'de': {'CENTRO OPERATIVO':'STEUERZENTRALE','Scegli una sezione per accedere alle relative funzioni.':'Wählen Sie einen Bereich, um die zugehörigen Funktionen aufzurufen.','Tutti i temi e tutti i record della tua collezione':'Alle Themen und Datensätze Ihrer Sammlung','Seleziona un tema per consultare i relativi oggetti.':'Wählen Sie ein Thema, um die zugehörigen Objekte anzusehen.','SERVIZIO VALORA':'VALORA-SERVICE','1. SELEZIONA L’OGGETTO':'1. OBJEKT AUSWÄHLEN','Oggetto da valutare':'Zu bewertendes Objekt','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'Keine Objekte im Ziel SAMMLUNG verfügbar.','Mercato di riferimento':'Referenzmarkt','Preparazione in corso…':'Vorbereitung läuft…','PREPARA VALUTAZIONE':'BEWERTUNG VORBEREITEN','ESITO PREPARAZIONE':'VORBEREITUNGSERGEBNIS','AGGIORNA OGGETTI':'OBJEKTE AKTUALISIEREN','RIEPILOGO DEL PATRIMONIO':'SAMMLUNGSÜBERSICHT','DETTAGLIO OGGETTI':'OBJEKTDETAILS','Nessun oggetto destinato alla collezione.':'Keine Objekte der Sammlung zugewiesen.','TORNA ALLA DASHBOARD':'ZURÜCK ZUR ÜBERSICHT','RICERCA OGGETTI PER CATEGORIA':'OBJEKTE NACH KATEGORIE SUCHEN','CHIUDI':'SCHLIESSEN','IMPORTA':'IMPORTIEREN','ANTEPRIMA':'VORSCHAU','CONFERMA':'BESTÄTIGEN','CONFERMA IMPORTAZIONE':'IMPORT BESTÄTIGEN','ESPORTA EXCEL (.XLSX)':'EXCEL EXPORTIEREN (.XLSX)','ESPORTA CSV':'CSV EXPORTIEREN','ESPORTA JSON':'JSON EXPORTIEREN','NESSUN RISULTATO':'KEINE ERGEBNISSE','CONFERMA CHIUSURA':'ABSCHLUSS BESTÄTIGEN','METADATI DEL PRODOTTO':'PRODUKTMETADATEN','DATI TECNICI · SOLA LETTURA':'TECHNISCHE DATEN · NUR LESEN','IMMAGINE OGGETTO':'OBJEKTBILD','CONFERMO':'ICH BESTÄTIGE','RIEPILOGO FINALE':'ABSCHLUSSÜBERSICHT','SALVA TUTTO':'ALLES SPEICHERN'},
+    'es': {'CENTRO OPERATIVO':'CENTRO DE OPERACIONES','Scegli una sezione per accedere alle relative funzioni.':'Elige una sección para acceder a sus funciones.','Tutti i temi e tutti i record della tua collezione':'Todos los temas y registros de tu colección','Seleziona un tema per consultare i relativi oggetti.':'Selecciona un tema para consultar sus objetos.','SERVIZIO VALORA':'SERVICIO VALORA','1. SELEZIONA L’OGGETTO':'1. SELECCIONAR OBJETO','Oggetto da valutare':'Objeto para valorar','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'No hay objetos disponibles en el destino COLECCIÓN.','Mercato di riferimento':'Mercado de referencia','Preparazione in corso…':'Preparando…','PREPARA VALUTAZIONE':'PREPARAR VALORACIÓN','ESITO PREPARAZIONE':'RESULTADO DE PREPARACIÓN','AGGIORNA OGGETTI':'ACTUALIZAR OBJETOS','RIEPILOGO DEL PATRIMONIO':'RESUMEN DE LA COLECCIÓN','DETTAGLIO OGGETTI':'DETALLE DE OBJETOS','Nessun oggetto destinato alla collezione.':'No hay objetos asignados a la colección.','TORNA ALLA DASHBOARD':'VOLVER AL PANEL','RICERCA OGGETTI PER CATEGORIA':'BUSCAR OBJETOS POR CATEGORÍA','CHIUDI':'CERRAR','IMPORTA':'IMPORTAR','ANTEPRIMA':'VISTA PREVIA','CONFERMA':'CONFIRMAR','CONFERMA IMPORTAZIONE':'CONFIRMAR IMPORTACIÓN','ESPORTA EXCEL (.XLSX)':'EXPORTAR EXCEL (.XLSX)','ESPORTA CSV':'EXPORTAR CSV','ESPORTA JSON':'EXPORTAR JSON','NESSUN RISULTATO':'SIN RESULTADOS','CONFERMA CHIUSURA':'CONFIRMAR CIERRE','METADATI DEL PRODOTTO':'METADATOS DEL PRODUCTO','DATI TECNICI · SOLA LETTURA':'DATOS TÉCNICOS · SOLO LECTURA','IMMAGINE OGGETTO':'IMAGEN DEL OBJETO','CONFERMO':'CONFIRMO','RIEPILOGO FINALE':'RESUMEN FINAL','SALVA TUTTO':'GUARDAR TODO'},
+    'pt': {'CENTRO OPERATIVO':'CENTRO OPERACIONAL','Scegli una sezione per accedere alle relative funzioni.':'Escolha uma secção para aceder às respetivas funções.','Tutti i temi e tutti i record della tua collezione':'Todos os temas e registos da sua coleção','Seleziona un tema per consultare i relativi oggetti.':'Selecione um tema para consultar os objetos correspondentes.','SERVIZIO VALORA':'SERVIÇO VALORA','1. SELEZIONA L’OGGETTO':'1. SELECIONAR OBJETO','Oggetto da valutare':'Objeto a avaliar','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'Não existem objetos disponíveis no destino COLEÇÃO.','Mercato di riferimento':'Mercado de referência','Preparazione in corso…':'A preparar…','PREPARA VALUTAZIONE':'PREPARAR AVALIAÇÃO','ESITO PREPARAZIONE':'RESULTADO DA PREPARAÇÃO','AGGIORNA OGGETTI':'ATUALIZAR OBJETOS','RIEPILOGO DEL PATRIMONIO':'RESUMO DA COLEÇÃO','DETTAGLIO OGGETTI':'DETALHES DOS OBJETOS','Nessun oggetto destinato alla collezione.':'Não existem objetos atribuídos à coleção.','TORNA ALLA DASHBOARD':'VOLTAR AO PAINEL','RICERCA OGGETTI PER CATEGORIA':'PESQUISAR OBJETOS POR CATEGORIA','CHIUDI':'FECHAR','IMPORTA':'IMPORTAR','ANTEPRIMA':'PRÉ-VISUALIZAÇÃO','CONFERMA':'CONFIRMAR','CONFERMA IMPORTAZIONE':'CONFIRMAR IMPORTAÇÃO','ESPORTA EXCEL (.XLSX)':'EXPORTAR EXCEL (.XLSX)','ESPORTA CSV':'EXPORTAR CSV','ESPORTA JSON':'EXPORTAR JSON','NESSUN RISULTATO':'SEM RESULTADOS','CONFERMA CHIUSURA':'CONFIRMAR FECHO','METADATI DEL PRODOTTO':'METADADOS DO PRODUTO','DATI TECNICI · SOLA LETTURA':'DADOS TÉCNICOS · SÓ DE LEITURA','IMMAGINE OGGETTO':'IMAGEM DO OBJETO','CONFERMO':'CONFIRMO','RIEPILOGO FINALE':'RESUMO FINAL','SALVA TUTTO':'GUARDAR TUDO'},
+    'zh': {'CENTRO OPERATIVO':'操作中心','Scegli una sezione per accedere alle relative funzioni.':'选择一个栏目以访问相应功能。','Tutti i temi e tutti i record della tua collezione':'收藏中的所有主题和记录','Seleziona un tema per consultare i relativi oggetti.':'选择主题以查看相关物品。','SERVIZIO VALORA':'VALORA 服务','1. SELEZIONA L’OGGETTO':'1. 选择物品','Oggetto da valutare':'待估值物品','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'收藏目标中没有可用物品。','Mercato di riferimento':'参考市场','Preparazione in corso…':'正在准备…','PREPARA VALUTAZIONE':'准备估值','ESITO PREPARAZIONE':'准备结果','AGGIORNA OGGETTI':'刷新物品','RIEPILOGO DEL PATRIMONIO':'收藏总览','DETTAGLIO OGGETTI':'物品详情','Nessun oggetto destinato alla collezione.':'没有分配到收藏的物品。','TORNA ALLA DASHBOARD':'返回主页','RICERCA OGGETTI PER CATEGORIA':'按类别搜索物品','CHIUDI':'关闭','IMPORTA':'导入','ANTEPRIMA':'预览','CONFERMA':'确认','CONFERMA IMPORTAZIONE':'确认导入','ESPORTA EXCEL (.XLSX)':'导出 Excel (.XLSX)','ESPORTA CSV':'导出 CSV','ESPORTA JSON':'导出 JSON','NESSUN RISULTATO':'没有结果','CONFERMA CHIUSURA':'确认关闭','METADATI DEL PRODOTTO':'产品元数据','DATI TECNICI · SOLA LETTURA':'技术数据 · 只读','IMMAGINE OGGETTO':'物品图片','CONFERMO':'我确认','RIEPILOGO FINALE':'最终摘要','SALVA TUTTO':'全部保存'},
+    'ja': {'CENTRO OPERATIVO':'オペレーションセンター','Scegli una sezione per accedere alle relative funzioni.':'機能を利用するにはセクションを選択してください。','Tutti i temi e tutti i record della tua collezione':'コレクション内のすべてのテーマとレコード','Seleziona un tema per consultare i relativi oggetti.':'テーマを選択して関連アイテムを表示します。','SERVIZIO VALORA':'VALORAサービス','1. SELEZIONA L’OGGETTO':'1. アイテムを選択','Oggetto da valutare':'評価するアイテム','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'コレクションに利用可能なアイテムがありません。','Mercato di riferimento':'参照市場','Preparazione in corso…':'準備中…','PREPARA VALUTAZIONE':'評価を準備','ESITO PREPARAZIONE':'準備結果','AGGIORNA OGGETTI':'アイテムを更新','RIEPILOGO DEL PATRIMONIO':'コレクション概要','DETTAGLIO OGGETTI':'アイテム詳細','Nessun oggetto destinato alla collezione.':'コレクションに割り当てられたアイテムはありません。','TORNA ALLA DASHBOARD':'ダッシュボードに戻る','RICERCA OGGETTI PER CATEGORIA':'カテゴリ別にアイテムを検索','CHIUDI':'閉じる','IMPORTA':'インポート','ANTEPRIMA':'プレビュー','CONFERMA':'確認','CONFERMA IMPORTAZIONE':'インポートを確認','ESPORTA EXCEL (.XLSX)':'Excelを書き出す (.XLSX)','ESPORTA CSV':'CSVを書き出す','ESPORTA JSON':'JSONを書き出す','NESSUN RISULTATO':'結果なし','CONFERMA CHIUSURA':'終了を確認','METADATI DEL PRODOTTO':'製品メタデータ','DATI TECNICI · SOLA LETTURA':'技術データ・読み取り専用','IMMAGINE OGGETTO':'アイテム画像','CONFERMO':'確認します','RIEPILOGO FINALE':'最終概要','SALVA TUTTO':'すべて保存'},
+    'ru': {'CENTRO OPERATIVO':'ЦЕНТР УПРАВЛЕНИЯ','Scegli una sezione per accedere alle relative funzioni.':'Выберите раздел, чтобы открыть его функции.','Tutti i temi e tutti i record della tua collezione':'Все темы и записи вашей коллекции','Seleziona un tema per consultare i relativi oggetti.':'Выберите тему для просмотра соответствующих предметов.','SERVIZIO VALORA':'СЕРВИС VALORA','1. SELEZIONA L’OGGETTO':'1. ВЫБЕРИТЕ ПРЕДМЕТ','Oggetto da valutare':'Предмет для оценки','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'В коллекции нет доступных предметов.','Mercato di riferimento':'Референтный рынок','Preparazione in corso…':'Подготовка…','PREPARA VALUTAZIONE':'ПОДГОТОВИТЬ ОЦЕНКУ','ESITO PREPARAZIONE':'РЕЗУЛЬТАТ ПОДГОТОВКИ','AGGIORNA OGGETTI':'ОБНОВИТЬ ПРЕДМЕТЫ','RIEPILOGO DEL PATRIMONIO':'ОБЗОР КОЛЛЕКЦИИ','DETTAGLIO OGGETTI':'ДЕТАЛИ ПРЕДМЕТОВ','Nessun oggetto destinato alla collezione.':'Нет предметов, добавленных в коллекцию.','TORNA ALLA DASHBOARD':'НАЗАД НА ГЛАВНУЮ','RICERCA OGGETTI PER CATEGORIA':'ПОИСК ПРЕДМЕТОВ ПО КАТЕГОРИИ','CHIUDI':'ЗАКРЫТЬ','IMPORTA':'ИМПОРТ','ANTEPRIMA':'ПРЕДПРОСМОТР','CONFERMA':'ПОДТВЕРДИТЬ','CONFERMA IMPORTAZIONE':'ПОДТВЕРДИТЬ ИМПОРТ','ESPORTA EXCEL (.XLSX)':'ЭКСПОРТ EXCEL (.XLSX)','ESPORTA CSV':'ЭКСПОРТ CSV','ESPORTA JSON':'ЭКСПОРТ JSON','NESSUN RISULTATO':'НЕТ РЕЗУЛЬТАТОВ','CONFERMA CHIUSURA':'ПОДТВЕРДИТЬ ЗАКРЫТИЕ','METADATI DEL PRODOTTO':'МЕТАДАННЫЕ ТОВАРА','DATI TECNICI · SOLA LETTURA':'ТЕХНИЧЕСКИЕ ДАННЫЕ · ТОЛЬКО ЧТЕНИЕ','IMMAGINE OGGETTO':'ИЗОБРАЖЕНИЕ ПРЕДМЕТА','CONFERMO':'ПОДТВЕРЖДАЮ','RIEPILOGO FINALE':'ИТОГОВАЯ СВОДКА','SALVA TUTTO':'СОХРАНИТЬ ВСЁ'}
+  };
+
+  static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? source;
 }
 
 Future<void> main() async {
@@ -1597,7 +1609,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   Widget build(BuildContext context) {
     final selected = _objects.where((o) => o['codice_oggetto'] == _selectedId).firstOrNull;
     return Scaffold(
-      appBar: AppBar(title: const Text('VALORA')),
+      appBar: AppBar(title: Text(ValoraI18n.tr('VALORA'))),
       body: _loading
         ? const Center(child: CircularProgressIndicator())
         : ListView(padding: const EdgeInsets.all(18), children: [
@@ -1608,21 +1620,21 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFF8556C7)),
             ),
-            child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.auto_awesome, color: Color(0xFF8556C7), size: 38),
               SizedBox(height: 12),
-              Text('SERVIZIO VALORA', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
+              Text(ValoraI18n.tr('SERVIZIO VALORA'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
               SizedBox(height: 8),
-              Text('Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.'),
+              Text(ValoraI18n.tr('Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.')), 
             ]),
           ),
           const SizedBox(height: 18),
-          Text('1. SELEZIONA L’OGGETTO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          Text(ValoraI18n.tr('1. SELEZIONA L’OGGETTO'), style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
             value: _selectedId,
             isExpanded: true,
-            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Oggetto da valutare'),
+            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: ValoraI18n.tr('Oggetto da valutare')),
             items: _objects.map((o) => DropdownMenuItem<int>(
               value: (o['codice_oggetto'] as num).toInt(),
               child: Text('#${o['codice_oggetto']} · ${o['descrizione_oggetto'] ?? 'Senza descrizione'}', overflow: TextOverflow.ellipsis),
@@ -1631,7 +1643,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           ),
           if (_objects.isEmpty) const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text('Non risultano oggetti disponibili nella destinazione COLLEZIONE.'),
+            child: Text(ValoraI18n.tr('Non risultano oggetti disponibili nella destinazione COLLEZIONE.')), 
           ),
           if (selected != null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
@@ -1646,11 +1658,11 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
             value: _market,
-            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Mercato di riferimento'),
+            decoration: InputDecoration(border: const OutlineInputBorder(), labelText: ValoraI18n.tr('Mercato di riferimento')), 
             items: const [
-              DropdownMenuItem(value: 'ITALIA', child: Text('Italia')),
-              DropdownMenuItem(value: 'EUROPA', child: Text('Europa')),
-              DropdownMenuItem(value: 'MONDO', child: Text('Mondo')),
+              DropdownMenuItem(value: 'ITALIA', child: Text(ValoraI18n.tr('Italia'))),
+              DropdownMenuItem(value: 'EUROPA', child: Text(ValoraI18n.tr('Europa'))),
+              DropdownMenuItem(value: 'MONDO', child: Text(ValoraI18n.tr('Mondo'))),
             ],
             onChanged: (value) => setState(() { _market = value ?? 'ITALIA'; _prepared = null; }),
           ),
@@ -1658,7 +1670,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           FilledButton.icon(
             onPressed: _preparing || _selectedId == null ? null : _prepareValuation,
             icon: _preparing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-            label: Text(_preparing ? 'Preparazione in corso…' : 'PREPARA VALUTAZIONE'),
+            label: Text(_preparing ? ValoraI18n.tr('Preparazione in corso…') : ValoraI18n.tr('PREPARA VALUTAZIONE')),
           ),
           if (_error != null) Padding(
             padding: const EdgeInsets.only(top: 14),
@@ -1669,16 +1681,16 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             child: Padding(padding: const EdgeInsets.all(14), child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('ESITO PREPARAZIONE', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(ValoraI18n.tr('ESITO PREPARAZIONE'), style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('La richiesta è stata inviata al runtime. Questo esito non rappresenta ancora una valutazione di mercato definitiva né genera automaticamente inserzioni.'),
+                Text(ValoraI18n.tr('La richiesta è stata inviata al runtime. Questo esito non rappresenta ancora una valutazione di mercato definitiva né genera automaticamente inserzioni.')), 
                 const SizedBox(height: 8),
                 SelectableText(_prepared.toString()),
               ],
             )),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI')),
+          OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: Text(ValoraI18n.tr('AGGIORNA OGGETTI'))),
         ]),
     );
   }
@@ -2419,8 +2431,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ]),
       ),
       _menuCard(
-        title: 'COLLEZIONE',
-        subtitle: 'Tutti i temi e tutti i record della tua collezione',
+        title: ValoraI18n.tr('COLLEZIONE'),
+        subtitle: ValoraI18n.tr('Tutti i temi e tutti i record della tua collezione'),
         color: goldColor,
         icon: Icons.inventory_2_outlined,
         trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
