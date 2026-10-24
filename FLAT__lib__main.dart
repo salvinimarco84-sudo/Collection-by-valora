@@ -229,8 +229,21 @@ class ValoraI18n extends ChangeNotifier {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ValoraAppearance.instance.load();
   String? startupError;
+  try {
+    // Nessun errore di preferenze locali deve impedire a Flutter di mostrare
+    // una schermata utilizzabile al posto della splash nativa.
+    await ValoraAppearance.instance.load().timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => throw TimeoutException(
+        'Caricamento delle preferenze locali non completato entro 8 secondi.',
+      ),
+    );
+  } catch (error, stackTrace) {
+    startupError = 'Preferenze locali: $error';
+    debugPrint('VALORA appearance initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
   try {
     await Supabase.initialize(
       url: supabaseUrl,
@@ -242,10 +255,11 @@ Future<void> main() async {
       ),
     );
   } catch (error, stackTrace) {
-    startupError = '$error';
+    startupError = startupError == null ? '$error' : '$startupError\\nSupabase: $error';
     debugPrint('VALORA startup initialization failed: $error');
     debugPrintStack(stackTrace: stackTrace);
   }
+  // Avvia sempre Flutter, anche se un servizio di inizializzazione fallisce.
   runApp(CollectionValoraApp(startupError: startupError));
 }
 
