@@ -229,6 +229,51 @@ class ValoraI18n extends ChangeNotifier {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // In release builds Flutter otherwise replaces a widget build exception
+  // with an uninformative grey box. Keep the failure visible on-device so
+  // startup/rendering faults can be diagnosed without guessing.
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    final errorText = details.exceptionAsString();
+    debugPrint('VALORA WIDGET BUILD ERROR: $errorText');
+    debugPrintStack(stackTrace: details.stack);
+    return Material(
+      color: const Color(0xFF171717),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.error_outline, color: Color(0xFFFFC857), size: 42),
+              const SizedBox(height: 12),
+              const Text(
+                'ERRORE DI VISUALIZZAZIONE VALORA',
+                style: TextStyle(
+                  color: Color(0xFFFFC857),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Un componente non è riuscito a essere visualizzato. Dettaglio tecnico:',
+                style: TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 12),
+              SelectableText(
+                errorText,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+
+  // Render Flutter immediately: keep Android's native splash from remaining
+
   // Render Flutter immediately: keep Android's native splash from remaining
   // visible while preferences or Supabase initialization is pending.
   runApp(const ValoraBootstrapApp());
