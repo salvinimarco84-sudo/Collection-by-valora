@@ -159,192 +159,24 @@ class ValoraI18n extends ChangeNotifier {
   ValoraI18n._();
   static final instance = ValoraI18n._();
   String code = 'it';
-
   static const supportedCodes = <String>['it','en','fr','de','es','pt','zh','ja','ru'];
-
   void setLanguage(String value) {
     final next = supportedCodes.contains(value) ? value : 'it';
     if (code == next) return;
     code = next;
     notifyListeners();
   }
-
-  static const Map<String, Map<String, String>> _translations = {
-    'en': {
-      'ACCEDI':'SIGN IN','ANNULLA':'CANCEL','SALVA':'SAVE','ELIMINA':'DELETE','MODIFICA':'EDIT',
-      'RIPROVA':'RETRY','CERCA':'SEARCH','RICERCA':'SEARCH','SALVA PROFILO':'SAVE PROFILE',
-      'Profilo utente':'User profile','CARICA FOTO':'UPLOAD PHOTO','RIMUOVI FOTO':'REMOVE PHOTO',
-      'Stato':'Status','Autenticato':'Authenticated','Italia':'Italy','Europa':'Europe','Mondo':'World',
-      'COLLEZIONE':'COLLECTION','ACQUISTI':'PURCHASES','VENDITE':'SALES','CATALOGO':'CATALOG',
-      'VALUTAZIONI':'VALUATIONS','REPORT':'REPORTS','RICERCHE':'SEARCHES','CONTROLLO':'CONTROL',
-      'FLUSSI DI CASSA':'CASH FLOW','ASSISTENTE':'ASSISTANT','ASSISTENTE VALORA':'VALORA ASSISTANT',
-      'Parla con VALORA':'Talk to VALORA','ESEGUI':'RUN','PARLA':'SPEAK','FERMA ASCOLTO':'STOP LISTENING',
-      'VALORE COLLEZIONE':'COLLECTION VALUE','RIEPILOGO DEL PATRIMONIO':'COLLECTION SUMMARY',
-      'DETTAGLIO OGGETTI':'ITEM DETAILS','Nessun oggetto destinato alla collezione.':'No items assigned to the collection.',
-      'Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'No items are available in the COLLECTION destination.',
-      'AGGIORNA OGGETTI':'REFRESH ITEMS','ESITO PREPARAZIONE':'PREPARATION RESULT',
-      'CONFIGURAZIONE HOME':'HOME CONFIGURATION','Personalizza VALORA':'Customize VALORA',
-      'Schede':'Cards','Blocchi':'Blocks','SFONDO':'BACKGROUND','Nero':'Black','Bianco':'White',
-      'COLORI DELLE SEZIONI':'SECTION COLORS','Scegli il colore distintivo di ciascuna sezione.':'Choose a distinct color for each section.',
-      'RIPRISTINA CONFIGURAZIONE INIZIALE':'RESTORE DEFAULT SETTINGS',
-      'LE MIE PIATTAFORME':'MY PLATFORMS','PIATTAFORME CONFIGURATE':'CONFIGURED PLATFORMS',
-      'REGISTRO FONTI':'SOURCE REGISTER','AGGIUNGI FONTE':'ADD SOURCE','SALVA FONTE':'SAVE SOURCE',
-      'CATEGORIE COLLEZIONISTICHE':'COLLECTING CATEGORIES','NUOVA CATEGORIA':'NEW CATEGORY',
-      'CREA CATEGORIA':'CREATE CATEGORY','RIEPILOGO DEL PATRIMONIO':'COLLECTION SUMMARY',
-      '1. SELEZIONA L’OGGETTO':'1. SELECT ITEM','Ufficiale':'Official','Specialistica':'Specialist',
-      'Bibliografica':'Bibliographic','Comunità':'Community','Mercato':'Market','Personale':'Personal',
-      'Alta':'High','Media':'Medium','Da verificare':'Needs review','Priorità':'Priority',
-      'AMBIENTE TEST':'TEST ENVIRONMENT','Carica immagine':'Upload image','Ripristina':'Restore',
-    },
-    'fr': {
-      'ACCEDI':'SE CONNECTER','ANNULLA':'ANNULER','SALVA':'ENREGISTRER','ELIMINA':'SUPPRIMER','MODIFICA':'MODIFIER',
-      'RIPROVA':'RÉESSAYER','CERCA':'RECHERCHER','RICERCA':'RECHERCHE','SALVA PROFILO':'ENREGISTRER LE PROFIL',
-      'Profilo utente':'Profil utilisateur','CARICA FOTO':'TÉLÉVERSER UNE PHOTO','RIMUOVI FOTO':'SUPPRIMER LA PHOTO',
-      'Stato':'État','Autenticato':'Authentifié','Italia':'Italie','Europa':'Europe','Mondo':'Monde',
-      'COLLEZIONE':'COLLECTION','ACQUISTI':'ACHATS','VENDITE':'VENTES','CATALOGO':'CATALOGUE',
-      'VALUTAZIONI':'ÉVALUATIONS','REPORT':'RAPPORTS','RICERCHE':'RECHERCHES','CONTROLLO':'CONTRÔLE',
-      'FLUSSI DI CASSA':'FLUX DE TRÉSORERIE','ASSISTENTE':'ASSISTANT','ASSISTENTE VALORA':'ASSISTANT VALORA',
-      'Parla con VALORA':'Parler avec VALORA','ESEGUI':'EXÉCUTER','PARLA':'PARLER','FERMA ASCOLTO':'ARRÊTER L’ÉCOUTE',
-      'VALORE COLLEZIONE':'VALEUR DE LA COLLECTION','RIEPILOGO DEL PATRIMONIO':'RÉCAPITULATIF DE LA COLLECTION',
-      'DETTAGLIO OGGETTI':'DÉTAIL DES OBJETS','AGGIORNA OGGETTI':'ACTUALISER LES OBJETS',
-      'CONFIGURAZIONE HOME':'CONFIGURATION DE L’ACCUEIL','Personalizza VALORA':'Personnaliser VALORA',
-      'Schede':'Cartes','Blocchi':'Blocs','SFONDO':'ARRIÈRE-PLAN','Nero':'Noir','Bianco':'Blanc',
-      'COLORI DELLE SEZIONI':'COULEURS DES SECTIONS','LE MIE PIATTAFORME':'MES PLATEFORMES',
-      'PIATTAFORME CONFIGURATE':'PLATEFORMES CONFIGURÉES','REGISTRO FONTI':'REGISTRE DES SOURCES',
-      'AGGIUNGI FONTE':'AJOUTER UNE SOURCE','SALVA FONTE':'ENREGISTRER LA SOURCE',
-      'CATEGORIE COLLEZIONISTICHE':'CATÉGORIES DE COLLECTION','NUOVA CATEGORIA':'NOUVELLE CATÉGORIE',
-      'CREA CATEGORIA':'CRÉER UNE CATÉGORIE','AMBIENTE TEST':'ENVIRONNEMENT DE TEST',
-      'Carica immagine':'Téléverser une image','Ripristina':'Restaurer','Ufficiale':'Officielle',
-      'Specialistica':'Spécialisée','Bibliografica':'Bibliographique','Comunità':'Communauté',
-      'Mercato':'Marché','Personale':'Personnelle','Alta':'Élevée','Media':'Moyenne','Da verificare':'À vérifier',
-    },
-    'de': {
-      'ACCEDI':'ANMELDEN','ANNULLA':'ABBRECHEN','SALVA':'SPEICHERN','ELIMINA':'LÖSCHEN','MODIFICA':'BEARBEITEN',
-      'RIPROVA':'ERNEUT VERSUCHEN','CERCA':'SUCHEN','RICERCA':'SUCHE','SALVA PROFILO':'PROFIL SPEICHERN',
-      'Profilo utente':'Benutzerprofil','CARICA FOTO':'FOTO HOCHLADEN','RIMUOVI FOTO':'FOTO ENTFERNEN',
-      'Stato':'Status','Autenticato':'Authentifiziert','Italia':'Italien','Europa':'Europa','Mondo':'Welt',
-      'COLLEZIONE':'SAMMLUNG','ACQUISTI':'EINKÄUFE','VENDITE':'VERKÄUFE','CATALOGO':'KATALOG',
-      'VALUTAZIONI':'BEWERTUNGEN','REPORT':'BERICHTE','RICERCHE':'SUCHEN','CONTROLLO':'KONTROLLE',
-      'FLUSSI DI CASSA':'CASHFLOW','ASSISTENTE':'ASSISTENT','ASSISTENTE VALORA':'VALORA-ASSISTENT',
-      'Parla con VALORA':'Mit VALORA sprechen','ESEGUI':'AUSFÜHREN','PARLA':'SPRECHEN','FERMA ASCOLTO':'ZUHÖREN BEENDEN',
-      'VALORE COLLEZIONE':'SAMMLUNGSWERT','RIEPILOGO DEL PATRIMONIO':'SAMMLUNGSÜBERSICHT',
-      'DETTAGLIO OGGETTI':'OBJEKTDETAILS','AGGIORNA OGGETTI':'OBJEKTE AKTUALISIEREN',
-      'CONFIGURAZIONE HOME':'STARTSEITENKONFIGURATION','Personalizza VALORA':'VALORA anpassen',
-      'Schede':'Karten','Blocchi':'Blöcke','SFONDO':'HINTERGRUND','Nero':'Schwarz','Bianco':'Weiß',
-      'COLORI DELLE SEZIONI':'ABSCHNITTSFARBEN','LE MIE PIATTAFORME':'MEINE PLATTFORMEN',
-      'PIATTAFORME CONFIGURATE':'KONFIGURIERTE PLATTFORMEN','REGISTRO FONTI':'QUELLENVERZEICHNIS',
-      'AGGIUNGI FONTE':'QUELLE HINZUFÜGEN','SALVA FONTE':'QUELLE SPEICHERN',
-      'CATEGORIE COLLEZIONISTICHE':'SAMMELKATEGORIEN','NUOVA CATEGORIA':'NEUE KATEGORIE',
-      'CREA CATEGORIA':'KATEGORIE ERSTELLEN','AMBIENTE TEST':'TESTUMGEBUNG',
-      'Carica immagine':'Bild hochladen','Ripristina':'Zurücksetzen','Ufficiale':'Offiziell',
-      'Specialistica':'Fachspezifisch','Bibliografica':'Bibliografisch','Comunità':'Community',
-      'Mercato':'Markt','Personale':'Persönlich','Alta':'Hoch','Media':'Mittel','Da verificare':'Zu prüfen',
-    },
-    'es': {
-      'ACCEDI':'INICIAR SESIÓN','ANNULLA':'CANCELAR','SALVA':'GUARDAR','ELIMINA':'ELIMINAR','MODIFICA':'EDITAR',
-      'RIPROVA':'REINTENTAR','CERCA':'BUSCAR','RICERCA':'BÚSQUEDA','SALVA PROFILO':'GUARDAR PERFIL',
-      'Profilo utente':'Perfil de usuario','CARICA FOTO':'SUBIR FOTO','RIMUOVI FOTO':'ELIMINAR FOTO',
-      'Stato':'Estado','Autenticato':'Autenticado','Italia':'Italia','Europa':'Europa','Mondo':'Mundo',
-      'COLLEZIONE':'COLECCIÓN','ACQUISTI':'COMPRAS','VENDITE':'VENTAS','CATALOGO':'CATÁLOGO',
-      'VALUTAZIONI':'VALORACIONES','REPORT':'INFORMES','RICERCHE':'BÚSQUEDAS','CONTROLLO':'CONTROL',
-      'FLUSSI DI CASSA':'FLUJO DE CAJA','ASSISTENTE':'ASISTENTE','ASSISTENTE VALORA':'ASISTENTE VALORA',
-      'Parla con VALORA':'Habla con VALORA','ESEGUI':'EJECUTAR','PARLA':'HABLAR','FERMA ASCOLTO':'DETENER ESCUCHA',
-      'VALORE COLLEZIONE':'VALOR DE LA COLECCIÓN','RIEPILOGO DEL PATRIMONIO':'RESUMEN DEL PATRIMONIO',
-      'DETTAGLIO OGGETTI':'DETALLE DE OBJETOS','AGGIORNA OGGETTI':'ACTUALIZAR OBJETOS',
-      'CONFIGURAZIONE HOME':'CONFIGURACIÓN DE INICIO','Personalizza VALORA':'Personalizar VALORA',
-      'Schede':'Tarjetas','Blocchi':'Bloques','SFONDO':'FONDO','Nero':'Negro','Bianco':'Blanco',
-      'COLORI DELLE SEZIONI':'COLORES DE LAS SECCIONES','LE MIE PIATTAFORME':'MIS PLATAFORMAS',
-      'PIATTAFORME CONFIGURATE':'PLATAFORMAS CONFIGURADAS','REGISTRO FONTI':'REGISTRO DE FUENTES',
-      'AGGIUNGI FONTE':'AÑADIR FUENTE','SALVA FONTE':'GUARDAR FUENTE',
-      'CATEGORIE COLLEZIONISTICHE':'CATEGORÍAS DE COLECCIONISMO','NUOVA CATEGORIA':'NUEVA CATEGORÍA',
-      'CREA CATEGORIA':'CREAR CATEGORÍA','AMBIENTE TEST':'ENTORNO DE PRUEBAS',
-      'Carica immagine':'Subir imagen','Ripristina':'Restaurar','Ufficiale':'Oficial',
-      'Specialistica':'Especializada','Bibliografica':'Bibliográfica','Comunità':'Comunidad',
-      'Mercato':'Mercado','Personale':'Personal','Alta':'Alta','Media':'Media','Da verificare':'Por verificar',
-    },
-    'pt': {
-      'ACCEDI':'ENTRAR','ANNULLA':'CANCELAR','SALVA':'GUARDAR','ELIMINA':'ELIMINAR','MODIFICA':'EDITAR',
-      'RIPROVA':'TENTAR NOVAMENTE','CERCA':'PESQUISAR','RICERCA':'PESQUISA','SALVA PROFILO':'GUARDAR PERFIL',
-      'Profilo utente':'Perfil do utilizador','CARICA FOTO':'CARREGAR FOTO','RIMUOVI FOTO':'REMOVER FOTO',
-      'Stato':'Estado','Autenticato':'Autenticado','Italia':'Itália','Europa':'Europa','Mondo':'Mundo',
-      'COLLEZIONE':'COLEÇÃO','ACQUISTI':'COMPRAS','VENDITE':'VENDAS','CATALOGO':'CATÁLOGO',
-      'VALUTAZIONI':'AVALIAÇÕES','REPORT':'RELATÓRIOS','RICERCHE':'PESQUISAS','CONTROLLO':'CONTROLO',
-      'FLUSSI DI CASSA':'FLUXO DE CAIXA','ASSISTENTE':'ASSISTENTE','ASSISTENTE VALORA':'ASSISTENTE VALORA',
-      'Parla con VALORA':'Fale com VALORA','ESEGUI':'EXECUTAR','PARLA':'FALAR','FERMA ASCOLTO':'PARAR DE OUVIR',
-      'VALORE COLLEZIONE':'VALOR DA COLEÇÃO','RIEPILOGO DEL PATRIMONIO':'RESUMO DO PATRIMÓNIO',
-      'DETTAGLIO OGGETTI':'DETALHES DOS OBJETOS','AGGIORNA OGGETTI':'ATUALIZAR OBJETOS',
-      'CONFIGURAZIONE HOME':'CONFIGURAÇÃO INICIAL','Personalizza VALORA':'Personalizar VALORA',
-      'Schede':'Cartões','Blocchi':'Blocos','SFONDO':'FUNDO','Nero':'Preto','Bianco':'Branco',
-      'COLORI DELLE SEZIONI':'CORES DAS SECÇÕES','LE MIE PIATTAFORME':'AS MINHAS PLATAFORMAS',
-      'PIATTAFORME CONFIGURATE':'PLATAFORMAS CONFIGURADAS','REGISTRO FONTI':'REGISTO DE FONTES',
-      'AGGIUNGI FONTE':'ADICIONAR FONTE','SALVA FONTE':'GUARDAR FONTE',
-      'CATEGORIE COLLEZIONISTICHE':'CATEGORIAS DE COLECIONISMO','NUOVA CATEGORIA':'NOVA CATEGORIA',
-      'CREA CATEGORIA':'CRIAR CATEGORIA','AMBIENTE TEST':'AMBIENTE DE TESTE',
-      'Carica immagine':'Carregar imagem','Ripristina':'Restaurar','Ufficiale':'Oficial',
-      'Specialistica':'Especializada','Bibliografica':'Bibliográfica','Comunità':'Comunidade',
-      'Mercato':'Mercado','Personale':'Pessoal','Alta':'Alta','Media':'Média','Da verificare':'A verificar',
-    },
-    'zh': {
-      'ACCEDI':'登录','ANNULLA':'取消','SALVA':'保存','ELIMINA':'删除','MODIFICA':'编辑','RIPROVA':'重试',
-      'CERCA':'搜索','RICERCA':'搜索','SALVA PROFILO':'保存个人资料','Profilo utente':'用户资料',
-      'CARICA FOTO':'上传照片','RIMUOVI FOTO':'移除照片','Stato':'状态','Autenticato':'已认证',
-      'Italia':'意大利','Europa':'欧洲','Mondo':'全球','COLLEZIONE':'收藏','ACQUISTI':'购买',
-      'VENDITE':'销售','CATALOGO':'目录','VALUTAZIONI':'估值','REPORT':'报告','RICERCHE':'搜索',
-      'CONTROLLO':'控制','FLUSSI DI CASSA':'现金流','ASSISTENTE':'助手','ASSISTENTE VALORA':'VALORA 助手',
-      'Parla con VALORA':'与 VALORA 对话','ESEGUI':'执行','PARLA':'说话','FERMA ASCOLTO':'停止聆听',
-      'VALORE COLLEZIONE':'收藏价值','RIEPILOGO DEL PATRIMONIO':'收藏总览','DETTAGLIO OGGETTI':'物品详情',
-      'AGGIORNA OGGETTI':'刷新物品','CONFIGURAZIONE HOME':'主页设置','Personalizza VALORA':'自定义 VALORA',
-      'Schede':'卡片','Blocchi':'区块','SFONDO':'背景','Nero':'黑色','Bianco':'白色',
-      'COLORI DELLE SEZIONI':'分区颜色','LE MIE PIATTAFORME':'我的平台','PIATTAFORME CONFIGURATE':'已配置平台',
-      'REGISTRO FONTI':'来源登记','AGGIUNGI FONTE':'添加来源','SALVA FONTE':'保存来源',
-      'CATEGORIE COLLEZIONISTICHE':'收藏类别','NUOVA CATEGORIA':'新类别','CREA CATEGORIA':'创建类别',
-      'AMBIENTE TEST':'测试环境','Carica immagine':'上传图片','Ripristina':'恢复',
-      'Ufficiale':'官方','Specialistica':'专业','Bibliografica':'书目','Comunità':'社区',
-      'Mercato':'市场','Personale':'个人','Alta':'高','Media':'中','Da verificare':'待核实',
-    },
-    'ja': {
-      'ACCEDI':'ログイン','ANNULLA':'キャンセル','SALVA':'保存','ELIMINA':'削除','MODIFICA':'編集','RIPROVA':'再試行',
-      'CERCA':'検索','RICERCA':'検索','SALVA PROFILO':'プロフィールを保存','Profilo utente':'ユーザープロフィール',
-      'CARICA FOTO':'写真をアップロード','RIMUOVI FOTO':'写真を削除','Stato':'状態','Autenticato':'認証済み',
-      'Italia':'イタリア','Europa':'ヨーロッパ','Mondo':'世界','COLLEZIONE':'コレクション','ACQUISTI':'購入',
-      'VENDITE':'販売','CATALOGO':'カタログ','VALUTAZIONI':'評価額','REPORT':'レポート','RICERCHE':'検索',
-      'CONTROLLO':'管理','FLUSSI DI CASSA':'キャッシュフロー','ASSISTENTE':'アシスタント','ASSISTENTE VALORA':'VALORAアシスタント',
-      'Parla con VALORA':'VALORAと話す','ESEGUI':'実行','PARLA':'話す','FERMA ASCOLTO':'音声認識を停止',
-      'VALORE COLLEZIONE':'コレクション価値','RIEPILOGO DEL PATRIMONIO':'コレクション概要','DETTAGLIO OGGETTI':'アイテム詳細',
-      'AGGIORNA OGGETTI':'アイテムを更新','CONFIGURAZIONE HOME':'ホーム設定','Personalizza VALORA':'VALORAをカスタマイズ',
-      'Schede':'カード','Blocchi':'ブロック','SFONDO':'背景','Nero':'黒','Bianco':'白',
-      'COLORI DELLE SEZIONI':'セクションの色','LE MIE PIATTAFORME':'マイプラットフォーム','PIATTAFORME CONFIGURATE':'設定済みプラットフォーム',
-      'REGISTRO FONTI':'ソース一覧','AGGIUNGI FONTE':'ソースを追加','SALVA FONTE':'ソースを保存',
-      'CATEGORIE COLLEZIONISTICHE':'コレクションカテゴリ','NUOVA CATEGORIA':'新しいカテゴリ','CREA CATEGORIA':'カテゴリを作成',
-      'AMBIENTE TEST':'テスト環境','Carica immagine':'画像をアップロード','Ripristina':'元に戻す',
-      'Ufficiale':'公式','Specialistica':'専門','Bibliografica':'書誌','Comunità':'コミュニティ',
-      'Mercato':'市場','Personale':'個人','Alta':'高','Media':'中','Da verificare':'要確認',
-    },
-    'ru': {
-      'ACCEDI':'ВОЙТИ','ANNULLA':'ОТМЕНА','SALVA':'СОХРАНИТЬ','ELIMINA':'УДАЛИТЬ','MODIFICA':'ИЗМЕНИТЬ',
-      'RIPROVA':'ПОВТОРИТЬ','CERCA':'ПОИСК','RICERCA':'ПОИСК','SALVA PROFILO':'СОХРАНИТЬ ПРОФИЛЬ',
-      'Profilo utente':'Профиль пользователя','CARICA FOTO':'ЗАГРУЗИТЬ ФОТО','RIMUOVI FOTO':'УДАЛИТЬ ФОТО',
-      'Stato':'Статус','Autenticato':'Авторизован','Italia':'Италия','Europa':'Европа','Mondo':'Мир',
-      'COLLEZIONE':'КОЛЛЕКЦИЯ','ACQUISTI':'ПОКУПКИ','VENDITE':'ПРОДАЖИ','CATALOGO':'КАТАЛОГ',
-      'VALUTAZIONI':'ОЦЕНКИ','REPORT':'ОТЧЁТЫ','RICERCHE':'ПОИСК','CONTROLLO':'УПРАВЛЕНИЕ',
-      'FLUSSI DI CASSA':'ДЕНЕЖНЫЙ ПОТОК','ASSISTENTE':'АССИСТЕНТ','ASSISTENTE VALORA':'АССИСТЕНТ VALORA',
-      'Parla con VALORA':'Поговорить с VALORA','ESEGUI':'ВЫПОЛНИТЬ','PARLA':'ГОВОРИТЬ','FERMA ASCOLTO':'ОСТАНОВИТЬ ПРОСЛУШИВАНИЕ',
-      'VALORE COLLEZIONE':'СТОИМОСТЬ КОЛЛЕКЦИИ','RIEPILOGO DEL PATRIMONIO':'ОБЗОР КОЛЛЕКЦИИ','DETTAGLIO OGGETTI':'ДЕТАЛИ ПРЕДМЕТОВ',
-      'AGGIORNA OGGETTI':'ОБНОВИТЬ ПРЕДМЕТЫ','CONFIGURAZIONE HOME':'НАСТРОЙКИ ГЛАВНОЙ','Personalizza VALORA':'Настроить VALORA',
-      'Schede':'Карточки','Blocchi':'Блоки','SFONDO':'ФОН','Nero':'Чёрный','Bianco':'Белый',
-      'COLORI DELLE SEZIONI':'ЦВЕТА РАЗДЕЛОВ','LE MIE PIATTAFORME':'МОИ ПЛАТФОРМЫ','PIATTAFORME CONFIGURATE':'НАСТРОЕННЫЕ ПЛАТФОРМЫ',
-      'REGISTRO FONTI':'РЕЕСТР ИСТОЧНИКОВ','AGGIUNGI FONTE':'ДОБАВИТЬ ИСТОЧНИК','SALVA FONTE':'СОХРАНИТЬ ИСТОЧНИК',
-      'CATEGORIE COLLEZIONISTICHE':'КАТЕГОРИИ КОЛЛЕКЦИОНИРОВАНИЯ','NUOVA CATEGORIA':'НОВАЯ КАТЕГОРИЯ','CREA CATEGORIA':'СОЗДАТЬ КАТЕГОРИЮ',
-      'AMBIENTE TEST':'ТЕСТОВАЯ СРЕДА','Carica immagine':'Загрузить изображение','Ripristina':'Восстановить',
-      'Ufficiale':'Официальный','Specialistica':'Специализированный','Bibliografica':'Библиографический',
-      'Comunità':'Сообщество','Mercato':'Рынок','Personale':'Личный','Alta':'Высокий','Media':'Средний','Da verificare':'Требует проверки',
-    },
+  static const Map<String, Map<String, String>> _words = {
+    'en': {'Profilo utente':'User profile','ASSISTENTE VALORA':'VALORA ASSISTANT','ASSISTENTE':'ASSISTANT','COLLEZIONE':'COLLECTION','ACQUISTI':'PURCHASES','VENDITE':'SALES','CATALOGO':'CATALOG','VALUTAZIONI':'VALUATIONS','REPORT':'REPORTS','RICERCHE':'SEARCH','CONTROLLO':'CONTROL','ANNULLA':'CANCEL','ACCEDI':'SIGN IN','SALVA':'SAVE','MODIFICA':'EDIT','ELIMINA':'DELETE','RIPROVA':'RETRY','Italia':'Italy','Europa':'Europe','Mondo':'World','Nero':'Black','Bianco':'White','Carica immagine':'Upload image','Personalizza VALORA':'Customize VALORA','Schede':'Cards','Blocchi':'Blocks'},
+    'fr': {'Profilo utente':'Profil utilisateur','ASSISTENTE VALORA':'ASSISTANT VALORA','ASSISTENTE':'ASSISTANT','COLLEZIONE':'COLLECTION','ACQUISTI':'ACHATS','VENDITE':'VENTES','CATALOGO':'CATALOGUE','VALUTAZIONI':'ÉVALUATIONS','REPORT':'RAPPORTS','RICERCHE':'RECHERCHE','CONTROLLO':'CONTRÔLE','ANNULLA':'ANNULER','ACCEDI':'SE CONNECTER','SALVA':'ENREGISTRER','MODIFICA':'MODIFIER','ELIMINA':'SUPPRIMER','RIPROVA':'RÉESSAYER','Italia':'Italie','Europa':'Europe','Mondo':'Monde','Nero':'Noir','Bianco':'Blanc','Carica immagine':'Téléverser une image','Personalizza VALORA':'Personnaliser VALORA','Schede':'Cartes','Blocchi':'Blocs'},
+    'de': {'Profilo utente':'Benutzerprofil','ASSISTENTE VALORA':'VALORA-ASSISTENT','ASSISTENTE':'ASSISTENT','COLLEZIONE':'SAMMLUNG','ACQUISTI':'EINKÄUFE','VENDITE':'VERKÄUFE','CATALOGO':'KATALOG','VALUTAZIONI':'BEWERTUNGEN','REPORT':'BERICHTE','RICERCHE':'SUCHE','CONTROLLO':'KONTROLLE','ANNULLA':'ABBRECHEN','ACCEDI':'ANMELDEN','SALVA':'SPEICHERN','MODIFICA':'BEARBEITEN','ELIMINA':'LÖSCHEN','RIPROVA':'ERNEUT VERSUCHEN','Italia':'Italien','Europa':'Europa','Mondo':'Welt','Nero':'Schwarz','Bianco':'Weiß','Carica immagine':'Bild hochladen','Personalizza VALORA':'VALORA anpassen','Schede':'Karten','Blocchi':'Blöcke'},
+    'es': {'Profilo utente':'Perfil de usuario','ASSISTENTE VALORA':'ASISTENTE VALORA','ASSISTENTE':'ASISTENTE','COLLEZIONE':'COLECCIÓN','ACQUISTI':'COMPRAS','VENDITE':'VENTAS','CATALOGO':'CATÁLOGO','VALUTAZIONI':'VALORACIONES','REPORT':'INFORMES','RICERCHE':'BÚSQUEDAS','CONTROLLO':'CONTROL','ANNULLA':'CANCELAR','ACCEDI':'INICIAR SESIÓN','SALVA':'GUARDAR','MODIFICA':'EDITAR','ELIMINA':'ELIMINAR','RIPROVA':'REINTENTAR','Italia':'Italia','Europa':'Europa','Mondo':'Mundo','Nero':'Negro','Bianco':'Blanco','Carica immagine':'Subir imagen','Personalizza VALORA':'Personalizar VALORA','Schede':'Tarjetas','Blocchi':'Bloques'},
+    'pt': {'Profilo utente':'Perfil do utilizador','ASSISTENTE VALORA':'ASSISTENTE VALORA','ASSISTENTE':'ASSISTENTE','COLLEZIONE':'COLEÇÃO','ACQUISTI':'COMPRAS','VENDITE':'VENDAS','CATALOGO':'CATÁLOGO','VALUTAZIONI':'AVALIAÇÕES','REPORT':'RELATÓRIOS','RICERCHE':'PESQUISAS','CONTROLLO':'CONTROLO','ANNULLA':'CANCELAR','ACCEDI':'ENTRAR','SALVA':'GUARDAR','MODIFICA':'EDITAR','ELIMINA':'ELIMINAR','RIPROVA':'TENTAR NOVAMENTE','Italia':'Itália','Europa':'Europa','Mondo':'Mundo','Nero':'Preto','Bianco':'Branco','Carica immagine':'Carregar imagem','Personalizza VALORA':'Personalizar VALORA','Schede':'Cartões','Blocchi':'Blocos'},
+    'zh': {'Profilo utente':'用户资料','ASSISTENTE VALORA':'VALORA 助手','ASSISTENTE':'助手','COLLEZIONE':'收藏','ACQUISTI':'购买','VENDITE':'销售','CATALOGO':'目录','VALUTAZIONI':'估值','REPORT':'报告','RICERCHE':'搜索','CONTROLLO':'管理','ANNULLA':'取消','ACCEDI':'登录','SALVA':'保存','MODIFICA':'编辑','ELIMINA':'删除','RIPROVA':'重试','Italia':'意大利','Europa':'欧洲','Mondo':'全球','Nero':'黑色','Bianco':'白色','Carica immagine':'上传图片','Personalizza VALORA':'自定义 VALORA','Schede':'卡片','Blocchi':'区块'},
+    'ja': {'Profilo utente':'ユーザープロフィール','ASSISTENTE VALORA':'VALORAアシスタント','ASSISTENTE':'アシスタント','COLLEZIONE':'コレクション','ACQUISTI':'購入','VENDITE':'販売','CATALOGO':'カタログ','VALUTAZIONI':'評価額','REPORT':'レポート','RICERCHE':'検索','CONTROLLO':'管理','ANNULLA':'キャンセル','ACCEDI':'ログイン','SALVA':'保存','MODIFICA':'編集','ELIMINA':'削除','RIPROVA':'再試行','Italia':'イタリア','Europa':'ヨーロッパ','Mondo':'世界','Nero':'黒','Bianco':'白','Carica immagine':'画像をアップロード','Personalizza VALORA':'VALORAをカスタマイズ','Schede':'カード','Blocchi':'ブロック'},
+    'ru': {'Profilo utente':'Профиль пользователя','ASSISTENTE VALORA':'АССИСТЕНТ VALORA','ASSISTENTE':'АССИСТЕНТ','COLLEZIONE':'КОЛЛЕКЦИЯ','ACQUISTI':'ПОКУПКИ','VENDITE':'ПРОДАЖИ','CATALOGO':'КАТАЛОГ','VALUTAZIONI':'ОЦЕНКИ','REPORT':'ОТЧЁТЫ','RICERCHE':'ПОИСК','CONTROLLO':'УПРАВЛЕНИЕ','ANNULLA':'ОТМЕНА','ACCEDI':'ВОЙТИ','SALVA':'СОХРАНИТЬ','MODIFICA':'ИЗМЕНИТЬ','ELIMINA':'УДАЛИТЬ','RIPROVA':'ПОВТОРИТЬ','Italia':'Италия','Europa':'Европа','Mondo':'Мир','Nero':'Чёрный','Bianco':'Белый','Carica immagine':'Загрузить изображение','Personalizza VALORA':'Настроить VALORA','Schede':'Карточки','Blocchi':'Блоки'},
   };
-
-  static String tr(String source, [String? language]) {
-    final locale = language ?? instance.code;
-    return _translations[locale]?[source] ?? source;
-  }
+  static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? source;
 }
 
 Future<void> main() async {
@@ -379,7 +211,7 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'COLLECTION by VALORA',
-        locale: Locale(ValoraI18n.instance.code == 'zh' ? 'zh' : ValoraI18n.instance.code),
+        locale: Locale(ValoraI18n.instance.code),
         supportedLocales: const [Locale('it'),Locale('en'),Locale('fr'),Locale('de'),Locale('es'),Locale('pt'),Locale('zh'),Locale('ja'),Locale('ru')],
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -469,10 +301,10 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       final url = storage.getPublicUrl(path);
       await a.setSectionImage(section, url: url, path: path);
       _urlControllers[section]?.text = url;
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Immagine aggiornata per $section.'))));
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Immagine aggiornata per $section.')));
     } catch(e) {
       if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content:Text('Caricamento non riuscito: $e. Verifica che esista il bucket pubblico valora-section-images in Supabase Storage.')),
+        content:Text('Caricamento non riuscito: $e. Verifica che esista il bucket pubblico valora-section-images in Supabase Storage.'),
         duration:const Duration(seconds:6),
       ));
     } finally {
@@ -508,48 +340,48 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
             onSubmitted:(value)=>a.setSectionImage(section,url:value),
           ),
           Row(children:[
-            TextButton.icon(onPressed:()=>_uploadSectionImage(section),icon:const Icon(Icons.photo_library_outlined),label:const Text('Carica immagine'))),
+            TextButton.icon(onPressed:()=>_uploadSectionImage(section),icon:const Icon(Icons.photo_library_outlined),label:const Text('Carica immagine')),
             const Spacer(),
             TextButton(onPressed:()async{
               _urlControllers[section]?.clear();
               await a.setSectionImage(section);
-            },child:const Text('Ripristina'))),
+            },child:const Text('Ripristina')),
           ]),
         ]),
       ),
     );
   }
   @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('Personalizza VALORA'))),
+    appBar:AppBar(title:const Text('Personalizza VALORA')),
     body:ListView(padding:const EdgeInsets.all(16),children:[
-      const Text('CONFIGURAZIONE HOME'),style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const Text('CONFIGURAZIONE HOME',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:8),
       SegmentedButton<bool>(
         segments:const [
-          ButtonSegment<bool>(value:false,icon:Icon(Icons.view_agenda_outlined),label:const Text('Schede'))),
-          ButtonSegment<bool>(value:true,icon:Icon(Icons.grid_view_rounded),label:const Text('Blocchi'))),
+          ButtonSegment<bool>(value:false,icon:Icon(Icons.view_agenda_outlined),label:Text('Schede')),
+          ButtonSegment<bool>(value:true,icon:Icon(Icons.grid_view_rounded),label:Text('Blocchi')),
         ],
         selected:{a.useBlockLayout},
         onSelectionChanged:(values)=>a.setLayout(values.first),
       ),
       const SizedBox(height:8),
-      const Text('La modalità iniziale è Schede con sfondo nero. Cambiare modalità modifica solo la presentazione, non le procedure o i dati.')),
+      const Text('La modalità iniziale è Schede con sfondo nero. Cambiare modalità modifica solo la presentazione, non le procedure o i dati.'),
       const SizedBox(height:20),
-      const Text('SFONDO'),style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const Text('SFONDO',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:8),
       SegmentedButton<bool>(
         segments: const [
-          ButtonSegment<bool>(value:false, icon:Icon(Icons.dark_mode_outlined), label:const Text('Nero'))),
-          ButtonSegment<bool>(value:true, icon:Icon(Icons.light_mode_outlined), label:const Text('Bianco'))),
+          ButtonSegment<bool>(value:false, icon:Icon(Icons.dark_mode_outlined), label:Text('Nero')),
+          ButtonSegment<bool>(value:true, icon:Icon(Icons.light_mode_outlined), label:Text('Bianco')),
         ],
         selected: <bool>{a.whiteBackground},
         onSelectionChanged:(values)=>a.setBackground(values.first),
         showSelectedIcon:true,
       ),
       const SizedBox(height:12),
-      const Text('COLORI DELLE SEZIONI'),style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const Text('COLORI DELLE SEZIONI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:4),
-      const Text('Scegli il colore distintivo di ciascuna sezione.')),
+      const Text('Scegli il colore distintivo di ciascuna sezione.'),
       ...ValoraAppearance.defaults.keys.map((section){
         final current=a.colorFor(section);
         final available=ValoraAppearance.palette.where((c)=>c.value==current.value||
@@ -563,15 +395,15 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
             DropdownButton<int>(value:current.value,items:available.map((c)=>DropdownMenuItem<int>(
               value:c.value,child:Row(children:[
                 Container(width:20,height:20,decoration:BoxDecoration(color:c,borderRadius:BorderRadius.circular(4))),
-                const SizedBox(width:8),Text('#${c.value.toRadixString(16).substring(2).toUpperCase()}'))
+                const SizedBox(width:8),Text('#${c.value.toRadixString(16).substring(2).toUpperCase()}')
               ]))).toList(),
               onChanged:(v){if(v!=null)a.setColor(section,Color(v));}),
           ])));
       }),
       const SizedBox(height:20),
-      const Text('IMMAGINE PERSONALIZZATA PER SEZIONE'),style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const Text('IMMAGINE PERSONALIZZATA PER SEZIONE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:4),
-      const Text('Carica un logo o una foto oppure incolla un URL. Il caricamento richiede il bucket pubblico valora-section-images in Supabase Storage.')),
+      const Text('Carica un logo o una foto oppure incolla un URL. Il caricamento richiede il bucket pubblico valora-section-images in Supabase Storage.'),
       if(_uploading) const LinearProgressIndicator(),
       ..._allPersonalizableSections.map(_sectionImageEditor),
       const SizedBox(height:20),
@@ -582,8 +414,8 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
           await a.setSectionImage(section);
         }
         await a.setLayout(false);
-        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:const Text('Ripristinata la configurazione iniziale: Schede, sfondo nero.'))));
-      },icon:const Icon(Icons.restart_alt),label:const Text('RIPRISTINA CONFIGURAZIONE INIZIALE'))),
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Ripristinata la configurazione iniziale: Schede, sfondo nero.')));
+      },icon:const Icon(Icons.restart_alt),label:const Text('RIPRISTINA CONFIGURAZIONE INIZIALE')),
     ]));
 }
 
@@ -607,7 +439,8 @@ class StartupFailurePage extends StatelessWidget {
                     const Icon(Icons.warning_amber_rounded,
                         color: goldColor, size: 64),
                     const SizedBox(height: 20),
-                    const Text('COLLECTION by VALORA'),
+                    const Text(
+                      'COLLECTION by VALORA',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: goldColor,
@@ -616,7 +449,8 @@ class StartupFailurePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text('Avvio non completato. Il dettaglio seguente aiuta a individuare la causa.'),
+                    const Text(
+                      'Avvio non completato. Il dettaglio seguente aiuta a individuare la causa.',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
@@ -746,7 +580,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: loading
                             ? const SizedBox(width: 22, height: 22,
                                 child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Text('ACCEDI'), style: TextStyle(
+                            : const Text('ACCEDI', style: TextStyle(
                                 fontWeight: FontWeight.bold, letterSpacing: 1)),
                       ),
                     ),
@@ -756,7 +590,7 @@ class _LoginPageState extends State<LoginPage> {
                           style: const TextStyle(color: Colors.redAccent)),
                     ],
                     const SizedBox(height: 24),
-                    const Text('AMBIENTE TEST'), style: TextStyle(
+                    const Text('AMBIENTE TEST', style: TextStyle(
                       color: Colors.orangeAccent, fontWeight: FontWeight.bold,
                       letterSpacing: 1.5,
                     )),
@@ -958,11 +792,11 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rimuovere la piattaforma?')),
-        content: Text('Vuoi eliminare “${platform[')nome_piattaforma']}” dal tuo elenco? Se vuoi solo sospenderla, disattiva il flag Utilizzata.'),
+        title: const Text('Rimuovere la piattaforma?'),
+        content: Text('Vuoi eliminare “${platform['nome_piattaforma']}” dal tuo elenco? Se vuoi solo sospenderla, disattiva il flag Utilizzata.'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('ANNULLA'))),
-          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('RIMUOVI'))),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('RIMUOVI')),
         ],
       ),
     );
@@ -981,9 +815,9 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
   Widget build(BuildContext context) {
     final a = ValoraAppearance.instance;
     return Scaffold(
-      appBar: AppBar(title: const Text('LE MIE PIATTAFORME'))),
+      appBar: AppBar(title: const Text('LE MIE PIATTAFORME')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        const Text('Aggiungi soltanto i marketplace che utilizzi. VALORA preparerà le inserzioni solo per le piattaforme attive nel tuo elenco.'),
+        Text('Aggiungi soltanto i marketplace che utilizzi. VALORA preparerà le inserzioni solo per le piattaforme attive nel tuo elenco.',
           style: TextStyle(color: a.textSecondary)),
         const SizedBox(height: 16),
         TextField(controller: _name, textCapitalization: TextCapitalization.words,
@@ -999,11 +833,11 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
         if (_error != null) Padding(padding: const EdgeInsets.only(top: 8),
           child: Text(_error!, style: const TextStyle(color: Colors.redAccent))),
         const SizedBox(height: 20),
-        const Text('PIATTAFORME CONFIGURATE'), style: TextStyle(color: a.colorFor('RICERCHE'), fontWeight: FontWeight.bold)),
+        Text('PIATTAFORME CONFIGURATE', style: TextStyle(color: a.colorFor('RICERCHE'), fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         if (_loading) const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
         if (!_loading && _platforms.isEmpty) Padding(padding: const EdgeInsets.all(16),
-          child: const Text('Non hai ancora aggiunto piattaforme. Inserisci la prima qui sopra.'), style: TextStyle(color: a.textSecondary))),
+          child: Text('Non hai ancora aggiunto piattaforme. Inserisci la prima qui sopra.', style: TextStyle(color: a.textSecondary))),
         ..._platforms.map((p) {
           final used = p['utilizzata'] == true;
           return Card(child: ListTile(
@@ -1065,7 +899,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
   Future<void> _editSource([Map<String, dynamic>? source]) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Accedi per aggiungere fonti personali. Le fonti di sistema restano consultabili.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per aggiungere fonti personali. Le fonti di sistema restano consultabili.')));
       return;
     }
     final formKey = GlobalKey<FormState>();
@@ -1081,7 +915,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
     var trustLevel = (source?['attendibilita_dichiarata'] ?? 'da_verificare').toString();
     final canEdit = source == null || (source['origine_configurazione'] == 'utente' && source['proprietario_utente'] == user.id);
     if (!canEdit) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Le fonti di sistema sono protette. Puoi aggiungere una tua fonte specialistica.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Le fonti di sistema sono protette. Puoi aggiungere una tua fonte specialistica.')));
       return;
     }
     final accepted = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(
@@ -1100,12 +934,12 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
               value: type,
               decoration: const InputDecoration(labelText: 'Tipo di fonte'),
               items: const [
-                DropdownMenuItem(value: 'ufficiale', child: const Text('Ufficiale'))),
-                DropdownMenuItem(value: 'specialistica', child: const Text('Specialistica'))),
-                DropdownMenuItem(value: 'bibliografica', child: const Text('Bibliografica'))),
-                DropdownMenuItem(value: 'comunita', child: const Text('Comunità'))),
-                DropdownMenuItem(value: 'mercato', child: const Text('Mercato'))),
-                DropdownMenuItem(value: 'personale', child: const Text('Personale'))),
+                DropdownMenuItem(value: 'ufficiale', child: Text('Ufficiale')),
+                DropdownMenuItem(value: 'specialistica', child: Text('Specialistica')),
+                DropdownMenuItem(value: 'bibliografica', child: Text('Bibliografica')),
+                DropdownMenuItem(value: 'comunita', child: Text('Comunità')),
+                DropdownMenuItem(value: 'mercato', child: Text('Mercato')),
+                DropdownMenuItem(value: 'personale', child: Text('Personale')),
               ],
               onChanged: (v) { if (v != null) updateDialog(() => type = v); },
             ),
@@ -1113,27 +947,27 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
               value: trustLevel,
               decoration: const InputDecoration(labelText: 'Attendibilità dichiarata (non verificata automaticamente)'),
               items: const [
-                DropdownMenuItem(value: 'ufficiale', child: const Text('Fonte ufficiale'))),
-                DropdownMenuItem(value: 'alta', child: const Text('Alta'))),
-                DropdownMenuItem(value: 'media', child: const Text('Media'))),
-                DropdownMenuItem(value: 'da_verificare', child: const Text('Da verificare'))),
+                DropdownMenuItem(value: 'ufficiale', child: Text('Fonte ufficiale')),
+                DropdownMenuItem(value: 'alta', child: Text('Alta')),
+                DropdownMenuItem(value: 'media', child: Text('Media')),
+                DropdownMenuItem(value: 'da_verificare', child: Text('Da verificare')),
               ],
               onChanged: (v) { if (v != null) updateDialog(() => trustLevel = v); },
             ),
             const SizedBox(height: 8),
             Row(children: [
-              const Text('Priorità')),
+              const Text('Priorità'),
               Expanded(child: Slider(value: priority.toDouble(), min: 1, max: 100, divisions: 99, label: '$priority', onChanged: (v) => updateDialog(() => priority = v.round()))),
-              Text('$priority')),
+              Text('$priority'),
             ]),
             TextFormField(controller: note, decoration: const InputDecoration(labelText: 'Note / cosa verifica questa fonte')),
             const SizedBox(height: 8),
-            const Text('La fonte verrà salvata come “da verificare”. Inserirla non significa che ogni dato trovato sia automaticamente attendibile.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+            Text('La fonte verrà salvata come “da verificare”. Inserirla non significa che ogni dato trovato sia automaticamente attendibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
           ]),
         ))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA'))),
-          FilledButton(onPressed: () { if (formKey.currentState?.validate() == true) Navigator.pop(ctx, true); }, child: const Text('SALVA FONTE'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () { if (formKey.currentState?.validate() == true) Navigator.pop(ctx, true); }, child: const Text('SALVA FONTE')),
         ],
       ),
     ));
@@ -1157,10 +991,10 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
         await table.update(data).eq('id', source['id']).eq('proprietario_utente', user.id);
       }
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Fonte salvata. Stato: da verificare.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fonte salvata. Stato: da verificare.')));
       await _load();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito: $e'))));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito: $e')));
     }
     name.dispose(); url.dispose(); category.dispose(); market.dispose(); maker.dispose(); franchise.dispose(); note.dispose();
   }
@@ -1168,7 +1002,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
   Future<void> _toggleActive(Map<String, dynamic> source) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null || source['origine_configurazione'] != 'utente' || source['proprietario_utente'] != user.id) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Puoi disattivare soltanto le tue fonti personali.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Puoi disattivare soltanto le tue fonti personali.')));
       return;
     }
     try {
@@ -1177,7 +1011,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
           .eq('id', source['id']).eq('proprietario_utente', user.id);
       await _load();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Modifica non riuscita: $e'))));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Modifica non riuscita: $e')));
     }
   }
 
@@ -1186,22 +1020,22 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
     final query = _search.text.trim().toLowerCase();
     final visible = _sources.where((s) => query.isEmpty || ['nome','categoria','marchio_editore','franchise','mercato','url_base'].any((k) => (s[k] ?? '').toString().toLowerCase().contains(query))).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('REGISTRO FONTI')), actions: [
+      appBar: AppBar(title: const Text('REGISTRO FONTI'), actions: [
         IconButton(tooltip: 'Gestisci categorie e campi specialistici', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())), icon: const Icon(Icons.category_outlined)),
         IconButton(tooltip: 'Aggiorna', onPressed: _load, icon: const Icon(Icons.refresh)),
         IconButton(tooltip: 'Aggiungi fonte', onPressed: () => _editSource(), icon: const Icon(Icons.add_link)),
       ]),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => _editSource(), icon: const Icon(Icons.add), label: const Text('AGGIUNGI FONTE'))),
+      floatingActionButton: FloatingActionButton.extended(onPressed: () => _editSource(), icon: const Icon(Icons.add), label: const Text('AGGIUNGI FONTE')),
       body: _loading ? const Center(child: CircularProgressIndicator()) : _error != null
         ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.info_outline, size: 42), const SizedBox(height: 12),
-            const Text('Registro non ancora disponibile')), const SizedBox(height: 8),
+            const Text('Registro non ancora disponibile'), const SizedBox(height: 8),
             SelectableText(_error!), const SizedBox(height: 12),
-            FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('RIPROVA'))),
+            FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('RIPROVA')),
           ])))
         : Column(children: [
             Padding(padding: const EdgeInsets.all(12), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Cerca fonte, marchio, categoria o mercato', border: OutlineInputBorder()))),
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), child: Text('${visible.length} fonti · le fonti personali sono modificabili; quelle di sistema sono protette. Le fonti iniziali sono da verificare prima di usarle come prova definitiva.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), child: Text('${visible.length} fonti · le fonti personali sono modificabili; quelle di sistema sono protette. Le fonti iniziali sono da verificare prima di usarle come prova definitiva.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
             Expanded(child: ListView.builder(padding: const EdgeInsets.fromLTRB(12, 4, 12, 90), itemCount: visible.length, itemBuilder: (context, i) {
               final s = visible[i];
               final own = s['origine_configurazione'] == 'utente' && s['proprietario_utente'] == Supabase.instance.client.auth.currentUser?.id;
@@ -1213,12 +1047,12 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
                 title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(meta), SelectableText((s['url_base'] ?? '').toString(), style: const TextStyle(fontSize: 12)),
-                  Text('Priorità ${s[')priorita'] ?? 50} · ${s['tipo_fonte'] ?? 'specialistica'} · ${s['stato_verifica'] ?? 'da_verificare'} · ${s['origine_configurazione'] ?? 'utente'}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11)),
+                  Text('Priorità ${s['priorita'] ?? 50} · ${s['tipo_fonte'] ?? 'specialistica'} · ${s['stato_verifica'] ?? 'da_verificare'} · ${s['origine_configurazione'] ?? 'utente'}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11)),
                   if ((s['note'] ?? '').toString().isNotEmpty) Text(s['note'].toString()),
                 ]),
                 isThreeLine: true,
                 trailing: own ? PopupMenuButton<String>(onSelected: (v) { if (v == 'edit') _editSource(s); if (v == 'toggle') _toggleActive(s); }, itemBuilder: (_) => [
-                  const PopupMenuItem(value: 'edit', child: const Text('Modifica'))),
+                  const PopupMenuItem(value: 'edit', child: Text('Modifica')),
                   PopupMenuItem(value: 'toggle', child: Text(active ? 'Disattiva' : 'Riattiva')),
                 ]) : const Icon(Icons.verified_user_outlined),
               ));
@@ -1260,7 +1094,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
   Future<void> _addCategory() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Accedi per aggiungere categorie personali.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per aggiungere categorie personali.')));
       return;
     }
     final name = TextEditingController();
@@ -1268,7 +1102,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
     final accepted = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('NUOVA CATEGORIA COLLEZIONISTICA')),
+        title: const Text('NUOVA CATEGORIA COLLEZIONISTICA'),
         content: SizedBox(
           width: 460,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1278,8 +1112,8 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
           ]),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CREA CATEGORIA'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CREA CATEGORIA')),
         ],
       ),
     );
@@ -1287,7 +1121,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
     final categoryName = name.text.trim();
     final labels = fields.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
     if (categoryName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Inserisci il nome della categoria.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Inserisci il nome della categoria.')));
       name.dispose(); fields.dispose(); return;
     }
     final schema = labels.map((label) {
@@ -1301,10 +1135,10 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
         'origine_configurazione': 'utente',
         'proprietario_utente': user.id,
       });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Categoria aggiunta. Puoi usarla nelle tue fonti.'))));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Categoria aggiunta. Puoi usarla nelle tue fonti.')));
       await _load();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Creazione categoria non riuscita: ') + e.toString())));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Creazione categoria non riuscita: ' + e.toString())));
     }
     name.dispose();
     fields.dispose();
@@ -1312,10 +1146,10 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('CATEGORIE COLLEZIONISTICHE')), actions: [
+    appBar: AppBar(title: const Text('CATEGORIE COLLEZIONISTICHE'), actions: [
       IconButton(onPressed: _load, tooltip: 'Aggiorna', icon: const Icon(Icons.refresh)),
     ]),
-    floatingActionButton: FloatingActionButton.extended(onPressed: _addCategory, icon: const Icon(Icons.add), label: const Text('NUOVA CATEGORIA'))),
+    floatingActionButton: FloatingActionButton.extended(onPressed: _addCategory, icon: const Icon(Icons.add), label: const Text('NUOVA CATEGORIA')),
     body: _loading ? const Center(child: CircularProgressIndicator()) :
       _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: SelectableText(_error!))) :
       ListView.builder(
@@ -1412,7 +1246,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       return true;
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossibile caricare il profilo dal database TEST: $e'))));
+        SnackBar(content: Text('Impossibile caricare il profilo dal database TEST: $e')));
       return false;
     }
   }
@@ -1424,11 +1258,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Accedi per salvare il profilo.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per salvare il profilo.')));
       return;
     }
     if (!_profileLoaded || _markets.isEmpty || _name.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Completa il nome e verifica il catalogo mercati prima di salvare.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa il nome e verifica il catalogo mercati prima di salvare.')));
       return;
     }
     setState(() => _busy = true);
@@ -1468,9 +1302,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
       if (!reloaded) {
         throw StateError('Il salvataggio è stato inviato, ma la rilettura di conferma non è riuscita.');
       }
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Profilo salvato e verificato rileggendolo dal database TEST.'))));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profilo salvato e verificato rileggendolo dal database TEST.')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito. Verifica autorizzazione e policy TEST. Dettaglio: $e'))));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio non riuscito. Verifica autorizzazione e policy TEST. Dettaglio: $e')));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1507,13 +1341,13 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final password = _newPassword.text;
     if (password.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: const Text('La nuova password deve contenere almeno 8 caratteri.'))),
+        const SnackBar(content: Text('La nuova password deve contenere almeno 8 caratteri.')),
       );
       return;
     }
     if (password != _confirmPassword.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: const Text('Le due password non coincidono.'))),
+        const SnackBar(content: Text('Le due password non coincidono.')),
       );
       return;
     }
@@ -1524,19 +1358,19 @@ class _UserProfilePageState extends State<UserProfilePage> {
       _confirmPassword.clear();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: const Text('Password aggiornata correttamente.'))),
+          const SnackBar(content: Text('Password aggiornata correttamente.')),
         );
       }
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text('Impossibile aggiornare la password: ') + e.message)),
+          SnackBar(content: Text('Impossibile aggiornare la password: ' + e.message)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: const Text('Errore durante l’aggiornamento della password.'))),
+          const SnackBar(content: Text('Errore durante l’aggiornamento della password.')),
         );
       }
     } finally {
@@ -1570,7 +1404,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final created = user?.createdAt;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profilo utente')),
+        title: const Text('Profilo utente'),
         leading: IconButton(
           tooltip: 'Torna alla dashboard',
           icon: const Icon(Icons.arrow_back),
@@ -1593,9 +1427,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         : const Icon(Icons.person, color: goldColor, size: 54))),
                 const SizedBox(height: 8),
                 Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 6, children: [
-                  OutlinedButton.icon(onPressed: _busy ? null : _pickProfileImage, icon: const Icon(Icons.upload_file), label: const Text('CARICA FOTO'))),
+                  OutlinedButton.icon(onPressed: _busy ? null : _pickProfileImage, icon: const Icon(Icons.upload_file), label: const Text('CARICA FOTO')),
                   if (_profileImageBytes != null || _profileImageUrl != null)
-                    TextButton.icon(onPressed: _busy ? null : _removeProfilePhoto, icon: const Icon(Icons.delete_outline), label: const Text('RIMUOVI FOTO'))),
+                    TextButton.icon(onPressed: _busy ? null : _removeProfilePhoto, icon: const Icon(Icons.delete_outline), label: const Text('RIMUOVI FOTO')),
                 ]),
                 if (_profileImageStatus.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(_profileImageStatus, textAlign: TextAlign.center, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
               ])),
@@ -1659,14 +1493,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
             ]),
             _section('STATO ACCOUNT', Icons.info_outline, [
-              const ListTile(contentPadding: EdgeInsets.zero, title: const Text('Stato')), trailing: Chip(label: const Text('Autenticato')))),
-              ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data creazione account')), subtitle: Text(created ?? 'Non disponibile')),
+              const ListTile(contentPadding: EdgeInsets.zero, title: Text('Stato'), trailing: Chip(label: Text('Autenticato'))),
+              ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data creazione account'), subtitle: Text(created ?? 'Non disponibile')),
             ]),
             Card(
               color: ValoraAppearance.instance.card,
               child: const Padding(
                 padding: EdgeInsets.all(14),
-                child: const Text('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.')),
+                child: Text('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.'),
               ),
             ),
           ];
@@ -1763,7 +1597,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   Widget build(BuildContext context) {
     final selected = _objects.where((o) => o['codice_oggetto'] == _selectedId).firstOrNull;
     return Scaffold(
-      appBar: AppBar(title: const Text('VALORA'))),
+      appBar: AppBar(title: const Text('VALORA')),
       body: _loading
         ? const Center(child: CircularProgressIndicator())
         : ListView(padding: const EdgeInsets.all(18), children: [
@@ -1777,13 +1611,13 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.auto_awesome, color: Color(0xFF8556C7), size: 38),
               SizedBox(height: 12),
-              const Text('SERVIZIO VALORA'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
+              Text('SERVIZIO VALORA', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
               SizedBox(height: 8),
-              const Text('Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.')),
+              Text('Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.'),
             ]),
           ),
           const SizedBox(height: 18),
-          const Text('1. SELEZIONA L’OGGETTO'), style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          Text('1. SELEZIONA L’OGGETTO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
             value: _selectedId,
@@ -1791,22 +1625,22 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Oggetto da valutare'),
             items: _objects.map((o) => DropdownMenuItem<int>(
               value: (o['codice_oggetto'] as num).toInt(),
-              child: Text('#${o[')codice_oggetto']} · ${o['descrizione_oggetto'] ?? 'Senza descrizione'}', overflow: TextOverflow.ellipsis),
+              child: Text('#${o['codice_oggetto']} · ${o['descrizione_oggetto'] ?? 'Senza descrizione'}', overflow: TextOverflow.ellipsis),
             )).toList(),
             onChanged: (value) => setState(() { _selectedId = value; _prepared = null; }),
           ),
           if (_objects.isEmpty) const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: const Text('Non risultano oggetti disponibili nella destinazione COLLEZIONE.')),
+            child: Text('Non risultano oggetti disponibili nella destinazione COLLEZIONE.'),
           ),
           if (selected != null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(selected['descrizione_oggetto']?.toString() ?? 'Oggetto selezionato', style: const TextStyle(fontWeight: FontWeight.bold)),
-              if ((selected['produttore'] ?? '').toString().isNotEmpty) Text('Produttore: ${selected[')produttore']}'),
-              if ((selected['codice_prodotto'] ?? '').toString().isNotEmpty) Text('Codice prodotto: ${selected[')codice_prodotto']}'),
-              Text('Condizione: ${selected[')condizione'] ?? 'Non indicata'}'),
-              Text('Completezza: ${selected[')completezza'] ?? 'Non indicata'}'),
+              if ((selected['produttore'] ?? '').toString().isNotEmpty) Text('Produttore: ${selected['produttore']}'),
+              if ((selected['codice_prodotto'] ?? '').toString().isNotEmpty) Text('Codice prodotto: ${selected['codice_prodotto']}'),
+              Text('Condizione: ${selected['condizione'] ?? 'Non indicata'}'),
+              Text('Completezza: ${selected['completezza'] ?? 'Non indicata'}'),
             ]),
           )),
           const SizedBox(height: 14),
@@ -1814,9 +1648,9 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             value: _market,
             decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Mercato di riferimento'),
             items: const [
-              DropdownMenuItem(value: 'ITALIA', child: const Text('Italia'))),
-              DropdownMenuItem(value: 'EUROPA', child: const Text('Europa'))),
-              DropdownMenuItem(value: 'MONDO', child: const Text('Mondo'))),
+              DropdownMenuItem(value: 'ITALIA', child: Text('Italia')),
+              DropdownMenuItem(value: 'EUROPA', child: Text('Europa')),
+              DropdownMenuItem(value: 'MONDO', child: Text('Mondo')),
             ],
             onChanged: (value) => setState(() { _market = value ?? 'ITALIA'; _prepared = null; }),
           ),
@@ -1835,16 +1669,16 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             child: Padding(padding: const EdgeInsets.all(14), child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('ESITO PREPARAZIONE'), style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('ESITO PREPARAZIONE', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('La richiesta è stata inviata al runtime. Questo esito non rappresenta ancora una valutazione di mercato definitiva né genera automaticamente inserzioni.')),
+                const Text('La richiesta è stata inviata al runtime. Questo esito non rappresenta ancora una valutazione di mercato definitiva né genera automaticamente inserzioni.'),
                 const SizedBox(height: 8),
                 SelectableText(_prepared.toString()),
               ],
             )),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI'))),
+          OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI')),
         ]),
     );
   }
@@ -1905,25 +1739,25 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         subtitle: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18))),
     );
     return Scaffold(
-      appBar: AppBar(title: const Text('VALORE COLLEZIONE')),
+      appBar: AppBar(title: const Text('VALORE COLLEZIONE'),
         actions: [IconButton(tooltip: 'Aggiorna', onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))]),
       body: _loading ? const Center(child: CircularProgressIndicator()) :
         _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(
           mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center),
-            const SizedBox(height: 12), FilledButton(onPressed: _load, child: const Text('Riprova')))])))
+            const SizedBox(height: 12), FilledButton(onPressed: _load, child: const Text('Riprova'))])))
         : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Text('RIEPILOGO DEL PATRIMONIO'), style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const Text('RIEPILOGO DEL PATRIMONIO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
           const SizedBox(height: 6),
-          const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.')),
+          const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.'),
           const SizedBox(height: 12),
           metric('Valore di mercato noto', _eur(market), Icons.trending_up, const Color(0xFF39875B)),
           metric('Valore manuale registrato', _eur(manual), Icons.edit_note, const Color(0xFF568DAD)),
           metric('Oggetti e unità', '${_rows.length} record · $units unità', Icons.inventory_2_outlined, const Color(0xFF8556C7)),
           metric('Oggetti senza stima di mercato', '$missing', Icons.hourglass_empty, const Color(0xFFE17D35)),
           const SizedBox(height: 12),
-          const Text('DETTAGLIO OGGETTI'), style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const Text('DETTAGLIO OGGETTI', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
           const SizedBox(height: 6),
-          if (_rows.isEmpty) const Card(child: ListTile(title: const Text('Nessun oggetto destinato alla collezione.')))),
+          if (_rows.isEmpty) const Card(child: ListTile(title: Text('Nessun oggetto destinato alla collezione.'))),
           ..._rows.map((r) {
             final q = (r['quantita'] as num?)?.toInt() ?? 1;
             final m = _num(r['valore_mercato']);
@@ -1932,12 +1766,12 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                 v != null ? 'Valore manuale: ${_eur(v*q)}' : 'Stima di mercato non disponibile';
             return Card(child: ListTile(
               title: Text((r['descrizione_oggetto'] ?? 'Oggetto senza descrizione').toString()),
-              subtitle: Text('ID ${r[')codice_oggetto']} · Quantità $q\n$label'),
+              subtitle: Text('ID ${r['codice_oggetto']} · Quantità $q\n$label'),
               isThreeLine: true,
             ));
           }),
           const SizedBox(height: 10),
-          const Text('Le stime automatiche e l’aggiornamento mensile saranno collegati al motore di valutazione in un passaggio separato, dopo il collaudo.'),
+          Text('Le stime automatiche e l’aggiornamento mensile saranno collegati al motore di valutazione in un passaggio separato, dopo il collaudo.',
             style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
         ])),
     );
@@ -2066,7 +1900,7 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('ASSISTENTE VALORA'))),
+    appBar: AppBar(title: Text(ValoraI18n.tr('ASSISTENTE VALORA'))),
     body: SafeArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -2075,10 +1909,10 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
           children: [
             const Icon(Icons.psychology_alt_outlined, color: goldColor, size: 44),
             const SizedBox(height: 8),
-            const Text('Parla con VALORA'), textAlign: TextAlign.center,
+            const Text('Parla con VALORA', textAlign: TextAlign.center,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
-            Text('L’assistente riceve il contesto della schermata: ${widget.screenContext}. In questa fase i comandi sono in sola lettura.'),
+            Text('L’assistente riceve il contesto della schermata: ${widget.screenContext}. In questa fase i comandi sono in sola lettura.',
               textAlign: TextAlign.center, style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
             const SizedBox(height: 16),
             TextField(
@@ -2105,7 +1939,7 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
                 icon: _working
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.send),
-                label: const Text('ESEGUI')),
+                label: const Text('ESEGUI'),
               )),
             ]),
             const SizedBox(height: 10),
@@ -2114,7 +1948,7 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
         ))),
         if (_answer.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(16), child: SelectableText(_answer))),
         const SizedBox(height: 8),
-        const Text('SICUREZZA: in questa versione l’assistente non salva, cancella o modifica record. Le azioni sui dati richiederanno conferma esplicita.'),
+        Text('SICUREZZA: in questa versione l’assistente non salva, cancella o modifica record. Le azioni sui dati richiederanno conferma esplicita.',
           style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
       ],
     )),
@@ -2264,7 +2098,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           border: Border.all(color: const Color(0xFFFFD54F), width: 2),
           boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 4, offset: Offset(0, 2))],
         ),
-        child: const Text('LEGO'), style: TextStyle(
+        child: const Text('LEGO', style: TextStyle(
           color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900,
           letterSpacing: -1.2, shadows: [Shadow(color: Colors.black54, offset: Offset(1, 2), blurRadius: 1)],
         )),
@@ -2281,7 +2115,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(Icons.shield_outlined, color: Color(0xFF6DB8FF), size: 19),
-          const Text('TRANSFORMERS'), maxLines: 1, style: TextStyle(
+          Text('TRANSFORMERS', maxLines: 1, style: TextStyle(
             color: Colors.white, fontSize: 5.5, fontWeight: FontWeight.w900, letterSpacing: 0.2,
           )),
         ]),
@@ -2296,7 +2130,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           borderRadius: BorderRadius.circular(9),
           border: Border.all(color: const Color(0xFF3B6EA8), width: 2),
         ),
-        child: const Text('GUNDAM'), style: TextStyle(
+        child: const Text('GUNDAM', style: TextStyle(
           color: Color(0xFF164B8C), fontSize: 11, fontWeight: FontWeight.w900,
           letterSpacing: -0.4,
         )),
@@ -2372,19 +2206,19 @@ class _HomeDashboardState extends State<HomeDashboard> {
               Text(category, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
               Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
             ])),
-            Text('${rows.length} record'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            Text('${rows.length} record', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
             const SizedBox(width: 6),
             TextButton(
               onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: category))),
               style: TextButton.styleFrom(foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 7)),
-              child: const Text('VEDI TUTTI'), style: TextStyle(fontSize: 10)),
+              child: const Text('VEDI TUTTI', style: TextStyle(fontSize: 10)),
             ),
           ]),
           if (_catalogLoading)
             const Padding(padding: EdgeInsets.all(14), child: LinearProgressIndicator())
           else if (rows.isEmpty)
             const Padding(padding: EdgeInsets.fromLTRB(4, 10, 4, 5),
-              child: const Text('Nessun record riconosciuto in questa categoria.'), style: TextStyle(color: Colors.white70, fontSize: 12)))
+              child: Text('Nessun record riconosciuto in questa categoria.', style: TextStyle(color: Colors.white70, fontSize: 12)))
           else
             SizedBox(height: 118, child: ListView.separated(
               scrollDirection: Axis.horizontal,
@@ -2433,7 +2267,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             onPressed: () => setState(() { selectedSection = null; showCollection = false; }),
             icon: const Icon(Icons.arrow_back),
           ),
-          title: const Text('COLLECTION by VALORA'), style: TextStyle(
+          title: const Text('COLLECTION by VALORA', style: TextStyle(
             fontWeight: FontWeight.bold, letterSpacing: 1,
           )),
           actions: [
@@ -2457,7 +2291,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             builder: (_) => ValoraAssistantPage(screenContext: selectedSection?.title ?? 'Dashboard'),
           )),
           icon: const Icon(Icons.mic_none),
-          label: const Text('ASSISTENTE')),
+          label: Text(ValoraI18n.tr('ASSISTENTE')),
         ),
       );
 
@@ -2579,9 +2413,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
       const Padding(
         padding: EdgeInsets.fromLTRB(2, 4, 2, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('CENTRO OPERATIVO'), style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
+          Text('CENTRO OPERATIVO', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
           SizedBox(height: 5),
-          const Text('Scegli una sezione per accedere alle relative funzioni.'), style: TextStyle(color: Colors.white70, fontSize: 13)),
+          Text('Scegli una sezione per accedere alle relative funzioni.', style: TextStyle(color: Colors.white70, fontSize: 13)),
         ]),
       ),
       _menuCard(
@@ -2602,10 +2436,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
       if (_catalogError != null)
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Text('Conteggio catalogo non disponibile: $_catalogError'), style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
+          child: Text('Conteggio catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
         ),
       const SizedBox(height: 12),
-      const Center(child: const Text('COLLECTION by VALORA'), style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
+      const Center(child: Text('COLLECTION by VALORA', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
     ],
   );
   }
@@ -2619,9 +2453,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
           const Icon(Icons.inventory_2_outlined, color: goldColor, size: 34),
           const SizedBox(width: 10),
           const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('COLLEZIONE'), style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
+            Text('COLLEZIONE', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
             SizedBox(height: 3),
-            const Text('Seleziona un tema per consultare i relativi oggetti.'), style: TextStyle(color: Colors.white70, fontSize: 12)),
+            Text('Seleziona un tema per consultare i relativi oggetti.', style: TextStyle(color: Colors.white70, fontSize: 12)),
           ])),
           Text(_catalogLoading ? '…' : '${_catalogRows.length}', style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
         ]),
@@ -2630,7 +2464,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         Container(
           margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
-          child: Text('Catalogo non disponibile: $_catalogError'), style: const TextStyle(color: Colors.white)),
+          child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
         ),
       if (!_catalogLoading) ...[
         if (_catalogRows.any((row) => _dashboardCategory(row) == 'LEGO'))
@@ -2707,7 +2541,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       )),
       const SizedBox(height: 12),
       OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
-        icon: const Icon(Icons.dashboard_outlined), label: const Text('TORNA ALLA DASHBOARD'))),
+        icon: const Icon(Icons.dashboard_outlined), label: const Text('TORNA ALLA DASHBOARD')),
     ]);
   }
 
@@ -2717,7 +2551,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(procedure.description),
       ]),
-      actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('CHIUDI')))],
+      actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('CHIUDI'))],
     ));
   }
 }
@@ -2890,7 +2724,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
     final code = int.tryParse(_code(row));
     if (code == null || code <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: const Text('Il risultato non contiene un codice oggetto valido.'))),
+        const SnackBar(content: Text('Il risultato non contiene un codice oggetto valido.')),
       );
       return;
     }
@@ -2913,12 +2747,13 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   Widget build(BuildContext context) {
     final color = ValoraAppearance.instance.colorFor('RICERCHE');
     return Scaffold(
-      appBar: AppBar(title: const Text('RICERCA OGGETTI PER CATEGORIA'))),
+      appBar: AppBar(title: const Text('RICERCA OGGETTI PER CATEGORIA')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text('Cerca nel catalogo esistente per categoria o dicitura. Esempio: TRANSFORMERS.'),
+            Text(
+              'Cerca nel catalogo esistente per categoria o dicitura. Esempio: TRANSFORMERS.',
               style: TextStyle(color: ValoraAppearance.instance.textSecondary),
             ),
             const SizedBox(height: 14),
@@ -2966,7 +2801,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
                   child: Icon(Icons.inventory_2_outlined, color: color),
                 ),
                 title: Text(_description(row), maxLines: 3, overflow: TextOverflow.ellipsis),
-                subtitle: Text('Codice oggetto: ${_code(row)}')),
+                subtitle: Text('Codice oggetto: ${_code(row)}'),
                 trailing: Icon(Icons.chevron_right, color: color),
                 onTap: () => _openRecord(row),
               ),
@@ -3312,12 +3147,13 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('CONFERMA IMPORTAZIONE')),
-        content: Text('Saranno caricati e verificati ${eligible.length} oggetti selezionati, poi salvati con un’unica operazione SQL in TEST. Se un oggetto non supera la validazione, l’intero lotto sarà annullato. I possibili duplicati e le righe senza descrizione saranno esclusi. Procedere?'),
+        title: const Text('CONFERMA IMPORTAZIONE'),
+        content: Text(
+          'Saranno caricati e verificati ${eligible.length} oggetti selezionati, poi salvati con un’unica operazione SQL in TEST. Se un oggetto non supera la validazione, l’intero lotto sarà annullato. I possibili duplicati e le righe senza descrizione saranno esclusi. Procedere?',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('IMPORTA'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('IMPORTA')),
         ],
       ),
     );
@@ -3487,8 +3323,8 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                   tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                   leading: Icon(Icons.tips_and_updates_outlined, color: color),
-                  title: const Text('Preparare il file'), style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Requisiti e consigli per l’importazione')),
+                  title: const Text('Preparare il file', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Requisiti e consigli per l’importazione'),
                   children: [
                     Align(alignment: Alignment.centerLeft, child: sectionLabel('FORMATO E STRUTTURA')),
                     tip(Icons.view_list_outlined, 'Una riga per oggetto', 'Usa una riga per ogni oggetto e una colonna per ogni informazione.'),
@@ -3499,11 +3335,12 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                       children: [
                         Icon(Icons.file_present_outlined, size: 18, color: color),
                         const SizedBox(width: 8),
-                        Expanded(child: const Text('Formati supportati: XLSX, CSV e JSON'), style: TextStyle(color: appearance.textSecondary, fontSize: 13))),
+                        Expanded(child: Text('Formati supportati: XLSX, CSV e JSON', style: TextStyle(color: appearance.textSecondary, fontSize: 13))),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    const Text('Prima del salvataggio vedrai l’anteprima e gli eventuali duplicati. I record già presenti non vengono aggiornati.'),
+                    Text(
+                      'Prima del salvataggio vedrai l’anteprima e gli eventuali duplicati. I record già presenti non vengono aggiornati.',
                       style: TextStyle(color: appearance.textMuted, fontSize: 12, height: 1.35),
                     ),
                   ],
@@ -3524,19 +3361,20 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                 const SizedBox(height: 20),
                 Row(
                   children: [
-                    Expanded(child: const Text('ANTEPRIMA'), style: TextStyle(color: appearance.textSecondary, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.0))),
+                    Expanded(child: Text('ANTEPRIMA', style: TextStyle(color: appearance.textSecondary, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.0))),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: Text('${_rows.length} record'), style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+                      child: Text('${_rows.length} record', style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Selezionati: ${_selectedRows.where((i) => !_invalid.contains(i) && !_duplicates.contains(i)).length} · Esclusi: ${_invalid.length + _duplicates.length}'),
+                Text(
+                  'Selezionati: ${_selectedRows.where((i) => !_invalid.contains(i) && !_duplicates.contains(i)).length} · Esclusi: ${_invalid.length + _duplicates.length}',
                   style: TextStyle(color: appearance.textSecondary, fontSize: 12),
                 ),
                 const SizedBox(height: 8),
@@ -3555,7 +3393,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                         }
                       }),
                       icon: const Icon(Icons.library_add_check, size: 18),
-                      label: const Text('SELEZIONA PAGINA')),
+                      label: const Text('SELEZIONA PAGINA'),
                     ),
                     OutlinedButton.icon(
                       onPressed: _busy ? null : () => setState(() {
@@ -3564,12 +3402,12 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                           ..addAll(List<int>.generate(_rows.length, (i) => i).where((i) => !_invalid.contains(i) && !_duplicates.contains(i)));
                       }),
                       icon: const Icon(Icons.select_all, size: 18),
-                      label: const Text('SELEZIONA TUTTI I VALIDI')),
+                      label: const Text('SELEZIONA TUTTI I VALIDI'),
                     ),
                     TextButton.icon(
                       onPressed: _busy ? null : () => setState(() => _selectedRows.clear()),
                       icon: const Icon(Icons.deselect, size: 18),
-                      label: const Text('DESELEZIONA TUTTI')),
+                      label: const Text('DESELEZIONA TUTTI'),
                     ),
                   ],
                 ),
@@ -3628,7 +3466,8 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                           icon: const Icon(Icons.arrow_back_ios_new),
                         ),
                         Expanded(
-                          child: Text('${_importPage * _importPageSize + 1}–${((_importPage + 1) * _importPageSize) > _rows.length ? _rows.length : ((_importPage + 1) * _importPageSize)} di ${_rows.length} · Pagina ${_importPage + 1}/${((_rows.length - 1) ~/ _importPageSize) + 1}'),
+                          child: Text(
+                            '${_importPage * _importPageSize + 1}–${((_importPage + 1) * _importPageSize) > _rows.length ? _rows.length : ((_importPage + 1) * _importPageSize)} di ${_rows.length} · Pagina ${_importPage + 1}/${((_rows.length - 1) ~/ _importPageSize) + 1}',
                             textAlign: TextAlign.center,
                             style: TextStyle(color: appearance.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
                           ),
@@ -3647,16 +3486,16 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
                   child: FilledButton.icon(
                     onPressed: _busy ? null : _confirmImport,
                     icon: const Icon(Icons.save_outlined),
-                    label: Text('IMPORTA ${_selectedRows.where((i) => !_invalid.contains(i) && !_duplicates.contains(i)).length} SELEZIONATI')),
+                    label: Text('IMPORTA ${_selectedRows.where((i) => !_invalid.contains(i) && !_duplicates.contains(i)).length} SELEZIONATI'),
                   ),
                 ),
               ],
             ] else ...[
-              SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _busy ? null : () => _export('xlsx'), icon: const Icon(Icons.table_view_outlined), label: const Text('ESPORTA EXCEL (.XLSX)')))),
+              SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _busy ? null : () => _export('xlsx'), icon: const Icon(Icons.table_view_outlined), label: const Text('ESPORTA EXCEL (.XLSX)'))),
               const SizedBox(height: 8),
-              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : () => _export('csv'), icon: const Icon(Icons.description_outlined), label: const Text('ESPORTA CSV')))),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : () => _export('csv'), icon: const Icon(Icons.description_outlined), label: const Text('ESPORTA CSV'))),
               const SizedBox(height: 8),
-              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : () => _export('json'), icon: const Icon(Icons.data_object_outlined), label: const Text('ESPORTA JSON')))),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : () => _export('json'), icon: const Icon(Icons.data_object_outlined), label: const Text('ESPORTA JSON'))),
             ],
             if (_busy) ...[
               const SizedBox(height: 16),
@@ -3686,7 +3525,8 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
               children: [
                 Icon(Icons.shield_outlined, size: 15, color: appearance.textMuted),
                 const SizedBox(width: 7),
-                Expanded(child: const Text('Ambiente TEST · L’importazione crea nuovi record e non modifica quelli esistenti.'),
+                Expanded(child: Text(
+                  'Ambiente TEST · L’importazione crea nuovi record e non modifica quelli esistenti.',
                   style: TextStyle(color: appearance.textMuted, fontSize: 11, height: 1.35),
                 )),
               ],
@@ -3897,7 +3737,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         setState(() => _output = 'ERRORE: $e');
         if (widget.apiCode == 'OBJECT_MASTER') {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ricerca non riuscita: $e')), duration: const Duration(seconds: 5)),
+            SnackBar(content: Text('Ricerca non riuscita: $e'), duration: const Duration(seconds: 5)),
           );
         }
       }
@@ -4121,10 +3961,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           backgroundColor: ValoraAppearance.instance.card,
-          title: const Text('NESSUN RISULTATO'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-          content: const Text('Non ho trovato oggetti per “') + query + '”. Prova con una parte più breve della descrizione o con il codice oggetto.'),
+          title: Text('NESSUN RISULTATO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          content: Text('Non ho trovato oggetti per “' + query + '”. Prova con una parte più breve della descrizione o con il codice oggetto.'),
           actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('OK'))),
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('OK')),
           ],
         ),
       );
@@ -4135,7 +3975,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: true,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: ValoraAppearance.instance.card,
-        title: const Text('RISULTATI RICERCA (') + results.length.toString() + ')',
+        title: Text('RISULTATI RICERCA (' + results.length.toString() + ')',
           style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
         content: SizedBox(
           width: 560,
@@ -4147,7 +3987,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 children: results.map((item) => Card(
                   child: ListTile(
                     title: Text(codeOf(item) + ' · ' + descriptionOf(item)),
-                    subtitle: const Text('Stato: ') + (item['stato'] ?? 'Non indicato').toString() +
+                    subtitle: Text('Stato: ' + (item['stato'] ?? 'Non indicato').toString() +
                       ' · Quantità: ' + (item['quantita'] ?? 'Non indicata').toString() +
                       ' · Prezzo unitario: € ' + (item['valore_oggetto'] ?? 'Non indicato').toString()),
                     trailing: Icon(Icons.chevron_right, color: sectionColor),
@@ -4160,7 +4000,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('ANNULLA'))),
+            child: Text('ANNULLA')),
         ],
       ),
     );
@@ -4253,11 +4093,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: ValoraAppearance.instance.card,
-        title: const Text('CONFERMA CHIUSURA')),
-        content: Text('Oggetto: $id · $description\nMotivo: $reason\nNote: ${notes.isEmpty ? "Nessuna" : notes}\n\nConfermi questa chiusura?')),
+        title: Text('CONFERMA CHIUSURA'),
+        content: Text('Oggetto: $id · $description\nMotivo: $reason\nNote: ${notes.isEmpty ? "Nessuna" : notes}\n\nConfermi questa chiusura?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA'))),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA'))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('CONFERMA')),
         ],
       ),
     );
@@ -4276,11 +4116,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: ValoraAppearance.instance.card,
-        title: const Text('ALTRO OGGETTO?')),
-        content: Text('Vuoi chiudere un altro oggetto?\n\nOggetti confermati: ${_pr03PendingClosures.length}')),
+        title: Text('ALTRO OGGETTO?'),
+        content: Text('Vuoi chiudere un altro oggetto?\n\nOggetti confermati: ${_pr03PendingClosures.length}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, SALVA'))),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, CERCA ALTRO'))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('NO, SALVA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('SÌ, CERCA ALTRO')),
         ],
       ),
     );
@@ -4312,11 +4152,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: ValoraAppearance.instance.card,
-        title: const Text('RIEPILOGO FINALE')),
-        content: SingleChildScrollView(child: Text('Saranno salvate queste chiusure:\n\n$summary\n\nConfermi il salvataggio?'))),
+        title: Text('RIEPILOGO FINALE'),
+        content: SingleChildScrollView(child: Text('Saranno salvate queste chiusure:\n\n$summary\n\nConfermi il salvataggio?')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA'))),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SALVA TUTTO'))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('SALVA TUTTO')),
         ],
       ),
     );
@@ -4370,7 +4210,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _output = 'Chiusure salvate e scrittura confermata per: ${saved.join(', ')}.';
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Chiusure salvate: ${saved.join('), ')}')),
+      SnackBar(content: Text('Chiusure salvate: ${saved.join(', ')}')),
     );
   }
 
@@ -4409,7 +4249,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('METADATI DEL PRODOTTO'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          Text('METADATI DEL PRODOTTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Container(
@@ -4432,7 +4272,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ])),
           ]),
           const SizedBox(height: 8),
-          const Text('Metadati informativi, non modificabili da questa scheda.'),
+          Text('Metadati informativi, non modificabili da questa scheda.',
             style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
         ]),
       ),
@@ -4465,12 +4305,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('DATI TECNICI · SOLA LETTURA'),
+          Text('DATI TECNICI · SOLA LETTURA',
             style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Divider(height: 24),
           if (technicalEntries.isEmpty)
-            const Text('Nessun altro dato tecnico presente nel record.'),
+            Text('Nessun altro dato tecnico presente nel record.',
               style: TextStyle(color: ValoraAppearance.instance.textMuted))
           else
             ...technicalEntries.map((entry) => _detailFieldCard(entry.key, entry.value)),
@@ -4580,7 +4420,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<void> _recognizeSelectedPhoto() async {
     final bytes = _selectedImageBytes;
     if (bytes == null || bytes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: const Text('Scatta prima una foto dell’oggetto.'))));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Scatta prima una foto dell’oggetto.')));
       return;
     }
     setState(() { _loading = true; _imageStatus = 'Sto riconoscendo l’oggetto e cercando fonti con PR-12…'; });
@@ -4651,9 +4491,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             Icon(Icons.auto_awesome, color: sectionColor, size: 26),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('ASSISTENTE VALORA'), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('ASSISTENTE VALORA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 3),
-              const Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.'),
+              Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
             ])),
           ]),
@@ -4688,7 +4528,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Align(alignment: Alignment.centerRight, child: TextButton.icon(
             onPressed: _loading ? null : _pickImageFile,
             icon: const Icon(Icons.photo_library_outlined),
-            label: const Text('Scegli invece una foto dalla galleria')),
+            label: const Text('Scegli invece una foto dalla galleria'),
           )),
         ]),
       ),
@@ -4702,7 +4542,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('IMMAGINE OGGETTO'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text('IMMAGINE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 10),
           if (imageUrl != null && imageUrl.startsWith('http'))
             ClipRRect(
@@ -4718,7 +4558,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 errorBuilder: (_, __, ___) => Column(children: [
                   Icon(Icons.broken_image_outlined, size: 42, color: ValoraAppearance.instance.textFaint),
                   const SizedBox(height: 6),
-                  const Text('Immagine registrata, ma anteprima non disponibile.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                  Text('Immagine registrata, ma anteprima non disponibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                 ]),
               ),
             )
@@ -5246,8 +5086,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final accepted = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('CONFERMA APPLICAZIONE METADATI')),
-        content: Text('Oggetto #$id\n')
+        title: const Text('CONFERMA APPLICAZIONE METADATI'),
+        content: Text(
+          'Oggetto #$id\n'
           'Descrizione proposta: ' + (proposedDescription.isEmpty ? 'nessuna modifica' : proposedDescription) + '\n'
           'Produttore: ' + (maker.isEmpty ? 'non trovato' : maker) + '\n'
           'Anno: ' + (year?.toString() ?? 'non trovato') + '\n'
@@ -5255,8 +5096,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'La descrizione esistente viene conservata e integrata con il titolo candidato. Gli altri campi vengono compilati soltanto se vuoti. Verifica che il candidato identifichi proprio questo oggetto.',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMO'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMO')),
         ],
       ),
     );
@@ -5273,7 +5114,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
     if (!mounted) return;
     setState(() => _pr12AiBatchStatus = 'Metadati applicati all’oggetto #$id: ' + patch.keys.join(', ') + '. Sono stati aggiornati soltanto campi vuoti.');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato: ') + patch.keys.join(', '))));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato: ' + patch.keys.join(', '))));
   }
   String _pr12CategoryFromDescription(String description) {
     final v = description.toLowerCase();
@@ -5296,7 +5137,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<void> _exportResults({required bool asPdf}) async {
     if (_rows.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: const Text('Non ci sono risultati da esportare.'))),
+        const SnackBar(content: Text('Non ci sono risultati da esportare.')),
       );
       return;
     }
@@ -5324,12 +5165,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           pageFormat: pw_core.PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(28),
           build: (context) => [
-            pw.const Text('COLLECTION by VALORA'),
+            pw.Text('COLLECTION by VALORA',
                 style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 6),
             pw.Text(widget.title, style: const pw.TextStyle(fontSize: 14)),
             pw.SizedBox(height: 4),
-            pw.Text('Record: ${records.length} · Generato il ${_dateLabel(DateTime.now())}'),
+            pw.Text('Record: ${records.length} · Generato il ${_dateLabel(DateTime.now())}',
                 style: const pw.TextStyle(fontSize: 9)),
             pw.SizedBox(height: 14),
             pw.TableHelper.fromTextArray(
@@ -5373,7 +5214,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Esportazione non riuscita: $e')), duration: const Duration(seconds: 6)),
+        SnackBar(content: Text('Esportazione non riuscita: $e'), duration: const Duration(seconds: 6)),
       );
     }
   }
@@ -5646,7 +5487,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             SelectableText(text, style: TextStyle(fontSize: 15)),
             if (isUrl) ...[
               const SizedBox(height: 4),
-              const Text('Fonte esterna'), style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+              Text('Fonte esterna', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
             ],
           ],
         ),
@@ -5829,7 +5670,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${labelFor(key)}${required ? ') · OBBLIGATORIO' : ''}',
+              Text('${labelFor(key)}${required ? ' · OBBLIGATORIO' : ''}',
                 style: TextStyle(color: sectionColor, fontWeight: FontWeight.w600)),
               const SizedBox(height: 4),
               SelectableText(shown),
@@ -5841,7 +5682,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 12)),
                 ),
               if (applicability != null && applicability.isNotEmpty)
-                Text('Applicabilità: $applicability'),
+                Text('Applicabilità: $applicability',
                   style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
             ]),
           ),
@@ -5854,7 +5695,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     };
     return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
       crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('METADATI DEL PRODOTTO'),
+        Text('METADATI DEL PRODOTTO',
           style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 4),
         Text(_pr11CategoryCode == null
@@ -5862,19 +5703,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             : 'Categoria: $_pr11CategoryCode · campi specifici caricati dal catalogo VALORA.',
           style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 12)),
         const SizedBox(height: 12),
-        const Text('IDENTIFICAZIONE'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+        Text('IDENTIFICAZIONE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         ...common.map((key) => field(key)),
         if (_pr11CategoryFieldDefinitions.isNotEmpty) ...[
           const SizedBox(height: 8),
-          const Text('CAMPI SPECIFICI DELLA CATEGORIA'),
+          Text('CAMPI SPECIFICI DELLA CATEGORIA',
             style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...category.map((key) => field(key, definition: definitionsByName[key])),
         ] else
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8),
-            child: const Text('Non risultano definizioni di campi specifici per questa categoria.')),
+            child: Text('Non risultano definizioni di campi specifici per questa categoria.'),
           ),
       ],
     )));
@@ -5891,14 +5732,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (technical.isEmpty) {
       return Card(child: const Padding(
         padding: EdgeInsets.all(16),
-        child: const Text('Nessun campo tecnico disponibile per questo oggetto.')),
+        child: Text('Nessun campo tecnico disponibile per questo oggetto.'),
       ));
     }
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('DATI TECNICI E DI SISTEMA'),
+          Text('DATI TECNICI E DI SISTEMA',
             style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 8),
           ...technical.map((e) => _detailFieldCard(e.key, e.value)),
@@ -5922,7 +5763,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('CODICE OGGETTO $code'),
+          Text('CODICE OGGETTO $code',
             style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           _pr11SummaryValue('Destinazione', destination),
@@ -6048,7 +5889,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ],
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Expanded(child: Text('CODICE $code'),
+                Expanded(child: Text(
+                  'CODICE $code',
                   style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 12),
                 )),
                 if (onTap != null) Icon(Icons.chevron_right, color: sectionColor, size: 20),
@@ -6068,17 +5910,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 Row(children: [
                   Icon(Icons.circle, size: 8, color: sectionColor),
                   const SizedBox(width: 6),
-                  Expanded(child: Text('Stato: $state'), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
+                  Expanded(child: Text('Stato: $state', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
                 ]),
                 const SizedBox(height: 5),
-                Text('Valore: $value'),
+                Text(
+                  'Valore: $value',
                   style: TextStyle(color: sectionColor, fontWeight: FontWeight.w700, fontSize: 13),
                 ),
               ] else ...[
-                Text('Destinazione: $destination')),
-                Text('Condizione: $condition')),
-                Text('Stato: $state')),
-                Text('Valore: $value')),
+                Text('Destinazione: $destination'),
+                Text('Condizione: $condition'),
+                Text('Stato: $state'),
+                Text('Valore: $value'),
               ],
             ])),
           ]),
@@ -6135,7 +5978,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (reason.isNotEmpty) details.add(_historyDetailRow('Motivo', reason));
     if (note.isNotEmpty) details.add(_historyDetailRow('Note', note));
     if (details.isEmpty) {
-      details.add(const Text('Nessun dettaglio registrato'), style: TextStyle(color: ValoraAppearance.instance.textSecondary)));
+      details.add(Text('Nessun dettaglio registrato', style: TextStyle(color: ValoraAppearance.instance.textSecondary)));
     }
     return Card(
       child: Padding(
@@ -6191,7 +6034,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
     if (code == 'PR-12') {
       return Scaffold(
-        appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI'))),
+        appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI')),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -6201,9 +6044,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('RICERCA MULTI-FONTE'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                    Text('RICERCA MULTI-FONTE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    const Text('PR-12 controlla il catalogo e individua tutti i record con almeno un metadato identificativo mancante. Questa fase è di sola lettura: i dati presenti non vengono modificati.')),
+                    const Text('PR-12 controlla il catalogo e individua tutti i record con almeno un metadato identificativo mancante. Questa fase è di sola lettura: i dati presenti non vengono modificati.'),
                     const SizedBox(height: 14),
                     SizedBox(
                       width: double.infinity,
@@ -6216,7 +6059,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text('Record incompleti: ${_pr12IncompleteRecords.length}'), style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                    Text('Record incompleti: ${_pr12IncompleteRecords.length}', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                     const SizedBox(height: 12),
                     SizedBox(width: double.infinity, child: FilledButton.icon(
                       onPressed: _loading || _pr12AiBatchRunning ? null : _runPr12AiBatch,
@@ -6227,7 +6070,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     SelectableText(_pr12RetryRunning ? 'Nuovo tentativo sui record irrisolti in corso…' : _pr12AiBatchStatus),
                     if (_pr12UnresolvedRecords.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      Text('DA RIPROVARE: ${_pr12UnresolvedRecords.length}'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      Text('DA RIPROVARE: ${_pr12UnresolvedRecords.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                       SizedBox(width: double.infinity, child: OutlinedButton.icon(
                         onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(retryUnresolved: true),
                         icon: const Icon(Icons.refresh),
@@ -6239,19 +6082,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       SizedBox(width: double.infinity, child: OutlinedButton.icon(
                         onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(),
                         icon: const Icon(Icons.skip_next),
-                        label: Text('ELABORA PROSSIMO LOTTO · ${(_pr12IncompleteRecords.length - _pr12NextBatchOffset).clamp(0, 10)} DI ${_pr12IncompleteRecords.length - _pr12NextBatchOffset} RECORD')),
+                        label: Text('ELABORA PROSSIMO LOTTO · ${(_pr12IncompleteRecords.length - _pr12NextBatchOffset).clamp(0, 10)} DI ${_pr12IncompleteRecords.length - _pr12NextBatchOffset} RECORD'),
                       )),
                     ],
                     if (_pr12AiResults.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      Text('RISULTATI RICERCA (${_pr12AiResults.length})'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      Text('RISULTATI RICERCA (${_pr12AiResults.length})', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                       ..._pr12AiResults.map((result) {
                         final candidates = result['risultati'];
                         final candidateList = candidates is List ? candidates : const [];
                         final objectId = (result['oggetto_id'] ?? '').toString();
                         final selectedIndex = _pr12SelectedCandidates[objectId];
                         return Card(child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('#${result[')oggetto_id'] ?? ''} · ${result['descrizione'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text('#${result['oggetto_id'] ?? ''} · ${result['descrizione'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
                           Text(result['ok'] != true ? 'Errore tecnico: ${result['error'] ?? 'ricerca non riuscita'}' : (((result['numero_risultati'] as num?) ?? candidateList.length) == 0 ? 'Nessuna corrispondenza pertinente trovata' : '${result['numero_risultati'] ?? candidateList.length} candidati da verificare')),
                           ...candidateList.take(5).toList().asMap().entries.map((entry) {
                             final index = entry.key;
@@ -6306,24 +6149,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                                           children: [
                                             Icon(Icons.image_search_outlined, size: 30),
                                             SizedBox(height: 5),
-                                            const Text('Nessuna immagine'), textAlign: TextAlign.center, style: TextStyle(fontSize: 11)),
+                                            Text('Nessuna immagine', textAlign: TextAlign.center, style: TextStyle(fontSize: 11)),
                                           ],
                                         ),
                                       ),
                                     ),
                                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                     Row(children: [Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: selected ? sectionColor : null), const SizedBox(width: 5), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)))]),
-                                    if (maker.isNotEmpty) Text('Produttore / editore: $maker')),
-                                    if (year.isNotEmpty) Text('Anno: $year')),
-                                    if (productCode.isNotEmpty) Text('Codice / ISBN: $productCode')),
-                                    Text('Fonte: ${source.isEmpty ? ')sito non identificato' : source}', style: TextStyle(color: sectionColor, fontSize: 12)),
+                                    if (maker.isNotEmpty) Text('Produttore / editore: $maker'),
+                                    if (year.isNotEmpty) Text('Anno: $year'),
+                                    if (productCode.isNotEmpty) Text('Codice / ISBN: $productCode'),
+                                    Text('Fonte: ${source.isEmpty ? 'sito non identificato' : source}', style: TextStyle(color: sectionColor, fontSize: 12)),
                                   ])),
                                 ]),
                                 if (snippet.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(snippet, maxLines: 5, overflow: TextOverflow.ellipsis)),
                                 if (url.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: SelectableText(url, style: TextStyle(color: sectionColor, fontSize: 12))),
-                                if (selected) Padding(padding: const EdgeInsets.only(top: 8), child: SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => _pr12ApplySelectedCandidate(result, item), icon: const Icon(Icons.check_circle_outline), label: const Text('APPLICA METADATI SE DISPONIBILI'))))),
+                                if (selected) Padding(padding: const EdgeInsets.only(top: 8), child: SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => _pr12ApplySelectedCandidate(result, item), icon: const Icon(Icons.check_circle_outline), label: const Text('APPLICA METADATI SE DISPONIBILI')))),
                                 const SizedBox(height: 4),
-                                const Text('Candidato da verificare: selezionalo per applicare eventuali metadati strutturati.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                                Text('Candidato da verificare: selezionalo per applicare eventuali metadati strutturati.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                               ]),
                             ));
                           }),
@@ -6331,27 +6174,27 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       }),
                     ],                    if (_pr12IncompleteRecords.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      Text('RECORD INCOMPLETI · PAGINA ${_pr12QueuePage + 1} DI ${(_pr12IncompleteRecords.length / 10).ceil()}'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      Text('RECORD INCOMPLETI · PAGINA ${_pr12QueuePage + 1} DI ${(_pr12IncompleteRecords.length / 10).ceil()}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      const Text('Mostro 10 record alla volta. Puoi verificare un singolo oggetto oppure selezionarne fino a 10 per una ricerca combinata.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                      Text('Mostro 10 record alla volta. Puoi verificare un singolo oggetto oppure selezionarne fino a 10 per una ricerca combinata.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                       const SizedBox(height: 8),
                       Row(children: [
                         Expanded(child: OutlinedButton.icon(
                           onPressed: _pr12AiBatchRunning || _pr12QueuePage == 0 ? null : () => setState(() { _pr12QueuePage--; _pr12SelectedRecordIds.clear(); }),
                           icon: const Icon(Icons.arrow_back),
-                          label: const Text('PRECEDENTE')),
+                          label: const Text('PRECEDENTE'),
                         )),
                         const SizedBox(width: 10),
                         Expanded(child: OutlinedButton.icon(
                           onPressed: _pr12AiBatchRunning || (_pr12QueuePage + 1) * 10 >= _pr12IncompleteRecords.length ? null : () => setState(() { _pr12QueuePage++; _pr12SelectedRecordIds.clear(); }),
                           icon: const Icon(Icons.arrow_forward),
-                          label: const Text('SUCCESSIVA')),
+                          label: const Text('SUCCESSIVA'),
                         )),
                       ]),
                       const SizedBox(height: 8),
                       Row(children: [
-                        Expanded(child: Text('Selezionati: ${_pr12SelectedRecordIds.length}/10'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
-                        TextButton(onPressed: _pr12SelectedRecordIds.isEmpty ? null : () => setState(() => _pr12SelectedRecordIds.clear()), child: const Text('ANNULLA SELEZIONE'))),
+                        Expanded(child: Text('Selezionati: ${_pr12SelectedRecordIds.length}/10', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
+                        TextButton(onPressed: _pr12SelectedRecordIds.isEmpty ? null : () => setState(() => _pr12SelectedRecordIds.clear()), child: const Text('ANNULLA SELEZIONE')),
                       ]),
                       SizedBox(width: double.infinity, child: FilledButton.icon(
                         onPressed: _pr12AiBatchRunning || _pr12SelectedRecordIds.isEmpty ? null : () {
@@ -6359,7 +6202,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                           _runPr12AiBatch(selectedRecords: selected);
                         },
                         icon: const Icon(Icons.travel_explore),
-                        label: Text('VERIFICA ${_pr12SelectedRecordIds.length} SELEZIONATI')),
+                        label: Text('VERIFICA ${_pr12SelectedRecordIds.length} SELEZIONATI'),
                       )),
                       const SizedBox(height: 8),
                       ..._pr12IncompleteRecords.skip(_pr12QueuePage * 10).take(10).map((row) {
@@ -6394,9 +6237,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                               Expanded(child: Padding(
                                 padding: const EdgeInsets.only(top: 12, bottom: 8),
                                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  Text('#$id · ${row[')descrizione_oggetto'] ?? 'Senza descrizione'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text('#$id · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}', style: const TextStyle(fontWeight: FontWeight.bold)),
                                   const SizedBox(height: 4),
-                                  Text('Mancano: ${missing.join('), ')}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                                  Text('Mancano: ${missing.join(', ')}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                                 ]),
                               )),
                               IconButton(
@@ -6413,13 +6256,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         Expanded(child: OutlinedButton.icon(
                           onPressed: _pr12AiBatchRunning || _pr12QueuePage == 0 ? null : () => setState(() { _pr12QueuePage--; _pr12SelectedRecordIds.clear(); }),
                           icon: const Icon(Icons.arrow_back),
-                          label: const Text('INDIETRO')),
+                          label: const Text('INDIETRO'),
                         )),
                         const SizedBox(width: 10),
                         Expanded(child: OutlinedButton.icon(
                           onPressed: _pr12AiBatchRunning || (_pr12QueuePage + 1) * 10 >= _pr12IncompleteRecords.length ? null : () => setState(() { _pr12QueuePage++; _pr12SelectedRecordIds.clear(); }),
                           icon: const Icon(Icons.arrow_forward),
-                          label: const Text('AVANTI')),
+                          label: const Text('AVANTI'),
                         )),
                       ]),
                     ],
@@ -6434,17 +6277,17 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('STATO DELLA RICERCA'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                    Text('STATO DELLA RICERCA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     SelectableText(_metadataResult),
                     if (_producer.text.isNotEmpty || _line.text.isNotEmpty || _family.text.isNotEmpty) ...[
                       const Divider(height: 24),
-                      const Text('METADATI SELEZIONATI'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      Text('METADATI SELEZIONATI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       _field(_producer, 'Produttore selezionato'),
                       _field(_line, 'Anno di uscita selezionato'),
                       _field(_family, 'Codice prodotto selezionato'),
-                      const Text('I candidati qui sopra sono solo proposte. Il record viene aggiornato esclusivamente dopo aver selezionato un candidato e confermato l’operazione; gli altri campi già compilati vengono conservati.')),
+                      const Text('I candidati qui sopra sono solo proposte. Il record viene aggiornato esclusivamente dopo aver selezionato un candidato e confermato l’operazione; gli altri campi già compilati vengono conservati.'),
                     ],
                   ],
                 ),
@@ -6461,7 +6304,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (!isMaster)
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? ')sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
+            child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
               style: TextStyle(color: sectionColor)),
           )),
         if (_isWrite && code == 'PR-01') ...[
@@ -6469,9 +6312,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('IDENTIFICAZIONE OGGETTO'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                Text('IDENTIFICAZIONE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                 const SizedBox(height: 8),
                 _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
                 const SizedBox(height: 10),
@@ -6484,7 +6327,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('DATI IDENTIFICATIVI · INSERIMENTO MANUALE'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                Text('DATI IDENTIFICATIVI · INSERIMENTO MANUALE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 _field(_producer, 'Produttore (facoltativo)'),
                 _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
@@ -6497,7 +6340,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('DATI INSERIBILI'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                Text('DATI INSERIBILI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
                 _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
@@ -6525,9 +6368,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('VALORI DETERMINATI DA ALTRE PROCEDURE'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                Text('VALORI DETERMINATI DA ALTRE PROCEDURE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('Valore di mercato attuale (€)'), style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                Text('Valore di mercato attuale (€)', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                 const SizedBox(height: 4),
                 TextField(
                   controller: _marketValue,
@@ -6540,7 +6383,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.'), style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+                Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
               ]),
             ),
           ),
@@ -6549,7 +6392,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('RICERCA OGGETTO'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+              Text('RICERCA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: _search,
@@ -6567,7 +6410,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.'), style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
+              Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
               if (_pr02SearchCompleted)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
@@ -6595,7 +6438,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                       ),
                       onPressed: () => setState(() => _showPr02TechnicalTab = false),
-                      child: const Text('SCHEDA OGGETTO')),
+                      child: Text('SCHEDA OGGETTO'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -6606,7 +6449,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
                       ),
                       onPressed: () => setState(() => _showPr02TechnicalTab = true),
-                      child: const Text('DATI TECNICI')),
+                      child: Text('DATI TECNICI'),
                     ),
                   ),
                 ]),
@@ -6629,12 +6472,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           FilledButton.icon(
             onPressed: _loading ? null : () => _run(_searchPr02Objects),
             icon: Icon(Icons.search),
-            label: const Text('CERCA E SELEZIONA OGGETTO')),
+            label: Text('CERCA E SELEZIONA OGGETTO'),
           ),
           if (_pr03PendingClosures.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text('Chiusure confermate in attesa: ${_pr03PendingClosures.length}'),
+              child: Text('Chiusure confermate in attesa: ${_pr03PendingClosures.length}',
                 style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
             ),
           if (_currentObject != null) ...[
@@ -6643,7 +6486,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             FilledButton.icon(
               onPressed: _loading ? null : () => _run(_confirmPr03Closure),
               icon: Icon(Icons.verified_outlined),
-              label: const Text('CONFERMA CHIUSURA')),
+              label: Text('CONFERMA CHIUSURA'),
             ),
           ],
         ],
@@ -6681,7 +6524,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     _run(_searchPr02Objects);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: const Text('Inserisci almeno 2 caratteri per cercare.'))),
+                      const SnackBar(content: Text('Inserisci almeno 2 caratteri per cercare.')),
                     );
                   }
                 },
@@ -6691,30 +6534,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ),
         ],
         if (!_isWrite && isAvailableList)
-          Padding(padding: const EdgeInsets.only(bottom: 8), child: const Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
+          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
         if (_isPeriodReport) ...[
           Card(child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('PERIODO DEL REPORT'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+              Text('PERIODO DEL REPORT', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Mese corrente')),
+              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Mese corrente'),
                 value: 'month', groupValue: _reportPeriodMode, onChanged: (v) => setState(() => _reportPeriodMode = v!)),
-              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Anno corrente')),
+              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Anno corrente'),
                 value: 'year', groupValue: _reportPeriodMode, onChanged: (v) => setState(() => _reportPeriodMode = v!)),
-              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Intervallo personalizzato')),
+              RadioListTile<String>(contentPadding: EdgeInsets.zero, dense: true, title: const Text('Intervallo personalizzato'),
                 value: 'custom', groupValue: _reportPeriodMode, onChanged: (v) => setState(() => _reportPeriodMode = v!)),
               if (_reportPeriodMode == 'custom') ...[
                 Row(children: [
                   Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : () => _pickReportDate(isStart: true),
-                    icon: const Icon(Icons.calendar_today_outlined), label: Text('Dal ${_dateLabel(_reportStart)}')))),
+                    icon: const Icon(Icons.calendar_today_outlined), label: Text('Dal ${_dateLabel(_reportStart)}'))),
                   const SizedBox(width: 8),
                   Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : () => _pickReportDate(isStart: false),
-                    icon: const Icon(Icons.event_outlined), label: Text('Al ${_dateLabel(_reportEnd)}')))),
+                    icon: const Icon(Icons.event_outlined), label: Text('Al ${_dateLabel(_reportEnd)}'))),
                 ]),
               ],
               const SizedBox(height: 4),
-              const Text('Le date selezionate vengono applicate alla query del database.'),
+              Text('Le date selezionate vengono applicate alla query del database.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
             ]),
           )),
@@ -6730,27 +6573,27 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ),
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
-            icon: Icon(Icons.lock_open), label: const Text('RILASCIA BLOCCO ARCHIVIO'))),
+            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
         ] else if (_isWrite && code == 'PR-02') ...[
           FilledButton.icon(
             onPressed: _loading || _currentObject == null ? null : () => _run(_confirmPr02Changes),
             icon: Icon(Icons.verified_outlined),
-            label: const Text('CONFERMA DATI')),
+            label: Text('CONFERMA DATI'),
           ),
         ] else if (_isWrite && code == 'PR-03') ...[
           const SizedBox.shrink(),
         ] else if (_isWrite) ...[
           FilledButton.icon(onPressed: _loading ? null : () => _run(_preview),
-            icon: Icon(Icons.fact_check_outlined), label: const Text('1 · CONTROLLA DATI E ANTEPRIMA'))),
+            icon: Icon(Icons.fact_check_outlined), label: Text('1 · CONTROLLA DATI E ANTEPRIMA')),
           const SizedBox(height: 8),
           OutlinedButton.icon(onPressed: _loading || _lastResult == null ? null : () => _run(_confirmData),
-            icon: Icon(Icons.verified_outlined), label: const Text('2 · CONFERMO I DATI'))),
+            icon: Icon(Icons.verified_outlined), label: Text('2 · CONFERMO I DATI')),
           const SizedBox(height: 8),
           FilledButton.icon(onPressed: _loading || !_dataConfirmed || !_finalReady ? null : () => _run(_save),
-            icon: Icon(Icons.save_outlined), label: const Text('3 · CONFERMA DEFINITIVA E SALVA'))),
+            icon: Icon(Icons.save_outlined), label: Text('3 · CONFERMA DEFINITIVA E SALVA')),
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
-            icon: Icon(Icons.lock_open), label: const Text('RILASCIA BLOCCO ARCHIVIO'))),
+            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
         ] else if (!isMaster)
           FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
             icon: Icon(Icons.search),
@@ -6800,7 +6643,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('DATI DELL’OGGETTO'),
+                    Text('DATI DELL’OGGETTO',
                       style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
                     _masterDetails(_currentObject!),
@@ -6817,10 +6660,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
             ),
             const SizedBox(height: 12),
-            const Text('SCHEDA OGGETTO'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
             _objectCard(_currentObject!, showImagePlaceholder: false),
           ] else ...[
-            const Text('SCHEDA OGGETTO'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('SCHEDA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
             _objectCard(_currentObject!),
             ..._currentObject!.entries
                 .where((e) => !const {
@@ -6851,14 +6694,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('OGGETTI DISPONIBILI'), style: TextStyle(
+                Text('OGGETTI DISPONIBILI', style: TextStyle(
                   color: sectionColor, fontWeight: FontWeight.bold, letterSpacing: 0.5,
                 )),
                 const SizedBox(height: 4),
-                Text('${_rows.length} ${_rows.length == 1 ? ')oggetto trovato' : 'oggetti trovati'}',
+                Text('${_rows.length} ${_rows.length == 1 ? 'oggetto trovato' : 'oggetti trovati'}',
                   style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 3),
-                const Text('Seleziona una scheda per vedere tutti i dettagli.'),
+                Text('Seleziona una scheda per vedere tutti i dettagli.',
                   style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
               ])),
             ]),
@@ -6880,12 +6723,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               return Card(child: ListTile(
                 leading: Icon(Icons.receipt_long_outlined, color: sectionColor),
                 title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('$dateValue · ${item[')codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
-                trailing: amount == null ? null : Text('${amount.toString()} ${item[')valuta'] ?? 'EUR'}'),
+                subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
+                trailing: amount == null ? null : Text('${amount.toString()} ${item['valuta'] ?? 'EUR'}'),
                 onTap: () => showDialog<void>(context: context, builder: (context) => AlertDialog(
-                  title: const Text('Dettaglio operazione')),
+                  title: const Text('Dettaglio operazione'),
                   content: SingleChildScrollView(child: SelectableText(_pretty(item))),
-                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CHIUDI')))],
+                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CHIUDI'))],
                 )),
               ));
             }
@@ -6961,24 +6804,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   border: Border.all(color: sectionColor.withValues(alpha: 0.55)),
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('RIEPILOGO FLUSSI DI CASSA'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('RIEPILOGO FLUSSI DI CASSA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 10),
                   Row(children: [
-                    const Expanded(child: const Text('TOTALE ENTRATE'))),
+                    const Expanded(child: Text('TOTALE ENTRATE')),
                     Text(euro(entries), style: const TextStyle(fontWeight: FontWeight.bold)),
                   ]),
                   const SizedBox(height: 6),
                   Row(children: [
-                    const Expanded(child: const Text('TOTALE USCITE'))),
+                    const Expanded(child: Text('TOTALE USCITE')),
                     Text(euro(exits), style: const TextStyle(fontWeight: FontWeight.bold)),
                   ]),
                   const Divider(height: 18),
                   Row(children: [
-                    const Expanded(child: const Text('SALDO (ENTRATE − USCITE)'), style: TextStyle(fontWeight: FontWeight.bold))),
+                    const Expanded(child: Text('SALDO (ENTRATE − USCITE)', style: TextStyle(fontWeight: FontWeight.bold))),
                     Text(euro(balance), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: balance >= 0 ? Colors.green : Colors.red)),
                   ]),
                   const SizedBox(height: 4),
-                  Text('${_rows.length} operazioni elencate'), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                  Text('${_rows.length} operazioni elencate', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                 ]),
               );
             }),
@@ -7035,10 +6878,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     children: [
                       Text(label, style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 14)),
                       const SizedBox(height: 4),
-                      Text('${_rows.length} operazioni elencate'), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                      Text('${_rows.length} operazioni elencate', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                     ],
                   )),
-                  Text('$money €'), style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text('$money €', style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
                 ]),
               );
             }),
@@ -7048,13 +6891,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             Expanded(child: OutlinedButton.icon(
               onPressed: _loading ? null : () => _exportResults(asPdf: false),
               icon: const Icon(Icons.file_download_outlined),
-              label: const Text('CREA FILE EXCEL')),
+              label: const Text('CREA FILE EXCEL'),
             )),
             const SizedBox(width: 10),
             Expanded(child: OutlinedButton.icon(
               onPressed: _loading ? null : () => _exportResults(asPdf: true),
               icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('CREA FILE PDF')),
+              label: const Text('CREA FILE PDF'),
             )),
           ]),
         ] else if (isAvailableList && !_loading) ...[
@@ -7069,18 +6912,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Column(children: [
               Icon(Icons.inventory_2_outlined, size: 42, color: sectionColor),
               const SizedBox(height: 12),
-              const Text('Nessun oggetto da mostrare'),
+              const Text('Nessun oggetto da mostrare',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center),
               const SizedBox(height: 6),
-              const Text('Premi “Visualizza elenco oggetti disponibili” per caricare l’elenco.'),
+              Text('Premi “Visualizza elenco oggetti disponibili” per caricare l’elenco.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary), textAlign: TextAlign.center),
             ]),
           ),
         ],
         if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory && code != 'REPORT-CASH' && code != 'REPORT-PURCHASES' && code != 'REPORT-SALES') ...[
           const SizedBox(height: 16),
-          const Text('ESITO RUNTIME'), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(
             color: ValoraAppearance.instance.card, borderRadius: BorderRadius.circular(12)),
@@ -7098,7 +6941,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ),
               onPressed: () => Navigator.of(context).pop(),
               icon: const Icon(Icons.close),
-              label: const Text('CHIUDI E TORNA AL BLOCCO DI APPARTENENZA')),
+              label: const Text('CHIUDI E TORNA AL BLOCCO DI APPARTENENZA'),
             ),
           ),
         ],
@@ -7133,9 +6976,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Conferma inserimento oggetto')),
+        title: const Text('Conferma inserimento oggetto'),
         content: SingleChildScrollView(
-          child: Text('Descrizione: ${_description.text.trim()}\\n')
+          child: Text(
+            'Descrizione: ${_description.text.trim()}\\n'
             'Produttore: ${_producer.text.trim()}\\n'
             'Linea / serie: ${_line.text.trim()}\\n'
             'Famiglia / categoria: ${_family.text.trim()}\\n'
@@ -7151,8 +6995,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA'))),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA E SALVA'))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('CONFERMA E SALVA')),
         ],
       ),
     );
@@ -7170,11 +7014,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Oggetto salvato')),
-        content: const Text('Vuoi inserire un altro oggetto?')),
+        title: Text('Oggetto salvato'),
+        content: Text('Vuoi inserire un altro oggetto?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, TORNA AL MENU'))),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, NUOVO OGGETTO'))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('NO, TORNA AL MENU')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('SÌ, NUOVO OGGETTO')),
         ],
       ),
     );
@@ -7303,18 +7147,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Conferma modifiche oggetto')),
+        title: Text('Conferma modifiche oggetto'),
         content: SingleChildScrollView(
           child: SelectableText(_pr02ConfirmationText(item)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('ANNULLA')),
+            child: Text('ANNULLA'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('CONFERMA DATI')),
+            child: Text('CONFERMA DATI'),
           ),
         ],
       ),
@@ -7341,16 +7185,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Modifica confermata')),
-        content: const Text('Vuoi modificare un altro oggetto?')),
+        title: Text('Modifica confermata'),
+        content: Text('Vuoi modificare un altro oggetto?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('NO, SALVA E TERMINA')),
+            child: Text('NO, SALVA E TERMINA'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('SÌ, MODIFICA UN ALTRO')),
+            child: Text('SÌ, MODIFICA UN ALTRO'),
           ),
         ],
       ),
@@ -7587,28 +7431,28 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         builder: (ctx) {
           int selected = -1;
           return StatefulBuilder(builder: (ctx, refreshDialog) => AlertDialog(
-            title: const Text('PR-12 · Verifica oggetto e immagine')),
+            title: const Text('PR-12 · Verifica oggetto e immagine'),
             content: SizedBox(width: 560, child: SingleChildScrollView(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Descrizione proposta: ') + (clues['descrizione_provvisoria'] ?? 'Non rilevata').toString()),
-                const Text('Marchio: ') + (clues['marchio'] ?? 'Non rilevato').toString()),
-                const Text('Codice prodotto: ') + (clues['codice_prodotto'] ?? 'Non rilevato').toString()),
-                if ((clues['categoria'] ?? '').toString().trim().isNotEmpty) const Text('Categoria: ') + clues['categoria'].toString()),
+                Text('Descrizione proposta: ' + (clues['descrizione_provvisoria'] ?? 'Non rilevata').toString()),
+                Text('Marchio: ' + (clues['marchio'] ?? 'Non rilevato').toString()),
+                Text('Codice prodotto: ' + (clues['codice_prodotto'] ?? 'Non rilevato').toString()),
+                if ((clues['categoria'] ?? '').toString().trim().isNotEmpty) Text('Categoria: ' + clues['categoria'].toString()),
                 if (clues['incertezze'] is List && (clues['incertezze'] as List).isNotEmpty)
-                  const Text('Da verificare: ') + (clues['incertezze'] as List).join(' · ')),
+                  Text('Da verificare: ' + (clues['incertezze'] as List).join(' · ')),
                 const Divider(),
-                const Text('Scegli l’immagine da associare all’oggetto'), style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Scegli l’immagine da associare all’oggetto', style: TextStyle(fontWeight: FontWeight.bold)),
                 RadioListTile<int>(
                   value: -1, groupValue: selected,
                   onChanged: (v) => refreshDialog(() => selected = v ?? -1),
-                  title: const Text('Mantieni la foto scattata')),
-                  subtitle: const Text('La foto del tuo esemplare')),
+                  title: const Text('Mantieni la foto scattata'),
+                  subtitle: const Text('La foto del tuo esemplare'),
                   secondary: ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.memory(bytes, width: 58, height: 58, fit: BoxFit.cover)),
                   contentPadding: EdgeInsets.zero,
                 ),
                 if (imageCandidates.isEmpty)
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: const Text('Nessuna immagine online utilizzabile. Puoi mantenere la foto originale.'))),
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Nessuna immagine online utilizzabile. Puoi mantenere la foto originale.')),
                 for (var i = 0; i < imageCandidates.length; i++)
                   RadioListTile<int>(
                     value: i, groupValue: selected,
@@ -7623,16 +7467,16 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
                     )),
                   ),
                 const Divider(),
-                Text('Risultati catalografici PR-12: ${results.length}. I metadati proposti restano da verificare.')),
-                const Text('La ricerca non salva dati nel database.')),
+                Text('Risultati catalografici PR-12: ${results.length}. I metadati proposti restano da verificare.'),
+                const Text('La ricerca non salva dati nel database.'),
               ],
             ))),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, <String,dynamic>{'annulla': true}), child: const Text('ANNULLA'))),
+              TextButton(onPressed: () => Navigator.pop(ctx, <String,dynamic>{'annulla': true}), child: const Text('ANNULLA')),
               FilledButton(onPressed: () => Navigator.pop(ctx, <String,dynamic>{
                 'use_original': selected < 0,
                 if (selected >= 0) 'candidate': imageCandidates[selected],
-              }), child: const Text('USA SELEZIONE'))),
+              }), child: const Text('USA SELEZIONE')),
             ],
           ));
         },
@@ -7759,11 +7603,11 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       });
       if (saved && mounted) {
         final another = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
-          title: const Text('Acquisto verificato')),
-          content: const Text('Vuoi effettuare un altro acquisto?')),
+          title: const Text('Acquisto verificato'),
+          content: const Text('Vuoi effettuare un altro acquisto?'),
           actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('NO, TERMINA'))),
-            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SÌ, ALTRO ACQUISTO'))),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('NO, TERMINA')),
+            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SÌ, ALTRO ACQUISTO')),
           ],
         ));
         if (!mounted) return;
@@ -7805,7 +7649,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     final item = _items[n];
     return Card(key: ValueKey('pr04-item-' + n.toString()), margin: const EdgeInsets.only(bottom: 10),
       child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('OGGETTO ') + (n + 1).toString(), style: TextStyle(color: ValoraAppearance.instance.colorFor('ACQUISTI'), fontWeight: FontWeight.bold)),
+        Text('OGGETTO ' + (n + 1).toString(), style: TextStyle(color: ValoraAppearance.instance.colorFor('ACQUISTI'), fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         TextField(controller: item.description, decoration: const InputDecoration(labelText: 'Descrizione oggetto *'),
           onChanged: (_) => setState(_invalidate)),
@@ -7813,7 +7657,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         SizedBox(width: double.infinity, child: OutlinedButton.icon(
           onPressed: _busy ? null : () => _photoAndRecognize(item),
           icon: const Icon(Icons.camera_alt_outlined),
-          label: const Text('SCATTA FOTO · RICONOSCIMENTO PR-12')),
+          label: const Text('SCATTA FOTO · RICONOSCIMENTO PR-12'),
         )),
         if (item.photoUrl != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
@@ -7832,16 +7676,16 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
           onChanged: (_) => setState(_invalidate)),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(value: item.destination, decoration: const InputDecoration(labelText: 'Destinazione'),
-          items: const [DropdownMenuItem(value: 'COLLEZIONE', child: const Text('COLLEZIONE'))), DropdownMenuItem(value: 'RIVENDITA', child: const Text('RIVENDITA')))],
+          items: const [DropdownMenuItem(value: 'COLLEZIONE', child: Text('COLLEZIONE')), DropdownMenuItem(value: 'RIVENDITA', child: Text('RIVENDITA'))],
           onChanged: _busy ? null : (v) => setState(() { item.destination = v ?? item.destination; _invalidate(); })),
         const SizedBox(height: 8),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(value: item.condition, decoration: const InputDecoration(labelText: 'Condizione'),
-            items: const [DropdownMenuItem(value: 'NUOVO', child: const Text('NUOVO'))), DropdownMenuItem(value: 'USATO', child: const Text('USATO'))), DropdownMenuItem(value: 'DA RIPARARE', child: const Text('DA RIPARARE')))],
+            items: const [DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')), DropdownMenuItem(value: 'USATO', child: Text('USATO')), DropdownMenuItem(value: 'DA RIPARARE', child: Text('DA RIPARARE'))],
             onChanged: _busy ? null : (v) => setState(() { item.condition = v ?? item.condition; _invalidate(); }))),
           const SizedBox(width: 8),
           Expanded(child: DropdownButtonFormField<String>(value: item.completeness, decoration: const InputDecoration(labelText: 'Completezza'),
-            items: const [DropdownMenuItem(value: 'COMPLETO', child: const Text('COMPLETO'))), DropdownMenuItem(value: 'INCOMPLETO', child: const Text('INCOMPLETO'))), DropdownMenuItem(value: 'SOLO PARTI', child: const Text('SOLO PARTI')))],
+            items: const [DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')), DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')), DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI'))],
             onChanged: _busy ? null : (v) => setState(() { item.completeness = v ?? item.completeness; _invalidate(); }))),
         ]),
       ])));
@@ -7860,12 +7704,12 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         () => setState(() { _type = 'SINGOLO'; _resize(1); _count.text = '1'; })),
       _choice('ACQUISTO MULTIPLO / LOTTO', 'Una transazione · più oggetti distinti', Icons.inventory_2_outlined, _type == 'LOTTO',
         () => setState(() { _type = 'LOTTO'; if (_items.length < 2) _resize(2); _count.text = _items.length.toString(); })),
-      const SizedBox(height: 12), FilledButton(onPressed: _busy ? null : () => setState(() => _step = 1), child: const Text('CONTINUA'))),
+      const SizedBox(height: 12), FilledButton(onPressed: _busy ? null : () => setState(() => _step = 1), child: const Text('CONTINUA')),
     ]);
 
     if (_step == 1) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       _heading('Dati dell’acquisto', 'La data è unica per tutta la transazione.'),
-      Card(child: ListTile(leading: const Icon(Icons.calendar_month_outlined), title: const Text('Data acquisto')),
+      Card(child: ListTile(leading: const Icon(Icons.calendar_month_outlined), title: const Text('Data acquisto'),
         subtitle: Text(_dateLabel(_date)), trailing: const Icon(Icons.edit_calendar_outlined), onTap: _busy ? null : _pickDate)),
       if (_type == 'LOTTO') ...[
         const SizedBox(height: 10), TextField(controller: _count, keyboardType: TextInputType.number,
@@ -7878,8 +7722,8 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
           _resize(n);
         } else { _resize(1); }
         setState(() => _step = 2);
-      }, child: const Text('CONTINUA AGLI OGGETTI'))),
-      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 0), child: const Text('INDIETRO'))),
+      }, child: const Text('CONTINUA AGLI OGGETTI')),
+      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 0), child: const Text('INDIETRO')),
     ]);
 
     if (_step == 2) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -7887,8 +7731,8 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         _type == 'SINGOLO' ? 'Un oggetto, un record, un acquisto.' : 'Ogni oggetto ha il proprio prezzo e record; la transazione resta unica.'),
       for (var i = 0; i < _items.length; i++) _itemEditor(i),
       Card(child: Padding(padding: const EdgeInsets.all(12), child: _line('TOTALE ACQUISTO', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true))),
-      const SizedBox(height: 10), FilledButton(onPressed: _busy ? null : () { if (!_valid()) return; setState(() => _step = 3); }, child: const Text('RIEPILOGO ACQUISTO'))),
-      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 1), child: const Text('INDIETRO'))),
+      const SizedBox(height: 10), FilledButton(onPressed: _busy ? null : () { if (!_valid()) return; setState(() => _step = 3); }, child: const Text('RIEPILOGO ACQUISTO')),
+      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 1), child: const Text('INDIETRO')),
     ]);
 
     if (_step == 3) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -7900,12 +7744,12 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text((i + 1).toString() + '. ' + _items[i].description.text.trim(), style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
-          Align(alignment: Alignment.centerRight, child: const Text('€ ') + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
+          Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
         ])),
         const Divider(height: 22), _line('TOTALE TRANSAZIONE', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
       ]))),
-      const SizedBox(height: 10), FilledButton.icon(onPressed: _busy ? null : _runPreview, icon: const Icon(Icons.fact_check_outlined), label: const Text('CONTROLLA E MOSTRA RIEPILOGO'))),
-      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 2), child: const Text('MODIFICA OGGETTI'))),
+      const SizedBox(height: 10), FilledButton.icon(onPressed: _busy ? null : _runPreview, icon: const Icon(Icons.fact_check_outlined), label: const Text('CONTROLLA E MOSTRA RIEPILOGO')),
+      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 2), child: const Text('MODIFICA OGGETTI')),
     ]);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -7917,7 +7761,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text((i + 1).toString() + '. ' + _items[i].description.text.trim(), style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
-          Align(alignment: Alignment.centerRight, child: const Text('€ ') + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
+          Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
         ])),
         const Divider(height: 22), _line('TOTALE ACQUISTO', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
       ]))),
@@ -7925,22 +7769,22 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       FilledButton(onPressed: _busy ? null : () {
         for (final item in _items) { item.dispose(); }
         setState(() { _step = 0; _type = 'SINGOLO'; _date = DateTime.now(); _items..clear()..add(_PurchaseItemDraft()); _count.text = '1'; _preview = null; _dataConfirmed = false; _status = 'Nuova bozza pronta. Nessun acquisto precedente è stato salvato.'; });
-      }, child: const Text('SÌ · INSERISCI UN ALTRO ACQUISTO'))),
+      }, child: const Text('SÌ · INSERISCI UN ALTRO ACQUISTO')),
       const SizedBox(height: 8),
       FilledButton(onPressed: _busy ? null : () { setState(() { _dataConfirmed = true; }); _save(); }, child: Text(_busy ? 'ATTENDI…' : 'NO · SALVA E ESCI')),
-      OutlinedButton(onPressed: _busy ? null : () => setState(() { _step = 2; _invalidate(); }), child: const Text('MODIFICA DATI'))),
+      OutlinedButton(onPressed: _busy ? null : () => setState(() { _step = 2; _invalidate(); }), child: const Text('MODIFICA DATI')),
     ]);
   }
   @override
   Widget build(BuildContext context) {
     final c = ValoraAppearance.instance.colorFor('ACQUISTI');
-    return Scaffold(appBar: AppBar(title: const Text('PR-04 · NUOVO ACQUISTO'))),
+    return Scaffold(appBar: AppBar(title: const Text('PR-04 · NUOVO ACQUISTO')),
       body: SafeArea(child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 820),
         child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Card(child: Padding(padding: EdgeInsets.all(12), child: const Text('AMBIENTE TEST · Nessun acquisto viene registrato senza conferma esplicita. Dopo il salvataggio è obbligatoria la rilettura di verifica.')))),
+          const Card(child: Padding(padding: EdgeInsets.all(12), child: Text('AMBIENTE TEST · Nessun acquisto viene registrato senza conferma esplicita. Dopo il salvataggio è obbligatoria la rilettura di verifica.'))),
           const SizedBox(height: 12),
           ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: (_step + 1) / 5, minHeight: 5, color: c)),
-          const SizedBox(height: 8), const Text('PASSAGGIO ') + (_step + 1).toString() + ' DI 5', style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1)),
+          const SizedBox(height: 8), Text('PASSAGGIO ' + (_step + 1).toString() + ' DI 5', style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1)),
           const SizedBox(height: 14), if (_busy) const LinearProgressIndicator(),
           _content(), const SizedBox(height: 12),
           Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status))),
@@ -8062,8 +7906,8 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
       setState((){_last=r;_status=saved?'Modifica verificata: codice conservato, cassa e storico aggiornati.':'Modifica NON considerata conclusa: il runtime non ha confermato tutti i controlli richiesti.';});
       if(saved&&mounted){
         final again=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
-          title:const Text('Modifica verificata')),content:const Text('Vuoi modificare un altro acquisto?')),
-          actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('NO, TERMINA'))),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('SÌ, ALTRO ACQUISTO')))]));
+          title:const Text('Modifica verificata'),content:const Text('Vuoi modificare un altro acquisto?'),
+          actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('NO, TERMINA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('SÌ, ALTRO ACQUISTO'))]));
         if(!mounted)return;
         if(again==true)setState((){_query.clear();_found=[];_purchase=null;_items=[];_last=null;_confirmed=false;_status='Cerca un altro acquisto.';});
         else Navigator.of(context).pop();
@@ -8075,34 +7919,34 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
   @override
   Widget build(BuildContext context){
     final color=ValoraAppearance.instance.colorFor('ACQUISTI');
-    return Scaffold(appBar:AppBar(title:const Text('PR-05 · MODIFICA ACQUISTO'))),
+    return Scaffold(appBar:AppBar(title:const Text('PR-05 · MODIFICA ACQUISTO')),
       body:SafeArea(child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:820),child:ListView(padding:const EdgeInsets.all(16),children:[
-        const Card(child:Padding(padding:EdgeInsets.all(12),child:const Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Nessuna eliminazione/ricreazione. Quadratura, cassa, storico e rilettura sono obbligatori.')))),
-        const Text('1 · CERCA ACQUISTO'),style:TextStyle(color:color,fontWeight:FontWeight.bold)),
+        const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Nessuna eliminazione/ricreazione. Quadratura, cassa, storico e rilettura sono obbligatori.'))),
+        Text('1 · CERCA ACQUISTO',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
         TextField(controller:_query,decoration:const InputDecoration(labelText:'Codice acquisto o descrizione'),onSubmitted:(_)=>_search()),
-        FilledButton(onPressed:_busy?null:_search,child:const Text('CERCA'))),
-        for(final row in _found) Card(child:ListTile(title:Text(_name(row)),subtitle:const Text('Codice: ')+_code(row)+' · Totale: '+((_money(_totalValue(row))??0).toStringAsFixed(2))+' €'),trailing:const Icon(Icons.chevron_right),onTap:_busy?null:()=>_load(row))),
+        FilledButton(onPressed:_busy?null:_search,child:const Text('CERCA')),
+        for(final row in _found) Card(child:ListTile(title:Text(_name(row)),subtitle:Text('Codice: '+_code(row)+' · Totale: '+((_money(_totalValue(row))??0).toStringAsFixed(2))+' €'),trailing:const Icon(Icons.chevron_right),onTap:_busy?null:()=>_load(row))),
         if(_purchase!=null)...[
-          const Divider(height:24),const Text('2 · MODIFICA SCHEDA ESISTENTE'),style:TextStyle(color:color,fontWeight:FontWeight.bold)),
+          const Divider(height:24),Text('2 · MODIFICA SCHEDA ESISTENTE',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
           _line('Codice acquisto',_code(_purchase!)),
           TextField(controller:_description,decoration:const InputDecoration(labelText:'Descrizione acquisto *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
           TextField(controller:_date,decoration:const InputDecoration(labelText:'Data acquisto (AAAA-MM-GG) *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
           TextField(controller:_total,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Totale acquisto (€) *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
           _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),_line('Totale','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
-          if (((_money(_total.text) ?? -999) - _allocated).abs() > 0.009) const Text('QUADRATURA NON VALIDA: il salvataggio è bloccato.'),style:TextStyle(color:Colors.redAccent,fontWeight:FontWeight.bold)),
-          for(final item in _items) Card(child:ListTile(title:Text((item['descrizione_oggetto']??item['descrizione']??item['nome']??'Oggetto collegato').toString()),subtitle:const Text('Codice oggetto: ')+(item['codice_oggetto']??item['object_code']??item['id']??'non disponibile').toString()),trailing:const Text('€ ')+((_money(item['importo']??item['prezzo_acquisto']??item['valore'])??0).toStringAsFixed(2))))),
-          FilledButton(onPressed:_busy?null:_preview,child:const Text('MOSTRA RIEPILOGO'))),
+          if (((_money(_total.text) ?? -999) - _allocated).abs() > 0.009) const Text('QUADRATURA NON VALIDA: il salvataggio è bloccato.',style:TextStyle(color:Colors.redAccent,fontWeight:FontWeight.bold)),
+          for(final item in _items) Card(child:ListTile(title:Text((item['descrizione_oggetto']??item['descrizione']??item['nome']??'Oggetto collegato').toString()),subtitle:Text('Codice oggetto: '+(item['codice_oggetto']??item['object_code']??item['id']??'non disponibile').toString()),trailing:Text('€ '+((_money(item['importo']??item['prezzo_acquisto']??item['valore'])??0).toStringAsFixed(2))))),
+          FilledButton(onPressed:_busy?null:_preview,child:const Text('MOSTRA RIEPILOGO')),
           if(_last!=null) Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            const Text('RIEPILOGO MODIFICA'),style:TextStyle(fontWeight:FontWeight.bold)),
+            const Text('RIEPILOGO MODIFICA',style:TextStyle(fontWeight:FontWeight.bold)),
             _line('Codice acquisto',_code(_purchase!)),
             _line('Data',_date.text.trim()),
             _line('Descrizione',_description.text.trim()),
             _line('Oggetti collegati',_items.length.toString()),
             _line('Totale acquisto','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
             _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),
-            const Text('I codici degli oggetti collegati vengono conservati. Il salvataggio aggiorna cassa e storico tramite runtime.')),
+            const Text('I codici degli oggetti collegati vengono conservati. Il salvataggio aggiorna cassa e storico tramite runtime.'),
           ]))),
-          CheckboxListTile(value:_confirmed,title:const Text('Confermo il riepilogo e autorizzo il salvataggio.')),onChanged:_busy||_last==null?null:(v)=>setState(()=>_confirmed=v??false)),
+          CheckboxListTile(value:_confirmed,title:const Text('Confermo il riepilogo e autorizzo il salvataggio.'),onChanged:_busy||_last==null?null:(v)=>setState(()=>_confirmed=v??false)),
           FilledButton(onPressed:_busy||!_confirmed||_last==null?null:_save,child:Text(_busy?'ATTENDI…':'SALVA MODIFICA E TERMINA')),
         ],
         if(_busy)const LinearProgressIndicator(),
@@ -8223,42 +8067,42 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
   @override
   Widget build(BuildContext context) {
     final remaining = _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length.clamp(0, 10);
-    return Scaffold(appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI'))),
+    return Scaffold(appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI')),
       body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
         const Card(child: Padding(padding: EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('RICERCA MULTIPLA IN LOTTI'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8), const Text('PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.')),
+          Text('RICERCA MULTIPLA IN LOTTI', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          SizedBox(height: 8), Text('PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.'),
         ]))),
         const SizedBox(height: 8),
         FilledButton.icon(onPressed: _loading || _running ? null : _loadQueue,
           icon: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
-          label: const Text('CARICA OGGETTI INCOMPLETI'))),
+          label: const Text('CARICA OGGETTI INCOMPLETI')),
         const SizedBox(height: 8),
         OutlinedButton.icon(onPressed: _running || _loading || _queue.every((row) => _processedIds.contains((row['codice_oggetto'] ?? '').toString())) ? null : _runBatch,
           icon: _running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
           label: Text(_running ? 'RICERCA IN CORSO…' : 'ELABORA PROSSIMO LOTTO ($remaining)')),
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('STATO'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text(_status),
-          if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: $_offset · lotti: ${(_queue.length / 10).ceil()}')),
+          const Text('STATO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text(_status),
+          if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: $_offset · lotti: ${(_queue.length / 10).ceil()}'),
           if (_error != null) SelectableText(_error!, style: const TextStyle(color: Color(0xFFE35D5D))),
         ]))),
         if (_queue.any((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString()))) ...[
-          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: const Text('OGGETTI IN CODA · SELEZIONE FACOLTATIVA'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
-          const Text('Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.'), style: TextStyle(color: Colors.white70)),
+          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('OGGETTI IN CODA · SELEZIONE FACOLTATIVA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+          const Text('Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.', style: TextStyle(color: Colors.white70)),
           Row(children: [
-            Expanded(child: Text('PAGINA ${_queuePage + 1} DI ${((_queue.where((row) => !_processedIds.contains((row[')codice_oggetto'] ?? '').toString())).length) / 10).ceil().clamp(1, 9999)}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
-            Text('${_selectedIds.length}/10 selezionati'), style: const TextStyle(color: Colors.white70)),
+            Expanded(child: Text('PAGINA ${_queuePage + 1} DI ${((_queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length) / 10).ceil().clamp(1, 9999)}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+            Text('${_selectedIds.length}/10 selezionati', style: const TextStyle(color: Colors.white70)),
           ]),
           const SizedBox(height: 6),
           Row(children: [
             Expanded(child: OutlinedButton.icon(
               onPressed: _running || _loading || _queuePage == 0 ? null : () => setState(() { _queuePage--; _selectedIds.clear(); }),
-              icon: const Icon(Icons.chevron_left), label: const Text('PRECEDENTE')),
+              icon: const Icon(Icons.chevron_left), label: const Text('PRECEDENTE'),
             )),
             const SizedBox(width: 8),
             Expanded(child: OutlinedButton.icon(
               onPressed: _running || _loading || (_queuePage + 1) * 10 >= _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length ? null : () => setState(() { _queuePage++; _selectedIds.clear(); }),
-              icon: const Icon(Icons.chevron_right), label: const Text('SUCCESSIVA')),
+              icon: const Icon(Icons.chevron_right), label: const Text('SUCCESSIVA'),
             )),
           ]),
           const SizedBox(height: 8),
@@ -8281,7 +8125,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text('ID $id · produttore: ${v[')produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                    Text('ID $id · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
                   ]),
                 )),
                 IconButton(
@@ -8296,12 +8140,12 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
           Row(children: [
             Expanded(child: OutlinedButton.icon(
               onPressed: _running || _loading || _queuePage == 0 ? null : () => setState(() { _queuePage--; _selectedIds.clear(); }),
-              icon: const Icon(Icons.chevron_left), label: const Text('INDIETRO')),
+              icon: const Icon(Icons.chevron_left), label: const Text('INDIETRO'),
             )),
             const SizedBox(width: 8),
             Expanded(child: OutlinedButton.icon(
               onPressed: _running || _loading || (_queuePage + 1) * 10 >= _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length ? null : () => setState(() { _queuePage++; _selectedIds.clear(); }),
-              icon: const Icon(Icons.chevron_right), label: const Text('AVANTI')),
+              icon: const Icon(Icons.chevron_right), label: const Text('AVANTI'),
             )),
           ]),
           const SizedBox(height: 8),
@@ -8311,11 +8155,11 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
               _runBatch(selectedBatch: chosen);
             },
             icon: const Icon(Icons.checklist),
-            label: Text('ELABORA SELEZIONATI (${_selectedIds.length}/10)')),
+            label: Text('ELABORA SELEZIONATI (${_selectedIds.length}/10)'),
           ),
         ],
         if (_results.isNotEmpty) ...[
-          const Padding(padding: EdgeInsets.only(top: 16, bottom: 4), child: const Text('RISULTATI · SOLA LETTURA'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+          const Padding(padding: EdgeInsets.only(top: 16, bottom: 4), child: Text('RISULTATI · SOLA LETTURA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
           ..._results.map((v) {
             final candidates = v['risultati'] is List ? (v['risultati'] as List).whereType<Map>().toList() : <Map>[];
             return Card(
@@ -8329,7 +8173,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                       child: const Icon(Icons.inventory_2_outlined, color: goldColor)),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('OGGETTO ${v[')oggetto_id'] ?? ''}', style: const TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text('OGGETTO ${v['oggetto_id'] ?? ''}', style: const TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 3),
                       Text((v['descrizione'] ?? 'Oggetto senza descrizione').toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 6),
@@ -8340,7 +8184,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                   if (candidates.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Divider(),
-                    const Text('PROPOSTE TROVATE'), style: TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: .7)),
+                    const Text('PROPOSTE TROVATE', style: TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: .7)),
                     const SizedBox(height: 8),
                     ...candidates.take(6).map((c) {
                       final rawImage = (c['image_url'] ?? c['immagine_url'] ?? '').toString().trim();
@@ -8374,15 +8218,15 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                                 Text((c['snippet'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.white70)),
                               ],
                               const SizedBox(height: 7),
-                              const Text('Proposta da verificare prima di usarla'), style: TextStyle(fontSize: 11, color: Colors.white54)),
+                              const Text('Proposta da verificare prima di usarla', style: TextStyle(fontSize: 11, color: Colors.white54)),
                             ])),
                           ]),
                           ...values.entries.where((e) => e.value.trim().isNotEmpty).map((e) =>
-                            Padding(padding: const EdgeInsets.only(top: 4), child: Text('${e.key}: ${e.value}'), style: const TextStyle(fontSize: 12)))),
+                            Padding(padding: const EdgeInsets.only(top: 4), child: Text('${e.key}: ${e.value}', style: const TextStyle(fontSize: 12)))),
                           if (validUrl) Row(children: [
                             Expanded(child: Text(uri!.host, style: const TextStyle(fontSize: 11, color: Colors.white54), overflow: TextOverflow.ellipsis)),
                             TextButton.icon(onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication),
-                              icon: const Icon(Icons.open_in_new, size: 16), label: const Text('APRI FONTE'))),
+                              icon: const Icon(Icons.open_in_new, size: 16), label: const Text('APRI FONTE')),
                             IconButton(tooltip: 'Esamina proposta', icon: const Icon(Icons.fact_check_outlined, color: goldColor),
                               onPressed: () {
                                 final fields = <String, String>{
@@ -8396,10 +8240,10 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                                   'Fonte': rawUrl,
                                 };
                                 showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
-                                  title: const Text('Scheda proposta · da verificare')),
+                                  title: const Text('Scheda proposta · da verificare'),
                                   content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
-                                    children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? ')Non disponibile' : e.value}'))).toList())),
-                                  actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI')))],
+                                    children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? 'Non disponibile' : e.value}'))).toList())),
+                                  actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
                                 ));
                               }),
                           ]),
@@ -8408,10 +8252,10 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                     }),
                   ] else if (v['ok'] == true) ...[
                     const SizedBox(height: 10),
-                    const Text('Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.'), style: TextStyle(fontSize: 12, color: Colors.white70)),
+                    const Text('Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.', style: TextStyle(fontSize: 12, color: Colors.white70)),
                   ],
                   if (v['diagnostica_ricerca'] is Map)
-                    ExpansionTile(tilePadding: EdgeInsets.zero, title: const Text('Dettagli tecnici'), style: TextStyle(fontSize: 12, color: Colors.white54)),
+                    ExpansionTile(tilePadding: EdgeInsets.zero, title: const Text('Dettagli tecnici', style: TextStyle(fontSize: 12, color: Colors.white54)),
                       children: [SelectableText(jsonEncode(v['diagnostica_ricerca']), style: const TextStyle(fontSize: 11, color: Colors.white54))]),
                 ]),
               ),
