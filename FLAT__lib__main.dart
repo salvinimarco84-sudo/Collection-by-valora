@@ -2464,7 +2464,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         child: Row(children: [
           const Icon(Icons.inventory_2_outlined, color: goldColor, size: 34),
           const SizedBox(width: 10),
-          const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('COLLEZIONE', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
             SizedBox(height: 3),
             Text('Seleziona un tema per consultare i relativi oggetti.', style: TextStyle(color: Colors.white70, fontSize: 12)),
