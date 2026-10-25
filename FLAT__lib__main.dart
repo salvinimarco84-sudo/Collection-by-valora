@@ -1783,6 +1783,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   String? _error;
   List<Map<String, dynamic>> _rows = [];
   Map<String, dynamic>? _latest;
+  List<Map<String, dynamic>> _evaluationHistory = [];
   double? _latestTotal;
   double? _trendCurrentTotal;
   double? _previousTotal;
@@ -1815,11 +1816,12 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       double? latestTotal, trendCurrentTotal, previousTotal;
       var evaluated = 0;
       final evalData = await Supabase.instance.client.schema('collection').from('valutazioni_mercato')
-        .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima')
+        .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima,report_riepilogo,completata_il')
         .inFilter('stato_esecuzione', ['COMPLETATA','COMPLETATA_PARZIALE'])
-        .order('avviata_il', ascending: false).limit(1);
-      if ((evalData as List).isNotEmpty) {
-        latest = Map<String,dynamic>.from(evalData.first as Map);
+        .order('avviata_il', ascending: false).limit(20);
+      final evaluations = (evalData as List).map((e) => Map<String,dynamic>.from(e as Map)).toList();
+      if (evaluations.isNotEmpty) {
+        latest = evaluations.first;
         final id = latest['codice_valutazione'];
         final currentData = await Supabase.instance.client.schema('collection').from('storico_valori_mercato')
           .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
@@ -1886,6 +1888,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       setState(() {
         _rows=rows;
         _latest=latest;
+        _evaluationHistory=evaluations;
         _latestTotal=latestTotal;
         _trendCurrentTotal=trendCurrentTotal;
         _previousTotal=previousTotal;
@@ -2072,7 +2075,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
               const SizedBox(height:8),
               Text(_latestTotal==null?'Importo non disponibile':_eur(_latestTotal!),style:const TextStyle(fontSize:28,fontWeight:FontWeight.bold,color:Color(0xFFD5B45B))),
               const SizedBox(height:6),
-              Text('$_evaluated oggetti con stima valida nella rilevazione'),
+              Text('$_evaluated oggetti con valore di mercato nella rilevazione'),
               const SizedBox(height:12),
               Row(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:color,size:28),const SizedBox(width:8),Expanded(child:Text(trend,style:TextStyle(color:color,fontWeight:FontWeight.w600)))]),
               if (_trendCurrentTotal!=null && _previousTotal!=null) ...[
@@ -2085,7 +2088,38 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
               Text('Valutazione n. ${_latest!['codice_valutazione']} · ${_latest!['stato_esecuzione']}',style:TextStyle(color:ValoraAppearance.instance.textSubtle,fontSize:11)),
             ]))),
           const SizedBox(height:10),
-          Text('Il confronto considera soltanto oggetti con una rilevazione valida attuale e precedente; quando manca uno storico confrontabile, la variazione non viene stimata.',style:TextStyle(color:ValoraAppearance.instance.textSubtle,fontSize:11)),
+          Text('Il confronto usa i valori di mercato registrati, indipendentemente dallo stato della stima, e considera soltanto gli oggetti presenti in entrambe le rilevazioni; quando manca uno storico confrontabile, la variazione non viene stimata.',style:TextStyle(color:ValoraAppearance.instance.textSubtle,fontSize:11)),
+          const SizedBox(height:20),
+          const Text('REGISTRO DELLE VALUTAZIONI',style:TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
+          const SizedBox(height:8),
+          if (_evaluationHistory.isEmpty)
+            const Card(child:ListTile(title:Text('Nessuna valutazione registrata.')))
+          else
+            ..._evaluationHistory.map((evaluation) {
+              final report = evaluation['report_riepilogo'] is Map
+                  ? Map<String,dynamic>.from(evaluation['report_riepilogo'] as Map)
+                  : <String,dynamic>{};
+              final status = (evaluation['stato_esecuzione'] ?? 'STATO NON DISPONIBILE').toString();
+              final evaluated = (evaluation['oggetti_valutati'] ?? 0).toString();
+              final missingCount = (evaluation['oggetti_senza_stima'] ?? 0).toString();
+              final examined = (evaluation['oggetti_esaminati'] ?? 0).toString();
+              return Card(
+                child: ExpansionTile(
+                  leading: const Icon(Icons.history,color:Color(0xFFD6B15E)),
+                  title: Text('Valutazione n. ${evaluation['codice_valutazione']} · ${_date(evaluation['data_riferimento'])}'),
+                  subtitle: Text('$status · $evaluated con stima · $missingCount senza stima'),
+                  childrenPadding: const EdgeInsets.fromLTRB(16,0,16,16),
+                  children: [
+                    Align(alignment:Alignment.centerLeft,child:Text('Oggetti esaminati: $examined')),
+                    Align(alignment:Alignment.centerLeft,child:Text('Avviata: ${_date(evaluation['avviata_il'])}')),
+                    if (evaluation['completata_il'] != null)
+                      Align(alignment:Alignment.centerLeft,child:Text('Completata: ${_date(evaluation['completata_il'])}')),
+                    if ((report['avviso'] ?? '').toString().isNotEmpty)
+                      Align(alignment:Alignment.centerLeft,child:Padding(padding:const EdgeInsets.only(top:6),child:Text(report['avviso'].toString(),style:TextStyle(fontSize:12,color:ValoraAppearance.instance.textSubtle)))),
+                  ],
+                ),
+              );
+            }),
         ])),
     );
   }
