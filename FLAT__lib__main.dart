@@ -893,6 +893,50 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
     }
   }
 
+  Future<void> _capturePatrimonySnapshot() async {
+    if (_snapshotBusy) return;
+    setState(() => _snapshotBusy = true);
+    try {
+      final response = await Supabase.instance.client.functions.invoke('collection-patrimony-snapshot', body: <String, dynamic>{});
+      if (response.status < 200 || response.status >= 300) throw Exception('Servizio snapshot non disponibile: ' + response.status.toString());
+      final result = Map<String, dynamic>.from(response.data as Map);
+      if (result['ok'] != true) throw Exception((result['error'] ?? 'Calcolo non riuscito').toString());
+      if (!mounted) return;
+      setState(() { _snapshotResult = result; _snapshotBusy = false; });
+      final hasPrevious = result['precedente'] != null;
+      final total = _num(result['variazione_totale']);
+      final quantity = _num(result['variazione_quantita']);
+      final revaluation = _num(result['variazione_rivalutazioni']);
+      final residual = _num(result['variazione_non_attribuita']);
+      if (!mounted) return;
+      await showDialog<void>(context: context, builder: (ctx) => AlertDialog(
+        title: const Text('Confronto del patrimonio'),
+        content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Text('Valore attuale: ' + _eur(_num(result['valore_mercato']) ?? 0)),
+          const SizedBox(height: 10),
+          if (!hasPrevious) const Text('Snapshot iniziale salvato. Il prossimo calcolo permetterà il confronto.'),
+          if (hasPrevious) ...[
+            Text('Variazione totale: ' + _eur(total ?? 0), style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Effetto quantità / oggetti: ' + _eur(quantity ?? 0)),
+            Text('Effetto rivalutazione: ' + _eur(revaluation ?? 0)),
+            Text('Non attribuito / dati mancanti: ' + _eur(residual ?? 0)),
+            const SizedBox(height: 8),
+            const Text('Il residuo segnala differenze non spiegabili con certezza dai dati disponibili.'),
+          ],
+          const SizedBox(height: 8),
+          Text('Record: ' + (result['record'] ?? 0).toString() + ' · Unità: ' + (result['unita'] ?? 0).toString()),
+          Text('Oggetti senza stima: ' + (result['oggetti_senza_stima'] ?? 0).toString()),
+        ])),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Chiudi'))],
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _snapshotBusy = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Snapshot non riuscito: ' + e.toString())));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final a = ValoraAppearance.instance;
@@ -1781,6 +1825,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   double? _previousTotal;
   int _evaluated = 0;
   List<Map<String, dynamic>> _valuationRegister = [];
+  bool _snapshotBusy = false;
+  Map<String, dynamic>? _snapshotResult;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -1853,6 +1899,12 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           Text(ValoraI18n.tr('RIEPILOGO DEL PATRIMONIO'),style:const TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
           const SizedBox(height:6),
           Text(ValoraI18n.tr('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.')),
+          const SizedBox(height:12),
+          SizedBox(width: double.infinity, child: FilledButton.icon(
+            onPressed: _snapshotBusy ? null : _capturePatrimonySnapshot,
+            icon: _snapshotBusy ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.calculate_outlined),
+            label: Text(_snapshotBusy ? 'Calcolo e confronto in corso…' : 'CALCOLA E CONFRONTA PATRIMONIO'),
+          )),
           const SizedBox(height:12),
           metric('Valore di mercato noto',_eur(market),Icons.trending_up,const Color(0xFF39875B)),
           metric('Valore manuale registrato',_eur(manual),Icons.edit_note,const Color(0xFF568DAD)),
