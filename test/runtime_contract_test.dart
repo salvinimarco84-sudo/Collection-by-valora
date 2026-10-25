@@ -39,9 +39,13 @@ void main() {
 
     test('la schermata valore collezione espone il pulsante di calcolo manuale', () {
       expect(source, contains("label: const Text('CALCOLA VALORE COLLEZIONE')"));
-      expect(source, contains('onPressed: _loading ? null : _runValuation'));
+      expect(source, contains('onPressed: _loading || _valuationRunning ? null : _runValuation'));
       expect(source, contains("'collection-market-value-test'"));
       expect(source, contains("'esegui_valutazione': true"));
+      expect(source, contains("'codice_valutazione': valuationId"));
+      expect(source, contains("while (true)"));
+      expect(source, contains('LinearProgressIndicator('));
+      expect(source, contains("'VALUTAZIONE IN CORSO'"));
       expect(source, isNot(contains(".eq('stato_stima','VALIDA')")));
     });
 

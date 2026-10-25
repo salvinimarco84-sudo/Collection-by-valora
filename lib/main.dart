@@ -1787,6 +1787,10 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   double? _trendCurrentTotal;
   double? _previousTotal;
   int _evaluated = 0;
+  bool _valuationRunning = false;
+  int _valuationDone = 0;
+  int _valuationTotal = 0;
+  String _valuationStatus = '';
 
   @override
   void initState() { super.initState(); _load(); }
@@ -1895,33 +1899,87 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   }
 
   Future<void> _runValuation() async {
-    if (_loading) return;
-    setState(() { _loading = true; _error = null; });
+    if (_loading || _valuationRunning) return;
+    setState(() {
+      _valuationRunning = true;
+      _valuationDone = 0;
+      _valuationTotal = 0;
+      _valuationStatus = 'Avvio della valutazione PR-18…';
+      _error = null;
+    });
+
+    int? valuationId;
+    var firstRequest = true;
+    var previousOffset = -1;
     try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'collection-market-value-test',
-        body: {
-          'modalita_avvio': 'MANUALE',
-          'esegui_valutazione': true,
-        },
-      );
-      final data = response.data;
-      if (response.status < 200 || response.status >= 300 ||
-          data is! Map || data['ok'] != true) {
-        final detail = data is Map ? (data['error'] ?? data['messaggio'] ?? 'Risposta PR-18 non valida') : 'Risposta PR-18 non valida';
-        throw Exception(detail.toString());
+      while (true) {
+        final response = await Supabase.instance.client.functions.invoke(
+          'collection-market-value-test',
+          body: {
+            'modalita_avvio': 'MANUALE',
+            if (firstRequest) 'esegui_valutazione': true,
+            if (!firstRequest) 'codice_valutazione': valuationId,
+          },
+        );
+        final data = response.data;
+        if (response.status < 200 || response.status >= 300 ||
+            data is! Map || data['ok'] != true) {
+          final detail = data is Map
+              ? (data['error'] ?? data['messaggio'] ?? 'Risposta PR-18 non valida')
+              : 'Risposta PR-18 non valida';
+          throw Exception(detail.toString());
+        }
+
+        final payload = Map<String, dynamic>.from(data);
+        final returnedId = int.tryParse('${payload['codice_valutazione'] ?? ''}');
+        if (returnedId == null) {
+          throw Exception('PR-18 non ha restituito il codice della valutazione.');
+        }
+        valuationId = returnedId;
+        final total = int.tryParse('${payload['oggetti_totali'] ?? 0}') ?? 0;
+        final done = int.tryParse('${payload['oggetti_esaminati'] ?? 0}') ?? 0;
+        final nextOffset = int.tryParse('${payload['prossimo_offset'] ?? done}') ?? done;
+        final hasMore = payload['continua'] == true;
+
+        if (hasMore && nextOffset <= previousOffset) {
+          throw Exception('L’avanzamento PR-18 non procede. Interrompo per evitare un ciclo infinito.');
+        }
+        previousOffset = nextOffset;
+        if (mounted) {
+          setState(() {
+            _valuationTotal = total;
+            _valuationDone = total > 0 ? done.clamp(0, total).toInt() : done;
+            _valuationStatus = (payload['messaggio'] ?? 'Lotto elaborato.').toString();
+          });
+        }
+
+        firstRequest = false;
+        if (!hasMore) break;
       }
+
       if (!mounted) return;
+      setState(() {
+        _valuationRunning = false;
+        _valuationDone = _valuationTotal;
+        _valuationStatus = 'Valutazione completata. Aggiorno i risultati…';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PR-18 ha terminato la richiesta. Aggiorno lo storico.')),
+        const SnackBar(content: Text('PR-18 ha completato tutti i lotti. Aggiorno lo storico.')),
       );
       await _load();
     } catch (e) {
       if (!mounted) return;
-      setState(() { _loading = false; });
+      setState(() {
+        _valuationRunning = false;
+        _valuationStatus = 'Valutazione interrotta: $e';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Avvio VALORE COLLEZIONE non riuscito: $e')),
+        SnackBar(content: Text('Valutazione VALORA non completata: $e')),
       );
+    } finally {
+      if (mounted && _valuationRunning) {
+        setState(() => _valuationRunning = false);
+      }
     }
   }
 
@@ -1951,11 +2009,54 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _loading ? null : _runValuation,
+              onPressed: _loading || _valuationRunning ? null : _runValuation,
               icon: const Icon(Icons.calculate_outlined),
               label: const Text('CALCOLA VALORE COLLEZIONE'),
             ),
           ),
+          if (_valuationRunning) ...[
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.sync, color: Color(0xFFD6B15E)),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text('VALUTAZIONE IN CORSO', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        Text(
+                          _valuationTotal > 0
+                              ? '${((_valuationDone * 100) / _valuationTotal).floor().clamp(0, 100)}%'
+                              : '…',
+                          style: const TextStyle(color: Color(0xFFD6B15E), fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    LinearProgressIndicator(
+                      value: _valuationTotal > 0
+                          ? (_valuationDone / _valuationTotal).clamp(0.0, 1.0).toDouble()
+                          : null,
+                      minHeight: 8,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _valuationTotal > 0
+                          ? 'Oggetti esaminati: $_valuationDone di $_valuationTotal'
+                          : 'Preparazione della coda degli oggetti…',
+                    ),
+                    const SizedBox(height: 4),
+                    Text(_valuationStatus, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height:12),
           metric('Valore di mercato noto',_eur(market),Icons.trending_up,const Color(0xFF39875B)),
           metric('Valore manuale registrato',_eur(manual),Icons.edit_note,const Color(0xFF568DAD)),
