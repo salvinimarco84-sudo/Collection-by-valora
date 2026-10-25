@@ -1894,6 +1894,37 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     }
   }
 
+  Future<void> _runValuation() async {
+    if (_loading) return;
+    setState(() { _loading = true; _error = null; });
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'collection-market-value-test',
+        body: {
+          'modalita_avvio': 'MANUALE',
+          'esegui_valutazione': true,
+        },
+      );
+      final data = response.data;
+      if (response.status < 200 || response.status >= 300 ||
+          data is! Map || data['ok'] != true) {
+        final detail = data is Map ? (data['error'] ?? data['messaggio'] ?? 'Risposta PR-18 non valida') : 'Risposta PR-18 non valida';
+        throw Exception(detail.toString());
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PR-18 ha terminato la richiesta. Aggiorno lo storico.')),
+      );
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _loading = false; });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Avvio VALORE COLLEZIONE non riuscito: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var market=0.0, manual=0.0, units=0, missing=0;
@@ -1920,7 +1951,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: _loading ? null : _load,
+              onPressed: _loading ? null : _runValuation,
               icon: const Icon(Icons.calculate_outlined),
               label: const Text('CALCOLA VALORE COLLEZIONE'),
             ),
