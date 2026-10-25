@@ -1780,6 +1780,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   double? _latestTotal;
   double? _previousTotal;
   int _evaluated = 0;
+  List<Map<String, dynamic>> _valuationRegister = [];
 
   @override
   void initState() { super.initState(); _load(); }
@@ -1803,6 +1804,11 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       Map<String,dynamic>? latest;
       double? latestTotal, previousTotal;
       var evaluated = 0;
+      var valuationRegister = <Map<String, dynamic>>[];
+      final registerData = await Supabase.instance.client.schema('collection').from('valutazioni_mercato')
+        .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima')
+        .order('avviata_il', ascending: false).limit(10);
+      valuationRegister = (registerData as List).map((e) => Map<String,dynamic>.from(e as Map)).toList();
       final evalData = await Supabase.instance.client.schema('collection').from('valutazioni_mercato')
         .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima')
         .inFilter('stato_esecuzione', ['COMPLETATA','COMPLETATA_PARZIALE'])
@@ -1844,7 +1850,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         }
       }
       if (!mounted) return;
-      setState(() { _rows=rows; _latest=latest; _latestTotal=latestTotal; _previousTotal=previousTotal; _evaluated=evaluated; _loading=false; });
+      setState(() { _rows=rows; _latest=latest; _latestTotal=latestTotal; _previousTotal=previousTotal; _evaluated=evaluated; _valuationRegister=valuationRegister; _loading=false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _error='Impossibile leggere il catalogo e lo storico valutazioni: $e'; _loading=false; });
@@ -1897,6 +1903,16 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
             ]))),
           const SizedBox(height:10),
           Text('Il confronto considera soltanto oggetti con una rilevazione valida attuale e precedente; quando manca uno storico confrontabile, la variazione non viene stimata.',style:TextStyle(color:ValoraAppearance.instance.textSubtle,fontSize:11)),
+          const SizedBox(height:18),
+          Text('REGISTRO DELLE VALUTAZIONI',style:const TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
+          const SizedBox(height:6),
+          if (_valuationRegister.isEmpty) const Card(child:ListTile(title:Text('Nessuna valutazione registrata.'))),
+          ..._valuationRegister.map((v) => Card(child:ListTile(
+            leading:Icon((v['stato_esecuzione'] ?? '').toString().startsWith('COMPLETATA') ? Icons.check_circle_outline : Icons.pending_outlined),
+            title:Text('Valutazione n. ${v['codice_valutazione']} · ${(v['stato_esecuzione'] ?? 'STATO N/D').toString()}'),
+            subtitle:Text('${_date(v['data_riferimento'] ?? v['avviata_il'])}\\nEsaminati: ${v['oggetti_esaminati'] ?? 0} · Valutati: ${v['oggetti_valutati'] ?? 0} · Senza stima: ${v['oggetti_senza_stima'] ?? 0}'),
+            isThreeLine:true,
+          ))),
         ])),
     );
   }
