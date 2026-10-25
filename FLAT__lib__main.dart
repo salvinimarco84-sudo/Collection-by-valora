@@ -1789,6 +1789,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   double? _previousTotal;
   int _evaluated = 0;
   bool _valuationRunning = false;
+  int? _activeValuationId;
   int _valuationDone = 0;
   int _valuationTotal = 0;
   String _valuationStatus = '';
@@ -1912,8 +1913,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       _error = null;
     });
 
-    int? valuationId;
-    var firstRequest = true;
+    int? valuationId = _activeValuationId;
+    var firstRequest = valuationId == null;
     var previousOffset = -1;
     try {
       while (true) {
@@ -1940,6 +1941,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           throw Exception('PR-18 non ha restituito il codice della valutazione.');
         }
         valuationId = returnedId;
+        _activeValuationId = returnedId;
         final total = int.tryParse('${payload['oggetti_totali'] ?? 0}') ?? 0;
         final done = int.tryParse('${payload['oggetti_esaminati'] ?? 0}') ?? 0;
         final nextOffset = int.tryParse('${payload['prossimo_offset'] ?? done}') ?? done;
@@ -1961,6 +1963,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         if (!hasMore) break;
       }
 
+      _activeValuationId = null;
       if (!mounted) return;
       setState(() {
         _valuationRunning = false;
@@ -1975,7 +1978,9 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       if (!mounted) return;
       setState(() {
         _valuationRunning = false;
-        _valuationStatus = 'Valutazione interrotta: $e';
+        _valuationStatus = _activeValuationId == null
+            ? 'Valutazione interrotta: $e'
+            : 'Connessione interrotta al lotto ${_valuationDone} di ${_valuationTotal}. La valutazione n. $_activeValuationId è conservata: puoi riprendere senza crearne una nuova. Dettaglio: $e';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Valutazione VALORA non completata: $e')),
@@ -2014,8 +2019,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: _loading || _valuationRunning ? null : _runValuation,
-              icon: const Icon(Icons.calculate_outlined),
-              label: const Text('CALCOLA VALORE COLLEZIONE'),
+              icon: Icon(_activeValuationId == null ? Icons.calculate_outlined : Icons.play_arrow_rounded),
+              label: Text(_activeValuationId == null ? 'CALCOLA VALORE COLLEZIONE' : 'RIPRENDI VALUTAZIONE N. $_activeValuationId'),
             ),
           ),
           if (_valuationRunning) ...[
