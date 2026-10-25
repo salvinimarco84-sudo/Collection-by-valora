@@ -1851,20 +1851,24 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           for (final e in (oldData as List).map((x) => Map<String,dynamic>.from(x as Map))) {
             oldById.putIfAbsent(e['codice_oggetto'].toString(), () => e);
           }
-          var comparableNow = 0.0, comparableOld = 0.0;
-          var comparableCount = 0;
+          final currentValues = <String,double>{};
+          final previousValues = <String,double>{};
           for (final e in currentById.entries) {
-            final now = _num(e.value['valore_mercato']);
-            final old = _num(oldById[e.key]?['valore_mercato']);
-            if (now == null || old == null) continue;
-            final q = quantities[e.key] ?? 1;
-            comparableNow += now * q;
-            comparableOld += old * q;
-            comparableCount++;
+            final value = _num(e.value['valore_mercato']);
+            if (value != null) currentValues[e.key] = value;
           }
-          if (comparableCount > 0) {
-            trendCurrentTotal = comparableNow;
-            previousTotal = comparableOld;
+          for (final e in oldById.entries) {
+            final value = _num(e.value['valore_mercato']);
+            if (value != null) previousValues[e.key] = value;
+          }
+          final comparison = calculateCollectionValueComparison(
+            currentValues: currentValues,
+            previousValues: previousValues,
+            quantities: quantities,
+          );
+          if (comparison.comparedObjects > 0) {
+            trendCurrentTotal = comparison.currentTotal;
+            previousTotal = comparison.previousTotal;
           }
         }
       }
@@ -1938,6 +1942,46 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         ])),
     );
   }
+}
+
+class CollectionValueComparison {
+  const CollectionValueComparison({
+    required this.currentTotal,
+    required this.previousTotal,
+    required this.comparedObjects,
+  });
+
+  final double currentTotal;
+  final double previousTotal;
+  final int comparedObjects;
+
+  double get difference => currentTotal - previousTotal;
+}
+
+/// Confronta soltanto gli identificativi presenti in entrambi i periodi.
+/// Le quantità vengono applicate ugualmente al valore attuale e precedente.
+CollectionValueComparison calculateCollectionValueComparison({
+  required Map<String,double> currentValues,
+  required Map<String,double> previousValues,
+  required Map<String,int> quantities,
+}) {
+  var currentTotal = 0.0;
+  var previousTotal = 0.0;
+  var comparedObjects = 0;
+  for (final entry in currentValues.entries) {
+    final previous = previousValues[entry.key];
+    if (previous == null) continue;
+    final quantity = quantities[entry.key] ?? 1;
+    if (quantity < 1) continue;
+    currentTotal += entry.value * quantity;
+    previousTotal += previous * quantity;
+    comparedObjects++;
+  }
+  return CollectionValueComparison(
+    currentTotal: currentTotal,
+    previousTotal: previousTotal,
+    comparedObjects: comparedObjects,
+  );
 }
 
 class ValoraAssistantPage extends StatefulWidget {
