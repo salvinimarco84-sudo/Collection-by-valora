@@ -10,6 +10,7 @@ on:
       - feature/pr12-engine-test-current
       - repair/pr12-preserve-full-app
       - feature/pr04-nuovo-acquisto-mask
+      - fix/stabilize-collection-2026-10-25
   pull_request:
     branches:
       - main
