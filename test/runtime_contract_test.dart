@@ -45,6 +45,8 @@ void main() {
       expect(source, contains("'codice_valutazione': valuationId"));
       expect(source, contains("while (true)"));
       expect(source, contains('LinearProgressIndicator('));
+      expect(source, contains('REGISTRO DELLE VALUTAZIONI'));
+      expect(source, contains('_evaluationHistory=evaluations'));
       expect(source, contains("'VALUTAZIONE IN CORSO'"));
       expect(source, isNot(contains(".eq('stato_stima','VALIDA')")));
     });
