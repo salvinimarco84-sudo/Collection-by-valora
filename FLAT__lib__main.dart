@@ -1983,12 +1983,29 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       );
       await _load();
     } catch (e) {
+      // La funzione può creare il registro sul server e poi la connessione può interrompersi
+      // prima che il client riceva il codice. Recuperiamo quindi l'ultima AVVIATA dal DB.
+      int? recoveredId = _activeValuationId;
+      try {
+        final pending = await Supabase.instance.client.schema('collection')
+            .from('valutazioni_mercato')
+            .select('codice_valutazione,stato_esecuzione')
+            .eq('stato_esecuzione', 'AVVIATA')
+            .order('avviata_il', ascending: false)
+            .limit(1);
+        if (pending is List && pending.isNotEmpty) {
+          recoveredId = int.tryParse('${pending.first['codice_valutazione'] ?? ''}') ?? recoveredId;
+        }
+      } catch (_) {
+        // Mantieni l'errore originale: il recupero non deve nasconderlo.
+      }
       if (!mounted) return;
       setState(() {
         _valuationRunning = false;
-        _valuationStatus = _activeValuationId == null
-            ? 'Valutazione interrotta: $e'
-            : 'Connessione interrotta al lotto ${_valuationDone} di ${_valuationTotal}. La valutazione n. $_activeValuationId è conservata: puoi riprendere senza crearne una nuova. Dettaglio: $e';
+        _activeValuationId = recoveredId;
+        _valuationStatus = recoveredId == null
+            ? 'Valutazione interrotta: $e. Aggiorna la schermata per verificare se il server ha creato un registro.'
+            : 'Connessione interrotta. La valutazione n. $recoveredId risulta da riprendere. Premi RIPRENDI per continuare senza crearne una nuova. Dettaglio: $e';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Valutazione VALORA non completata: $e')),
