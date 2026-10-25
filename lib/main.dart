@@ -1733,7 +1733,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     final delta = _latestTotal != null && _previousTotal != null ? _latestTotal! - _previousTotal! : null;
     final color = delta == null ? Colors.blueGrey : delta > 0.004 ? const Color(0xFF39875B) : delta < -0.004 ? const Color(0xFFE35D5D) : Colors.blueGrey;
     final icon = delta == null ? Icons.compare_arrows : delta > 0.004 ? Icons.trending_up : delta < -0.004 ? Icons.trending_down : Icons.trending_flat;
-    final trend = delta == null ? 'Confronto con la valutazione precedente non disponibile' : delta > 0.004 ? 'Aumento di ${_eur(delta)} rispetto alla precedente' : delta < -0.004 ? 'Diminuzione di ${_eur(delta.abs())} rispetto alla precedente' : 'Valore invariato rispetto alla precedente';
+    final trend = delta == null ? 'Confronto con la valutazione precedente non disponibile' : delta > 0.004 ? '▲ AUMENTO di ${_eur(delta)} rispetto alla precedente' : delta < -0.004 ? '▼ DIMINUZIONE di ${_eur(delta.abs())} rispetto alla precedente' : '● VALORE INVARIATO rispetto alla precedente';
     Widget metric(String label,String value,IconData icon,Color color) => Card(child: ListTile(leading:Icon(icon,color:color),title:Text(label),subtitle:Text(value,style:TextStyle(color:color,fontWeight:FontWeight.bold,fontSize:18))));
     return Scaffold(
       appBar: AppBar(title:const Text('VALORE COLLEZIONE'),actions:[IconButton(tooltip:'Aggiorna',onPressed:_loading?null:_load,icon:const Icon(Icons.refresh))]),
