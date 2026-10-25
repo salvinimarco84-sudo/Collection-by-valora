@@ -37,6 +37,12 @@ void main() {
       expect(source, contains("!['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']"));
     });
 
+    test('la schermata valore collezione espone il pulsante di calcolo manuale', () {
+      expect(source, contains("label: const Text('CALCOLA VALORE COLLEZIONE')"));
+      expect(source, contains('onPressed: _loading ? null : _load'));
+      expect(source, isNot(contains(".eq('stato_stima','VALIDA')")));
+    });
+
     test('il caricamento delle preferenze non blocca da solo l’avvio', () {
       expect(source, contains('VALORA appearance preferences could not be loaded'));
       expect(source, contains('await ValoraAppearance.instance.load();'));
