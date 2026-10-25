@@ -1815,9 +1815,10 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       Map<String,dynamic>? latest;
       double? latestTotal, trendCurrentTotal, previousTotal;
       var evaluated = 0;
+      // Il registro mostra anche valutazioni in corso o interrotte, non soltanto quelle concluse.
+      // In questo modo un lotto già registrato resta visibile anche se PR-18 si interrompe prima del completamento.
       final evalData = await Supabase.instance.client.schema('collection').from('valutazioni_mercato')
         .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima,report_riepilogo,completata_il')
-        .inFilter('stato_esecuzione', ['COMPLETATA','COMPLETATA_PARZIALE'])
         .order('avviata_il', ascending: false).limit(20);
       final evaluations = (evalData as List).map((e) => Map<String,dynamic>.from(e as Map)).toList();
       if (evaluations.isNotEmpty) {
