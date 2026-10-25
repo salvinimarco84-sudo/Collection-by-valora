@@ -1819,7 +1819,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         final id = latest['codice_valutazione'];
         final currentData = await Supabase.instance.client.schema('collection').from('storico_valori_mercato')
           .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
-          .eq('codice_valutazione', id).eq('stato_stima','VALIDA')
+          .eq('codice_valutazione', id)
           .not('valore_mercato','is',null).order('rilevato_il',ascending:false);
 
         // Confronta soltanto record che appartengono ancora alla collezione attiva.
@@ -1851,7 +1851,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         if (ids.isNotEmpty) {
           final oldData = await Supabase.instance.client.schema('collection').from('storico_valori_mercato')
             .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
-            .inFilter('codice_oggetto', ids).eq('stato_stima','VALIDA').not('valore_mercato','is',null)
+            .inFilter('codice_oggetto', ids).not('valore_mercato','is',null)
             .lt('rilevato_il', latest['avviata_il'].toString()).order('rilevato_il',ascending:false);
           final oldById = <String,Map<String,dynamic>>{};
           for (final e in (oldData as List).map((x) => Map<String,dynamic>.from(x as Map))) {
