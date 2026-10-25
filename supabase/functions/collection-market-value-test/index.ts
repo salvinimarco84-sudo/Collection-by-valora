@@ -57,6 +57,17 @@ Deno.serve(async (req: Request) => {
   const mode = String(body.modalita_avvio ?? "MANUALE").trim().toUpperCase();
   if (mode !== "MANUALE" && mode !== "PROGRAMMATA") return reply({ ok: false, error: "modalita_avvio deve essere MANUALE o PROGRAMMATA." }, 400);
 
+  // Blocco di sicurezza: la ricerca PR-12 può consumare crediti esterni.
+  // La funzione resta disabilitata finché un operatore non abilita esplicitamente la variabile server.
+  if (Deno.env.get("VALORA_PAID_RESEARCH_ENABLED") !== "true") {
+    return reply({
+      ok: false,
+      codice: "RICERCA_A_PAGAMENTO_DISABILITATA",
+      error: "Valutazione sospesa: le ricerche esterne sono disabilitate in modalità test. Nessun lotto è stato avviato e nessun credito API è stato utilizzato.",
+      valutazione_avviata: false,
+    }, 503);
+  }
+
   const authResponse = await fetch(base + "/auth/v1/user", { headers: { apikey: anon, Authorization: authorization } });
   if (!authResponse.ok) return reply({ ok: false, error: "Sessione non valida o scaduta." }, 401);
   const authUser = await authResponse.json();
