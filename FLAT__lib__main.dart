@@ -1778,6 +1778,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   List<Map<String, dynamic>> _rows = [];
   Map<String, dynamic>? _latest;
   double? _latestTotal;
+  double? _trendCurrentTotal;
   double? _previousTotal;
   int _evaluated = 0;
 
@@ -1801,7 +1802,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO'].contains((r['stato'] ?? '').toString().toUpperCase())).toList();
 
       Map<String,dynamic>? latest;
-      double? latestTotal, previousTotal;
+      double? latestTotal, trendCurrentTotal, previousTotal;
       var evaluated = 0;
       final evalData = await Supabase.instance.client.schema('collection').from('valutazioni_mercato')
         .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima')
@@ -1814,15 +1815,33 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
           .eq('codice_valutazione', id).eq('stato_stima','VALIDA')
           .not('valore_mercato','is',null).order('rilevato_il',ascending:false);
+
+        // Confronta soltanto record che appartengono ancora alla collezione attiva.
+        final quantities = <String,int>{};
+        for (final r in rows) {
+          quantities[r['codice_oggetto'].toString()] = (r['quantita'] as num?)?.toInt() ?? 1;
+        }
         final currentById = <String,Map<String,dynamic>>{};
         for (final e in (currentData as List).map((x) => Map<String,dynamic>.from(x as Map))) {
-          currentById.putIfAbsent(e['codice_oggetto'].toString(), () => e);
+          final objectId = e['codice_oggetto'].toString();
+          if (quantities.containsKey(objectId)) {
+            currentById.putIfAbsent(objectId, () => e);
+          }
         }
-        final quantities = <String,int>{};
-        for (final r in rows) { quantities[r['codice_oggetto'].toString()] = (r['quantita'] as num?)?.toInt() ?? 1; }
+
+        var sumNow = 0.0;
+        for (final e in currentById.entries) {
+          final now = _num(e.value['valore_mercato']);
+          if (now != null) {
+            sumNow += now * (quantities[e.key] ?? 1);
+            evaluated++;
+          }
+        }
+        latestTotal = sumNow;
+
+        // Il trend viene calcolato su un sottoinsieme identico in entrambi i periodi.
+        // Gli oggetti senza storico precedente non entrano in nessuno dei due totali comparati.
         final ids = currentById.keys.map((x) => int.tryParse(x)).whereType<int>().toList();
-        var sumNow = 0.0, sumOld = 0.0;
-        var hasOld = false;
         if (ids.isNotEmpty) {
           final oldData = await Supabase.instance.client.schema('collection').from('storico_valori_mercato')
             .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
@@ -1832,19 +1851,33 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           for (final e in (oldData as List).map((x) => Map<String,dynamic>.from(x as Map))) {
             oldById.putIfAbsent(e['codice_oggetto'].toString(), () => e);
           }
+          var comparableNow = 0.0, comparableOld = 0.0;
+          var comparableCount = 0;
           for (final e in currentById.entries) {
-            final q = quantities[e.key] ?? 1;
             final now = _num(e.value['valore_mercato']);
-            if (now != null) { sumNow += now*q; evaluated++; }
             final old = _num(oldById[e.key]?['valore_mercato']);
-            if (old != null) { sumOld += old*q; hasOld = true; }
+            if (now == null || old == null) continue;
+            final q = quantities[e.key] ?? 1;
+            comparableNow += now * q;
+            comparableOld += old * q;
+            comparableCount++;
           }
-          latestTotal = sumNow;
-          if (hasOld) previousTotal = sumOld;
+          if (comparableCount > 0) {
+            trendCurrentTotal = comparableNow;
+            previousTotal = comparableOld;
+          }
         }
       }
       if (!mounted) return;
-      setState(() { _rows=rows; _latest=latest; _latestTotal=latestTotal; _previousTotal=previousTotal; _evaluated=evaluated; _loading=false; });
+      setState(() {
+        _rows=rows;
+        _latest=latest;
+        _latestTotal=latestTotal;
+        _trendCurrentTotal=trendCurrentTotal;
+        _previousTotal=previousTotal;
+        _evaluated=evaluated;
+        _loading=false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() { _error='Impossibile leggere il catalogo e lo storico valutazioni: $e'; _loading=false; });
@@ -1860,7 +1893,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       if (m==null) { missing++; } else { market+=m*q; }
       if (v!=null) manual+=v*q;
     }
-    final delta = _latestTotal != null && _previousTotal != null ? _latestTotal! - _previousTotal! : null;
+    final delta = _trendCurrentTotal != null && _previousTotal != null ? _trendCurrentTotal! - _previousTotal! : null;
     final color = delta == null ? Colors.blueGrey : delta > 0.004 ? const Color(0xFF39875B) : delta < -0.004 ? const Color(0xFFE35D5D) : Colors.blueGrey;
     final icon = delta == null ? Icons.compare_arrows : delta > 0.004 ? Icons.trending_up : delta < -0.004 ? Icons.trending_down : Icons.trending_flat;
     final trend = delta == null ? 'Confronto con la valutazione precedente non disponibile' : delta > 0.004 ? 'Aumento di ${_eur(delta)} rispetto alla precedente' : delta < -0.004 ? 'Diminuzione di ${_eur(delta.abs())} rispetto alla precedente' : 'Valore invariato rispetto alla precedente';
@@ -1891,7 +1924,12 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
               Text('$_evaluated oggetti con stima valida nella rilevazione'),
               const SizedBox(height:12),
               Row(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:color,size:28),const SizedBox(width:8),Expanded(child:Text(trend,style:TextStyle(color:color,fontWeight:FontWeight.w600)))]),
-              if (_previousTotal!=null) ...[const SizedBox(height:6),Text('Valore precedente degli stessi oggetti: ${_eur(_previousTotal!)}',style:TextStyle(color:ValoraAppearance.instance.textSecondary,fontSize:12))],
+              if (_trendCurrentTotal!=null && _previousTotal!=null) ...[
+                const SizedBox(height:6),
+                Text('Valore attuale degli oggetti confrontabili: ${_eur(_trendCurrentTotal!)}',style:TextStyle(color:ValoraAppearance.instance.textSecondary,fontSize:12)),
+                const SizedBox(height:3),
+                Text('Valore precedente degli stessi oggetti: ${_eur(_previousTotal!)}',style:TextStyle(color:ValoraAppearance.instance.textSecondary,fontSize:12)),
+              ],
               const SizedBox(height:8),
               Text('Valutazione n. ${_latest!['codice_valutazione']} · ${_latest!['stato_esecuzione']}',style:TextStyle(color:ValoraAppearance.instance.textSubtle,fontSize:11)),
             ]))),
