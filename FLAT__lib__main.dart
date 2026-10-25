@@ -230,8 +230,14 @@ class ValoraI18n extends ChangeNotifier {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ValoraAppearance.instance.load();
   String? startupError;
+  try {
+    await ValoraAppearance.instance.load();
+  } catch (error, stackTrace) {
+    // Un errore nelle preferenze locali non deve impedire l'avvio dell'interfaccia.
+    debugPrint('VALORA appearance preferences could not be loaded: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
   try {
     await Supabase.initialize(
       url: supabaseUrl,
