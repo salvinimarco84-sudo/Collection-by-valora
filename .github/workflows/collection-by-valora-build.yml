@@ -89,6 +89,9 @@ jobs:
       - name: Analyze application source
         run: flutter analyze lib/main.dart --no-fatal-infos --no-fatal-warnings
 
+      - name: Run unit tests
+        run: flutter test
+
       - name: Build release APK
         run: flutter build apk --release
 
@@ -146,6 +149,9 @@ jobs:
 
       - name: Analyze application source
         run: flutter analyze lib/main.dart --no-fatal-infos --no-fatal-warnings
+
+      - name: Run unit tests
+        run: flutter test
 
       - name: Build Windows release
         run: flutter build windows --release
