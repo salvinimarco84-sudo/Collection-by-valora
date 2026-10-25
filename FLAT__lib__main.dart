@@ -1822,6 +1822,14 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima,report_riepilogo,completata_il')
         .order('avviata_il', ascending: false).limit(20);
       final evaluations = (evalData as List).map((e) => Map<String,dynamic>.from(e as Map)).toList();
+      // Recupera automaticamente l'ultima valutazione lasciata AVVIATA dopo chiusura o timeout.
+      // Così il pulsante riprende il codice esistente invece di creare una nuova valutazione.
+      final resumable = evaluations.cast<Map<String,dynamic>?>().firstWhere(
+        (e) => (e?['stato_esecuzione'] ?? '').toString().toUpperCase() == 'AVVIATA',
+        orElse: () => null,
+      );
+      final resumableId = int.tryParse('${resumable?['codice_valutazione'] ?? ''}');
+      if (resumableId != null) _activeValuationId = resumableId;
       if (evaluations.isNotEmpty) {
         latest = evaluations.first;
         final id = latest['codice_valutazione'];
