@@ -1917,6 +1917,15 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           const SizedBox(height:6),
           Text(ValoraI18n.tr('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.')),
           const SizedBox(height:12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _loading ? null : _load,
+              icon: const Icon(Icons.calculate_outlined),
+              label: const Text('CALCOLA VALORE COLLEZIONE'),
+            ),
+          ),
+          const SizedBox(height:12),
           metric('Valore di mercato noto',_eur(market),Icons.trending_up,const Color(0xFF39875B)),
           metric('Valore manuale registrato',_eur(manual),Icons.edit_note,const Color(0xFF568DAD)),
           metric('Oggetti e unità','${_rows.length} record · $units unità',Icons.inventory_2_outlined,const Color(0xFF8556C7)),
