@@ -1762,13 +1762,13 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     final trend = delta == null ? 'Confronto con la valutazione precedente non disponibile' : delta > 0.004 ? 'Aumento di ${_eur(delta)} rispetto alla precedente' : delta < -0.004 ? 'Diminuzione di ${_eur(delta.abs())} rispetto alla precedente' : 'Valore invariato rispetto alla precedente';
     Widget metric(String label,String value,IconData icon,Color color) => Card(child: ListTile(leading:Icon(icon,color:color),title:Text(label),subtitle:Text(value,style:TextStyle(color:color,fontWeight:FontWeight.bold,fontSize:18))));
     return Scaffold(
-      appBar: AppBar(title:Text(ValoraI18n.tr('VALORE COLLEZIONE')),actions:[IconButton(tooltip:'Aggiorna',onPressed:_loading?null:_load,icon:const Icon(Icons.refresh))]),
+      appBar: AppBar(title:const Text('VALORE COLLEZIONE'),actions:[IconButton(tooltip:'Aggiorna',onPressed:_loading?null:_load,icon:const Icon(Icons.refresh))]),
       body:_loading ? const Center(child:CircularProgressIndicator()) : _error!=null
         ? Center(child:Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,children:[Text(_error!,textAlign:TextAlign.center),const SizedBox(height:12),FilledButton(onPressed:_load,child:const Text('Riprova'))])))
         : RefreshIndicator(onRefresh:_load,child:ListView(padding:const EdgeInsets.all(16),children:[
-          Text(ValoraI18n.tr('RIEPILOGO DEL PATRIMONIO'),style:const TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
+          const Text('RIEPILOGO DEL PATRIMONIO',style:TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
           const SizedBox(height:6),
-          Text(ValoraI18n.tr('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.')),
+          const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.'),
           const SizedBox(height:12),
           metric('Valore di mercato noto',_eur(market),Icons.trending_up,const Color(0xFF39875B)),
           metric('Valore manuale registrato',_eur(manual),Icons.edit_note,const Color(0xFF568DAD)),
