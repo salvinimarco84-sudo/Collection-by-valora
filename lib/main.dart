@@ -1793,6 +1793,12 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.'),
           const SizedBox(height:12),
           SizedBox(width: double.infinity, child: FilledButton.icon(
+            onPressed: _loading ? null : _load,
+            icon: const Icon(Icons.calculate),
+            label: const Text('RICALCOLA VALORE COLLEZIONE'),
+          )),
+          const SizedBox(height: 8),
+          SizedBox(width: double.infinity, child: FilledButton.icon(
             onPressed: _snapshotBusy ? null : _capturePatrimonySnapshot,
             icon: _snapshotBusy ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.calculate_outlined),
             label: Text(_snapshotBusy ? 'Calcolo e confronto in corso…' : 'CALCOLA E CONFRONTA PATRIMONIO'),
