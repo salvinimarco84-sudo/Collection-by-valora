@@ -1695,50 +1695,24 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       double? latestTotal, previousTotal;
       var evaluated = 0;
       var valuationRegister = <Map<String, dynamic>>[];
-      final registerData = await Supabase.instance.client.schema('collection').from('valutazioni_mercato')
-        .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima')
-        .order('avviata_il', ascending: false).limit(10);
-      valuationRegister = (registerData as List).map((e) => Map<String,dynamic>.from(e as Map)).toList();
-      final evalData = await Supabase.instance.client.schema('collection').from('valutazioni_mercato')
-        .select('codice_valutazione,avviata_il,data_riferimento,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima')
-        .inFilter('stato_esecuzione', ['COMPLETATA','COMPLETATA_PARZIALE'])
-        .order('avviata_il', ascending: false).limit(1);
-      if ((evalData as List).isNotEmpty) {
-        latest = Map<String,dynamic>.from(evalData.first as Map);
-        final id = latest['codice_valutazione'];
-        final currentData = await Supabase.instance.client.schema('collection').from('storico_valori_mercato')
-          .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
-          .eq('codice_valutazione', id).eq('stato_stima','VALIDA')
-          .not('valore_mercato','is',null).order('rilevato_il',ascending:false);
-        final currentById = <String,Map<String,dynamic>>{};
-        for (final e in (currentData as List).map((x) => Map<String,dynamic>.from(x as Map))) {
-          currentById.putIfAbsent(e['codice_oggetto'].toString(), () => e);
-        }
-        final quantities = <String,int>{};
-        for (final r in rows) { quantities[r['codice_oggetto'].toString()] = (r['quantita'] as num?)?.toInt() ?? 1; }
-        final ids = currentById.keys.map((x) => int.tryParse(x)).whereType<int>().toList();
-        var sumNow = 0.0, sumOld = 0.0;
-        var hasOld = false;
-        if (ids.isNotEmpty) {
-          final oldData = await Supabase.instance.client.schema('collection').from('storico_valori_mercato')
-            .select('codice_oggetto,rilevato_il,valore_mercato,stato_stima')
-            .inFilter('codice_oggetto', ids).eq('stato_stima','VALIDA').not('valore_mercato','is',null)
-            .lt('rilevato_il', latest['avviata_il'].toString()).order('rilevato_il',ascending:false);
-          final oldById = <String,Map<String,dynamic>>{};
-          for (final e in (oldData as List).map((x) => Map<String,dynamic>.from(x as Map))) {
-            oldById.putIfAbsent(e['codice_oggetto'].toString(), () => e);
-          }
-          for (final e in currentById.entries) {
-            final q = quantities[e.key] ?? 1;
-            final now = _num(e.value['valore_mercato']);
-            if (now != null) { sumNow += now*q; evaluated++; }
-            final old = _num(oldById[e.key]?['valore_mercato']);
-            if (old != null) { sumOld += old*q; hasOld = true; }
-          }
-          latestTotal = sumNow;
-          if (hasOld) previousTotal = sumOld;
-        }
+      final response = await Supabase.instance.client.functions.invoke(
+        'collection-valuation-history',
+        body: <String, dynamic>{},
+      );
+      if (response.status < 200 || response.status >= 300) {
+        throw Exception('Servizio registro valutazioni non disponibile: ' + response.status.toString());
       }
+      final payload = Map<String, dynamic>.from(response.data as Map);
+      if (payload['ok'] != true) {
+        throw Exception((payload['error'] ?? 'Lettura registro valutazioni non riuscita.').toString());
+      }
+      valuationRegister = ((payload['valutazioni'] as List?) ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final latestData = payload['ultima_valutazione'];
+      if (latestData is Map) latest = Map<String, dynamic>.from(latestData);
+      latestTotal = _num(payload['valore_ultima']);
+      previousTotal = _num(payload['valore_precedente']);
+      evaluated = (payload['oggetti_valutati'] as num?)?.toInt() ?? 0;
       if (!mounted) return;
       setState(() { _rows=rows; _latest=latest; _latestTotal=latestTotal; _previousTotal=previousTotal; _evaluated=evaluated; _valuationRegister=valuationRegister; _loading=false; });
     } catch (e) {
