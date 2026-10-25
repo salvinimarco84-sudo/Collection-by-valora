@@ -1774,7 +1774,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           ..._valuationRegister.map((v) => Card(child:ListTile(
             leading:Icon((v['stato_esecuzione'] ?? '').toString().startsWith('COMPLETATA') ? Icons.check_circle_outline : Icons.pending_outlined),
             title:Text('Valutazione n. ${v['codice_valutazione']} · ${(v['stato_esecuzione'] ?? 'STATO N/D').toString()}'),
-            subtitle:Text('${_date(v['data_riferimento'] ?? v['avviata_il'])}\\nEsaminati: ${v['oggetti_esaminati'] ?? 0} · Valutati: ${v['oggetti_valutati'] ?? 0} · Senza stima: ${v['oggetti_senza_stima'] ?? 0}'),
+            subtitle:Text('${_date(v['data_riferimento'] ?? v['avviata_il'])}\
+Esaminati: ${v['oggetti_esaminati'] ?? 0} · Valutati: ${v['oggetti_valutati'] ?? 0} · Senza stima: ${v['oggetti_senza_stima'] ?? 0}'),
             isThreeLine:true,
           ))),
         ])),
