@@ -2857,10 +2857,33 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   bool _loading = false;
   String _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
   List<Map<String, dynamic>> _results = [];
+  List<Map<String, dynamic>> _themes = [];
+  String? _selectedThemeId;
+
+  Future<void> _loadThemes() async {
+    final code = widget.initialCategoryCode?.trim() ?? '';
+    if (code.isEmpty) return;
+    try {
+      final response = await Supabase.instance.client.schema('collection')
+          .from('temi_collezione')
+          .select('id_tema, descrizione')
+          .eq('codice_categoria', code)
+          .eq('attivo', true)
+          .order('ordine')
+          .order('descrizione');
+      if (!mounted) return;
+      setState(() => _themes = List<Map<String, dynamic>>.from(
+        (response as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)),
+      ));
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Impossibile caricare i temi: $e');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadThemes();
     final initial = widget.initialQuery?.trim() ?? '';
     if (initial.isNotEmpty) {
       _query.text = initial;
@@ -2909,10 +2932,14 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       if (widget.initialCategoryCode?.trim().isNotEmpty ?? false) {
         final assignmentResponse = await Supabase.instance.client.schema('collection')
             .from('oggetto_collezione_categoria')
-            .select('codice_oggetto')
+            .select('codice_oggetto, id_tema')
             .eq('codice_categoria', widget.initialCategoryCode!.trim());
-        assignedObjectCodes = (assignmentResponse as List)
+        final assignmentRows = (assignmentResponse as List)
             .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row));
+        assignedObjectCodes = assignmentRows
+            .where((row) => _selectedThemeId == null ||
+                (row['id_tema'] ?? '').toString() == _selectedThemeId)
             .map((row) => (row['codice_oggetto'] ?? '').toString())
             .toSet();
       }
@@ -3025,6 +3052,27 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
               'Cerca nel catalogo esistente per categoria o dicitura. Esempio: TRANSFORMERS.',
               style: TextStyle(color: ValoraAppearance.instance.textSecondary),
             ),
+            if ((widget.initialCategoryCode?.trim().isNotEmpty ?? false) && _themes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String?>(
+                value: _selectedThemeId,
+                decoration: const InputDecoration(
+                  labelText: 'Categoria 1 · Tema',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem<String?>(value: null, child: Text('Tutti i temi')),
+                  ..._themes.map((theme) => DropdownMenuItem<String?>(
+                    value: (theme['id_tema'] ?? '').toString(),
+                    child: Text((theme['descrizione'] ?? '').toString()),
+                  )),
+                ],
+                onChanged: (value) {
+                  setState(() => _selectedThemeId = value);
+                  _search();
+                },
+              ),
+            ],
             const SizedBox(height: 14),
             TextField(
               controller: _query,
