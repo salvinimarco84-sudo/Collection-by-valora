@@ -7280,14 +7280,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
               : isHistory ? 'VISUALIZZA STORICO OGGETTO'
               : 'ESEGUI CONSULTAZIONE')),
-        if (_currentObject != null && code != 'PR-02' && code != 'PR-03') ...[
+        if (isMaster && (_currentObject != null || widget.initialObjectCode != null)) ...[
           const SizedBox(height: 16),
-          if (isMaster) ...[
-            Text(
-              _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
-              style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
-            ),
-            const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -7315,6 +7309,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+        ],
+        if (_currentObject != null && code != 'PR-02' && code != 'PR-03') ...[
+          const SizedBox(height: 16),
+          if (isMaster) ...[
+            Text(
+              _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
+              style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
             ),
             const SizedBox(height: 12),
             Card(
