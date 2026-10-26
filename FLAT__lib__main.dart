@@ -2854,9 +2854,12 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
     });
     try {
       final categoryMode = widget.initialQuery?.trim().isNotEmpty ?? false;
+      final normalizedInput = query.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
+      final otherCollectionsMode = !categoryMode &&
+          (normalizedInput == 'altre collezioni' || normalizedInput == 'altre collezione');
       final response = await Supabase.instance.client.schema('collection').rpc(
         'pr_11_ricerca_schede',
-        params: {'p_cerca': categoryMode ? null : query},
+        params: {'p_cerca': (categoryMode || otherCollectionsMode) ? null : query},
       );
       dynamic payload = response;
       if (payload is List && payload.length == 1 && payload.first is Map) {
@@ -2865,13 +2868,21 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       if (payload is! Map || payload['oggetti'] is! List) {
         throw Exception('Il catalogo non ha restituito un elenco di oggetti valido.');
       }
-      final normalizedQuery = query.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
+      final normalizedQuery = normalizedInput;
+      const primaryDashboardCategories = {'lego', 'saint seiya', 'fumetti', 'transformers'};
       final rows = (payload['oggetti'] as List)
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
-          .where((row) => categoryMode
-              ? _matchesInitialCategory(row, widget.initialQuery!.trim())
-              : _description(row).toLowerCase().contains(normalizedQuery))
+          .where((row) {
+            if (categoryMode) {
+              return _matchesInitialCategory(row, widget.initialQuery!.trim());
+            }
+            if (otherCollectionsMode) {
+              final canonical = (row['categoria'] ?? '').toString().trim().toLowerCase();
+              return canonical.isEmpty || !primaryDashboardCategories.contains(canonical);
+            }
+            return _description(row).toLowerCase().contains(normalizedQuery);
+          })
           .toList()
         ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
 
