@@ -265,6 +265,31 @@ async function searchDcBatmanHush(description: string): Promise<SearchResult[]> 
 }
 
 
+async function enrichFunkoImages(results: SearchResult[]): Promise<SearchResult[]> {
+  // I risultati web sono pagine prodotto, non necessariamente file immagine.
+  // Estrae l'immagine Open Graph/Twitter della pagina per offrire a PR-12 un URL
+  // immagine utilizzabile e distinto per ciascun candidato, senza salvare nulla.
+  const candidates = results.slice(0, 8);
+  await mapWithConcurrency(candidates, 4, async (item) => {
+    if (item.image_url || !/^https?:\\/\\//i.test(item.url)) return;
+    try {
+      const html = await fetchText(item.url, 5000);
+      const raw =
+        html.match(/<meta\\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
+        html.match(/<meta\\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1] ??
+        html.match(/<meta\\b[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
+        html.match(/<meta\\b[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image["']/i)?.[1];
+      const image = raw ? decodeEntities(raw.replace(/&amp;/gi, "&")).trim() : "";
+      if (/^https?:\\/\\//i.test(image) && !/placeholder|no[-_ ]?image|default[-_ ]?image/i.test(image)) {
+        item.image_url = image;
+      }
+    } catch {
+      // Un sito può bloccare il crawler: il risultato resta disponibile senza immagine.
+    }
+  });
+  return results;
+}
+
 type ConfiguredSource = { codice_fonte?: string; nome_fonte?: string; url_principale?: string; tipo_fonte?: string; ambito_ricerca?: string; produttore?: string; linea_prodotto?: string; famiglia_prodotto?: string; priorita_metadati?: number; stato_affidabilita?: string; riutilizzabile?: boolean };
 type RegistrySource = { id?: string; nome?: string; url_base?: string; ambito?: string; categoria?: string; marchio_editore?: string; franchise?: string; mercato?: string; tipo_fonte?: string; priorita?: number; attendibilita_dichiarata?: string; stato_verifica?: string; attiva?: boolean; origine_configurazione?: string; proprietario_utente?: string; condivisa?: boolean };
 type RegistryScope = { fonte_id?: string; categoria?: string; marchio_editore?: string; franchise?: string; mercato?: string; priorita_override?: number | null; note?: string };
@@ -970,6 +995,9 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
     let results = rankRelevantResults(dopoCodice, category, description, theme);
     const conteggioDopoPertinenza = results.length;
     results = enrichMetadata(results, category, description);
+    if (/funko|pop!|pop vinyl/i.test(description + " " + category + " " + theme)) {
+      results = await enrichFunkoImages(results);
+    }
     // Nessun filtro per dominio: i candidati possono provenire da qualsiasi sito.
     // I controlli sul codice esatto e sulla pertinenza restano attivi.
 
