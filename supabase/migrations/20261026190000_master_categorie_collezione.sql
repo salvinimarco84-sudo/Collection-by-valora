@@ -48,7 +48,7 @@ create table if not exists collection.oggetto_collezione_categoria (
   stato_verifica text not null default 'DA_VERIFICARE'
     check (stato_verifica in ('DA_VERIFICARE','VERIFICATO','CONFLITTO')),
   aggiornato_il timestamptz not null default now(),
-  constraint ck_oggetto_tema_stessa_categoria check (id_tema is null or true)
+  constraint ck_oggetto_categoria_codice check (length(btrim(codice_categoria)) > 0)
 );
 
 comment on table collection.oggetto_collezione_categoria is
@@ -59,6 +59,25 @@ create index if not exists ix_temi_collezione_categoria_ordine
 
 create index if not exists ix_oggetto_collezione_categoria_tema
   on collection.oggetto_collezione_categoria(codice_categoria, id_tema);
+
+
+-- Categorie iniziali: le righe restano nel master anche quando non hanno oggetti.
+insert into collection.master_categorie_collezione
+  (codice_categoria, descrizione, icona, colore_hex, ordine_menu, visibile)
+values
+  ('LEGO', 'LEGO', 'extension', '#E31B23', 10, true),
+  ('SAINT_SEIYA', 'Saint Seiya', 'shield_outlined', '#7137B8', 20, true),
+  ('MOTO_DIE_CAST', 'Moto die-cast', 'two_wheeler', '#DD741D', 30, true),
+  ('FUMETTI', 'Fumetti', 'menu_book_outlined', '#008C4A', 40, true),
+  ('GUNDAM', 'Gundam', 'smart_toy_outlined', '#C62828', 50, true),
+  ('TRANSFORMERS', 'Transformers', 'smart_toy_outlined', '#2476C8', 60, true)
+on conflict (codice_categoria) do update
+set descrizione = excluded.descrizione,
+    icona = excluded.icona,
+    colore_hex = excluded.colore_hex,
+    ordine_menu = excluded.ordine_menu,
+    visibile = excluded.visibile,
+    aggiornato_il = now();
 
 -- La relazione tema/categoria viene validata con trigger, evitando di assegnare
 -- un tema appartenente a una categoria principale diversa.
