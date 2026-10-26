@@ -5136,7 +5136,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     try {
       final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
         'modalita_ia': 'TEST',
-        'oggetti': batch.map((row) => {'id': (row['codice_oggetto'] ?? '').toString(), 'descrizione': (row['descrizione_oggetto'] ?? '').toString(), 'categoria': _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString()), 'tema': (row['tema'] ?? row['franchise'] ?? row['franchise_tema'] ?? row['linea_prodotto'] ?? '').toString().trim(), 'mercato': (row['mercato'] ?? row['market'] ?? 'Italia').toString()}).toList(),
+        'oggetti': batch.map((row) {
+          // Mantieni distinti tema e sottotema: non promuovere mai un
+          // sottotema (es. Polizia) al campo tema solo perché è valorizzato.
+          String metadataText(List<String> keys) {
+            for (final key in keys) {
+              final value = row[key];
+              if (value != null && value.toString().trim().isNotEmpty) {
+                return value.toString().trim();
+              }
+            }
+            return '';
+          }
+          return {
+            'id': (row['codice_oggetto'] ?? '').toString(),
+            'descrizione': (row['descrizione_oggetto'] ?? '').toString(),
+            'categoria': metadataText(['categoria_principale', 'categoria_collezione']).isNotEmpty
+                ? metadataText(['categoria_principale', 'categoria_collezione'])
+                : _pr12CategoryFromDescription((row['descrizione_oggetto'] ?? '').toString()),
+            'tema': metadataText(['tema', 'tema_lego', 'franchise_tema', 'franchise', 'linea_prodotto']),
+            'sottotema': metadataText(['sottotema', 'sotto_tema', 'sottotema_lego']),
+            'sezione': metadataText(['sezione', 'serie', 'linea']),
+            'mercato': (row['mercato'] ?? row['market'] ?? 'Italia').toString(),
+          };
+        }).toList(),
       });
       dynamic raw = response.data;
       // Supabase Functions può esporre il body come ByteStream: consumarlo e decodificarlo prima del parsing JSON/SSE.
