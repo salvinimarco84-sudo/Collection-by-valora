@@ -8689,15 +8689,42 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   double get _total => _items.fold<double>(0, (sum, i) => sum + (i.amount ?? 0));
   void _notice(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
 
-  Future<void> _photoAndRecognize(_PurchaseItemDraft item) async {
+  Future<void> _photoAndRecognize(_PurchaseItemDraft item, {bool fromGallery = false}) async {
     try {
-      final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
-      if (picked == null) return;
-      final bytes = await picked.readAsBytes();
-      if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Foto vuota o superiore a 10 MB.');
+      final source = await showModalBottomSheet<String>(
+        context: context,
+        builder: (ctx) => SafeArea(child: Wrap(children: [
+          ListTile(leading: const Icon(Icons.camera_alt_outlined), title: const Text('Scatta una foto'),
+            onTap: () => Navigator.pop(ctx, 'camera')),
+          ListTile(leading: const Icon(Icons.photo_library_outlined), title: const Text('Scegli dalla galleria'),
+            onTap: () => Navigator.pop(ctx, 'gallery')),
+          ListTile(leading: const Icon(Icons.upload_file_outlined), title: const Text('Carica un file immagine'),
+            onTap: () => Navigator.pop(ctx, 'file')),
+        ])),
+      );
+      if (source == null) return;
+      Uint8List bytes;
+      String fileName;
+      if (source == 'file') {
+        final result = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false, withData: true);
+        if (result == null || result.files.isEmpty) return;
+        final file = result.files.single;
+        final data = file.bytes ?? (file.path != null ? await File(file.path!).readAsBytes() : null);
+        if (data == null) throw Exception('Impossibile leggere il file immagine selezionato.');
+        bytes = data;
+        fileName = file.name.isNotEmpty ? file.name : 'immagine_acquisto.jpg';
+      } else {
+        final picked = await ImagePicker().pickImage(
+          source: source == 'camera' ? ImageSource.camera : ImageSource.gallery,
+          imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
+        if (picked == null) return;
+        bytes = await picked.readAsBytes();
+        fileName = picked.name.isNotEmpty ? picked.name : 'immagine_acquisto.jpg';
+      }
+      if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Immagine vuota o superiore a 10 MB.');
       setState(() {
         item.photoBytes = bytes;
-        item.photoName = picked.name.isNotEmpty ? picked.name : 'foto_acquisto.jpg';
+        item.photoName = fileName;
         item.photoUrl = null;
         item.photoStatus = 'Foto acquisita. Riconoscimento PR-12 in corso…';
       });
@@ -8945,8 +8972,8 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         const SizedBox(height: 6),
         SizedBox(width: double.infinity, child: OutlinedButton.icon(
           onPressed: _busy ? null : () => _photoAndRecognize(item),
-          icon: const Icon(Icons.camera_alt_outlined),
-          label: const Text('SCATTA FOTO · RICONOSCIMENTO PR-12'),
+          icon: const Icon(Icons.add_photo_alternate_outlined),
+          label: const Text('FOTO O IMMAGINE · RICONOSCIMENTO PR-12'),
         )),
         if (item.photoUrl != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
