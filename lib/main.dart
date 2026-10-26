@@ -6509,6 +6509,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Widget build(BuildContext context) {
     final code = widget.apiCode;
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
+    // Anche i risultati del report per franchise/tema sono schede navigabili.
+    final isThemeReport = code == 'REPORT-COLLECTION-THEME';
     final isHistory = code == 'EXPLORE_RECORDS';
     final isMaster = code == 'OBJECT_MASTER';
 
@@ -7212,7 +7214,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 )),
               ));
             }
-            return _objectCard(item, availableStyle: isAvailableList, onTap: isAvailableList
+            return _objectCard(item, availableStyle: isAvailableList || isThemeReport, onTap: (isAvailableList || isThemeReport)
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(
                       title: 'Visualizza scheda',
