@@ -7172,6 +7172,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
       else { throw Exception('Rilascio del blocco non confermato.'); }
       if (!mounted) return;
       setState(() {
+        _busy = false;
         _selected.clear(); _platformIds.clear(); _price.clear(); _notes.clear(); _preview = null; _reviewed = false;
         _status = 'LOTTO SALVATO E VERIFICATO · Codice: ' + (r['codice_lotto'] ?? 'non restituito').toString() +
           ' · Oggetti: ' + (r['numero_oggetti'] ?? 0).toString() + ' · Totale: ' + _eur(r['prezzo_totale'] ?? 0);
