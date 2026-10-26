@@ -735,6 +735,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
   'VENDITE': [
     ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'WRITE-PR-06', readOnly: false),
+    ProcedureEntry(title: 'Nuova vendita a lotto', description: 'Seleziona più oggetti e assegna un unico prezzo totale al lotto.', apiCode: 'WRITE-PR-06-LOTTO', readOnly: false),
     ProcedureEntry(title: 'Chiudi vendita', description: 'Chiude una vendita secondo la procedura VALORA.', enabled: false, readOnly: false),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
@@ -2730,7 +2731,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
                           : procedure.apiCode == 'WRITE-PR-05'
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
-                               : procedure.apiCode != null
+                               : procedure.apiCode == 'WRITE-PR-06-LOTTO'
+                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSaleLotPage()))
+                                : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
                       : null,
@@ -7568,6 +7571,255 @@ class _PurchaseItemDraft {
     if (photoUrl != null) 'url_immagine_catalogo': photoUrl,
   };
   void dispose() { description.dispose(); price.dispose(); }
+}
+
+class NewSaleLotPage extends StatefulWidget {
+  const NewSaleLotPage({super.key});
+  @override State<NewSaleLotPage> createState() => _NewSaleLotPageState();
+}
+
+class _NewSaleLotPageState extends State<NewSaleLotPage> {
+  final _search = TextEditingController();
+  final _price = TextEditingController();
+  final _notes = TextEditingController();
+  final _session = _uuid.v4();
+  bool _busy = false, _locked = false, _reviewed = false;
+  List<Map<String,dynamic>> _objects = [];
+  List<Map<String,dynamic>> _platforms = [];
+  final Set<int> _selected = {};
+  final Set<int> _platformIds = {};
+  Map<String,dynamic>? _preview;
+  String _status = 'Seleziona almeno due oggetti disponibili e assegna un prezzo unico al lotto.';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _load(); });
+  }
+  @override
+  void dispose() {
+    if (_locked) _releaseQuietly();
+    _search.dispose(); _price.dispose(); _notes.dispose(); super.dispose();
+  }
+  int? _id(Map<String,dynamic> r) => int.tryParse((r['codice_oggetto'] ?? '').toString());
+  String _desc(Map<String,dynamic> r) => (r['descrizione_oggetto'] ?? r['descrizione'] ?? 'Oggetto').toString();
+  double? _amount() => double.tryParse(_price.text.trim().replaceAll(',', '.'));
+  String _eur(dynamic x) {
+    final n = x is num ? x.toDouble() : (double.tryParse((x ?? '').toString().replaceAll(',', '.')) ?? 0);
+    return '€ ' + n.toStringAsFixed(2).replaceAll('.', ',');
+  }
+  List<Map<String,dynamic>> get _visible {
+    final q = _search.text.trim().toLowerCase();
+    if (q.isEmpty) return _objects;
+    return _objects.where((r) => _desc(r).toLowerCase().contains(q) || (r['codice_oggetto'] ?? '').toString().contains(q)).toList();
+  }
+  List<Map<String,dynamic>> get _chosen => _objects.where((r) => _id(r) != null && _selected.contains(_id(r))).toList();
+
+  Future<void> _load() async {
+    if (_busy) return;
+    setState(() { _busy = true; _status = 'Caricamento oggetti disponibili e piattaforme…'; });
+    try {
+      final all = <Map<String,dynamic>>[];
+      const size = 100;
+      for (var offset = 0; offset < 10000; offset += size) {
+        final response = await _ValoraRuntimeApi.call('consultation', {
+          'session_id': _session, 'consultation_code': 'OBJECTS_SELLABLE',
+          'arguments': {'limite': size, 'offset': offset},
+        });
+        final outer = response['result'];
+        final data = outer is Map ? outer['risultato'] : null;
+        final rows = data is List ? data.whereType<Map>().map((r) => Map<String,dynamic>.from(r)).toList() : <Map<String,dynamic>>[];
+        all.addAll(rows);
+        if (rows.length < size) break;
+      }
+      final raw = await Supabase.instance.client.schema('collection').from('piattaforme')
+          .select('codice_piattaforma,nome_piattaforma').order('codice_piattaforma');
+      if (!mounted) return;
+      setState(() {
+        _objects = all;
+        _platforms = (raw as List).whereType<Map>().map((r) => Map<String,dynamic>.from(r)).toList();
+        _selected.removeWhere((id) => !all.any((r) => _id(r) == id));
+        _status = 'Oggetti disponibili caricati: ' + all.length.toString() + '.';
+      });
+    } catch (e) {
+      if (mounted) setState(() { _status = 'Caricamento non riuscito: ' + e.toString(); });
+    } finally { if (mounted) setState(() { _busy = false; }); }
+  }
+
+  Future<void> _acquire() async {
+    final r = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _session});
+    final x = r['result'];
+    if (x is Map && x['acquisito'] == true) { _locked = true; return; }
+    throw Exception(x is Map ? (x['messaggio'] ?? 'Blocco archivio non acquisito.') : 'Blocco archivio non acquisito.');
+  }
+  Future<void> _release() async {
+    if (!_locked) return;
+    final r = await _ValoraRuntimeApi.call('release_lock', {'session_id': _session});
+    final x = r['result'];
+    if (x is Map && x['rilasciato'] == true) { _locked = false; return; }
+    throw Exception('Il blocco archivio non è stato rilasciato.');
+  }
+  Future<void> _releaseQuietly() async { try { await _release(); } catch (_) {} }
+
+  Map<String,dynamic> _payload() {
+    final amount = _amount();
+    if (_selected.length < 2) throw Exception('Seleziona almeno due oggetti.');
+    if (amount == null || amount <= 0) throw Exception('Inserisci un prezzo totale maggiore di zero.');
+    if (_platformIds.isEmpty) throw Exception('Seleziona almeno una piattaforma.');
+    if (_chosen.length != _selected.length) throw Exception('Un oggetto selezionato non è più disponibile. Aggiorna il catalogo.');
+    return {
+      'prezzo_totale': (amount * 100).round() / 100,
+      'operazioni': _chosen.map((r) => {
+        'codice_oggetto': _id(r), 'codici_piattaforme': _platformIds.toList()..sort(),
+      }).toList(),
+      if (_notes.text.trim().isNotEmpty) 'note': _notes.text.trim(),
+    };
+  }
+
+  Future<void> _previewLot() async {
+    final payload = _payload();
+    setState(() { _busy = true; _preview = null; _reviewed = false; });
+    try {
+      if (!_locked) await _acquire();
+      final r = await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'preview', payload, sessionId: _session);
+      if (mounted) setState(() {
+        _preview = r;
+        _status = 'Anteprima pronta: ' + (r['numero_oggetti'] ?? _selected.length).toString() + ' oggetti, totale ' + _eur(r['prezzo_totale'] ?? _amount()) + '. Nessuna scrittura eseguita.';
+      });
+    } catch (e) { await _releaseQuietly(); rethrow; }
+    finally { if (mounted) setState(() { _busy = false; }); }
+  }
+  Future<void> _reviewLot() async {
+    if (_preview == null) throw Exception('Controlla prima il lotto.');
+    setState(() { _busy = true; });
+    try {
+      await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'review', _payload(), sessionId: _session);
+      if (mounted) setState(() { _reviewed = true; _status = 'Riepilogo confermato. Attende la conferma definitiva.'; });
+    } finally { if (mounted) setState(() { _busy = false; }); }
+  }
+  Future<void> _saveLot() async {
+    if (!_reviewed) throw Exception('Conferma prima il riepilogo.');
+    final platformText = _platforms.where((p) => _platformIds.contains(int.tryParse((p['codice_piattaforma'] ?? '').toString())))
+        .map((p) => (p['nome_piattaforma'] ?? '').toString()).join(', ');
+    final yes = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+      title: const Text('CONFERMA DEFINITIVA DEL LOTTO'),
+      content: Text('Oggetti: ' + _selected.length.toString() + '\nPrezzo unico: ' + _eur(_amount()) + '\nPiattaforme: ' + platformText + '\n\nConfermi un unico lotto di vendita?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('MODIFICA')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMA E SALVA')),
+      ],
+    ));
+    if (yes != true || !mounted) return;
+    setState(() { _busy = true; _status = 'Salvataggio del lotto in corso…'; });
+    try {
+      final r = await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'save', _payload(), sessionId: _session, requestId: _uuid.v4());
+      if (r['scrittura_eseguita'] != true) throw Exception('Scrittura del lotto non confermata dal runtime.');
+      if (r['blocco_rilasciato_automaticamente'] == true) { _locked = false; }
+      else { throw Exception('Rilascio del blocco non confermato.'); }
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _selected.clear(); _platformIds.clear(); _price.clear(); _notes.clear(); _preview = null; _reviewed = false;
+        _status = 'LOTTO SALVATO E VERIFICATO · Codice: ' + (r['codice_lotto'] ?? 'non restituito').toString() +
+          ' · Oggetti: ' + (r['numero_oggetti'] ?? 0).toString() + ' · Totale: ' + _eur(r['prezzo_totale'] ?? 0);
+      });
+      await _load();
+    } catch (e) { await _releaseQuietly(); rethrow; }
+    finally { if (mounted) setState(() { _busy = false; }); }
+  }
+  Future<void> _run(Future<void> Function() action) async {
+    if (_busy) return;
+    try { await action(); }
+    catch (e) {
+      if (mounted) setState(() { _status = 'ERRORE: ' + e.toString(); });
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Operazione non completata: ' + e.toString())));
+    }
+  }
+  Future<void> _cancel() async { await _releaseQuietly(); if (mounted) Navigator.of(context).pop(); }
+
+  @override Widget build(BuildContext context) {
+    final color = ValoraAppearance.instance.colorFor('VENDITE');
+    final allocations = _preview?['allocazione_per_oggetto'];
+    return Scaffold(
+      appBar: AppBar(title: const Text('NUOVA VENDITA A LOTTO'), actions: [
+        IconButton(onPressed: _busy ? null : _load, tooltip: 'Aggiorna oggetti', icon: const Icon(Icons.refresh)),
+      ]),
+      body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('UN SOLO PREZZO PER PIÙ OGGETTI', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text('Seleziona almeno due oggetti disponibili, scegli le piattaforme e inserisci un unico importo complessivo. Tutti gli oggetti avranno lo stesso codice lotto.'),
+          const SizedBox(height: 12),
+          TextField(controller: _price, enabled: !_busy, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Prezzo totale del lotto (€)', hintText: 'Es. 100,00'),
+            onChanged: (_) => setState(() { _preview = null; _reviewed = false; })),
+          const SizedBox(height: 8),
+          TextField(controller: _notes, enabled: !_busy, decoration: const InputDecoration(labelText: 'Note (facoltative)'),
+            onChanged: (_) => setState(() { _preview = null; _reviewed = false; })),
+        ]))),
+        Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('PIATTAFORME DEL LOTTO', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const Text('Le piattaforme selezionate vengono associate a tutti gli oggetti.'),
+          ..._platforms.map((p) {
+            final id = int.tryParse((p['codice_piattaforma'] ?? '').toString());
+            if (id == null) return const SizedBox.shrink();
+            return CheckboxListTile(contentPadding: EdgeInsets.zero, dense: true, value: _platformIds.contains(id),
+              title: Text((p['nome_piattaforma'] ?? 'Piattaforma').toString()),
+              onChanged: _busy ? null : (v) => setState(() {
+                if (v == true) { _platformIds.add(id); } else { _platformIds.remove(id); }
+                _preview = null; _reviewed = false;
+              }));
+          }),
+        ]))),
+        Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(child: Text('OGGETTI DISPONIBILI (' + _objects.length.toString() + ')', style: TextStyle(color: color, fontWeight: FontWeight.bold))),
+            TextButton(onPressed: _busy ? null : _load, child: const Text('AGGIORNA')),
+          ]),
+          TextField(controller: _search, enabled: !_busy, decoration: const InputDecoration(labelText: 'Cerca per descrizione o codice', prefixIcon: Icon(Icons.search)),
+            onChanged: (_) => setState(() {})),
+          ..._visible.map((r) {
+            final id = _id(r);
+            if (id == null) return const SizedBox.shrink();
+            return CheckboxListTile(value: _selected.contains(id),
+              onChanged: _busy ? null : (v) => setState(() {
+                if (v == true) { _selected.add(id); } else { _selected.remove(id); }
+                _preview = null; _reviewed = false;
+              }),
+              title: Text(_desc(r), maxLines: 3, overflow: TextOverflow.ellipsis),
+              subtitle: Text('Codice: ' + id.toString() + ' · ' + (r['stato'] ?? 'DISPONIBILE').toString()),
+              controlAffinity: ListTileControlAffinity.leading);
+          }),
+          const SizedBox(height: 8),
+          Text('Selezionati: ' + _selected.length.toString() + ' · Totale: ' + _eur(_amount() ?? 0), style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+        ]))),
+        if (_preview != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('RIEPILOGO PRELIMINARE', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          Text('Oggetti: ' + (_preview!['numero_oggetti'] ?? _selected.length).toString()),
+          Text('Prezzo unico del lotto: ' + _eur(_preview!['prezzo_totale'] ?? _amount())),
+          if (allocations is List) ...[
+            const Text('Ripartizione tecnica nei record dei singoli oggetti:'),
+            ...allocations.whereType<Map>().map((a) => Text('Oggetto ' + (a['codice_oggetto'] ?? '').toString() + ' · quota ' + _eur(a['prezzo_allocato']))),
+          ],
+          const Text('La ripartizione tecnica non crea vendite concluse separate: gli oggetti appartengono allo stesso lotto.'),
+          FilledButton.icon(onPressed: _busy ? null : () => _run(_reviewLot), icon: const Icon(Icons.fact_check_outlined), label: const Text('CONFERMA I DATI')),
+        ]))),
+        if (_reviewed) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('CONFERMA DEFINITIVA', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          Text('Un lotto · ' + _selected.length.toString() + ' oggetti · ' + _eur(_amount())),
+          FilledButton.icon(onPressed: _busy ? null : () => _run(_saveLot), icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA LOTTO')),
+        ]))),
+        if (_busy) const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator())),
+        Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status))),
+        Row(children: [
+          Expanded(child: OutlinedButton(onPressed: _busy ? null : _cancel, child: const Text('ANNULLA'))),
+          const SizedBox(width: 8),
+          Expanded(child: FilledButton.icon(onPressed: _busy ? null : () => _run(_previewLot), icon: const Icon(Icons.preview_outlined), label: const Text('CONTROLLA LOTTO'))),
+        ]),
+        Text('Ambiente TEST. Nessuna scrittura prima della conferma definitiva.', style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
+      ])),
+    );
+  }
 }
 
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
