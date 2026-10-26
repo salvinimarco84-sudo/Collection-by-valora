@@ -2759,7 +2759,24 @@ class _HomeDashboardState extends State<HomeDashboard> {
       if (!_catalogLoading) ...[
         if (_collectionCategories.isEmpty)
           const Padding(padding: EdgeInsets.all(12), child: Text('Nessuna categoria configurata nel master.', style: TextStyle(color: Colors.white70))),
-        ..._collectionCategories.map((category) {
+        ...(() {
+          // Prima le categorie con più oggetti disponibili; a parità mantiene
+          // l'ordine configurato nel master delle categorie.
+          final sortedCategories = List<Map<String, dynamic>>.from(_collectionCategories);
+          sortedCategories.sort((a, b) {
+            final codeA = (a['codice_categoria'] ?? '').toString();
+            final codeB = (b['codice_categoria'] ?? '').toString();
+            final countA = _collectionCategoryCounts[codeA] ?? 0;
+            final countB = _collectionCategoryCounts[codeB] ?? 0;
+            final byCount = countB.compareTo(countA);
+            if (byCount != 0) return byCount;
+            final orderA = int.tryParse((a['ordine_menu'] ?? '').toString()) ?? 999999;
+            final orderB = int.tryParse((b['ordine_menu'] ?? '').toString()) ?? 999999;
+            final byOrder = orderA.compareTo(orderB);
+            if (byOrder != 0) return byOrder;
+            return (a['descrizione'] ?? '').toString().compareTo((b['descrizione'] ?? '').toString());
+          });
+          return sortedCategories.map((category) {
           final name = (category['descrizione'] ?? '').toString();
           final hex = (category['colore_hex'] ?? '#D6B15E').toString().replaceFirst('#', '');
           final parsed = int.tryParse(hex, radix: 16) ?? 0xD6B15E;
@@ -2774,7 +2791,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
           final code = (category['codice_categoria'] ?? '').toString();
           final count = _collectionCategoryCounts[code] ?? 0;
           return _collectionCategoryMasterPanel(code, name, 'Apri la categoria e consulta gli oggetti', color, icon, count);
-        }),
+          });
+        })(),
       ],
     ],
   );
