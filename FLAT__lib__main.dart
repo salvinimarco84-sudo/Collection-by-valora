@@ -7823,7 +7823,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
             final id = _id(r);
             if (id == null) return const SizedBox.shrink();
             return CheckboxListTile(value: _selected.contains(id),
-              onChanged: _busy ? null : (v) => setState(() {
+              onChanged: _busy || (widget.singleSale && !_selected.contains(id) && _selected.isNotEmpty) ? null : (v) => setState(() {
                 if (v == true) { _selected.add(id); } else { _selected.remove(id); }
                 _preview = null; _reviewed = false;
               }),
