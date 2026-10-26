@@ -2728,8 +2728,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
           (categoryKey == 'GIJOE' && category == 'GIJOE') ||
           (categoryKey == 'MODELKIT' && category == 'MODELKIT') ||
           (categoryKey == 'FUNKOPOP' && category == 'FUNKOPOP');
-      return matches && _dashboardImageUrl(row) != null;
-    }).take(4).toList();
+      return matches;
+    }).take(5).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -2756,18 +2756,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final row = previewRows[index];
-                final url = _dashboardImageUrl(row)!;
+                final url = _dashboardImageUrl(row);
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     width: 76,
                     decoration: BoxDecoration(color: const Color(0xFF111111), border: Border.all(color: Colors.white24), borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.all(3),
-                    child: Image.network(
-                      _valoraImageProxyUrl(url),
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 30),
-                    ),
+                    child: url == null
+                        ? Icon(icon, color: color, size: 30)
+                        : Image.network(
+                            _valoraImageProxyUrl(url),
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 30),
+                          ),
                   ),
                 );
               },
