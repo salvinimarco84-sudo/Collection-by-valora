@@ -4050,6 +4050,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
 
   final String _sessionId = _uuid.v4();
+  final Map<String, Future<String?>> _reportImageFutures = <String, Future<String?>>{};
   final FocusNode _descriptionFocus = FocusNode();
   String? _metadataSourceUrl;
   bool _metadataSearchExecuted = false;
@@ -6287,6 +6288,55 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       onChanged: onChanged,
     ));
 
+  Future<String?> _loadReportImageUrl(Map<String, dynamic> item) async {
+    final rawCode = (item['codice_oggetto'] ?? item['id'] ?? '').toString();
+    final code = int.tryParse(rawCode);
+    if (code == null || code <= 0) return null;
+    try {
+      final response = await _ValoraRuntimeApi.call('consultation', {
+        'session_id': _sessionId,
+        'consultation_code': 'OBJECT_MASTER',
+        'arguments': {'codice_oggetto': code},
+      });
+      final envelope = response['result'];
+      final dynamic data = envelope is Map ? (envelope['risultato'] ?? envelope) : envelope;
+      dynamic record = data is List ? (data.isNotEmpty ? data.first : null) : data;
+      String findImage(dynamic value) {
+        const keys = <String>[
+          'url_immagine_catalogo', 'url_immagine', 'immagine_url', 'foto_url',
+          'image_url', 'immagine_principale', 'url_foto', 'foto', 'immagine',
+          'image', 'imageUrl', 'photo_url', 'main_image_url', 'image_uri',
+          'photo_uri', 'url_foto_principale', 'percorso_immagine',
+        ];
+        if (value is Map) {
+          for (final key in keys) {
+            final candidate = value[key];
+            if (candidate is String && (candidate.startsWith('https://') || candidate.startsWith('http://'))) {
+              return candidate.trim();
+            }
+          }
+          for (final nested in value.values) {
+            final found = findImage(nested);
+            if (found.isNotEmpty) return found;
+          }
+        } else if (value is Iterable) {
+          for (final nested in value) {
+            final found = findImage(nested);
+            if (found.isNotEmpty) return found;
+          }
+        } else if (value is String) {
+          final trimmed = value.trim();
+          if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) return trimmed;
+        }
+        return '';
+      }
+      final found = findImage(record);
+      return found.isEmpty ? null : found;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Widget _objectCard(
     Map<String, dynamic> item, {
     VoidCallback? onTap, bool availableStyle = false, bool showImagePlaceholder = true,
@@ -6363,7 +6413,27 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 child: imageUrl.startsWith('http')
                   ? Image.network(_valoraImageProxyUrl(imageUrl), width: imageSize, height: imageSize, fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize))
-                  : _imagePlaceholder(size: imageSize),
+                  : (widget.apiCode == 'REPORT-COLLECTION-THEME'
+                      ? FutureBuilder<String?>(
+                          future: _reportImageFutures.putIfAbsent(
+                            code,
+                            () => _loadReportImageUrl(item),
+                          ),
+                          builder: (context, snapshot) {
+                            final recovered = snapshot.data;
+                            if (recovered != null && recovered.startsWith('http')) {
+                              return Image.network(
+                                _valoraImageProxyUrl(recovered),
+                                width: imageSize,
+                                height: imageSize,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize),
+                              );
+                            }
+                            return _imagePlaceholder(size: imageSize);
+                          },
+                        )
+                      : _imagePlaceholder(size: imageSize)),
               ),
               const SizedBox(width: 12),
             ],
