@@ -3321,6 +3321,7 @@ class ObjectRuntimePage extends StatefulWidget {
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<Map<String, dynamic>> _merchandiseCategories = [];
   String? _categoryCode;
+  String? _originalCategoryCode;
   bool _categoriesLoading = false;
 
   Future<void> _loadMerchandiseCategories() async {
@@ -3475,7 +3476,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   @override
   void initState() {
-    if (widget.apiCode == 'PR-01') WidgetsBinding.instance.addPostFrameCallback((_) => _loadMerchandiseCategories());
+    if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02') WidgetsBinding.instance.addPostFrameCallback((_) => _loadMerchandiseCategories());
     super.initState();
     if (widget.apiCode == 'OBJECT_MASTER') {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
@@ -3654,6 +3655,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         item['anno_uscita'] = year;
       }
       if (_family.text.trim() != (_currentObject?['codice_prodotto'] ?? '').toString()) item['codice_prodotto'] = _family.text.trim().isEmpty ? null : _family.text.trim();
+      if (_categoryCode != null && _categoryCode != _originalCategoryCode) {
+        if (!_merchandiseCategories.any((e) => e['codice_categoria'] == _categoryCode)) throw Exception('Seleziona una categoria primaria valida.');
+        item['codice_categoria'] = _categoryCode;
+      }
       final currentSource = (_currentObject?['fonte_dati_prodotto'] ?? '').toString().trim();
       final proposedSource = (_metadataSourceUrl ?? '').trim();
       if (proposedSource.isNotEmpty && proposedSource != currentSource) {
@@ -4172,7 +4177,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _detailFieldCard('stato', object['stato']),
           ] else ...[
             _field(_description, 'Descrizione oggetto', focusNode: _descriptionFocus),
-        if (widget.apiCode == 'PR-01') _merchandiseCategoryField(),
+        if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02') _merchandiseCategoryField(),
             _field(_producer, 'Produttore'),
             _field(_line, 'Anno di uscita', type: TextInputType.number),
             _field(_family, 'Codice prodotto'),
@@ -4553,7 +4558,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final metadata = await Supabase.instance.client
           .schema('collection')
           .from('master_metadati')
-          .select('url_immagine, codice_identificativo, nome_ufficiale, produttore, anno_uscita, versione_variante, descrizione_ufficiale, tema, sezione, sottotema')
+          .select('url_immagine, codice_identificativo, nome_ufficiale, produttore, anno_uscita, versione_variante, descrizione_ufficiale, tema, sezione, sottotema, codice_categoria')
           .eq('codice_oggetto', id)
           .maybeSingle();
       if (metadata != null) {
@@ -4570,6 +4575,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       // La scheda operativa resta consultabile anche se i metadati non sono accessibili.
       debugPrint('VALORA: metadati immagine non recuperati per oggetto $id: $e');
     }
+    try {
+      final category = await Supabase.instance.client.schema('collection')
+          .from('oggetto_categoria').select('id_categoria,categorie_merceologiche(codice_categoria,nome_categoria)')
+          .eq('codice_oggetto', id).maybeSingle();
+      if (category != null && category['categorie_merceologiche'] is Map) {
+        final linked = Map<String, dynamic>.from(category['categorie_merceologiche'] as Map);
+        m['codice_categoria'] = linked['codice_categoria'];
+        m['categoria'] = linked['nome_categoria'];
+      }
+    } catch (e) {
+      debugPrint('VALORA: categoria primaria non recuperata per oggetto $id: $e');
+    }
     String txt(List<String> keys, [String fallback = '']) {
       for (final k in keys) { if (m[k] != null) return m[k].toString(); }
       return fallback;
@@ -4584,6 +4601,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _producer.text = txt(['produttore']);
       _line.text = txt(['anno_uscita']);
       _family.text = txt(['codice_prodotto']);
+      _categoryCode = txt(['codice_categoria']).trim().isEmpty ? null : txt(['codice_categoria']).trim();
+      _originalCategoryCode = _categoryCode;
       final c = txt(['condizione'], _condition);
       if (const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
       final cp = txt(['completezza'], _completeness);
@@ -7000,6 +7019,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() => _lockHeld = false);
     } else {
       throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
+    }
+    if (widget.apiCode == 'PR-02' && _categoryCode != null && _categoryCode != _originalCategoryCode) {
+      final selected = _merchandiseCategories.firstWhere((e) => e['codice_categoria'] == _categoryCode);
+      await Supabase.instance.client.schema('collection').rpc('assegna_categoria_oggetto', params: {
+        'p_codice_oggetto': int.parse(_code.text.trim()),
+        'p_nome_categoria': selected['nome_categoria'],
+        'p_fonte': 'MODIFICA_OGGETTO',
+        'p_confidenza': 1.0,
+      });
+      await Supabase.instance.client.schema('collection').from('master_metadati')
+          .update({'codice_categoria': _categoryCode}).eq('codice_oggetto', int.parse(_code.text.trim()));
+      _originalCategoryCode = _categoryCode;
     }
     if (widget.apiCode == 'PR-01') {
       final savedRows = result['risultati'];
