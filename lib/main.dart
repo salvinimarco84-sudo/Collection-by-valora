@@ -1,6 +1,6 @@
+import 'dart:io' show File;
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show File;
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:typed_data';
@@ -8,6 +8,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:csv/csv.dart';
 import 'package:excel/excel.dart' as xlsx;
+import 'package:archive/archive.dart' as archive;
+import 'package:xml/xml.dart' as xml;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart' as pw_core;
 import 'package:flutter/material.dart';
@@ -24,8 +26,8 @@ String _valoraImageProxyUrl(String rawUrl) {
   final uri = Uri.tryParse(value);
   if (uri == null || uri.scheme != 'https') return value;
   const proxyHosts = {
-    'www.gunpla-italia.com',
     'bandai-a.akamaihd.net',
+    'www.gunpla-italia.com',
     'cdn.media.amplience.net',
     'www.hasbropulse.com',
     'tf.takaratomy.co.jp',
@@ -34,6 +36,7 @@ String _valoraImageProxyUrl(String rawUrl) {
     'www.gamelife.it',
     'kurogami.com',
     'www.kurogami.com',
+    'www.vendiloshop.it',
   };
   if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
   return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
@@ -50,10 +53,9 @@ class ValoraAppearance extends ChangeNotifier {
     'CATALOGO': Color(0xFF3978C5),
     'ACQUISTI': Color(0xFFC74444),
     'VENDITE': Color(0xFF39875B),
-    'FLUSSI DI CASSA': Color(0xFFD6A83F),
     'VALUTAZIONI': Color(0xFF8556C7),
     'REPORT': Color(0xFFE17D35),
-    'RICERCHE': Color(0xFF252525),
+    'RICERCHE': Color(0xFFD6A83F),
     'CONTROLLO': Color(0xFF777777),
     'COLLEZIONE': Color(0xFFD6B45C),
     'LEGO': Color(0xFFE31B23),
@@ -62,7 +64,6 @@ class ValoraAppearance extends ChangeNotifier {
     'FUMETTI': Color(0xFF008C4A),
     'GUNDAM': Color(0xFFC62828),
     'TRANSFORMERS': Color(0xFF2476C8),
-    'FUNKO POP': Color(0xFF00AEEF),
     'ALTRE COLLEZIONI': Color(0xFF466B87),
   };
   static const List<Color> palette = [
@@ -101,6 +102,9 @@ class ValoraAppearance extends ChangeNotifier {
       if (path != null && path.isNotEmpty) imagePaths[k] = path;
     }
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
+    // RICERCHE eredita stabilmente il colore oro, anche sui dispositivi con preferenze precedenti.
+    colors['RICERCHE'] = defaults['RICERCHE']!;
+    await p.setInt('valora_color_RICERCHE', defaults['RICERCHE']!.value);
     final used=<int>{};
     for(final k in defaults.keys) {
       if(!used.add(colors[k]!.value)) {
@@ -149,6 +153,79 @@ class ValoraAppearance extends ChangeNotifier {
     for(final k in defaults.keys){await p.remove('valora_color_$k');}
     notifyListeners();
   }
+}
+
+
+class ValoraI18n extends ChangeNotifier {
+  ValoraI18n._();
+  static final instance = ValoraI18n._();
+  String code = 'it';
+  static const supportedCodes = <String>['it','en','fr','es'];
+  void setLanguage(String value) {
+    final next = supportedCodes.contains(value) ? value : 'it';
+    if (code == next) return;
+    code = next;
+    notifyListeners();
+  }
+  static const Map<String, Map<String, String>> _words = {
+    'en': {'Profilo utente':'User profile','ASSISTENTE VALORA':'VALORA ASSISTANT','ASSISTENTE':'ASSISTANT','COLLEZIONE':'COLLECTION','ACQUISTI':'PURCHASES','VENDITE':'SALES','CATALOGO':'CATALOG','VALUTAZIONI':'VALUATIONS','REPORT':'REPORTS','RICERCHE':'SEARCH','CONTROLLO':'CONTROL','ANNULLA':'CANCEL','ACCEDI':'SIGN IN','SALVA':'SAVE','MODIFICA':'EDIT','ELIMINA':'DELETE','RIPROVA':'RETRY','Italia':'Italy','Europa':'Europe','Mondo':'World','Nero':'Black','Bianco':'White','Carica immagine':'Upload image','Personalizza VALORA':'Customize VALORA','Schede':'Cards','Blocchi':'Blocks'},
+    'fr': {'Profilo utente':'Profil utilisateur','ASSISTENTE VALORA':'ASSISTANT VALORA','ASSISTENTE':'ASSISTANT','COLLEZIONE':'COLLECTION','ACQUISTI':'ACHATS','VENDITE':'VENTES','CATALOGO':'CATALOGUE','VALUTAZIONI':'ÉVALUATIONS','REPORT':'RAPPORTS','RICERCHE':'RECHERCHE','CONTROLLO':'CONTRÔLE','ANNULLA':'ANNULER','ACCEDI':'SE CONNECTER','SALVA':'ENREGISTRER','MODIFICA':'MODIFIER','ELIMINA':'SUPPRIMER','RIPROVA':'RÉESSAYER','Italia':'Italie','Europa':'Europe','Mondo':'Monde','Nero':'Noir','Bianco':'Blanc','Carica immagine':'Téléverser une image','Personalizza VALORA':'Personnaliser VALORA','Schede':'Cartes','Blocchi':'Blocs'},
+    'de': {'Profilo utente':'Benutzerprofil','ASSISTENTE VALORA':'VALORA-ASSISTENT','ASSISTENTE':'ASSISTENT','COLLEZIONE':'SAMMLUNG','ACQUISTI':'EINKÄUFE','VENDITE':'VERKÄUFE','CATALOGO':'KATALOG','VALUTAZIONI':'BEWERTUNGEN','REPORT':'BERICHTE','RICERCHE':'SUCHE','CONTROLLO':'KONTROLLE','ANNULLA':'ABBRECHEN','ACCEDI':'ANMELDEN','SALVA':'SPEICHERN','MODIFICA':'BEARBEITEN','ELIMINA':'LÖSCHEN','RIPROVA':'ERNEUT VERSUCHEN','Italia':'Italien','Europa':'Europa','Mondo':'Welt','Nero':'Schwarz','Bianco':'Weiß','Carica immagine':'Bild hochladen','Personalizza VALORA':'VALORA anpassen','Schede':'Karten','Blocchi':'Blöcke'},
+    'es': {'Profilo utente':'Perfil de usuario','ASSISTENTE VALORA':'ASISTENTE VALORA','ASSISTENTE':'ASISTENTE','COLLEZIONE':'COLECCIÓN','ACQUISTI':'COMPRAS','VENDITE':'VENTAS','CATALOGO':'CATÁLOGO','VALUTAZIONI':'VALORACIONES','REPORT':'INFORMES','RICERCHE':'BÚSQUEDAS','CONTROLLO':'CONTROL','ANNULLA':'CANCELAR','ACCEDI':'INICIAR SESIÓN','SALVA':'GUARDAR','MODIFICA':'EDITAR','ELIMINA':'ELIMINAR','RIPROVA':'REINTENTAR','Italia':'Italia','Europa':'Europa','Mondo':'Mundo','Nero':'Negro','Bianco':'Blanco','Carica immagine':'Subir imagen','Personalizza VALORA':'Personalizar VALORA','Schede':'Tarjetas','Blocchi':'Bloques'},
+    'pt': {'Profilo utente':'Perfil do utilizador','ASSISTENTE VALORA':'ASSISTENTE VALORA','ASSISTENTE':'ASSISTENTE','COLLEZIONE':'COLEÇÃO','ACQUISTI':'COMPRAS','VENDITE':'VENDAS','CATALOGO':'CATÁLOGO','VALUTAZIONI':'AVALIAÇÕES','REPORT':'RELATÓRIOS','RICERCHE':'PESQUISAS','CONTROLLO':'CONTROLO','ANNULLA':'CANCELAR','ACCEDI':'ENTRAR','SALVA':'GUARDAR','MODIFICA':'EDITAR','ELIMINA':'ELIMINAR','RIPROVA':'TENTAR NOVAMENTE','Italia':'Itália','Europa':'Europa','Mondo':'Mundo','Nero':'Preto','Bianco':'Branco','Carica immagine':'Carregar imagem','Personalizza VALORA':'Personalizar VALORA','Schede':'Cartões','Blocchi':'Blocos'},
+    'zh': {'Profilo utente':'用户资料','ASSISTENTE VALORA':'VALORA 助手','ASSISTENTE':'助手','COLLEZIONE':'收藏','ACQUISTI':'购买','VENDITE':'销售','CATALOGO':'目录','VALUTAZIONI':'估值','REPORT':'报告','RICERCHE':'搜索','CONTROLLO':'管理','ANNULLA':'取消','ACCEDI':'登录','SALVA':'保存','MODIFICA':'编辑','ELIMINA':'删除','RIPROVA':'重试','Italia':'意大利','Europa':'欧洲','Mondo':'全球','Nero':'黑色','Bianco':'白色','Carica immagine':'上传图片','Personalizza VALORA':'自定义 VALORA','Schede':'卡片','Blocchi':'区块'},
+    'ja': {'Profilo utente':'ユーザープロフィール','ASSISTENTE VALORA':'VALORAアシスタント','ASSISTENTE':'アシスタント','COLLEZIONE':'コレクション','ACQUISTI':'購入','VENDITE':'販売','CATALOGO':'カタログ','VALUTAZIONI':'評価額','REPORT':'レポート','RICERCHE':'検索','CONTROLLO':'管理','ANNULLA':'キャンセル','ACCEDI':'ログイン','SALVA':'保存','MODIFICA':'編集','ELIMINA':'削除','RIPROVA':'再試行','Italia':'イタリア','Europa':'ヨーロッパ','Mondo':'世界','Nero':'黒','Bianco':'白','Carica immagine':'画像をアップロード','Personalizza VALORA':'VALORAをカスタマイズ','Schede':'カード','Blocchi':'ブロック'},
+    'ru': {'Profilo utente':'Профиль пользователя','ASSISTENTE VALORA':'АССИСТЕНТ VALORA','ASSISTENTE':'АССИСТЕНТ','COLLEZIONE':'КОЛЛЕКЦИЯ','ACQUISTI':'ПОКУПКИ','VENDITE':'ПРОДАЖИ','CATALOGO':'КАТАЛОГ','VALUTAZIONI':'ОЦЕНКИ','REPORT':'ОТЧЁТЫ','RICERCHE':'ПОИСК','CONTROLLO':'УПРАВЛЕНИЕ','ANNULLA':'ОТМЕНА','ACCEDI':'ВОЙТИ','SALVA':'СОХРАНИТЬ','MODIFICA':'ИЗМЕНИТЬ','ELIMINA':'УДАЛИТЬ','RIPROVA':'ПОВТОРИТЬ','Italia':'Италия','Europa':'Европа','Mondo':'Мир','Nero':'Чёрный','Bianco':'Белый','Carica immagine':'Загрузить изображение','Personalizza VALORA':'Настроить VALORA','Schede':'Карточки','Blocchi':'Блоки'},
+  };
+
+  static const Map<String, Map<String, String>> _common = {
+    'en': {'CENTRO OPERATIVO':'OPERATIONS CENTER','Scegli una sezione per accedere alle relative funzioni.':'Choose a section to access its features.','Tutti i temi e tutti i record della tua collezione':'All themes and records in your collection','Seleziona un tema per consultare i relativi oggetti.':'Select a theme to browse its items.','SERVIZIO VALORA':'VALORA SERVICE','Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.':'Select an item from your collection and prepare a specialist valuation request. Preparation is not a completed market valuation.','1. SELEZIONA L’OGGETTO':'1. SELECT ITEM','Oggetto da valutare':'Item to value','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'No items are available in the COLLECTION destination.','Mercato di riferimento':'Reference market','Preparazione in corso…':'Preparing…','PREPARA VALUTAZIONE':'PREPARE VALUATION','ESITO PREPARAZIONE':'PREPARATION RESULT','AGGIORNA OGGETTI':'REFRESH ITEMS','RIEPILOGO DEL PATRIMONIO':'COLLECTION SUMMARY','DETTAGLIO OGGETTI':'ITEM DETAILS','Nessun oggetto destinato alla collezione.':'No items assigned to the collection.','TORNA ALLA DASHBOARD':'BACK TO DASHBOARD','RICERCA OGGETTI PER CATEGORIA':'SEARCH ITEMS BY CATEGORY','CHIUDI':'CLOSE','IMPORTA':'IMPORT','ANTEPRIMA':'PREVIEW','CONFERMA':'CONFIRM','CONFERMA IMPORTAZIONE':'CONFIRM IMPORT','ESPORTA EXCEL (.XLSX)':'EXPORT EXCEL (.XLSX)','ESPORTA CSV':'EXPORT CSV','ESPORTA JSON':'EXPORT JSON','NESSUN RISULTATO':'NO RESULTS','RISULTATI RICERCA (':'SEARCH RESULTS (','CONFERMA CHIUSURA':'CONFIRM CLOSURE','METADATI DEL PRODOTTO':'PRODUCT METADATA','DATI TECNICI · SOLA LETTURA':'TECHNICAL DATA · READ ONLY','IMMAGINE OGGETTO':'ITEM IMAGE','CONFERMA APPLICAZIONE METADATI':'CONFIRM APPLYING METADATA','CONFERMO':'I CONFIRM','RIEPILOGO FINALE':'FINAL SUMMARY','SALVA TUTTO':'SAVE ALL'},
+    'fr': {'CENTRO OPERATIVO':'CENTRE OPÉRATIONNEL','Scegli una sezione per accedere alle relative funzioni.':'Choisissez une section pour accéder à ses fonctions.','Tutti i temi e tutti i record della tua collezione':'Tous les thèmes et objets de votre collection','Seleziona un tema per consultare i relativi oggetti.':'Sélectionnez un thème pour consulter les objets correspondants.','SERVIZIO VALORA':'SERVICE VALORA','1. SELEZIONA L’OGGETTO':'1. SÉLECTIONNER UN OBJET','Oggetto da valutare':'Objet à évaluer','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'Aucun objet disponible dans la destination COLLECTION.','Mercato di riferimento':'Marché de référence','Preparazione in corso…':'Préparation en cours…','PREPARA VALUTAZIONE':'PRÉPARER L’ÉVALUATION','ESITO PREPARAZIONE':'RÉSULTAT DE PRÉPARATION','AGGIORNA OGGETTI':'ACTUALISER LES OBJETS','RIEPILOGO DEL PATRIMONIO':'RÉCAPITULATIF DE LA COLLECTION','DETTAGLIO OGGETTI':'DÉTAIL DES OBJETS','Nessun oggetto destinato alla collezione.':'Aucun objet destiné à la collection.','TORNA ALLA DASHBOARD':'RETOUR AU TABLEAU DE BORD','RICERCA OGGETTI PER CATEGORIA':'RECHERCHER DES OBJETS PAR CATÉGORIE','CHIUDI':'FERMER','IMPORTA':'IMPORTER','ANTEPRIMA':'APERÇU','CONFERMA':'CONFIRMER','CONFERMA IMPORTAZIONE':'CONFIRMER L’IMPORTATION','ESPORTA EXCEL (.XLSX)':'EXPORTER EXCEL (.XLSX)','ESPORTA CSV':'EXPORTER CSV','ESPORTA JSON':'EXPORTER JSON','NESSUN RISULTATO':'AUCUN RÉSULTAT','CONFERMA CHIUSURA':'CONFIRMER LA CLÔTURE','METADATI DEL PRODOTTO':'MÉTADONNÉES DU PRODUIT','DATI TECNICI · SOLA LETTURA':'DONNÉES TECHNIQUES · LECTURE SEULE','IMMAGINE OGGETTO':'IMAGE DE L’OBJET','CONFERMO':'JE CONFIRME','RIEPILOGO FINALE':'RÉCAPITULATIF FINAL','SALVA TUTTO':'TOUT ENREGISTRER'},
+    'de': {'CENTRO OPERATIVO':'STEUERZENTRALE','Scegli una sezione per accedere alle relative funzioni.':'Wählen Sie einen Bereich, um die zugehörigen Funktionen aufzurufen.','Tutti i temi e tutti i record della tua collezione':'Alle Themen und Datensätze Ihrer Sammlung','Seleziona un tema per consultare i relativi oggetti.':'Wählen Sie ein Thema, um die zugehörigen Objekte anzusehen.','SERVIZIO VALORA':'VALORA-SERVICE','1. SELEZIONA L’OGGETTO':'1. OBJEKT AUSWÄHLEN','Oggetto da valutare':'Zu bewertendes Objekt','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'Keine Objekte im Ziel SAMMLUNG verfügbar.','Mercato di riferimento':'Referenzmarkt','Preparazione in corso…':'Vorbereitung läuft…','PREPARA VALUTAZIONE':'BEWERTUNG VORBEREITEN','ESITO PREPARAZIONE':'VORBEREITUNGSERGEBNIS','AGGIORNA OGGETTI':'OBJEKTE AKTUALISIEREN','RIEPILOGO DEL PATRIMONIO':'SAMMLUNGSÜBERSICHT','DETTAGLIO OGGETTI':'OBJEKTDETAILS','Nessun oggetto destinato alla collezione.':'Keine Objekte der Sammlung zugewiesen.','TORNA ALLA DASHBOARD':'ZURÜCK ZUR ÜBERSICHT','RICERCA OGGETTI PER CATEGORIA':'OBJEKTE NACH KATEGORIE SUCHEN','CHIUDI':'SCHLIESSEN','IMPORTA':'IMPORTIEREN','ANTEPRIMA':'VORSCHAU','CONFERMA':'BESTÄTIGEN','CONFERMA IMPORTAZIONE':'IMPORT BESTÄTIGEN','ESPORTA EXCEL (.XLSX)':'EXCEL EXPORTIEREN (.XLSX)','ESPORTA CSV':'CSV EXPORTIEREN','ESPORTA JSON':'JSON EXPORTIEREN','NESSUN RISULTATO':'KEINE ERGEBNISSE','CONFERMA CHIUSURA':'ABSCHLUSS BESTÄTIGEN','METADATI DEL PRODOTTO':'PRODUKTMETADATEN','DATI TECNICI · SOLA LETTURA':'TECHNISCHE DATEN · NUR LESEN','IMMAGINE OGGETTO':'OBJEKTBILD','CONFERMO':'ICH BESTÄTIGE','RIEPILOGO FINALE':'ABSCHLUSSÜBERSICHT','SALVA TUTTO':'ALLES SPEICHERN'},
+    'es': {'CENTRO OPERATIVO':'CENTRO DE OPERACIONES','Scegli una sezione per accedere alle relative funzioni.':'Elige una sección para acceder a sus funciones.','Tutti i temi e tutti i record della tua collezione':'Todos los temas y registros de tu colección','Seleziona un tema per consultare i relativi oggetti.':'Selecciona un tema para consultar sus objetos.','SERVIZIO VALORA':'SERVICIO VALORA','1. SELEZIONA L’OGGETTO':'1. SELECCIONAR OBJETO','Oggetto da valutare':'Objeto para valorar','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'No hay objetos disponibles en el destino COLECCIÓN.','Mercato di riferimento':'Mercado de referencia','Preparazione in corso…':'Preparando…','PREPARA VALUTAZIONE':'PREPARAR VALORACIÓN','ESITO PREPARAZIONE':'RESULTADO DE PREPARACIÓN','AGGIORNA OGGETTI':'ACTUALIZAR OBJETOS','RIEPILOGO DEL PATRIMONIO':'RESUMEN DE LA COLECCIÓN','DETTAGLIO OGGETTI':'DETALLE DE OBJETOS','Nessun oggetto destinato alla collezione.':'No hay objetos asignados a la colección.','TORNA ALLA DASHBOARD':'VOLVER AL PANEL','RICERCA OGGETTI PER CATEGORIA':'BUSCAR OBJETOS POR CATEGORÍA','CHIUDI':'CERRAR','IMPORTA':'IMPORTAR','ANTEPRIMA':'VISTA PREVIA','CONFERMA':'CONFIRMAR','CONFERMA IMPORTAZIONE':'CONFIRMAR IMPORTACIÓN','ESPORTA EXCEL (.XLSX)':'EXPORTAR EXCEL (.XLSX)','ESPORTA CSV':'EXPORTAR CSV','ESPORTA JSON':'EXPORTAR JSON','NESSUN RISULTATO':'SIN RESULTADOS','CONFERMA CHIUSURA':'CONFIRMAR CIERRE','METADATI DEL PRODOTTO':'METADATOS DEL PRODUCTO','DATI TECNICI · SOLA LETTURA':'DATOS TÉCNICOS · SOLO LECTURA','IMMAGINE OGGETTO':'IMAGEN DEL OBJETO','CONFERMO':'CONFIRMO','RIEPILOGO FINALE':'RESUMEN FINAL','SALVA TUTTO':'GUARDAR TODO'},
+    'pt': {'CENTRO OPERATIVO':'CENTRO OPERACIONAL','Scegli una sezione per accedere alle relative funzioni.':'Escolha uma secção para aceder às respetivas funções.','Tutti i temi e tutti i record della tua collezione':'Todos os temas e registos da sua coleção','Seleziona un tema per consultare i relativi oggetti.':'Selecione um tema para consultar os objetos correspondentes.','SERVIZIO VALORA':'SERVIÇO VALORA','1. SELEZIONA L’OGGETTO':'1. SELECIONAR OBJETO','Oggetto da valutare':'Objeto a avaliar','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'Não existem objetos disponíveis no destino COLEÇÃO.','Mercato di riferimento':'Mercado de referência','Preparazione in corso…':'A preparar…','PREPARA VALUTAZIONE':'PREPARAR AVALIAÇÃO','ESITO PREPARAZIONE':'RESULTADO DA PREPARAÇÃO','AGGIORNA OGGETTI':'ATUALIZAR OBJETOS','RIEPILOGO DEL PATRIMONIO':'RESUMO DA COLEÇÃO','DETTAGLIO OGGETTI':'DETALHES DOS OBJETOS','Nessun oggetto destinato alla collezione.':'Não existem objetos atribuídos à coleção.','TORNA ALLA DASHBOARD':'VOLTAR AO PAINEL','RICERCA OGGETTI PER CATEGORIA':'PESQUISAR OBJETOS POR CATEGORIA','CHIUDI':'FECHAR','IMPORTA':'IMPORTAR','ANTEPRIMA':'PRÉ-VISUALIZAÇÃO','CONFERMA':'CONFIRMAR','CONFERMA IMPORTAZIONE':'CONFIRMAR IMPORTAÇÃO','ESPORTA EXCEL (.XLSX)':'EXPORTAR EXCEL (.XLSX)','ESPORTA CSV':'EXPORTAR CSV','ESPORTA JSON':'EXPORTAR JSON','NESSUN RISULTATO':'SEM RESULTADOS','CONFERMA CHIUSURA':'CONFIRMAR FECHO','METADATI DEL PRODOTTO':'METADADOS DO PRODUTO','DATI TECNICI · SOLA LETTURA':'DADOS TÉCNICOS · SÓ DE LEITURA','IMMAGINE OGGETTO':'IMAGEM DO OBJETO','CONFERMO':'CONFIRMO','RIEPILOGO FINALE':'RESUMO FINAL','SALVA TUTTO':'GUARDAR TUDO'},
+    'zh': {'CENTRO OPERATIVO':'操作中心','Scegli una sezione per accedere alle relative funzioni.':'选择一个栏目以访问相应功能。','Tutti i temi e tutti i record della tua collezione':'收藏中的所有主题和记录','Seleziona un tema per consultare i relativi oggetti.':'选择主题以查看相关物品。','SERVIZIO VALORA':'VALORA 服务','1. SELEZIONA L’OGGETTO':'1. 选择物品','Oggetto da valutare':'待估值物品','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'收藏目标中没有可用物品。','Mercato di riferimento':'参考市场','Preparazione in corso…':'正在准备…','PREPARA VALUTAZIONE':'准备估值','ESITO PREPARAZIONE':'准备结果','AGGIORNA OGGETTI':'刷新物品','RIEPILOGO DEL PATRIMONIO':'收藏总览','DETTAGLIO OGGETTI':'物品详情','Nessun oggetto destinato alla collezione.':'没有分配到收藏的物品。','TORNA ALLA DASHBOARD':'返回主页','RICERCA OGGETTI PER CATEGORIA':'按类别搜索物品','CHIUDI':'关闭','IMPORTA':'导入','ANTEPRIMA':'预览','CONFERMA':'确认','CONFERMA IMPORTAZIONE':'确认导入','ESPORTA EXCEL (.XLSX)':'导出 Excel (.XLSX)','ESPORTA CSV':'导出 CSV','ESPORTA JSON':'导出 JSON','NESSUN RISULTATO':'没有结果','CONFERMA CHIUSURA':'确认关闭','METADATI DEL PRODOTTO':'产品元数据','DATI TECNICI · SOLA LETTURA':'技术数据 · 只读','IMMAGINE OGGETTO':'物品图片','CONFERMO':'我确认','RIEPILOGO FINALE':'最终摘要','SALVA TUTTO':'全部保存'},
+    'ja': {'CENTRO OPERATIVO':'オペレーションセンター','Scegli una sezione per accedere alle relative funzioni.':'機能を利用するにはセクションを選択してください。','Tutti i temi e tutti i record della tua collezione':'コレクション内のすべてのテーマとレコード','Seleziona un tema per consultare i relativi oggetti.':'テーマを選択して関連アイテムを表示します。','SERVIZIO VALORA':'VALORAサービス','1. SELEZIONA L’OGGETTO':'1. アイテムを選択','Oggetto da valutare':'評価するアイテム','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'コレクションに利用可能なアイテムがありません。','Mercato di riferimento':'参照市場','Preparazione in corso…':'準備中…','PREPARA VALUTAZIONE':'評価を準備','ESITO PREPARAZIONE':'準備結果','AGGIORNA OGGETTI':'アイテムを更新','RIEPILOGO DEL PATRIMONIO':'コレクション概要','DETTAGLIO OGGETTI':'アイテム詳細','Nessun oggetto destinato alla collezione.':'コレクションに割り当てられたアイテムはありません。','TORNA ALLA DASHBOARD':'ダッシュボードに戻る','RICERCA OGGETTI PER CATEGORIA':'カテゴリ別にアイテムを検索','CHIUDI':'閉じる','IMPORTA':'インポート','ANTEPRIMA':'プレビュー','CONFERMA':'確認','CONFERMA IMPORTAZIONE':'インポートを確認','ESPORTA EXCEL (.XLSX)':'Excelを書き出す (.XLSX)','ESPORTA CSV':'CSVを書き出す','ESPORTA JSON':'JSONを書き出す','NESSUN RISULTATO':'結果なし','CONFERMA CHIUSURA':'終了を確認','METADATI DEL PRODOTTO':'製品メタデータ','DATI TECNICI · SOLA LETTURA':'技術データ・読み取り専用','IMMAGINE OGGETTO':'アイテム画像','CONFERMO':'確認します','RIEPILOGO FINALE':'最終概要','SALVA TUTTO':'すべて保存'},
+    'ru': {'CENTRO OPERATIVO':'ЦЕНТР УПРАВЛЕНИЯ','Scegli una sezione per accedere alle relative funzioni.':'Выберите раздел, чтобы открыть его функции.','Tutti i temi e tutti i record della tua collezione':'Все темы и записи вашей коллекции','Seleziona un tema per consultare i relativi oggetti.':'Выберите тему для просмотра соответствующих предметов.','SERVIZIO VALORA':'СЕРВИС VALORA','1. SELEZIONA L’OGGETTO':'1. ВЫБЕРИТЕ ПРЕДМЕТ','Oggetto da valutare':'Предмет для оценки','Non risultano oggetti disponibili nella destinazione COLLEZIONE.':'В коллекции нет доступных предметов.','Mercato di riferimento':'Референтный рынок','Preparazione in corso…':'Подготовка…','PREPARA VALUTAZIONE':'ПОДГОТОВИТЬ ОЦЕНКУ','ESITO PREPARAZIONE':'РЕЗУЛЬТАТ ПОДГОТОВКИ','AGGIORNA OGGETTI':'ОБНОВИТЬ ПРЕДМЕТЫ','RIEPILOGO DEL PATRIMONIO':'ОБЗОР КОЛЛЕКЦИИ','DETTAGLIO OGGETTI':'ДЕТАЛИ ПРЕДМЕТОВ','Nessun oggetto destinato alla collezione.':'Нет предметов, добавленных в коллекцию.','TORNA ALLA DASHBOARD':'НАЗАД НА ГЛАВНУЮ','RICERCA OGGETTI PER CATEGORIA':'ПОИСК ПРЕДМЕТОВ ПО КАТЕГОРИИ','CHIUDI':'ЗАКРЫТЬ','IMPORTA':'ИМПОРТ','ANTEPRIMA':'ПРЕДПРОСМОТР','CONFERMA':'ПОДТВЕРДИТЬ','CONFERMA IMPORTAZIONE':'ПОДТВЕРДИТЬ ИМПОРТ','ESPORTA EXCEL (.XLSX)':'ЭКСПОРТ EXCEL (.XLSX)','ESPORTA CSV':'ЭКСПОРТ CSV','ESPORTA JSON':'ЭКСПОРТ JSON','NESSUN RISULTATO':'НЕТ РЕЗУЛЬТАТОВ','CONFERMA CHIUSURA':'ПОДТВЕРДИТЬ ЗАКРЫТИЕ','METADATI DEL PRODOTTO':'МЕТАДАННЫЕ ТОВАРА','DATI TECNICI · SOLA LETTURA':'ТЕХНИЧЕСКИЕ ДАННЫЕ · ТОЛЬКО ЧТЕНИЕ','IMMAGINE OGGETTO':'ИЗОБРАЖЕНИЕ ПРЕДМЕТА','CONFERMO':'ПОДТВЕРЖДАЮ','RIEPILOGO FINALE':'ИТОГОВАЯ СВОДКА','SALVA TUTTO':'СОХРАНИТЬ ВСЁ'}
+  };
+
+
+  static const Map<String, Map<String, String>> _sections = {
+    'en': {'VENDITE E INSERZIONI':'SALES & LISTINGS','Consulta e gestisci gli oggetti':'Browse and manage items','Gestione acquisti e allocazioni':'Purchases and allocations','Vendite e inserzioni':'Sales and listings','VALORA e valore collezione':'VALORA and collection value','Riepiloghi e risultati':'Summaries and results','Ricerca oggetti e fonti':'Search items and sources','Stato e verifiche del sistema':'System status and checks','Nuovo oggetto':'New item','Modifica oggetto':'Edit item','Chiudi oggetto':'Close item','Visualizza scheda':'View item record','Elenco oggetti disponibili':'Available items','Storico oggetto':'Item history','Importa oggetti':'Import items','Esporta oggetti':'Export items','Nuovo acquisto':'New purchase','Modifica acquisto':'Edit purchase','Acquisti comparati':'Compare purchases','Report acquisti':'Purchase report','Nuova vendita':'New sale','Chiudi vendita':'Close sale','Report vendite':'Sales report','VALORA':'VALORA','VALORE COLLEZIONE':'COLLECTION VALUE','VALUTA ACQUISTO':'EVALUATE PURCHASE','TORNA ALLA DASHBOARD':'BACK TO DASHBOARD'},
+    'fr': {'VENDITE E INSERZIONI':'VENTES ET ANNONCES','Consulta e gestisci gli oggetti':'Consulter et gérer les objets','Gestione acquisti e allocazioni':'Achats et affectations','Vendite e inserzioni':'Ventes et annonces','VALORA e valore collezione':'VALORA et valeur de la collection','Riepiloghi e risultati':'Synthèses et résultats','Ricerca oggetti e fonti':'Recherche d’objets et de sources','Stato e verifiche del sistema':'État et vérifications du système','Nuovo oggetto':'Nouvel objet','Modifica oggetto':'Modifier l’objet','Chiudi oggetto':'Clôturer l’objet','Visualizza scheda':'Afficher la fiche','Elenco oggetti disponibili':'Objets disponibles','Storico oggetto':'Historique de l’objet','Importa oggetti':'Importer des objets','Esporta oggetti':'Exporter des objets','Nuovo acquisto':'Nouvel achat','Modifica acquisto':'Modifier l’achat','Acquisti comparati':'Comparer les achats','Report acquisti':'Rapport des achats','Nuova vendita':'Nouvelle vente','Chiudi vendita':'Clôturer la vente','Report vendite':'Rapport des ventes','VALORA':'VALORA','VALORE COLLEZIONE':'VALEUR DE LA COLLECTION','VALUTA ACQUISTO':'ÉVALUER L’ACHAT','TORNA ALLA DASHBOARD':'RETOUR AU TABLEAU DE BORD'},
+    'de': {'VENDITE E INSERZIONI':'VERKÄUFE & ANGEBOTE','Consulta e gestisci gli oggetti':'Objekte anzeigen und verwalten','Gestione acquisti e allocazioni':'Käufe und Zuordnungen','Vendite e inserzioni':'Verkäufe und Angebote','VALORA e valore collezione':'VALORA und Sammlungswert','Riepiloghi e risultati':'Übersichten und Ergebnisse','Ricerca oggetti e fonti':'Objekte und Quellen suchen','Stato e verifiche del sistema':'Systemstatus und Prüfungen','Nuovo oggetto':'Neues Objekt','Modifica oggetto':'Objekt bearbeiten','Chiudi oggetto':'Objekt schließen','Visualizza scheda':'Objektdatensatz anzeigen','Elenco oggetti disponibili':'Verfügbare Objekte','Storico oggetto':'Objektverlauf','Importa oggetti':'Objekte importieren','Esporta oggetti':'Objekte exportieren','Nuovo acquisto':'Neuer Kauf','Modifica acquisto':'Kauf bearbeiten','Acquisti comparati':'Käufe vergleichen','Report acquisti':'Kaufbericht','Nuova vendita':'Neuer Verkauf','Chiudi vendita':'Verkauf schließen','Report vendite':'Verkaufsbericht','VALORA':'VALORA','VALORE COLLEZIONE':'SAMMLUNGSWERT','VALUTA ACQUISTO':'KAUF BEWERTEN','TORNA ALLA DASHBOARD':'ZURÜCK ZUR ÜBERSICHT'},
+    'es': {'VENDITE E INSERZIONI':'VENTAS Y ANUNCIOS','Consulta e gestisci gli oggetti':'Consultar y gestionar objetos','Gestione acquisti e allocazioni':'Compras y asignaciones','Vendite e inserzioni':'Ventas y anuncios','VALORA e valore collezione':'VALORA y valor de la colección','Riepiloghi e risultati':'Resúmenes y resultados','Ricerca oggetti e fonti':'Buscar objetos y fuentes','Stato e verifiche del sistema':'Estado y comprobaciones del sistema','Nuovo oggetto':'Nuevo objeto','Modifica oggetto':'Editar objeto','Chiudi oggetto':'Cerrar objeto','Visualizza scheda':'Ver ficha','Elenco oggetti disponibili':'Objetos disponibles','Storico oggetto':'Historial del objeto','Importa oggetti':'Importar objetos','Esporta oggetti':'Exportar objetos','Nuovo acquisto':'Nueva compra','Modifica acquisto':'Editar compra','Acquisti comparati':'Comparar compras','Report acquisti':'Informe de compras','Nuova vendita':'Nueva venta','Chiudi vendita':'Cerrar venta','Report vendite':'Informe de ventas','VALORA':'VALORA','VALORE COLLEZIONE':'VALOR DE LA COLECCIÓN','VALUTA ACQUISTO':'VALORAR COMPRA','TORNA ALLA DASHBOARD':'VOLVER AL PANEL'},
+    'pt': {'VENDITE E INSERZIONI':'VENDAS E ANÚNCIOS','Consulta e gestisci gli oggetti':'Consultar e gerir objetos','Gestione acquisti e allocazioni':'Compras e atribuições','Vendite e inserzioni':'Vendas e anúncios','VALORA e valore collezione':'VALORA e valor da coleção','Riepiloghi e risultati':'Resumos e resultados','Ricerca oggetti e fonti':'Pesquisar objetos e fontes','Stato e verifiche del sistema':'Estado e verificações do sistema','Nuovo oggetto':'Novo objeto','Modifica oggetto':'Editar objeto','Chiudi oggetto':'Fechar objeto','Visualizza scheda':'Ver ficha do objeto','Elenco oggetti disponibili':'Objetos disponíveis','Storico oggetto':'Histórico do objeto','Importa oggetti':'Importar objetos','Esporta oggetti':'Exportar objetos','Nuovo acquisto':'Nova compra','Modifica acquisto':'Editar compra','Acquisti comparati':'Comparar compras','Report acquisti':'Relatório de compras','Nuova vendita':'Nova venda','Chiudi vendita':'Fechar venda','Report vendite':'Relatório de vendas','VALORA':'VALORA','VALORE COLLEZIONE':'VALOR DA COLEÇÃO','VALUTA ACQUISTO':'AVALIAR COMPRA','TORNA ALLA DASHBOARD':'VOLTAR AO PAINEL'},
+    'zh': {'VENDITE E INSERZIONI':'销售与商品刊登','Consulta e gestisci gli oggetti':'查看和管理物品','Gestione acquisti e allocazioni':'购买与分配管理','Vendite e inserzioni':'销售与刊登','VALORA e valore collezione':'VALORA 与收藏估值','Riepiloghi e risultati':'汇总与结果','Ricerca oggetti e fonti':'搜索物品和来源','Stato e verifiche del sistema':'系统状态与检查','Nuovo oggetto':'新建物品','Modifica oggetto':'编辑物品','Chiudi oggetto':'关闭物品','Visualizza scheda':'查看物品记录','Elenco oggetti disponibili':'可用物品列表','Storico oggetto':'物品历史','Importa oggetti':'导入物品','Esporta oggetti':'导出物品','Nuovo acquisto':'新建购买','Modifica acquisto':'编辑购买','Acquisti comparati':'比较购买记录','Report acquisti':'购买报告','Nuova vendita':'新建销售','Chiudi vendita':'关闭销售','Report vendite':'销售报告','VALORA':'VALORA','VALORE COLLEZIONE':'收藏估值','VALUTA ACQUISTO':'评估购买','TORNA ALLA DASHBOARD':'返回主页'},
+    'ja': {'VENDITE E INSERZIONI':'販売・出品','Consulta e gestisci gli oggetti':'アイテムを表示・管理','Gestione acquisti e allocazioni':'購入と割り当ての管理','Vendite e inserzioni':'販売と出品','VALORA e valore collezione':'VALORAとコレクション価値','Riepiloghi e risultati':'概要と結果','Ricerca oggetti e fonti':'アイテムと情報源を検索','Stato e verifiche del sistema':'システム状態と確認','Nuovo oggetto':'アイテムを新規作成','Modifica oggetto':'アイテムを編集','Chiudi oggetto':'アイテムを終了','Visualizza scheda':'アイテム情報を表示','Elenco oggetti disponibili':'利用可能なアイテム','Storico oggetto':'アイテム履歴','Importa oggetti':'アイテムをインポート','Esporta oggetti':'アイテムをエクスポート','Nuovo acquisto':'購入を新規登録','Modifica acquisto':'購入を編集','Acquisti comparati':'購入を比較','Report acquisti':'購入レポート','Nuova vendita':'販売を新規登録','Chiudi vendita':'販売を終了','Report vendite':'販売レポート','VALORA':'VALORA','VALORE COLLEZIONE':'コレクション価値','VALUTA ACQUISTO':'購入を評価','TORNA ALLA DASHBOARD':'ダッシュボードに戻る'},
+    'ru': {'VENDITE E INSERZIONI':'ПРОДАЖИ И ОБЪЯВЛЕНИЯ','Consulta e gestisci gli oggetti':'Просмотр и управление предметами','Gestione acquisti e allocazioni':'Управление покупками и распределением','Vendite e inserzioni':'Продажи и объявления','VALORA e valore collezione':'VALORA и стоимость коллекции','Riepiloghi e risultati':'Сводки и результаты','Ricerca oggetti e fonti':'Поиск предметов и источников','Stato e verifiche del sistema':'Состояние и проверки системы','Nuovo oggetto':'Новый предмет','Modifica oggetto':'Изменить предмет','Chiudi oggetto':'Закрыть предмет','Visualizza scheda':'Открыть карточку','Elenco oggetti disponibili':'Доступные предметы','Storico oggetto':'История предмета','Importa oggetti':'Импорт предметов','Esporta oggetti':'Экспорт предметов','Nuovo acquisto':'Новая покупка','Modifica acquisto':'Изменить покупку','Acquisti comparati':'Сравнить покупки','Report acquisti':'Отчёт о покупках','Nuova vendita':'Новая продажа','Chiudi vendita':'Закрыть продажу','Report vendite':'Отчёт о продажах','VALORA':'VALORA','VALORE COLLEZIONE':'СТОИМОСТЬ КОЛЛЕКЦИИ','VALUTA ACQUISTO':'ОЦЕНИТЬ ПОКУПКУ','TORNA ALLA DASHBOARD':'НАЗАД НА ГЛАВНУЮ'}
+  };
+
+
+  static const Map<String, Map<String, String>> _profile = {
+    'en': {'Nome utente':'Username','Email':'Email','Gestita dal sistema di autenticazione':'Managed by the authentication system','Nuova password':'New password','Nascondi password':'Hide password','Mostra password':'Show password','Almeno 8 caratteri':'At least 8 characters','Conferma nuova password':'Confirm new password','AGGIORNAMENTO...':'UPDATING...','CAMBIA PASSWORD':'CHANGE PASSWORD','Nome assistente':'Assistant name','PREFERENZE GENERALI':'GENERAL PREFERENCES','Mercato principale':'Primary market','Valuta predefinita':'Default currency','Lingua interfaccia':'Interface language','Formato data':'Date format','STATO ACCOUNT':'ACCOUNT STATUS','Data creazione account':'Account creation date','Non disponibile':'Not available','Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.':'The profile is read and saved in master_utente in the TEST database. Visual preferences remain separate and local.','Torna alla dashboard':'Back to dashboard'},
+    'fr': {'Nome utente':'Nom d’utilisateur','Email':'E-mail','Gestita dal sistema di autenticazione':'Géré par le système d’authentification','Nuova password':'Nouveau mot de passe','Nascondi password':'Masquer le mot de passe','Mostra password':'Afficher le mot de passe','Almeno 8 caratteri':'Au moins 8 caractères','Conferma nuova password':'Confirmer le nouveau mot de passe','AGGIORNAMENTO...':'MISE À JOUR...','CAMBIA PASSWORD':'CHANGER LE MOT DE PASSE','Nome assistente':'Nom de l’assistant','PREFERENZE GENERALI':'PRÉFÉRENCES GÉNÉRALES','Mercato principale':'Marché principal','Valuta predefinita':'Devise par défaut','Lingua interfaccia':'Langue de l’interface','Formato data':'Format de date','STATO ACCOUNT':'ÉTAT DU COMPTE','Data creazione account':'Date de création du compte','Non disponibile':'Indisponible','Torna alla dashboard':'Retour au tableau de bord'},
+    'de': {'Nome utente':'Benutzername','Email':'E-Mail','Gestita dal sistema di autenticazione':'Wird vom Authentifizierungssystem verwaltet','Nuova password':'Neues Passwort','Nascondi password':'Passwort ausblenden','Mostra password':'Passwort anzeigen','Almeno 8 caratteri':'Mindestens 8 Zeichen','Conferma nuova password':'Neues Passwort bestätigen','AGGIORNAMENTO...':'AKTUALISIERUNG...','CAMBIA PASSWORD':'PASSWORT ÄNDERN','Nome assistente':'Assistentenname','PREFERENZE GENERALI':'ALLGEMEINE EINSTELLUNGEN','Mercato principale':'Hauptmarkt','Valuta predefinita':'Standardwährung','Lingua interfaccia':'Oberflächensprache','Formato data':'Datumsformat','STATO ACCOUNT':'KONTOSTATUS','Data creazione account':'Kontoerstellungsdatum','Non disponibile':'Nicht verfügbar','Torna alla dashboard':'Zurück zur Übersicht'},
+    'es': {'Nome utente':'Nombre de usuario','Email':'Correo electrónico','Gestita dal sistema di autenticazione':'Gestionado por el sistema de autenticación','Nuova password':'Nueva contraseña','Nascondi password':'Ocultar contraseña','Mostra password':'Mostrar contraseña','Almeno 8 caratteri':'Al menos 8 caracteres','Conferma nuova password':'Confirmar nueva contraseña','AGGIORNAMENTO...':'ACTUALIZANDO...','CAMBIA PASSWORD':'CAMBIAR CONTRASEÑA','Nome assistente':'Nombre del asistente','PREFERENZE GENERALI':'PREFERENCIAS GENERALES','Mercato principale':'Mercado principal','Valuta predefinita':'Moneda predeterminada','Lingua interfaccia':'Idioma de la interfaz','Formato data':'Formato de fecha','STATO ACCOUNT':'ESTADO DE LA CUENTA','Data creazione account':'Fecha de creación de la cuenta','Non disponibile':'No disponible','Torna alla dashboard':'Volver al panel'},
+    'pt': {'Nome utente':'Nome de utilizador','Email':'E-mail','Gestita dal sistema di autenticazione':'Gerido pelo sistema de autenticação','Nuova password':'Nova palavra-passe','Nascondi password':'Ocultar palavra-passe','Mostra password':'Mostrar palavra-passe','Almeno 8 caratteri':'Pelo menos 8 caracteres','Conferma nuova password':'Confirmar nova palavra-passe','AGGIORNAMENTO...':'A ATUALIZAR...','CAMBIA PASSWORD':'ALTERAR PALAVRA-PASSE','Nome assistente':'Nome do assistente','PREFERENZE GENERALI':'PREFERÊNCIAS GERAIS','Mercato principale':'Mercado principal','Valuta predefinita':'Moeda predefinida','Lingua interfaccia':'Idioma da interface','Formato data':'Formato da data','STATO ACCOUNT':'ESTADO DA CONTA','Data creazione account':'Data de criação da conta','Non disponibile':'Indisponível','Torna alla dashboard':'Voltar ao painel'},
+    'zh': {'Nome utente':'用户名','Email':'电子邮箱','Gestita dal sistema di autenticazione':'由身份验证系统管理','Nuova password':'新密码','Nascondi password':'隐藏密码','Mostra password':'显示密码','Almeno 8 caratteri':'至少 8 个字符','Conferma nuova password':'确认新密码','AGGIORNAMENTO...':'正在更新…','CAMBIA PASSWORD':'修改密码','Nome assistente':'助手名称','PREFERENZE GENERALI':'常规偏好设置','Mercato principale':'主要市场','Valuta predefinita':'默认货币','Lingua interfaccia':'界面语言','Formato data':'日期格式','STATO ACCOUNT':'账户状态','Data creazione account':'账户创建日期','Non disponibile':'不可用','Torna alla dashboard':'返回主页'},
+    'ja': {'Nome utente':'ユーザー名','Email':'メールアドレス','Gestita dal sistema di autenticazione':'認証システムで管理','Nuova password':'新しいパスワード','Nascondi password':'パスワードを隠す','Mostra password':'パスワードを表示','Almeno 8 caratteri':'8文字以上','Conferma nuova password':'新しいパスワードを確認','AGGIORNAMENTO...':'更新中…','CAMBIA PASSWORD':'パスワードを変更','Nome assistente':'アシスタント名','PREFERENZE GENERALI':'一般設定','Mercato principale':'主要市場','Valuta predefinita':'既定の通貨','Lingua interfaccia':'インターフェース言語','Formato data':'日付形式','STATO ACCOUNT':'アカウント状態','Data creazione account':'アカウント作成日','Non disponibile':'利用不可','Torna alla dashboard':'ダッシュボードに戻る'},
+    'ru': {'Nome utente':'Имя пользователя','Email':'Электронная почта','Gestita dal sistema di autenticazione':'Управляется системой аутентификации','Nuova password':'Новый пароль','Nascondi password':'Скрыть пароль','Mostra password':'Показать пароль','Almeno 8 caratteri':'Не менее 8 символов','Conferma nuova password':'Подтвердите новый пароль','AGGIORNAMENTO...':'ОБНОВЛЕНИЕ...','CAMBIA PASSWORD':'ИЗМЕНИТЬ ПАРОЛЬ','Nome assistente':'Имя ассистента','PREFERENZE GENERALI':'ОБЩИЕ НАСТРОЙКИ','Mercato principale':'Основной рынок','Valuta predefinita':'Валюта по умолчанию','Lingua interfaccia':'Язык интерфейса','Formato data':'Формат даты','STATO ACCOUNT':'СОСТОЯНИЕ УЧЁТНОЙ ЗАПИСИ','Data creazione account':'Дата создания учётной записи','Non disponibile':'Недоступно','Torna alla dashboard':'Назад на главную'}
+  };
+
+
+  static const Map<String, Map<String, String>> _workflow = {
+    'en': {'REGISTRO FONTI':'SOURCE REGISTRY','AGGIUNGI FONTE':'ADD SOURCE','LE MIE PIATTAFORME':'MY MARKETPLACES','VALORE COLLEZIONE':'COLLECTION VALUE','RIEPILOGO DEL PATRIMONIO':'COLLECTION SUMMARY','DETTAGLIO OGGETTI':'ITEM DETAILS','Nessun oggetto destinato alla collezione.':'No items assigned to the collection.','Le stime automatiche e l’aggiornamento mensile saranno collegati al motore di valutazione in un passaggio separato, dopo il collaudo.':'Automatic estimates and monthly updates will be connected to the valuation engine in a separate step after testing.','PR-12 · RICERCA METADATI':'PR-12 · METADATA SEARCH','RICERCA MULTIPLA IN LOTTI':'BATCH MULTI-ITEM SEARCH','PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.':'PR-12 processes up to 10 items per batch and shows sources, candidates, and errors. Read-only trial: no metadata is written or overwritten.','CARICA OGGETTI INCOMPLETI':'LOAD INCOMPLETE ITEMS','RICERCA IN CORSO…':'SEARCHING…','STATO':'STATUS','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'QUEUED ITEMS · OPTIONAL SELECTION','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Process the automatic batch or select up to 10 specific items.','PRECEDENTE':'PREVIOUS','SUCCESSIVA':'NEXT','INDIETRO':'BACK','AVANTI':'FORWARD','ELABORA SELEZIONATI':'PROCESS SELECTED','Verifica solo questo record':'Check this record only','Massimo 10 oggetti selezionabili per ricerca.':'You can select up to 10 items per search.','CONFERMA DATI':'CONFIRM DETAILS','IDENTIFICAZIONE':'IDENTIFICATION','CAMPI SPECIFICI DELLA CATEGORIA':'CATEGORY-SPECIFIC FIELDS','DATI TECNICI E DI SISTEMA':'TECHNICAL AND SYSTEM DATA','DATI IDENTIFICATIVI · INSERIMENTO MANUALE':'IDENTIFICATION DATA · MANUAL ENTRY','DATI INSERIBILI':'EDITABLE DATA','VALORI DETERMINATI DA ALTRE PROCEDURE':'VALUES SET BY OTHER PROCEDURES','CERCA E SELEZIONA OGGETTO':'SEARCH AND SELECT ITEM','SCHEDA OGGETTO':'ITEM RECORD','DATI TECNICI':'TECHNICAL DATA','RIEPILOGO FLUSSI DI CASSA':'CASH FLOW SUMMARY','TOTALE ENTRATE':'TOTAL INCOME','TOTALE USCITE':'TOTAL EXPENSES','SALDO (ENTRATE − USCITE)':'BALANCE (INCOME − EXPENSES)','CREA FILE EXCEL':'CREATE EXCEL FILE','CREA FILE PDF':'CREATE PDF FILE','OGGETTI DISPONIBILI':'AVAILABLE ITEMS','ESITO RUNTIME':'RUNTIME RESULT','CONFERMA E SALVA':'CONFIRM AND SAVE','Oggetto salvato':'Item saved','CONFERMA CHIUSURA':'CONFIRM CLOSURE','RIEPILOGO FINALE':'FINAL SUMMARY','SALVA TUTTO':'SAVE ALL','PR-12 · Verifica oggetto e immagine':'PR-12 · Check item and image','APPLICA METADATI SE DISPONIBILI':'APPLY AVAILABLE METADATA','RECORD INCOMPLETI':'INCOMPLETE RECORDS','PREPARA IL FILE':'PREPARE FILE','REQUISITI E CONSIGLI PER L’IMPORTAZIONE':'IMPORT REQUIREMENTS AND TIPS','Formati supportati: XLSX, CSV e JSON':'Supported formats: XLSX, CSV, and JSON','ANTEPRIMA':'PREVIEW','SELEZIONA TUTTI I VALIDI':'SELECT ALL VALID','DESELEZIONA TUTTI':'DESELECT ALL','ESPORTA EXCEL (.XLSX)':'EXPORT EXCEL (.XLSX)','ESPORTA CSV':'EXPORT CSV','ESPORTA JSON':'EXPORT JSON','NESSUN RISULTATO':'NO RESULTS','RIPROVA':'RETRY','ELABORA PROSSIMO LOTTO':'PROCESS NEXT BATCH','APRI FONTE':'OPEN SOURCE','Esamina proposta':'Review candidate','Scheda proposta · da verificare':'Candidate record · needs review','CHIUDI':'CLOSE','Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.':'No verifiable record found. Try another item or consult specialist sources.','Dettagli tecnici':'Technical details','Proposta da verificare prima di usarla':'Candidate must be verified before use','Candidato senza titolo':'Untitled candidate','Fonte catalogo':'Catalog source','Non disponibile':'Not available','IMPORTA OGGETTI':'IMPORT ITEMS','ESPORTA OGGETTI':'EXPORT ITEMS','Importa il catalogo da un file e controlla i dati prima di salvarli.':'Import the catalog from a file and review the data before saving.','Esporta una copia del catalogo nel formato che preferisci.':'Export a copy of the catalog in your preferred format.','Preparare il file':'Prepare the file','Requisiti e consigli per l’importazione':'Import requirements and tips','FORMATO E STRUTTURA':'FORMAT AND STRUCTURE','Una riga per oggetto':'One row per item','Usa una riga per ogni oggetto e una colonna per ogni informazione.':'Use one row per item and one column per each piece of information.','Intestazioni riconoscibili':'Recognizable headers','Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.':'Keep the Master Items headers if available. An item description is required.','File pulito':'Clean file','Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.':'Avoid titles above the table, merged cells, and duplicate headers. Missing data can remain blank.','ANALISI IN CORSO…':'ANALYZING…','SELEZIONA FILE E ANALIZZA':'SELECT FILE AND ANALYZE','Selezionati:':'Selected:','CONFERMA IMPORTAZIONE':'CONFIRM IMPORT','IMPORTA':'IMPORT','Esportazione annullata.':'Export cancelled.','Pronto. Ambiente TEST.':'Ready. TEST environment.'},
+    'fr': {'REGISTRO FONTI':'REGISTRE DES SOURCES','AGGIUNGI FONTE':'AJOUTER UNE SOURCE','LE MIE PIATTAFORME':'MES PLATEFORMES','VALORE COLLEZIONE':'VALEUR DE LA COLLECTION','RIEPILOGO DEL PATRIMONIO':'RÉSUMÉ DE LA COLLECTION','DETTAGLIO OGGETTI':'DÉTAIL DES OBJETS','Nessun oggetto destinato alla collezione.':'Aucun objet attribué à la collection.','PR-12 · RICERCA METADATI':'PR-12 · RECHERCHE DE MÉTADONNÉES','RICERCA MULTIPLA IN LOTTI':'RECHERCHE MULTIPLE PAR LOTS','CARICA OGGETTI INCOMPLETI':'CHARGER LES OBJETS INCOMPLETS','RICERCA IN CORSO…':'RECHERCHE EN COURS…','STATO':'ÉTAT','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'OBJETS EN ATTENTE · SÉLECTION FACULTATIVE','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Traitez le lot automatique ou sélectionnez jusqu’à 10 objets.','PRECEDENTE':'PRÉCÉDENT','SUCCESSIVA':'SUIVANT','INDIETRO':'RETOUR','AVANTI':'SUIVANT','ELABORA SELEZIONATI':'TRAITER LA SÉLECTION','Verifica solo questo record':'Vérifier uniquement cet enregistrement','Massimo 10 oggetti selezionabili per ricerca.':'10 objets maximum par recherche.','IDENTIFICAZIONE':'IDENTIFICATION','CAMPI SPECIFICI DELLA CATEGORIA':'CHAMPS SPÉCIFIQUES À LA CATÉGORIE','DATI TECNICI E DI SISTEMA':'DONNÉES TECHNIQUES ET SYSTÈME','DATI TECNICI':'DONNÉES TECHNIQUES','RIEPILOGO FLUSSI DI CASSA':'RÉSUMÉ DES FLUX DE TRÉSORERIE','TOTALE ENTRATE':'TOTAL DES ENTRÉES','TOTALE USCITE':'TOTAL DES SORTIES','CREA FILE EXCEL':'CRÉER UN FICHIER EXCEL','CREA FILE PDF':'CRÉER UN FICHIER PDF','OGGETTI DISPONIBILI':'OBJETS DISPONIBLES','ESITO RUNTIME':'RÉSULTAT DU RUNTIME','CONFERMA E SALVA':'CONFIRMER ET ENREGISTRER','APPLICA METADATI SE DISPONIBILI':'APPLIQUER LES MÉTADONNÉES DISPONIBLES','ANTEPRIMA':'APERÇU','SELEZIONA TUTTI I VALIDI':'SÉLECTIONNER LES VALIDES','DESELEZIONA TUTTI':'TOUT DÉSÉLECTIONNER','NESSUN RISULTATO':'AUCUN RÉSULTAT','RIPROVA':'RÉESSAYER','ELABORA PROSSIMO LOTTO':'TRAITER LE LOT SUIVANT','APRI FONTE':'OUVRIR LA SOURCE','Esamina proposta':'Examiner le candidat','Scheda proposta · da verificare':'Fiche candidate · à vérifier','CHIUDI':'FERMER','Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.':'Aucune fiche vérifiable trouvée. Essayez un autre objet ou consultez des sources spécialisées.','Dettagli tecnici':'Détails techniques','Proposta da verificare prima di usarla':'Candidat à vérifier avant utilisation','Candidato senza titolo':'Candidat sans titre','Fonte catalogo':'Source du catalogue','Non disponibile':'Indisponible','IMPORTA OGGETTI':'IMPORTER DES OBJETS','ESPORTA OGGETTI':'EXPORTER DES OBJETS','Importa il catalogo da un file e controlla i dati prima di salvarli.':'Importez le catalogue depuis un fichier et vérifiez les données avant de les enregistrer.','Esporta una copia del catalogo nel formato che preferisci.':'Exportez une copie du catalogue au format souhaité.','Preparare il file':'Préparer le fichier','Requisiti e consigli per l’importazione':'Conditions et conseils d’importation','FORMATO E STRUTTURA':'FORMAT ET STRUCTURE','Una riga per oggetto':'Une ligne par objet','Usa una riga per ogni oggetto e una colonna per ogni informazione.':'Utilisez une ligne par objet et une colonne par information.','Intestazioni riconoscibili':'En-têtes reconnaissables','Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.':'Conservez les en-têtes du catalogue principal si disponibles. La description de l’objet est obligatoire.','File pulito':'Fichier propre','Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.':'Évitez les titres au-dessus du tableau, les cellules fusionnées et les en-têtes en double.','ANALISI IN CORSO…':'ANALYSE EN COURS…','SELEZIONA FILE E ANALIZZA':'CHOISIR UN FICHIER ET ANALYSER','IMPORTA':'IMPORTER'},
+    'de': {'REGISTRO FONTI':'QUELLENREGISTER','AGGIUNGI FONTE':'QUELLE HINZUFÜGEN','LE MIE PIATTAFORME':'MEINE MARKTPLÄTZE','VALORE COLLEZIONE':'SAMMLUNGSWERT','RIEPILOGO DEL PATRIMONIO':'SAMMLUNGSÜBERSICHT','DETTAGLIO OGGETTI':'OBJEKTDETAILS','Nessun oggetto destinato alla collezione.':'Keine Objekte der Sammlung zugewiesen.','PR-12 · RICERCA METADATI':'PR-12 · METADATENSUCHE','RICERCA MULTIPLA IN LOTTI':'MEHRFACH-SUCHE IN STAPELN','CARICA OGGETTI INCOMPLETI':'UNVOLLSTÄNDIGE OBJEKTE LADEN','RICERCA IN CORSO…':'SUCHE LÄUFT…','STATO':'STATUS','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'WARTENDE OBJEKTE · OPTIONALE AUSWAHL','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Verarbeiten Sie den automatischen Stapel oder wählen Sie bis zu 10 Objekte aus.','PRECEDENTE':'ZURÜCK','SUCCESSIVA':'WEITER','INDIETRO':'ZURÜCK','AVANTI':'WEITER','ELABORA SELEZIONATI':'AUSGEWÄHLTE VERARBEITEN','Verifica solo questo record':'Nur diesen Datensatz prüfen','Massimo 10 oggetti selezionabili per ricerca.':'Maximal 10 Objekte pro Suche.','IDENTIFICAZIONE':'IDENTIFIKATION','CAMPI SPECIFICI DELLA CATEGORIA':'KATEGORIESPEZIFISCHE FELDER','DATI TECNICI E DI SISTEMA':'TECHNISCHE UND SYSTEMDATEN','DATI TECNICI':'TECHNISCHE DATEN','RIEPILOGO FLUSSI DI CASSA':'KASSENÜBERSICHT','TOTALE ENTRATE':'GESAMTEINNAHMEN','TOTALE USCITE':'GESAMTAUSGABEN','CREA FILE EXCEL':'EXCEL-DATEI ERSTELLEN','CREA FILE PDF':'PDF ERSTELLEN','OGGETTI DISPONIBILI':'VERFÜGBARE OBJEKTE','ESITO RUNTIME':'RUNTIME-ERGEBNIS','CONFERMA E SALVA':'BESTÄTIGEN UND SPEICHERN','APPLICA METADATI SE DISPONIBILI':'VERFÜGBARE METADATEN ANWENDEN','ANTEPRIMA':'VORSCHAU','SELEZIONA TUTTI I VALIDI':'ALLE GÜLTIGEN AUSWÄHLEN','DESELEZIONA TUTTI':'AUSWAHL AUFHEBEN','NESSUN RISULTATO':'KEINE ERGEBNISSE','RIPROVA':'ERNEUT VERSUCHEN','ELABORA PROSSIMO LOTTO':'NÄCHSTEN STAPEL VERARBEITEN','APRI FONTE':'QUELLE ÖFFNEN','Esamina proposta':'Kandidaten prüfen','Scheda proposta · da verificare':'Kandidatendatensatz · zu prüfen','CHIUDI':'SCHLIESSEN','Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.':'Kein überprüfbarer Datensatz gefunden. Versuchen Sie ein anderes Objekt oder Fachquellen.','Dettagli tecnici':'Technische Details','Proposta da verificare prima di usarla':'Kandidat vor der Verwendung prüfen','Candidato senza titolo':'Kandidat ohne Titel','Fonte catalogo':'Katalogquelle','Non disponibile':'Nicht verfügbar','IMPORTA OGGETTI':'OBJEKTE IMPORTIEREN','ESPORTA OGGETTI':'OBJEKTE EXPORTIEREN','Importa il catalogo da un file e controlla i dati prima di salvarli.':'Importieren Sie den Katalog aus einer Datei und prüfen Sie die Daten vor dem Speichern.','Esporta una copia del catalogo nel formato che preferisci.':'Exportieren Sie eine Katalogkopie im gewünschten Format.','Preparare il file':'Datei vorbereiten','Requisiti e consigli per l’importazione':'Importanforderungen und Tipps','FORMATO E STRUTTURA':'FORMAT UND STRUKTUR','Una riga per oggetto':'Eine Zeile pro Objekt','Usa una riga per ogni oggetto e una colonna per ogni informazione.':'Verwenden Sie eine Zeile pro Objekt und eine Spalte pro Information.','Intestazioni riconoscibili':'Eindeutige Überschriften','Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.':'Behalten Sie nach Möglichkeit die Überschriften des Objektstamms bei. Eine Objektbeschreibung ist erforderlich.','File pulito':'Saubere Datei','Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.':'Vermeiden Sie Titel über der Tabelle, verbundene Zellen und doppelte Überschriften.','ANALISI IN CORSO…':'ANALYSE LÄUFT…','SELEZIONA FILE E ANALIZZA':'DATEI AUSWÄHLEN UND ANALYSIEREN','IMPORTA':'IMPORTIEREN'},
+    'es': {'REGISTRO FONTI':'REGISTRO DE FUENTES','AGGIUNGI FONTE':'AÑADIR FUENTE','LE MIE PIATTAFORME':'MIS PLATAFORMAS','VALORE COLLEZIONE':'VALOR DE LA COLECCIÓN','RIEPILOGO DEL PATRIMONIO':'RESUMEN DE LA COLECCIÓN','DETTAGLIO OGGETTI':'DETALLE DE OBJETOS','Nessun oggetto destinato alla collezione.':'No hay objetos asignados a la colección.','PR-12 · RICERCA METADATI':'PR-12 · BÚSQUEDA DE METADATOS','RICERCA MULTIPLA IN LOTTI':'BÚSQUEDA MÚLTIPLE POR LOTES','CARICA OGGETTI INCOMPLETI':'CARGAR OBJETOS INCOMPLETOS','RICERCA IN CORSO…':'BUSCANDO…','STATO':'ESTADO','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'OBJETOS EN COLA · SELECCIÓN OPCIONAL','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Procesa el lote automático o selecciona hasta 10 objetos.','PRECEDENTE':'ANTERIOR','SUCCESSIVA':'SIGUIENTE','INDIETRO':'ATRÁS','AVANTI':'SIGUIENTE','ELABORA SELEZIONATI':'PROCESAR SELECCIONADOS','Verifica solo questo record':'Verificar solo este registro','Massimo 10 oggetti selezionabili per ricerca.':'Máximo 10 objetos por búsqueda.','IDENTIFICAZIONE':'IDENTIFICACIÓN','CAMPI SPECIFICI DELLA CATEGORIA':'CAMPOS ESPECÍFICOS DE LA CATEGORÍA','DATI TECNICI E DI SISTEMA':'DATOS TÉCNICOS Y DEL SISTEMA','DATI TECNICI':'DATOS TÉCNICOS','RIEPILOGO FLUSSI DI CASSA':'RESUMEN DE FLUJOS DE CAJA','TOTALE ENTRATE':'INGRESOS TOTALES','TOTALE USCITE':'GASTOS TOTALES','CREA FILE EXCEL':'CREAR ARCHIVO EXCEL','CREA FILE PDF':'CREAR ARCHIVO PDF','OGGETTI DISPONIBILI':'OBJETOS DISPONIBLES','ESITO RUNTIME':'RESULTADO DEL RUNTIME','CONFERMA E SALVA':'CONFIRMAR Y GUARDAR','APPLICA METADATI SE DISPONIBILI':'APLICAR METADATOS DISPONIBLES','ANTEPRIMA':'VISTA PREVIA','SELEZIONA TUTTI I VALIDI':'SELECCIONAR TODOS LOS VÁLIDOS','DESELEZIONA TUTTI':'DESELECCIONAR TODO','NESSUN RISULTATO':'SIN RESULTADOS','RIPROVA':'REINTENTAR','ELABORA PROSSIMO LOTTO':'PROCESAR SIGUIENTE LOTE','APRI FONTE':'ABRIR FUENTE','Esamina proposta':'Revisar candidato','Scheda proposta · da verificare':'Ficha propuesta · por verificar','CHIUDI':'CERRAR','Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.':'No se encontró una ficha verificable. Prueba otro objeto o consulta fuentes especializadas.','Dettagli tecnici':'Detalles técnicos','Proposta da verificare prima di usarla':'Verificar el candidato antes de usarlo','Candidato senza titolo':'Candidato sin título','Fonte catalogo':'Fuente del catálogo','Non disponibile':'No disponible','IMPORTA OGGETTI':'IMPORTAR OBJETOS','ESPORTA OGGETTI':'EXPORTAR OBJETOS','Importa il catalogo da un file e controlla i dati prima di salvarli.':'Importa el catálogo desde un archivo y revisa los datos antes de guardarlos.','Esporta una copia del catalogo nel formato che preferisci.':'Exporta una copia del catálogo en el formato que prefieras.','Preparare il file':'Preparar el archivo','Requisiti e consigli per l’importazione':'Requisitos y consejos de importación','FORMATO E STRUTTURA':'FORMATO Y ESTRUCTURA','Una riga per oggetto':'Una fila por objeto','Usa una riga per ogni oggetto e una colonna per ogni informazione.':'Usa una fila por objeto y una columna por cada dato.','Intestazioni riconoscibili':'Encabezados reconocibles','Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.':'Mantén los encabezados del catálogo maestro si están disponibles. La descripción del objeto es obligatoria.','File pulito':'Archivo limpio','Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.':'Evita títulos sobre la tabla, celdas combinadas y encabezados duplicados.','ANALISI IN CORSO…':'ANALIZANDO…','SELEZIONA FILE E ANALIZZA':'SELECCIONAR ARCHIVO Y ANALIZAR','IMPORTA':'IMPORTAR'},
+    'pt': {'REGISTRO FONTI':'REGISTO DE FONTES','AGGIUNGI FONTE':'ADICIONAR FONTE','LE MIE PIATTAFORME':'AS MINHAS PLATAFORMAS','VALORE COLLEZIONE':'VALOR DA COLEÇÃO','RIEPILOGO DEL PATRIMONIO':'RESUMO DA COLEÇÃO','DETTAGLIO OGGETTI':'DETALHES DOS OBJETOS','Nessun oggetto destinato alla collezione.':'Não existem objetos atribuídos à coleção.','PR-12 · RICERCA METADATI':'PR-12 · PESQUISA DE METADADOS','RICERCA MULTIPLA IN LOTTI':'PESQUISA MÚLTIPLA POR LOTES','CARICA OGGETTI INCOMPLETI':'CARREGAR OBJETOS INCOMPLETOS','RICERCA IN CORSO…':'A PESQUISAR…','STATO':'ESTADO','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'OBJETOS EM FILA · SELEÇÃO OPCIONAL','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Processe o lote automático ou selecione até 10 objetos.','PRECEDENTE':'ANTERIOR','SUCCESSIVA':'SEGUINTE','INDIETRO':'VOLTAR','AVANTI':'AVANÇAR','ELABORA SELEZIONATI':'PROCESSAR SELECIONADOS','Verifica solo questo record':'Verificar apenas este registo','Massimo 10 oggetti selezionabili per ricerca.':'Máximo de 10 objetos por pesquisa.','IDENTIFICAZIONE':'IDENTIFICAÇÃO','CAMPI SPECIFICI DELLA CATEGORIA':'CAMPOS ESPECÍFICOS DA CATEGORIA','DATI TECNICI E DI SISTEMA':'DADOS TÉCNICOS E DO SISTEMA','DATI TECNICI':'DADOS TÉCNICOS','RIEPILOGO FLUSSI DI CASSA':'RESUMO DOS FLUXOS DE CAIXA','TOTALE ENTRATE':'TOTAL DE ENTRADAS','TOTALE USCITE':'TOTAL DE SAÍDAS','CREA FILE EXCEL':'CRIAR FICHEIRO EXCEL','CREA FILE PDF':'CRIAR FICHEIRO PDF','OGGETTI DISPONIBILI':'OBJETOS DISPONÍVEIS','ESITO RUNTIME':'RESULTADO DO RUNTIME','CONFERMA E SALVA':'CONFIRMAR E GUARDAR','APPLICA METADATI SE DISPONIBILI':'APLICAR METADADOS DISPONÍVEIS','ANTEPRIMA':'PRÉ-VISUALIZAÇÃO','SELEZIONA TUTTI I VALIDI':'SELECIONAR TODOS OS VÁLIDOS','DESELEZIONA TUTTI':'DESSELECIONAR TODOS','NESSUN RISULTATO':'SEM RESULTADOS','RIPROVA':'TENTAR NOVAMENTE','ELABORA PROSSIMO LOTTO':'PROCESSAR PRÓXIMO LOTE','APRI FONTE':'ABRIR FONTE','Esamina proposta':'Analisar candidato','Scheda proposta · da verificare':'Ficha proposta · por verificar','CHIUDI':'FECHAR','Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.':'Não foi encontrada ficha verificável. Experimente outro objeto ou consulte fontes especializadas.','Dettagli tecnici':'Detalhes técnicos','Proposta da verificare prima di usarla':'Verifique o candidato antes de o utilizar','Candidato senza titolo':'Candidato sem título','Fonte catalogo':'Fonte do catálogo','Non disponibile':'Indisponível','IMPORTA OGGETTI':'IMPORTAR OBJETOS','ESPORTA OGGETTI':'EXPORTAR OBJETOS','Importa il catalogo da un file e controlla i dati prima di salvarli.':'Importe o catálogo de um ficheiro e reveja os dados antes de guardar.','Esporta una copia del catalogo nel formato che preferisci.':'Exporte uma cópia do catálogo no formato pretendido.','Preparare il file':'Preparar o ficheiro','Requisiti e consigli per l’importazione':'Requisitos e sugestões de importação','FORMATO E STRUTTURA':'FORMATO E ESTRUTURA','Una riga per oggetto':'Uma linha por objeto','Usa una riga per ogni oggetto e una colonna per ogni informazione.':'Use uma linha por objeto e uma coluna por informação.','Intestazioni riconoscibili':'Cabeçalhos reconhecíveis','Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.':'Mantenha os cabeçalhos do catálogo principal, se disponíveis. A descrição do objeto é obrigatória.','File pulito':'Ficheiro limpo','Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.':'Evite títulos acima da tabela, células unidas e cabeçalhos duplicados.','ANALISI IN CORSO…':'A ANALISAR…','SELEZIONA FILE E ANALIZZA':'SELECIONAR FICHEIRO E ANALISAR','IMPORTA':'IMPORTAR'},
+    'zh': {'REGISTRO FONTI':'来源登记','AGGIUNGI FONTE':'添加来源','LE MIE PIATTAFORME':'我的平台','VALORE COLLEZIONE':'收藏估值','RIEPILOGO DEL PATRIMONIO':'收藏概览','DETTAGLIO OGGETTI':'物品详情','Nessun oggetto destinato alla collezione.':'没有分配到收藏的物品。','PR-12 · RICERCA METADATI':'PR-12 · 元数据搜索','RICERCA MULTIPLA IN LOTTI':'批量多物品搜索','CARICA OGGETTI INCOMPLETI':'加载不完整物品','RICERCA IN CORSO…':'正在搜索…','STATO':'状态','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'待处理物品 · 可选选择','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'可以处理自动批次，也可以选择最多 10 件物品。','PRECEDENTE':'上一页','SUCCESSIVA':'下一页','INDIETRO':'返回','AVANTI':'继续','ELABORA SELEZIONATI':'处理所选项目','Verifica solo questo record':'仅检查此记录','Massimo 10 oggetti selezionabili per ricerca.':'每次搜索最多选择 10 件物品。','IDENTIFICAZIONE':'识别信息','CAMPI SPECIFICI DELLA CATEGORIA':'类别专属字段','DATI TECNICI E DI SISTEMA':'技术与系统数据','DATI TECNICI':'技术数据','RIEPILOGO FLUSSI DI CASSA':'现金流汇总','TOTALE ENTRATE':'总收入','TOTALE USCITE':'总支出','CREA FILE EXCEL':'创建 Excel 文件','CREA FILE PDF':'创建 PDF 文件','OGGETTI DISPONIBILI':'可用物品','ESITO RUNTIME':'运行结果','CONFERMA E SALVA':'确认并保存','APPLICA METADATI SE DISPONIBILI':'应用可用元数据','ANTEPRIMA':'预览','SELEZIONA TUTTI I VALIDI':'选择所有有效项','DESELEZIONA TUTTI':'取消全选','NESSUN RISULTATO':'没有结果','RIPROVA':'重试','ELABORA PROSSIMO LOTTO':'处理下一批','APRI FONTE':'打开来源','Esamina proposta':'检查候选项','Scheda proposta · da verificare':'候选记录 · 需要核实','CHIUDI':'关闭','Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.':'未找到可核实的记录。请尝试其他物品或查看专业来源。','Dettagli tecnici':'技术详情','Proposta da verificare prima di usarla':'使用前请核实候选项','Candidato senza titolo':'无标题候选项','Fonte catalogo':'目录来源','Non disponibile':'不可用','IMPORTA OGGETTI':'导入物品','ESPORTA OGGETTI':'导出物品','Importa il catalogo da un file e controlla i dati prima di salvarli.':'从文件导入目录，并在保存前检查数据。','Esporta una copia del catalogo nel formato che preferisci.':'以所需格式导出目录副本。','Preparare il file':'准备文件','Requisiti e consigli per l’importazione':'导入要求与建议','FORMATO E STRUTTURA':'格式与结构','Una riga per oggetto':'每件物品一行','Usa una riga per ogni oggetto e una colonna per ogni informazione.':'每件物品使用一行，每项信息使用一列。','Intestazioni riconoscibili':'清晰的表头','Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.':'如有可能，请保留主目录表头。物品描述为必填项。','File pulito':'整理文件','Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.':'避免表格上方的标题、合并单元格和重复表头。缺失数据可以留空。','ANALISI IN CORSO…':'正在分析…','SELEZIONA FILE E ANALIZZA':'选择文件并分析','IMPORTA':'导入'},
+    'ja': {'REGISTRO FONTI':'情報源一覧','AGGIUNGI FONTE':'情報源を追加','LE MIE PIATTAFORME':'マイプラットフォーム','VALORE COLLEZIONE':'コレクション価値','RIEPILOGO DEL PATRIMONIO':'コレクション概要','DETTAGLIO OGGETTI':'アイテム詳細','Nessun oggetto destinato alla collezione.':'コレクションに割り当てられたアイテムはありません。','PR-12 · RICERCA METADATI':'PR-12 · メタデータ検索','RICERCA MULTIPLA IN LOTTI':'複数アイテムの一括検索','CARICA OGGETTI INCOMPLETI':'不完全なアイテムを読み込む','RICERCA IN CORSO…':'検索中…','STATO':'状態','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'待機中のアイテム · 任意選択','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'自動バッチを処理するか、最大10件のアイテムを選択できます。','PRECEDENTE':'前へ','SUCCESSIVA':'次へ','INDIETRO':'戻る','AVANTI':'進む','ELABORA SELEZIONATI':'選択項目を処理','Verifica solo questo record':'このレコードのみ確認','Massimo 10 oggetti selezionabili per ricerca.':'検索ごとに選択できるのは最大10件です。','IDENTIFICAZIONE':'識別情報','CAMPI SPECIFICI DELLA CATEGORIA':'カテゴリ固有の項目','DATI TECNICI E DI SISTEMA':'技術・システム情報','DATI TECNICI':'技術情報','RIEPILOGO FLUSSI DI CASSA':'キャッシュフロー概要','TOTALE ENTRATE':'収入合計','TOTALE USCITE':'支出合計','CREA FILE EXCEL':'Excelファイルを作成','CREA FILE PDF':'PDFファイルを作成','OGGETTI DISPONIBILI':'利用可能なアイテム','ESITO RUNTIME':'実行結果','CONFERMA E SALVA':'確認して保存','APPLICA METADATI SE DISPONIBILI':'利用可能なメタデータを適用','ANTEPRIMA':'プレビュー','SELEZIONA TUTTI I VALIDI':'有効な項目をすべて選択','DESELEZIONA TUTTI':'すべて選択解除','NESSUN RISULTATO':'結果なし','RIPROVA':'再試行','ELABORA PROSSIMO LOTTO':'次のバッチを処理','APRI FONTE':'情報源を開く','Esamina proposta':'候補を確認','Scheda proposta · da verificare':'候補レコード・要確認','CHIUDI':'閉じる','Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.':'確認可能なレコードが見つかりません。別のアイテムか専門情報源をお試しください。','Dettagli tecnici':'技術詳細','Proposta da verificare prima di usarla':'使用前に候補を確認してください','Candidato senza titolo':'タイトルなしの候補','Fonte catalogo':'カタログ情報源','Non disponibile':'利用不可','IMPORTA OGGETTI':'アイテムをインポート','ESPORTA OGGETTI':'アイテムをエクスポート','Importa il catalogo da un file e controlla i dati prima di salvarli.':'ファイルからカタログをインポートし、保存前にデータを確認します。','Esporta una copia del catalogo nel formato che preferisci.':'希望する形式でカタログのコピーをエクスポートします。','Preparare il file':'ファイルを準備','Requisiti e consigli per l’importazione':'インポート要件とヒント','FORMATO E STRUTTURA':'形式と構造','Una riga per oggetto':'アイテムごとに1行','Usa una riga per ogni oggetto e una colonna per ogni informazione.':'アイテムごとに1行、情報ごとに1列を使用します。','Intestazioni riconoscibili':'分かりやすい見出し','Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.':'可能であればマスターカタログの見出しを維持してください。アイテムの説明は必須です。','File pulito':'整理されたファイル','Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.':'表の上のタイトル、結合セル、重複した見出しを避けてください。欠損データは空欄でも構いません。','ANALISI IN CORSO…':'分析中…','SELEZIONA FILE E ANALIZZA':'ファイルを選択して分析','IMPORTA':'インポート'},
+    'ru': {'REGISTRO FONTI':'РЕЕСТР ИСТОЧНИКОВ','AGGIUNGI FONTE':'ДОБАВИТЬ ИСТОЧНИК','LE MIE PIATTAFORME':'МОИ ПЛАТФОРМЫ','VALORE COLLEZIONE':'СТОИМОСТЬ КОЛЛЕКЦИИ','RIEPILOGO DEL PATRIMONIO':'ОБЗОР КОЛЛЕКЦИИ','DETTAGLIO OGGETTI':'ДЕТАЛИ ПРЕДМЕТОВ','Nessun oggetto destinato alla collezione.':'Нет предметов, добавленных в коллекцию.','PR-12 · RICERCA METADATI':'PR-12 · ПОИСК МЕТАДАННЫХ','RICERCA MULTIPLA IN LOTTI':'ПАКЕТНЫЙ ПОИСК НЕСКОЛЬКИХ ПРЕДМЕТОВ','CARICA OGGETTI INCOMPLETI':'ЗАГРУЗИТЬ НЕПОЛНЫЕ ЗАПИСИ','RICERCA IN CORSO…':'ВЫПОЛНЯЕТСЯ ПОИСК…','STATO':'СТАТУС','OGGETTI IN CODA · SELEZIONE FACOLTATIVA':'ОЧЕРЕДЬ · НЕОБЯЗАТЕЛЬНЫЙ ВЫБОР','Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.':'Обработайте автоматический пакет или выберите до 10 предметов.','PRECEDENTE':'НАЗАД','SUCCESSIVA':'ДАЛЕЕ','INDIETRO':'НАЗАД','AVANTI':'ВПЕРЁД','ELABORA SELEZIONATI':'ОБРАБОТАТЬ ВЫБРАННОЕ','Verifica solo questo record':'Проверить только эту запись','Massimo 10 oggetti selezionabili per ricerca.':'Не более 10 предметов за один поиск.','IDENTIFICAZIONE':'ИДЕНТИФИКАЦИЯ','CAMPI SPECIFICI DELLA CATEGORIA':'ПОЛЯ КАТЕГОРИИ','DATI TECNICI E DI SISTEMA':'ТЕХНИЧЕСКИЕ ДАННЫЕ И СИСТЕМА','DATI TECNICI':'ТЕХНИЧЕСКИЕ ДАННЫЕ','RIEPILOGO FLUSSI DI CASSA':'СВОДКА ДЕНЕЖНЫХ ПОТОКОВ','TOTALE ENTRATE':'ОБЩИЙ ДОХОД','TOTALE USCITE':'ОБЩИЕ РАСХОДЫ','CREA FILE EXCEL':'СОЗДАТЬ ФАЙЛ EXCEL','CREA FILE PDF':'СОЗДАТЬ PDF','OGGETTI DISPONIBILI':'ДОСТУПНЫЕ ПРЕДМЕТЫ','ESITO RUNTIME':'РЕЗУЛЬТАТ ВЫПОЛНЕНИЯ','CONFERMA E SALVA':'ПОДТВЕРДИТЬ И СОХРАНИТЬ','APPLICA METADATI SE DISPONIBILI':'ПРИМЕНИТЬ ДОСТУПНЫЕ МЕТАДАННЫЕ','ANTEPRIMA':'ПРЕДПРОСМОТР','SELEZIONA TUTTI I VALIDI':'ВЫБРАТЬ ВСЁ ДОПУСТИМОЕ','DESELEZIONA TUTTI':'СНЯТЬ ВЫБОР СО ВСЕГО','NESSUN RISULTATO':'НЕТ РЕЗУЛЬТАТОВ','RIPROVA':'ПОВТОРИТЬ','ELABORA PROSSIMO LOTTO':'ОБРАБОТАТЬ СЛЕДУЮЩИЙ ПАКЕТ','APRI FONTE':'ОТКРЫТЬ ИСТОЧНИК','Esamina proposta':'Проверить кандидата','Scheda proposta · da verificare':'Карточка кандидата · проверить','CHIUDI':'ЗАКРЫТЬ','Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.':'Проверяемая запись не найдена. Попробуйте другой предмет или профильные источники.','Dettagli tecnici':'Технические сведения','Proposta da verificare prima di usarla':'Проверьте кандидата перед использованием','Candidato senza titolo':'Кандидат без названия','Fonte catalogo':'Источник каталога','Non disponibile':'Недоступно','IMPORTA OGGETTI':'ИМПОРТ ПРЕДМЕТОВ','ESPORTA OGGETTI':'ЭКСПОРТ ПРЕДМЕТОВ','Importa il catalogo da un file e controlla i dati prima di salvarli.':'Импортируйте каталог из файла и проверьте данные перед сохранением.','Esporta una copia del catalogo nel formato che preferisci.':'Экспортируйте копию каталога в нужном формате.','Preparare il file':'Подготовить файл','Requisiti e consigli per l’importazione':'Требования и советы по импорту','FORMATO E STRUTTURA':'ФОРМАТ И СТРУКТУРА','Una riga per oggetto':'Одна строка на предмет','Usa una riga per ogni oggetto e una colonna per ogni informazione.':'Используйте одну строку на предмет и один столбец на каждую характеристику.','Intestazioni riconoscibili':'Понятные заголовки','Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.':'По возможности сохраните заголовки основного каталога. Описание предмета обязательно.','File pulito':'Чистый файл','Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.':'Избегайте заголовков над таблицей, объединённых ячеек и повторяющихся столбцов.','ANALISI IN CORSO…':'АНАЛИЗ…','SELEZIONA FILE E ANALIZZA':'ВЫБРАТЬ ФАЙЛ И АНАЛИЗИРОВАТЬ','IMPORTA':'ИМПОРТ'}
+  };
+
+  static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? _sections[language ?? instance.code]?[source] ?? _profile[language ?? instance.code]?[source] ?? _workflow[language ?? instance.code]?[source] ?? source;
 }
 
 Future<void> main() async {
@@ -240,9 +317,9 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
     }
   }
   static const List<String> _allPersonalizableSections = [
-    'COLLEZIONE','CATALOGO','ACQUISTI','VENDITE','FLUSSI DI CASSA',
+    'COLLEZIONE','CATALOGO','ACQUISTI','VENDITE',
     'VALUTAZIONI','REPORT','RICERCHE','CONTROLLO','LEGO','SAINT SEIYA',
-    'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','FUNKO POP','ALTRE COLLEZIONI'
+    'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','ALTRE COLLEZIONI'
   ];
   void refresh(){
     if(!mounted)return;
@@ -389,6 +466,37 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
     ]));
 }
 
+class StartupLoadingPage extends StatelessWidget {
+  const StartupLoadingPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.inventory_2_outlined, color: goldColor, size: 64),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'COLLECTION by VALORA',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: goldColor, fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  const CircularProgressIndicator(color: goldColor),
+                  const SizedBox(height: 14),
+                  const Text('Inizializzazione dell’app in corso…', textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
 class StartupFailurePage extends StatelessWidget {
   const StartupFailurePage({super.key, required this.error});
 
@@ -492,7 +600,10 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: SafeArea(
+        backgroundColor: const Color(0xFF101010),
+        body: ColoredBox(
+          color: const Color(0xFF101010),
+          child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
@@ -570,30 +681,27 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+        ),
       );
 }
 
-// Le categorie del catalogo vengono renderizzate dalla configurazione SQL, non da voci Flutter dedicate.
 class DashboardSection {
   const DashboardSection({required this.title, required this.description,
-    required this.icon, required this.color, this.menuTitle, this.categoryName, this.categoryCode});
+    required this.icon, required this.color, this.menuTitle});
   final String title;
   final String? menuTitle;
   final String description;
   final IconData icon;
   final Color color;
-  final String? categoryName;
-  final String? categoryCode;
 }
 
 const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'CATALOGO', description: 'Consulta e gestisci gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
   DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti e allocazioni', icon: Icons.shopping_cart_outlined, color: Color(0xFFC74444)),
   DashboardSection(title: 'VENDITE', menuTitle: 'VENDITE E INSERZIONI', description: 'Vendite e inserzioni', icon: Icons.sell_outlined, color: Color(0xFF39875B)),
-  DashboardSection(title: 'FLUSSI DI CASSA', description: 'Entrate, uscite e saldi', icon: Icons.account_balance_wallet_outlined, color: Color(0xFFD6A83F)),
   DashboardSection(title: 'VALUTAZIONI', description: 'VALORA e valore collezione', icon: Icons.query_stats, color: Color(0xFF8556C7)),
   DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
-  DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFF252525)),
+  DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFFD6A83F)),
   DashboardSection(title: 'CONTROLLO', description: 'Stato e verifiche del sistema', icon: Icons.admin_panel_settings_outlined, color: Color(0xFF777777)),
 ];
 
@@ -626,14 +734,9 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report acquisti', description: 'Riepilogo degli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
   ],
   'VENDITE': [
-    ProcedureEntry(title: 'Nuova vendita', description: 'Registra una vendita.', apiCode: 'WRITE-PR-06', readOnly: false),
-    ProcedureEntry(title: 'Nuova vendita a lotto', description: 'Seleziona più oggetti e assegna un unico prezzo totale al lotto.', apiCode: 'WRITE-PR-06-LOTTO', readOnly: false),
-    ProcedureEntry(title: 'Nuova inserzione', description: 'Crea una nuova inserzione.', enabled: false, readOnly: false),
-    ProcedureEntry(title: 'Modifica inserzione', description: 'Modifica un’inserzione esistente.', enabled: false, readOnly: false),
-    ProcedureEntry(title: 'Chiudi inserzione', description: 'Chiude un’inserzione attiva.', enabled: false, readOnly: false),
-    ProcedureEntry(title: 'Vendita multipla Vinted', description: 'Registra una vendita multipla.', enabled: false, readOnly: false),
-    ProcedureEntry(title: 'Inserzioni attive', description: 'Consulta le inserzioni attive.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
-    ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate.', apiCode: 'REPORT-SALES'),
+    ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'WRITE-PR-06', readOnly: false),
+    ProcedureEntry(title: 'Chiudi vendita', description: 'Chiude una vendita secondo la procedura VALORA.', enabled: false, readOnly: false),
+    ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
   'VALUTAZIONI': [
     ProcedureEntry(title: 'VALORA', description: 'Valutazione completa di un singolo oggetto, preparazione delle inserzioni e report.', apiCode: 'LAUNCH-VALORA'),
@@ -771,7 +874,7 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rimuovere la piattaforma?'),
+        title: Text(ValoraI18n.tr('Rimuovere la piattaforma?')),
         content: Text('Vuoi eliminare “${platform['nome_piattaforma']}” dal tuo elenco? Se vuoi solo sospenderla, disattiva il flag Utilizzata.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('ANNULLA')),
@@ -795,7 +898,7 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
   Widget build(BuildContext context) {
     final a = ValoraAppearance.instance;
     return Scaffold(
-      appBar: AppBar(title: const Text('LE MIE PIATTAFORME')),
+      appBar: AppBar(title: Text(ValoraI18n.tr('LE MIE PIATTAFORME'))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         Text('Aggiungi soltanto i marketplace che utilizzi. VALORA preparerà le inserzioni solo per le piattaforme attive nel tuo elenco.',
           style: TextStyle(color: a.textSecondary)),
@@ -826,7 +929,7 @@ class _UserSalesPlatformsPageState extends State<UserSalesPlatformsPage> {
             subtitle: Text(used ? 'Utilizzata: sì' : 'Utilizzata: no'),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               Switch(value: used, onChanged: (value) => _toggle(p, value)),
-              IconButton(tooltip: 'Rimuovi', icon: const Icon(Icons.delete_outline), onPressed: () => _delete(p)),
+              IconButton(tooltip: ValoraI18n.tr('RIMUOVI'), icon: const Icon(Icons.delete_outline), onPressed: () => _delete(p)),
             ]),
           ));
         }),
@@ -1000,18 +1103,18 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
     final query = _search.text.trim().toLowerCase();
     final visible = _sources.where((s) => query.isEmpty || ['nome','categoria','marchio_editore','franchise','mercato','url_base'].any((k) => (s[k] ?? '').toString().toLowerCase().contains(query))).toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('REGISTRO FONTI'), actions: [
-        IconButton(tooltip: 'Gestisci categorie e campi specialistici', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())), icon: const Icon(Icons.category_outlined)),
-        IconButton(tooltip: 'Aggiorna', onPressed: _load, icon: const Icon(Icons.refresh)),
-        IconButton(tooltip: 'Aggiungi fonte', onPressed: () => _editSource(), icon: const Icon(Icons.add_link)),
+      appBar: AppBar(title: Text(ValoraI18n.tr('REGISTRO FONTI')), actions: [
+        IconButton(tooltip: ValoraI18n.tr('Gestisci categorie e campi specialistici'), onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())), icon: const Icon(Icons.category_outlined)),
+        IconButton(tooltip: ValoraI18n.tr('Aggiorna'), onPressed: _load, icon: const Icon(Icons.refresh)),
+        IconButton(tooltip: ValoraI18n.tr('Aggiungi fonte'), onPressed: () => _editSource(), icon: const Icon(Icons.add_link)),
       ]),
-      floatingActionButton: FloatingActionButton.extended(onPressed: () => _editSource(), icon: const Icon(Icons.add), label: const Text('AGGIUNGI FONTE')),
+      floatingActionButton: FloatingActionButton.extended(onPressed: () => _editSource(), icon: const Icon(Icons.add), label: Text(ValoraI18n.tr('AGGIUNGI FONTE'))),
       body: _loading ? const Center(child: CircularProgressIndicator()) : _error != null
         ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.info_outline, size: 42), const SizedBox(height: 12),
             const Text('Registro non ancora disponibile'), const SizedBox(height: 8),
             SelectableText(_error!), const SizedBox(height: 12),
-            FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('RIPROVA')),
+            FilledButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: Text(ValoraI18n.tr('RIPROVA'))),
           ])))
         : Column(children: [
             Padding(padding: const EdgeInsets.all(12), child: TextField(controller: _search, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), labelText: 'Cerca fonte, marchio, categoria o mercato', border: OutlineInputBorder()))),
@@ -1213,6 +1316,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
           _profileImageStoragePath = (row['foto_profilo'] ?? '').toString().trim().isEmpty ? null : row['foto_profilo'].toString().trim();
           _currency = _currencyFor((row['valuta_predefinita'] ?? 'EUR').toString());
           _language = _languageFor((row['lingua_interfaccia'] ?? 'it').toString());
+          ValoraI18n.instance.setLanguage((row['lingua_interfaccia'] ?? 'it').toString());
           _dateFormat = (row['formato_data'] ?? 'GG/MM/AAAA').toString();
           final market = _markets.where((m) => m['codice_mercato'] == row['mercato_nazionale_principale']).toList();
           if (market.isNotEmpty) _market = market.first['nome_mercato'].toString();
@@ -1231,7 +1335,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   }
 
   String _currencyFor(String code) => const {'EUR':'EUR - Euro (€)','USD':'USD - Dollaro USA (\$)','GBP':'GBP - Sterlina (£)'}[code] ?? 'EUR - Euro (€)';
-  String _languageFor(String code) => const {'it':'Italiano','en':'English','es':'Español','fr':'Français'}[code] ?? 'Italiano';
+  String _languageFor(String code) => const {'it':'Italiano','en':'English','fr':'Français','es':'Español'}[code] ?? 'Italiano';
 
   Future<void> _saveProfile() async {
     final client = Supabase.instance.client;
@@ -1265,7 +1369,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         'nome_utente': _name.text.trim(),
         'mercato_nazionale_principale': market['codice_mercato'],
         'valuta_predefinita': _currency.substring(0, 3),
-        'lingua_interfaccia': const {'Italiano':'it','English':'en','Español':'es','Français':'fr'}[_language] ?? 'it',
+        'lingua_interfaccia': const {'Italiano':'it','English':'en','Français':'fr','Español':'es'}[_language] ?? 'it',
         'formato_data': _dateFormat,
         'nome_assistente': _assistant.text.trim().isEmpty ? null : _assistant.text.trim(),
         'foto_profilo': profileImagePath,
@@ -1276,6 +1380,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       } else {
         await client.schema('collection').from('master_utente').update(values).eq('auth_user_id', user.id);
       }
+      ValoraI18n.instance.setLanguage((values['lingua_interfaccia'] ?? 'it').toString());
       final reloaded = await _loadProfile();
       if (!reloaded) {
         throw StateError('Il salvataggio è stato inviato, ma la rilettura di conferma non è riuscita.');
@@ -1365,7 +1470,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         Row(children: [
           Icon(icon, color: Colors.blueAccent),
           const SizedBox(width: 10),
-          Text(title, style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+          Text(ValoraI18n.tr(title), style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(height: 14),
         ...children,
@@ -1374,7 +1479,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   );
 
   InputDecoration _fieldDecoration(String label, {Widget? suffixIcon, String? helper}) =>
-      InputDecoration(labelText: label, helperText: helper, suffixIcon: suffixIcon);
+      InputDecoration(labelText: ValoraI18n.tr(label), helperText: helper == null ? null : ValoraI18n.tr(helper), suffixIcon: suffixIcon);
 
   @override
   Widget build(BuildContext context) {
@@ -1382,9 +1487,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final created = user?.createdAt;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profilo utente'),
+        title: Text(ValoraI18n.tr('Profilo utente')),
         leading: IconButton(
-          tooltip: 'Torna alla dashboard',
+          tooltip: ValoraI18n.tr('Torna alla dashboard'),
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
@@ -1424,7 +1529,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               TextField(controller: _newPassword, obscureText: !_showNewPassword,
                 decoration: _fieldDecoration('Nuova password',
                   suffixIcon: IconButton(
-                    tooltip: _showNewPassword ? 'Nascondi password' : 'Mostra password',
+                    tooltip: ValoraI18n.tr(_showNewPassword ? 'Nascondi password' : 'Mostra password'),
                     onPressed: () => setState(() => _showNewPassword = !_showNewPassword),
                     icon: Icon(_showNewPassword ? Icons.visibility_off : Icons.visibility),
                   ),
@@ -1436,7 +1541,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               SizedBox(width: double.infinity, child: OutlinedButton.icon(
                 onPressed: _busy ? null : _changePassword,
                 icon: const Icon(Icons.lock_reset),
-                label: Text(_busy ? 'AGGIORNAMENTO...' : 'CAMBIA PASSWORD'),
+                label: Text(ValoraI18n.tr(_busy ? 'AGGIORNAMENTO...' : 'CAMBIA PASSWORD')),
               )),
               const SizedBox(height: 12),
               TextField(controller: _assistant, decoration: _fieldDecoration('Nome assistente')),
@@ -1459,7 +1564,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               DropdownButtonFormField<String>(
                 value: _language,
                 decoration: _fieldDecoration('Lingua interfaccia'),
-                items: const ['Italiano', 'English', 'Español', 'Français'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+                items: const ['Italiano', 'English', 'Français', 'Español'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
                 onChanged: (v) { if (v != null) setState(() => _language = v); },
               ),
               const SizedBox(height: 12),
@@ -1471,14 +1576,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
             ]),
             _section('STATO ACCOUNT', Icons.info_outline, [
-              const ListTile(contentPadding: EdgeInsets.zero, title: Text('Stato'), trailing: Chip(label: Text('Autenticato'))),
-              ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data creazione account'), subtitle: Text(created ?? 'Non disponibile')),
+              ListTile(contentPadding: EdgeInsets.zero, title: Text(ValoraI18n.tr('Stato')), trailing: Chip(label: Text(ValoraI18n.tr('Autenticato')))),
+              ListTile(contentPadding: EdgeInsets.zero, title: Text(ValoraI18n.tr('Data creazione account')), subtitle: Text(created ?? ValoraI18n.tr('Non disponibile'))),
             ]),
             Card(
               color: ValoraAppearance.instance.card,
-              child: const Padding(
-                padding: EdgeInsets.all(14),
-                child: Text('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.'),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Text(ValoraI18n.tr('Il profilo viene letto e salvato in master_utente nel database TEST. Le preferenze grafiche restano separate e locali.')),
               ),
             ),
           ];
@@ -1575,7 +1680,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   Widget build(BuildContext context) {
     final selected = _objects.where((o) => o['codice_oggetto'] == _selectedId).firstOrNull;
     return Scaffold(
-      appBar: AppBar(title: const Text('VALORA')),
+      appBar: AppBar(title: Text(ValoraI18n.tr('VALORA'))),
       body: _loading
         ? const Center(child: CircularProgressIndicator())
         : ListView(padding: const EdgeInsets.all(18), children: [
@@ -1586,30 +1691,30 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: const Color(0xFF8556C7)),
             ),
-            child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Icon(Icons.auto_awesome, color: Color(0xFF8556C7), size: 38),
               SizedBox(height: 12),
-              Text('SERVIZIO VALORA', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
+              Text(ValoraI18n.tr('SERVIZIO VALORA'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF8556C7))),
               SizedBox(height: 8),
-              Text('Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.'),
+              Text(ValoraI18n.tr('Seleziona un oggetto della collezione e prepara una richiesta di valutazione specialistica. La preparazione non equivale ancora a una stima di mercato conclusa.')), 
             ]),
           ),
           const SizedBox(height: 18),
-          Text('1. SELEZIONA L’OGGETTO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          Text(ValoraI18n.tr('1. SELEZIONA L’OGGETTO'), style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
           DropdownButtonFormField<int>(
             value: _selectedId,
             isExpanded: true,
-            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Oggetto da valutare'),
+            decoration: InputDecoration(border: const OutlineInputBorder(), labelText: ValoraI18n.tr('Oggetto da valutare')),
             items: _objects.map((o) => DropdownMenuItem<int>(
               value: (o['codice_oggetto'] as num).toInt(),
               child: Text('#${o['codice_oggetto']} · ${o['descrizione_oggetto'] ?? 'Senza descrizione'}', overflow: TextOverflow.ellipsis),
             )).toList(),
             onChanged: (value) => setState(() { _selectedId = value; _prepared = null; }),
           ),
-          if (_objects.isEmpty) const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Text('Non risultano oggetti disponibili nella destinazione COLLEZIONE.'),
+          if (_objects.isEmpty) Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(ValoraI18n.tr('Non risultano oggetti disponibili nella destinazione COLLEZIONE.')), 
           ),
           if (selected != null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
@@ -1624,11 +1729,11 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
             value: _market,
-            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Mercato di riferimento'),
-            items: const [
-              DropdownMenuItem(value: 'ITALIA', child: Text('Italia')),
-              DropdownMenuItem(value: 'EUROPA', child: Text('Europa')),
-              DropdownMenuItem(value: 'MONDO', child: Text('Mondo')),
+            decoration: InputDecoration(border: const OutlineInputBorder(), labelText: ValoraI18n.tr('Mercato di riferimento')), 
+            items: [
+              DropdownMenuItem(value: 'ITALIA', child: Text(ValoraI18n.tr('Italia'))),
+              DropdownMenuItem(value: 'EUROPA', child: Text(ValoraI18n.tr('Europa'))),
+              DropdownMenuItem(value: 'MONDO', child: Text(ValoraI18n.tr('Mondo'))),
             ],
             onChanged: (value) => setState(() { _market = value ?? 'ITALIA'; _prepared = null; }),
           ),
@@ -1636,7 +1741,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           FilledButton.icon(
             onPressed: _preparing || _selectedId == null ? null : _prepareValuation,
             icon: _preparing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-            label: Text(_preparing ? 'Preparazione in corso…' : 'PREPARA VALUTAZIONE'),
+            label: Text(_preparing ? ValoraI18n.tr('Preparazione in corso…') : ValoraI18n.tr('PREPARA VALUTAZIONE')),
           ),
           if (_error != null) Padding(
             padding: const EdgeInsets.only(top: 14),
@@ -1647,16 +1752,16 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             child: Padding(padding: const EdgeInsets.all(14), child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('ESITO PREPARAZIONE', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(ValoraI18n.tr('ESITO PREPARAZIONE'), style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text('La richiesta è stata inviata al runtime. Questo esito non rappresenta ancora una valutazione di mercato definitiva né genera automaticamente inserzioni.'),
+                Text(ValoraI18n.tr('La richiesta è stata inviata al runtime. Questo esito non rappresenta ancora una valutazione di mercato definitiva né genera automaticamente inserzioni.')), 
                 const SizedBox(height: 8),
                 SelectableText(_prepared.toString()),
               ],
             )),
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI')),
+          OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: Text(ValoraI18n.tr('AGGIORNA OGGETTI'))),
         ]),
     );
   }
@@ -1789,13 +1894,13 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     final trend = delta == null ? 'Confronto con la valutazione precedente non disponibile' : delta > 0.004 ? '▲ AUMENTO di ${_eur(delta)} rispetto alla precedente' : delta < -0.004 ? '▼ DIMINUZIONE di ${_eur(delta.abs())} rispetto alla precedente' : '● VALORE INVARIATO rispetto alla precedente';
     Widget metric(String label,String value,IconData icon,Color color) => Card(child: ListTile(leading:Icon(icon,color:color),title:Text(label),subtitle:Text(value,style:TextStyle(color:color,fontWeight:FontWeight.bold,fontSize:18))));
     return Scaffold(
-      appBar: AppBar(title:const Text('VALORE COLLEZIONE'),actions:[IconButton(tooltip:'Aggiorna',onPressed:_loading?null:_load,icon:const Icon(Icons.refresh))]),
+      appBar: AppBar(title:Text(ValoraI18n.tr('VALORE COLLEZIONE')),actions:[IconButton(tooltip:'Aggiorna',onPressed:_loading?null:_load,icon:const Icon(Icons.refresh))]),
       body:_loading ? const Center(child:CircularProgressIndicator()) : _error!=null
         ? Center(child:Padding(padding:const EdgeInsets.all(20),child:Column(mainAxisSize:MainAxisSize.min,children:[Text(_error!,textAlign:TextAlign.center),const SizedBox(height:12),FilledButton(onPressed:_load,child:const Text('Riprova'))])))
         : RefreshIndicator(onRefresh:_load,child:ListView(padding:const EdgeInsets.all(16),children:[
-          const Text('RIEPILOGO DEL PATRIMONIO',style:TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
+          Text(ValoraI18n.tr('RIEPILOGO DEL PATRIMONIO'),style:const TextStyle(fontWeight:FontWeight.bold,letterSpacing:1)),
           const SizedBox(height:6),
-          const Text('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.'),
+          Text(ValoraI18n.tr('Consultazione di sola lettura. Il valore commerciale resta separato dal costo storico; questa schermata non modifica oggetti o cassa.')),
           const SizedBox(height:12),
           SizedBox(width: double.infinity, child: FilledButton.icon(
             onPressed: _loading ? null : _load,
@@ -1879,13 +1984,37 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
       if (mounted) setState(() {
         _speechReady = ready;
         _status = ready
-          ? 'Assistente pronto. Puoi parlare in italiano.'
+          ? 'Assistente pronto. Puoi parlare in $_speechLanguageName.'
           : 'Riconoscimento vocale non disponibile: puoi comunque scrivere il comando.';
       });
     } catch (e) {
       if (mounted) setState(() => _status = 'Microfono non disponibile: $e');
     }
   }
+
+  String get _speechLocaleId => switch (ValoraI18n.instance.code) {
+    'en' => 'en_US',
+    'fr' => 'fr_FR',
+    'de' => 'de_DE',
+    'es' => 'es_ES',
+    'pt' => 'pt_BR',
+    'zh' => 'zh_CN',
+    'ja' => 'ja_JP',
+    'ru' => 'ru_RU',
+    _ => 'it_IT',
+  };
+
+  String get _speechLanguageName => switch (ValoraI18n.instance.code) {
+    'en' => 'English',
+    'fr' => 'français',
+    'de' => 'Deutsch',
+    'es' => 'español',
+    'pt' => 'português',
+    'zh' => '普通话',
+    'ja' => '日本語',
+    'ru' => 'русский',
+    _ => 'italiano',
+  };
 
   Future<void> _toggleListening() async {
     if (_listening) {
@@ -1899,7 +2028,7 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
     }
     setState(() { _status = 'Ti ascolto…'; _listening = true; });
     await _speech.listen(
-      localeId: 'it_IT',
+      localeId: _speechLocaleId,
       listenFor: const Duration(seconds: 45),
       pauseFor: const Duration(seconds: 4),
       onResult: (result) {
@@ -1968,7 +2097,7 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('ASSISTENTE VALORA')),
+    appBar: AppBar(title: Text(ValoraI18n.tr('ASSISTENTE VALORA'))),
     body: SafeArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -2035,8 +2164,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
   bool _catalogLoading = true;
   List<Map<String, dynamic>> _catalogRows = [];
   String? _catalogError;
-  List<Map<String, dynamic>> _menuCategories = [];
-  String? _menuCategoriesError;
   final Map<int, String> _dashboardImageUrls = {};
   final Set<int> _dashboardImageLookups = {};
 
@@ -2044,7 +2171,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
   void initState() {
     super.initState();
     _loadDashboardCatalog();
-    _loadDashboardCategories();
   }
 
   Future<void> _loadDashboardCatalog() async {
@@ -2062,19 +2188,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
       final rows = (payload['oggetti'] as List)
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
+          // La HOME "COLLEZIONE" deve includere solo gli oggetti destinati
+          // alla collezione. Gli oggetti per rivendita/altro non vanno contati qui.
+          .where((row) =>
+              (row['destinazione'] ?? '').toString().trim().toUpperCase() == 'COLLEZIONE' &&
+              row['archiviato_test'] != true &&
+              !['VENDUTO', 'PERSO', 'DISTRUTTO', 'USCITO', 'ACCORPATO']
+                  .contains((row['stato'] ?? '').toString().trim().toUpperCase()))
           .toList();
-
-      // Categoria primaria canonica: codice stabile + nome restituiti da PR-11
-      // dalla relazione oggetto_categoria -> categorie_merceologiche.
-      // Tema e sottotema sono descrittivi e non spostano mai un oggetto di categoria.
-      for (final row in rows) {
-        final category = (row['categoria'] ?? '').toString().trim();
-        final categoryCode = (row['codice_categoria'] ?? '').toString().trim();
-        row['_valora_categoria'] = category;
-        row['_valora_codice_categoria'] = categoryCode;
-        row['_valora_sottotema'] = (row['sottotema'] ?? '').toString().trim();
-        row['_valora_sezione'] = category.isNotEmpty ? category : 'DA CLASSIFICARE';
-      }
       if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
       await _loadDashboardImages(rows);
     } catch (e) {
@@ -2082,260 +2203,74 @@ class _HomeDashboardState extends State<HomeDashboard> {
     }
   }
 
-
-  Future<void> _loadDashboardCategories() async {
-    try {
-      final response = await Supabase.instance.client.schema('collection')
-          .from('config_menu_categorie')
-          .select('codice_categoria,nome_categoria,descrizione_menu,icona,colore_hex,ordine_menu,visibile')
-          .eq('visibile', true).order('ordine_menu');
-      final rows = (response as List).whereType<Map>()
-          .map((row) => Map<String, dynamic>.from(row))
-          .where((row) => (row['nome_categoria'] ?? '').toString().trim().isNotEmpty).toList();
-      if (mounted) setState(() { _menuCategories = rows; _menuCategoriesError = null; });
-    } catch (e) {
-      if (mounted) setState(() => _menuCategoriesError = '$e');
-    }
-  }
-
-  IconData _menuIcon(String raw) {
-    switch (raw.trim().toLowerCase()) {
-      case 'extension': return Icons.extension;
-      case 'menu_book_outlined': return Icons.menu_book_outlined;
-      case 'two_wheeler': return Icons.two_wheeler;
-      case 'shield_outlined': return Icons.shield_outlined;
-      case 'smart_toy_outlined': case 'toys_outlined': return Icons.smart_toy_outlined;
-      default: return Icons.category_outlined;
-    }
-  }
-
-  Color _menuHexColor(String raw) {
-    final value = raw.trim().replaceFirst('#', '');
-    if (RegExp(r'^[0-9A-Fa-f]{6}$').hasMatch(value)) return Color(0xFF000000 | int.parse(value, radix: 16));
-    return goldColor;
-  }
-
-  List<DashboardSection> get _allDashboardSections {
-    final base = dashboardSections.map((e) => e.title.toLowerCase()).toSet();
-    final result = <DashboardSection>[...dashboardSections];
-    if (_menuCategories.isNotEmpty) {
-      for (final row in _menuCategories) {
-        final name = (row['nome_categoria'] ?? '').toString().trim();
-        if (name.isEmpty || base.contains(name.toLowerCase())) continue;
-        final count = _catalogRows.where((item) => _dashboardCategory(item).toLowerCase() == name.toLowerCase()).length;
-        final code = (row['codice_categoria'] ?? '').toString().trim();
-        result.add(DashboardSection(
-          title: name,
-          description: (row['descrizione_menu'] ?? 'Consulta la categoria').toString() + ' · ' + count.toString() + ' oggetti',
-          icon: _menuIcon((row['icona'] ?? '').toString()),
-          color: _menuHexColor((row['colore_hex'] ?? '').toString()),
-          categoryName: name,
-          categoryCode: code.isEmpty ? null : code,
-        ));
-      }
-    } else {
-      for (final name in _collectionSections()) {
-        if (base.contains(name.toLowerCase())) continue;
-        result.add(DashboardSection(title: name, description: 'Consulta gli oggetti della categoria',
-          icon: _sectionIcon(name), color: _sectionColor(name), categoryName: name));
-      }
-    }
-    result.sort((a,b) {
-      if (a.categoryName == null && b.categoryName != null) return -1;
-      if (a.categoryName != null && b.categoryName == null) return 1;
-      return a.title.toLowerCase().compareTo(b.title.toLowerCase());
-    });
-    return result;
-  }
-
-
-  Future<void> _createCategoryDialog() async {
-    final name = TextEditingController();
-    final description = TextEditingController();
-    final color = TextEditingController(text: '#D6B15E');
-    final icon = TextEditingController(text: 'category_outlined');
-    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('Crea categoria'),
-      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: name, autofocus: true, maxLength: 80, decoration: const InputDecoration(labelText: 'Nome categoria')),
-        TextField(controller: description, decoration: const InputDecoration(labelText: 'Descrizione (facoltativa)')),
-        TextField(controller: color, decoration: const InputDecoration(labelText: 'Colore HEX', hintText: '#D6B15E')),
-        TextField(controller: icon, decoration: const InputDecoration(labelText: 'Icona', hintText: 'category_outlined')),
-      ])),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CREA')),
-      ],
-    ));
-    if (confirmed != true) {
-      name.dispose(); description.dispose(); color.dispose(); icon.dispose(); return;
-    }
-    try {
-      final value = name.text.trim();
-      if (value.length < 2) throw Exception('Inserisci un nome di almeno 2 caratteri.');
-      await Supabase.instance.client.schema('collection').rpc('pr_crea_categoria_merceologica', params: {
-        'p_nome': value,
-        'p_descrizione': description.text.trim().isEmpty ? null : description.text.trim(),
-        'p_colore_hex': color.text.trim().isEmpty ? '#D6B15E' : color.text.trim(),
-        'p_icona': icon.text.trim().isEmpty ? 'category_outlined' : icon.text.trim(),
-      });
-      await _loadDashboardCategories();
-      await _loadDashboardCatalog();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Categoria "$value" creata e aggiunta al menu.')));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Creazione non riuscita: $e'), duration: const Duration(seconds: 6)));
-    } finally {
-      name.dispose(); description.dispose(); color.dispose(); icon.dispose();
-    }
-  }
-
-
-  Future<void> _createCategoryDialog() async {
-    final name = TextEditingController();
-    final description = TextEditingController();
-    final color = TextEditingController(text: '#D6B15E');
-    final icon = TextEditingController(text: 'category_outlined');
-    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
-      title: const Text('Crea categoria'),
-      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: name, autofocus: true, maxLength: 80, decoration: const InputDecoration(labelText: 'Nome categoria')),
-        TextField(controller: description, decoration: const InputDecoration(labelText: 'Descrizione (facoltativa)')),
-        TextField(controller: color, decoration: const InputDecoration(labelText: 'Colore HEX', hintText: '#D6B15E')),
-        TextField(controller: icon, decoration: const InputDecoration(labelText: 'Icona', hintText: 'category_outlined')),
-      ])),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CREA')),
-      ],
-    ));
-    if (confirmed != true) {
-      name.dispose(); description.dispose(); color.dispose(); icon.dispose(); return;
-    }
-    try {
-      final value = name.text.trim();
-      if (value.length < 2) throw Exception('Inserisci un nome di almeno 2 caratteri.');
-      await Supabase.instance.client.schema('collection').rpc('pr_crea_categoria_merceologica', params: {
-        'p_nome': value,
-        'p_descrizione': description.text.trim().isEmpty ? null : description.text.trim(),
-        'p_colore_hex': color.text.trim().isEmpty ? '#D6B15E' : color.text.trim(),
-        'p_icona': icon.text.trim().isEmpty ? 'category_outlined' : icon.text.trim(),
-      });
-      await _loadDashboardCategories();
-      await _loadDashboardCatalog();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Categoria "$value" creata e aggiunta al menu.')));
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Creazione non riuscita: $e'), duration: const Duration(seconds: 6)));
-    } finally {
-      name.dispose(); description.dispose(); color.dispose(); icon.dispose();
-    }
-  }
-
-  Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows, {bool retryFailed = false}) async {
-    // Prima usa l'URL catalografico di PR-12 salvato in master_metadati.
-    // Il registro immagini/Storage è un fallback, non l'unica sorgente.
+  Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows) async {
+    // Le anteprime visibili interrogano il registro immagini ufficiale:
+    // immagini_oggetto + Storage privato, tramite URL firmati a scadenza.
     final selected = <Map<String, dynamic>>[];
-    final categories = rows.map(_dashboardCategory).where((value) => value.isNotEmpty).toSet();
-    for (final category in categories) {
-      selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
+    final activeCategories = rows.map(_dashboardCategory).toSet();
+    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
+      if (activeCategories.contains(category)) {
+        selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
+      }
     }
     final ids = selected.map((row) => int.tryParse(
       (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
-    )).whereType<int>().where((id) => id > 0 &&
-      (retryFailed || !_dashboardImageLookups.contains(id))).toSet();
+    )).whereType<int>().where((id) => id > 0 && !_dashboardImageLookups.contains(id)).toSet();
     if (ids.isEmpty) return;
-
-    // Segna come tentati solo dopo il tentativo. Un errore non deve bloccare
-    // futuri recuperi quando la schermata viene aggiornata.
+    _dashboardImageLookups.addAll(ids);
     await Future.wait(ids.map((id) async {
-      var resolved = false;
       try {
-        final metadata = await Supabase.instance.client
-            .schema('collection')
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session == null) return;
+        final response = await Supabase.instance.client.functions.invoke(
+          'collection-object-images-test',
+          headers: {'Authorization': 'Bearer ${session.accessToken}'},
+          body: {'action': 'get', 'codice_oggetto': id},
+        );
+        if (response.status >= 200 && response.status < 300 && response.data is Map) {
+          final data = Map<String, dynamic>.from(response.data as Map);
+          final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? data['url_immagine'] ?? '').toString().trim();
+          if (url.startsWith('https://') || url.startsWith('http://')) {
+            _dashboardImageUrls[id] = url;
+            return;
+          }
+        }
+        // Una risposta non valida dal servizio immagini non deve interrompere
+        // la funzione: deve proseguire al fallback master_metadati sottostante.
+      } catch (_) {
+        // Se il registro immagini non restituisce una foto, proviamo il catalogo.
+      }
+      // Fallback al catalogo metadati: le anteprime della HOME non devono
+      // dipendere esclusivamente dall'archivio immagini/URL firmato.
+      try {
+        final metadata = await Supabase.instance.client.schema('collection')
             .from('master_metadati')
             .select('url_immagine')
             .eq('codice_oggetto', id)
             .maybeSingle();
-        final catalogUrl = (metadata?['url_immagine'] ?? '').toString().trim();
-        if (catalogUrl.startsWith('https://') || catalogUrl.startsWith('http://')) {
-          _dashboardImageUrls[id] = catalogUrl;
-          resolved = true;
+        final url = (metadata?['url_immagine'] ?? '').toString().trim();
+        if (url.startsWith('https://') || url.startsWith('http://')) {
+          _dashboardImageUrls[id] = url;
         }
       } catch (e) {
-        debugPrint('VALORA: URL catalografico non disponibile per $id: $e');
-      }
-
-      if (!resolved) {
-        try {
-          final session = Supabase.instance.client.auth.currentSession;
-          final response = await Supabase.instance.client.functions.invoke(
-            'collection-object-images-test',
-            headers: session == null ? null : {'Authorization': 'Bearer ${session.accessToken}'},
-            body: {'action': 'get', 'codice_oggetto': id},
-          );
-          if (response.status >= 200 && response.status < 300 && response.data is Map) {
-            final data = Map<String, dynamic>.from(response.data as Map);
-            final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
-            if (url.startsWith('https://') || url.startsWith('http://')) {
-              _dashboardImageUrls[id] = url;
-              resolved = true;
-            }
-          }
-        } catch (e) {
-          debugPrint('VALORA: immagine registro non disponibile per $id: $e');
-        }
-      }
-      if (resolved) {
-        _dashboardImageLookups.add(id);
-      } else {
-        _dashboardImageLookups.remove(id);
+        debugPrint('VALORA: immagine catalogo HOME non recuperata per $id: $e');
       }
     }));
     if (mounted) setState(() {});
-  }
-
-  Future<void> _retryDashboardImages() async {
-    await _loadDashboardImages(_catalogRows, retryFailed: true);
   }
 
   String _dashboardDescription(Map<String, dynamic> row) =>
       (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString();
 
   String _dashboardCategory(Map<String, dynamic> row) {
-    final section = (row['_valora_sezione'] ?? '').toString().trim();
-    if (section.isNotEmpty) return section;
-    return 'DA CLASSIFICARE';
-  }
-
-  List<String> _collectionSections() {
-    final sections = _catalogRows
-        .map((row) => _dashboardCategory(row).trim())
-        .where((section) => section.isNotEmpty)
-        .toSet()
-        .toList();
-    sections.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    return sections;
-  }
-
-  Color _sectionColor(String section) {
-    final palette = <Color>[
-      const Color(0xFFE31B23), const Color(0xFF7137B8),
-      const Color(0xFFDD741D), const Color(0xFF008C4A),
-      const Color(0xFF2476C8), const Color(0xFFB58A19),
-      const Color(0xFF466B87), const Color(0xFFAD4777),
-    ];
-    var hash = 0;
-    for (final unit in section.codeUnits) { hash = (hash * 31 + unit) & 0x7fffffff; }
-    return palette[hash % palette.length];
-  }
-
-  IconData _sectionIcon(String section) {
-    final value = section.toLowerCase();
-    if (value.contains('lego')) return Icons.extension;
-    if (value.contains('fumett') || value.contains('comic') || value.contains('manga')) return Icons.menu_book_outlined;
-    if (value.contains('moto') || value.contains('die-cast')) return Icons.two_wheeler;
-    if (value.contains('saint seiya') || value.contains('myth cloth')) return Icons.shield_outlined;
-    if (value.contains('transformer') || value.contains('gundam')) return Icons.smart_toy_outlined;
-    return Icons.category_outlined;
+    final d = _dashboardDescription(row).toLowerCase();
+    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d)) return 'LEGO';
+    if (RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d)) return 'SAINT SEIYA';
+    if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
+    if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman|from hell|alan moore|eddie campbell|magic press').hasMatch(d)) return 'FUMETTI';
+    if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
+    if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
+    return 'ALTRE COLLEZIONI';
   }
 
   String? _dashboardImageUrl(Map<String, dynamic> row) {
@@ -2553,7 +2488,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             builder: (_) => ValoraAssistantPage(screenContext: selectedSection?.title ?? 'Dashboard'),
           )),
           icon: const Icon(Icons.mic_none),
-          label: const Text('ASSISTENTE'),
+          label: Text(ValoraI18n.tr('ASSISTENTE')),
         ),
       );
 
@@ -2618,19 +2553,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
         final columns = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 600 ? 3 : 2;
         final entries = <Map<String, dynamic>>[
           {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
-          {'title':'NUOVA CATEGORIA','subtitle':'Crea una categoria e genera automaticamente la voce di menu','color':goldColor,'icon':Icons.add_box_outlined,'tap':() => _createCategoryDialog()},
-          {'title':'NUOVA CATEGORIA','subtitle':'Crea una categoria e genera automaticamente la voce di menu','color':goldColor,'icon':Icons.add_box_outlined,'tap':() => _createCategoryDialog()},
-          ..._allDashboardSections.map((section)=> {
-            'title':section.menuTitle ?? section.title,
-            'subtitle':section.description,
-            'color':section.categoryName != null ? section.color : ValoraAppearance.instance.colorFor(section.title),
+          ...dashboardSections.map((section)=> {
+            'title':ValoraI18n.tr(section.menuTitle ?? section.title),
+            'subtitle':ValoraI18n.tr(section.description),
+            'color':ValoraAppearance.instance.colorFor(section.title),
             'icon':section.icon,
-            'tap':() {
-              if (section.categoryName != null) {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(
-                  initialQuery: section.categoryName, initialCategoryCode: section.categoryCode)));
-              } else { setState(()=>selectedSection=section); }
-            },
+            'tap':() => setState(()=>selectedSection=section),
           }),
         ];
         return GridView.builder(
@@ -2679,35 +2607,28 @@ class _HomeDashboardState extends State<HomeDashboard> {
     return ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
     children: [
-      const Padding(
-        padding: EdgeInsets.fromLTRB(2, 4, 2, 14),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(2, 4, 2, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('CENTRO OPERATIVO', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
+          Text(ValoraI18n.tr('CENTRO OPERATIVO'), style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
           SizedBox(height: 5),
-          Text('Scegli una sezione per accedere alle relative funzioni.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'), style: TextStyle(color: Colors.white70, fontSize: 13)),
         ]),
       ),
       _menuCard(
-        title: 'COLLEZIONE',
-        subtitle: 'Tutti i temi e tutti i record della tua collezione',
+        title: ValoraI18n.tr('COLLEZIONE'),
+        subtitle: ValoraI18n.tr('Tutti i temi e tutti i record della tua collezione'),
         color: goldColor,
         icon: Icons.inventory_2_outlined,
         trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
         onTap: () => setState(() => showCollection = true),
       ),
-      _menuCard(title: 'NUOVA CATEGORIA', subtitle: 'Crea una categoria e genera automaticamente la sua voce di menu', color: goldColor, icon: Icons.add_box_outlined, onTap: _createCategoryDialog),
-      _menuCard(title: 'NUOVA CATEGORIA', subtitle: 'Crea una categoria e genera automaticamente la sua voce di menu', color: goldColor, icon: Icons.add_box_outlined, onTap: _createCategoryDialog),
-      ..._allDashboardSections.map((section) => _menuCard(
-        title: section.menuTitle ?? section.title,
-        subtitle: section.description,
-        color: section.categoryName != null ? section.color : ValoraAppearance.instance.colorFor(section.title),
+      ...dashboardSections.map((section) => _menuCard(
+        title: ValoraI18n.tr(section.menuTitle ?? section.title),
+        subtitle: ValoraI18n.tr(section.description),
+        color: ValoraAppearance.instance.colorFor(section.title),
         icon: section.icon,
-        onTap: () {
-          if (section.categoryName != null) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(
-              initialQuery: section.categoryName, initialCategoryCode: section.categoryCode)));
-          } else { setState(() => selectedSection = section); }
-        },
+        onTap: () => setState(() => selectedSection = section),
       )),
       if (_catalogError != null)
         Padding(
@@ -2715,7 +2636,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           child: Text('Conteggio catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
         ),
       const SizedBox(height: 12),
-      const Center(child: Text('COLLECTION by VALORA', style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
+      Center(child: Text('COLLECTION by VALORA', style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
     ],
   );
   }
@@ -2728,10 +2649,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
         child: Row(children: [
           const Icon(Icons.inventory_2_outlined, color: goldColor, size: 34),
           const SizedBox(width: 10),
-          const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('COLLEZIONE', style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(ValoraI18n.tr('COLLEZIONE'), style: const TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
             SizedBox(height: 3),
-            Text('Seleziona un tema per consultare i relativi oggetti.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(ValoraI18n.tr('Seleziona un tema per consultare i relativi oggetti.'), style: TextStyle(color: Colors.white70, fontSize: 12)),
           ])),
           Text(_catalogLoading ? '…' : '${_catalogRows.length}', style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
         ]),
@@ -2742,18 +2663,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
           decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
           child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
         ),
-      if (!_catalogLoading && _catalogRows.isNotEmpty)
-        ..._collectionSections().map((section) => _dashboardCategoryPanel(
-          section,
-          section == 'DA CLASSIFICARE' ? 'Oggetti senza sezione nei metadati' : 'Tutti gli oggetti della sezione',
-          _sectionColor(section),
-          _sectionIcon(section),
-        )),
-      if (!_catalogLoading && _catalogRows.isEmpty && _catalogError == null)
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text('Nessun oggetto presente nel catalogo.', style: TextStyle(color: Colors.white70)),
-        ),
+      if (!_catalogLoading) ...[
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'LEGO'))
+          _dashboardCategoryPanel('LEGO', 'Mattoncini, set, minifigure e collezioni', const Color(0xFFE31B23), Icons.extension),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'SAINT SEIYA'))
+          _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth, personaggi e accessori', const Color(0xFF7137B8), Icons.shield_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'MOTO DIE-CAST'))
+          _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'FUMETTI'))
+          _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'GUNDAM'))
+          _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'TRANSFORMERS'))
+          _dashboardCategoryPanel('TRANSFORMERS', 'Autobot, Decepticon e personaggi', const Color(0xFF2476C8), Icons.smart_toy_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'ALTRE COLLEZIONI'))
+          _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
+      ],
     ],
   );
 
@@ -2765,7 +2690,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       Text(section.title, textAlign: TextAlign.center, style: TextStyle(
         color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
       const SizedBox(height: 6),
-      Text(section.description, textAlign: TextAlign.center,
+      Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
         style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
       const SizedBox(height: 20),
       ...procedures.map((procedure) => Card(
@@ -2779,9 +2704,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 : Icons.lock_outline,
               color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.textFaint),
           ),
-          title: Text(procedure.title, style: TextStyle(fontWeight: FontWeight.w600,
+          title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
             color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
-          subtitle: Text(procedure.description),
+          subtitle: Text(ValoraI18n.tr(procedure.description)),
           isThreeLine: true,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
             color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
@@ -2805,9 +2730,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
                           : procedure.apiCode == 'WRITE-PR-05'
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
-                               : procedure.apiCode == 'WRITE-PR-06-LOTTO'
-                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSaleLotPage()))
-                                : procedure.apiCode != null
+                               : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
                       : null,
@@ -2815,17 +2738,17 @@ class _HomeDashboardState extends State<HomeDashboard> {
       )),
       const SizedBox(height: 12),
       OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
-        icon: const Icon(Icons.dashboard_outlined), label: const Text('TORNA ALLA DASHBOARD')),
+        icon: const Icon(Icons.dashboard_outlined), label: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
     ]);
   }
 
   void showProcedureInfo(ProcedureEntry procedure) {
     showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
-      title: Text(procedure.title),
+      title: Text(ValoraI18n.tr(procedure.title)),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(procedure.description),
+        Text(ValoraI18n.tr(procedure.description)),
       ]),
-      actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('CHIUDI'))],
+      actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
     ));
   }
 }
@@ -2872,9 +2795,8 @@ class _ValoraRuntimeApi {
 }
 
 class CategoryObjectSearchPage extends StatefulWidget {
-  const CategoryObjectSearchPage({super.key, this.initialQuery, this.initialCategoryCode});
+  const CategoryObjectSearchPage({super.key, this.initialQuery});
   final String? initialQuery;
-  final String? initialCategoryCode;
 
   @override
   State<CategoryObjectSearchPage> createState() => _CategoryObjectSearchPageState();
@@ -2885,8 +2807,6 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   bool _loading = false;
   String _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
   List<Map<String, dynamic>> _results = [];
-  static const int _pageSize = 50;
-  int _currentPage = 0;
 
   @override
   void initState() {
@@ -2906,13 +2826,16 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
 
   String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
 
-  bool _matchesInitialCategory(Map<String, dynamic> row, String category, {String? code}) {
-    final wantedCode = code?.trim() ?? '';
-    final rowCode = (row['_valora_codice_categoria'] ?? '').toString().trim();
-    if (wantedCode.isNotEmpty) return rowCode == wantedCode;
-    final metadataSection = (row['_valora_sezione'] ?? '').toString().trim();
-    if (metadataSection.isNotEmpty) return metadataSection.toLowerCase() == category.trim().toLowerCase();
-    return category.trim().toUpperCase() == 'DA CLASSIFICARE';
+  bool _matchesInitialCategory(Map<String, dynamic> row, String category) {
+    // La schermata "VEDI TUTTI" deve filtrare sulla categoria merceologica
+    // canonica restituita da PR-11, mai su parole della descrizione.
+    // Il vecchio filtro per regex spostava, per esempio, Batman Funko nei fumetti
+    // e tutti gli oggetti non riconosciuti in "Altre collezioni".
+    final canonical = (row['categoria'] ?? '').toString().trim();
+    if (canonical.isEmpty) {
+      return category.trim().toUpperCase() == 'DA CLASSIFICARE';
+    }
+    return canonical.toLowerCase() == category.trim().toLowerCase();
   }
 
   Future<void> _search() async {
@@ -2927,14 +2850,16 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
     setState(() {
       _loading = true;
       _results = [];
-      _currentPage = 0;
       _message = 'Ricerca nel catalogo in corso…';
     });
     try {
       final categoryMode = widget.initialQuery?.trim().isNotEmpty ?? false;
+      final normalizedInput = query.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
+      final otherCollectionsMode = !categoryMode &&
+          (normalizedInput == 'altre collezioni' || normalizedInput == 'altre collezione');
       final response = await Supabase.instance.client.schema('collection').rpc(
         'pr_11_ricerca_schede',
-        params: {'p_cerca': categoryMode ? null : query},
+        params: {'p_cerca': (categoryMode || otherCollectionsMode) ? null : query},
       );
       dynamic payload = response;
       if (payload is List && payload.length == 1 && payload.first is Map) {
@@ -2943,34 +2868,23 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       if (payload is! Map || payload['oggetti'] is! List) {
         throw Exception('Il catalogo non ha restituito un elenco di oggetti valido.');
       }
-      final normalizedQuery = query.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
+      final normalizedQuery = normalizedInput;
+      const primaryDashboardCategories = {'lego', 'saint seiya', 'fumetti', 'transformers'};
       final rows = (payload['oggetti'] as List)
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
-          .toList();
-      // Fonte unica per raggruppamento e filtro: categoria primaria restituita da PR-11.
-      // Non usare master_metadati.sezione/categoria_prodotto/tema per classificare:
-      // sono attributi descrittivi e non devono spostare l'oggetto tra le categorie.
-      for (final row in rows) {
-        final category = (row['categoria'] ?? '').toString().trim();
-        row['_valora_categoria'] = category;
-        row['_valora_codice_categoria'] = (row['codice_categoria'] ?? '').toString().trim();
-        row['_valora_sottotema'] = (row['sottotema'] ?? '').toString().trim();
-        row['_valora_sezione'] = category.isNotEmpty ? category : 'DA CLASSIFICARE';
-      }
-      final filteredRows = rows
           .where((row) {
             if (categoryMode) {
-              return _matchesInitialCategory(
-                row,
-                widget.initialQuery!.trim(),
-                code: widget.initialCategoryCode,
-              );
+              return _matchesInitialCategory(row, widget.initialQuery!.trim());
+            }
+            if (otherCollectionsMode) {
+              final canonical = (row['categoria'] ?? '').toString().trim().toLowerCase();
+              return canonical.isEmpty || !primaryDashboardCategories.contains(canonical);
             }
             final description = _description(row).toLowerCase();
             final objectCode = _code(row).toLowerCase();
-            final category = (row['_valora_categoria'] ?? '').toString().toLowerCase();
-            final categoryCode = (row['_valora_codice_categoria'] ?? '').toString().toLowerCase();
+            final category = (row['categoria'] ?? '').toString().toLowerCase().trim();
+            final categoryCode = (row['codice_categoria'] ?? '').toString().toLowerCase().trim();
             return description.contains(normalizedQuery) ||
                 objectCode.contains(normalizedQuery) ||
                 category.contains(normalizedQuery) ||
@@ -2991,20 +2905,18 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
         throw Exception('Impossibile calcolare il totale della collezione.');
       }
       final total = (allPayload['oggetti'] as List).length;
-      final percentage = total == 0 ? 0.0 : filteredRows.length * 100 / total;
+      final percentage = total == 0 ? 0.0 : rows.length * 100 / total;
       if (!mounted) return;
       setState(() {
-        _results = filteredRows;
-        _currentPage = 0;
-        _message = filteredRows.isEmpty
+        _results = rows;
+        _message = rows.isEmpty
             ? 'Nessun record contiene “$query”. Prova una dicitura più breve.'
-            : 'Trovati ${filteredRows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
+            : 'Trovati ${rows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _results = [];
-        _currentPage = 0;
         _message = 'Ricerca non riuscita: $e';
       });
     } finally {
@@ -3064,7 +2976,6 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
                     _query.clear();
                     setState(() {
                       _results = [];
-                      _currentPage = 0;
                       _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
                     });
                   },
@@ -3086,57 +2997,19 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
             const SizedBox(height: 16),
             Text(_message, style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
             const SizedBox(height: 8),
-            if (_results.isNotEmpty) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Blocco ${_currentPage + 1} di ${(_results.length / _pageSize).ceil()}',
-                    style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontWeight: FontWeight.w600)),
-                  Text('Oggetti ${_currentPage * _pageSize + 1}–${((_currentPage + 1) * _pageSize).clamp(0, _results.length)} di ${_results.length}',
-                    style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(child: OutlinedButton.icon(
-                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
-                  icon: const Icon(Icons.chevron_left), label: const Text('PRECEDENTE'),
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: FilledButton.icon(
-                  onPressed: (_currentPage + 1) * _pageSize < _results.length
-                      ? () => setState(() => _currentPage++) : null,
-                  icon: const Icon(Icons.chevron_right), label: const Text('SUCCESSIVO'),
-                )),
-              ]),
-              const SizedBox(height: 8),
-              ..._results.skip(_currentPage * _pageSize).take(_pageSize).map((row) => Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: color.withValues(alpha: 0.16),
-                    child: Icon(Icons.inventory_2_outlined, color: color),
-                  ),
-                  title: Text(_description(row), maxLines: 3, overflow: TextOverflow.ellipsis),
-                  subtitle: Text('Codice oggetto: ${_code(row)}'),
-                  trailing: Icon(Icons.chevron_right, color: color),
-                  onTap: () => _openRecord(row),
+            ..._results.map((row) => Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: color.withValues(alpha: 0.16),
+                  child: Icon(Icons.inventory_2_outlined, color: color),
                 ),
-              )),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(child: OutlinedButton.icon(
-                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
-                  icon: const Icon(Icons.chevron_left), label: const Text('PRECEDENTE'),
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: FilledButton.icon(
-                  onPressed: (_currentPage + 1) * _pageSize < _results.length
-                      ? () => setState(() => _currentPage++) : null,
-                  icon: const Icon(Icons.chevron_right), label: const Text('SUCCESSIVO'),
-                )),
-              ]),
-            ],
+                title: Text(_description(row), maxLines: 3, overflow: TextOverflow.ellipsis),
+                subtitle: Text('Codice oggetto: ${_code(row)}'),
+                trailing: Icon(Icons.chevron_right, color: color),
+                onTap: () => _openRecord(row),
+              ),
+            )),
           ],
         ),
       ),
@@ -3155,10 +3028,12 @@ class ObjectTransferPage extends StatefulWidget {
 class _ObjectTransferPageState extends State<ObjectTransferPage> {
   bool _busy = false;
   String _status = 'Pronto. Ambiente TEST.';
-  PlatformFile? _selectedImportFile;
   List<Map<String, dynamic>> _rows = [];
   final Set<int> _duplicates = {};
   final Set<int> _invalid = {};
+  final Set<int> _selectedRows = {};
+  int _importPage = 0;
+  static const int _importPageSize = 50;
   static const _headers = ['codice_oggetto','descrizione_oggetto','condizione','completezza','destinazione','stato','quantita','valore_oggetto','valuta_valore','totale_calcolato'];
 
   String _norm(dynamic value) => (value ?? '').toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
@@ -3210,218 +3085,249 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<List<Map<String,dynamic>>> _parse(PlatformFile file) async {
-    // Procedura di lettura dedicata del file_picker: il plugin recupera il
-    // contenuto anche quando il picker non popola bytes o non espone un path
-    // direttamente leggibile (ad esempio documenti forniti da Android SAF).
+    // Compatibile con la versione file_picker bloccata nel progetto:
+    // bytes, poi readStream, infine path locale quando disponibile.
     late final Uint8List bytes;
     try {
-      bytes = await file.readAsBytes();
-    } catch (e) {
-      int declaredSize = file.size;
-      try {
-        final path = file.path;
-        if (path != null && path.trim().isNotEmpty) {
-          final localFile = File(path);
-          if (await localFile.exists()) declaredSize = await localFile.length();
+      if (file.bytes != null) {
+        bytes = file.bytes!;
+      } else if (file.readStream != null) {
+        final buffer = BytesBuilder(copy: false);
+        await for (final chunk in file.readStream!) {
+          buffer.add(chunk);
         }
-      } catch (_) {
-        // Conserva la dimensione dichiarata dal selettore.
+        bytes = buffer.takeBytes();
+      } else {
+        final path = file.path;
+        if (path == null || path.trim().isEmpty) {
+          throw Exception('Android non ha fornito né contenuto, né flusso, né percorso locale.');
+        }
+        bytes = await File(path).readAsBytes();
       }
-      throw Exception('Impossibile leggere il file "${file.name}" (dimensione dichiarata: $declaredSize byte). Il selettore lo ha individuato ma file_picker non è riuscito a recuperarne il contenuto. Dettaglio tecnico: $e');
+    } catch (e) {
+      throw Exception('Lettura di "${file.name}" non riuscita (${file.size} byte dichiarati). Dettaglio: $e');
     }
     if (bytes.isEmpty) {
-      throw Exception('Il file "${file.name}" è stato letto ma contiene 0 byte. Seleziona il file originale, non un collegamento o un elemento cloud non scaricato.');
+      throw Exception('Il file "${file.name}" è stato selezionato ma contiene 0 byte.');
     }
-
-    final name = file.name.trim().toLowerCase();
+    final name = file.name.toLowerCase();
     if (name.endsWith('.json')) {
-      final dynamic data;
-      try {
-        data = jsonDecode(utf8.decode(bytes));
-      } catch (e) {
-        throw Exception('JSON non valido o non leggibile: $e');
-      }
+      final data = jsonDecode(utf8.decode(bytes));
       final list = data is Map ? (data['oggetti'] ?? data['objects'] ?? data['data']) : data;
       if (list is! List) throw Exception('Il JSON deve contenere un elenco di oggetti.');
       return list.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList();
     }
+  List<Map<String, dynamic>> _readXlsxXmlFallback(Uint8List bytes) {
+    final zipped = archive.ZipDecoder().decodeBytes(bytes);
+    String? entry(String path) {
+      for (final file in zipped.files) {
+        if (file.name == path) {
+          final data = file.content;
+          if (data is List<int>) return utf8.decode(data);
+        }
+      }
+      return null;
+    }
+    final sheetXml = entry('xl/worksheets/sheet1.xml');
+    if (sheetXml == null) throw Exception('Il file XLSX non contiene il primo foglio.');
+    final shared = <String>[];
+    final sharedXml = entry('xl/sharedStrings.xml');
+    if (sharedXml != null) {
+      final doc = xml.XmlDocument.parse(sharedXml);
+      for (final si in doc.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == 'si')) {
+        shared.add(si.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == 't').map((e) => e.innerText).join());
+      }
+    }
+    final doc = xml.XmlDocument.parse(sheetXml);
+    final lines = <Map<int, String>>[];
+    for (final row in doc.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == 'row')) {
+      final values = <int, String>{};
+      for (final cell in row.children.whereType<xml.XmlElement>().where((e) => e.name.local == 'c')) {
+        final ref = cell.getAttribute('r') ?? '';
+        final letters = RegExp(r'^[A-Z]+').stringMatch(ref);
+        if (letters == null) continue;
+        var col = 0;
+        for (final unit in letters.codeUnits) { col = col * 26 + unit - 64; }
+        final type = cell.getAttribute('t') ?? '';
+        final raw = cell.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == (type == 'inlineStr' ? 't' : 'v')).map((e) => e.innerText).join();
+        values[col - 1] = type == 's' ? (int.tryParse(raw) != null && int.parse(raw) < shared.length ? shared[int.parse(raw)] : '') : raw;
+      }
+      lines.add(values);
+    }
+    final headerIndex = lines.indexWhere((row) => row.values.any((v) => const ['descrizione_oggetto', 'descrizione', 'nome'].contains(v.trim().toLowerCase())));
+    if (headerIndex < 0) throw Exception('Intestazione descrizione_oggetto non trovata nel foglio Excel.');
+    final headers = lines[headerIndex].map((k,v) => MapEntry(k,v.trim().toLowerCase()));
+    return lines.skip(headerIndex + 1).where((row) => row.values.any((v) => v.trim().isNotEmpty)).map((row) {
+      final result = <String, dynamic>{};
+      for (final h in headers.entries) { if (h.value.isNotEmpty) result[h.value] = row[h.key] ?? ''; }
+      return result;
+    }).toList();
+  }
+
     if (name.endsWith('.xlsx')) {
-      final xlsx.Excel workbook;
+      late final xlsx.Excel workbook;
       try {
         workbook = xlsx.Excel.decodeBytes(bytes);
       } catch (e) {
-        throw Exception('Excel non leggibile. Usa un file .xlsx (non .xls) non protetto. Dettaglio: $e');
+        try {
+          return _readXlsxXmlFallback(bytes);
+        } catch (fallbackError) {
+          throw Exception('Excel "${file.name}" letto (${bytes.length} byte), ma non decodificabile. Lettore standard: $e. Lettore alternativo: $fallbackError');
+        }
       }
       if (workbook.tables.isEmpty) throw Exception('Il file Excel non contiene fogli leggibili.');
+      final firstSheet = workbook.tables.values.first;
+      final table = firstSheet.rows;
+      if (table.isEmpty) throw Exception('Il foglio Excel è vuoto o non contiene righe leggibili.');
 
-      String normalizeHeader(dynamic value) => (value ?? '')
-          .toString()
-          .replaceFirst('\uFEFF', '')
-          .trim()
-          .toLowerCase()
-          .replaceAll(RegExp(r'[\\s\\-./]+'), '_');
-
-      const descriptionHeaders = {
-        'descrizione_oggetto','descrizione','nome','description','object_description'
-      };
-      List<dynamic>? table;
+      // I file esportati da app esterne possono avere righe introduttive prima dell'intestazione.
+      // Cerca la riga che contiene un campo descrizione riconosciuto, invece di assumere la prima riga.
       int headerIndex = -1;
       List<String> headers = <String>[];
-
-      // Cerca la riga di intestazione in tutti i fogli, anche se non è la prima
-      // riga e anche se Excel ha intestazioni con spazi o maiuscole.
-      for (final sheet in workbook.tables.values) {
-        final rows = sheet.rows;
-        for (var ri = 0; ri < rows.length; ri++) {
-          final candidate = rows[ri]
-              .map((cell) => normalizeHeader(cell?.value))
-              .toList();
-          if (candidate.any(descriptionHeaders.contains)) {
-            table = rows;
-            headerIndex = ri;
-            headers = candidate;
-            break;
-          }
+      for (var rowIndex = 0; rowIndex < table.length; rowIndex++) {
+        final candidate = table[rowIndex]
+            .map((cell) => (cell?.value?.toString() ?? '').trim().toLowerCase())
+            .toList();
+        final hasDescription = candidate.any((h) =>
+            h == 'descrizione_oggetto' || h == 'descrizione' || h == 'nome');
+        if (hasDescription) {
+          headerIndex = rowIndex;
+          headers = candidate;
+          break;
         }
-        if (table != null) break;
       }
-
-      if (table == null || headerIndex < 0) {
-        final sheets = workbook.tables.keys.join(', ');
-        throw Exception('Intestazione non trovata nei fogli Excel ($sheets). Serve una colonna descrizione_oggetto, descrizione o nome.');
+      if (headerIndex < 0) {
+        throw Exception('Intestazione non trovata. Il foglio deve contenere una colonna descrizione_oggetto, descrizione o nome.');
       }
 
       final parsed = <Map<String, dynamic>>[];
+      try {
       for (final sourceRow in table.skip(headerIndex + 1)) {
         if (!sourceRow.any((cell) => (cell?.value?.toString() ?? '').trim().isNotEmpty)) continue;
         final row = <String, dynamic>{};
         for (var i = 0; i < headers.length && i < sourceRow.length; i++) {
           final header = headers[i];
           if (header.isEmpty) continue;
-          row[header] = sourceRow[i]?.value?.toString().trim() ?? '';
+          row[header] = sourceRow[i]?.value?.toString() ?? '';
         }
-
-        // Mantiene i nomi del master originale e aggiunge alias solo se mancanti.
-        row['descrizione_oggetto'] = row['descrizione_oggetto'] ??
-            row['descrizione'] ?? row['nome'] ?? row['description'] ?? '';
-        row['quantita'] = row['quantita'] ??
-            row['quantita_importazione'] ?? row['quantità'] ?? '1';
         parsed.add(row);
       }
-      if (parsed.isEmpty) throw Exception('Intestazione trovata nel foglio Excel, ma non ci sono righe oggetto da importare.');
+      } catch (e) {
+        throw Exception('Errore durante la lettura delle righe Excel (righe rilevate: ${table.length}): $e');
+      }
+      if (parsed.isEmpty) throw Exception('Intestazione trovata, ma non ci sono righe oggetto da importare.');
       return parsed;
     }
     if (name.endsWith('.csv')) {
-      // Il CSV esportato da Excel/Android può usare LF invece di CRLF.
-      // Normalizza le terminazioni prima del parsing e rimuove il BOM UTF-8.
-      var text = utf8.decode(bytes, allowMalformed: true).replaceFirst('\uFEFF','');
-      text = text.replaceAll('\r\n','\n').replaceAll('\r','\n');
-      if (text.trim().isEmpty) throw Exception('Il file CSV è realmente vuoto (' + bytes.length.toString() + ' byte).');
-
-      // I CSV arrivano da Excel con virgola, punto e virgola o tabulazione.
-      final firstLine = text.split('\n').first;
-      final delimiters = <String>[',', ';', '\t'];
-      var delimiter = ',';
-      var bestCount = -1;
-      for (final candidate in delimiters) {
-        final count = candidate.allMatches(firstLine).length;
-        if (count > bestCount) { bestCount = count; delimiter = candidate; }
+      // Gestisce BOM, righe vuote iniziali e separatori comuni dei CSV esportati.
+      String csvText;
+      try {
+        csvText = utf8.decode(bytes);
+      } on FormatException {
+        csvText = latin1.decode(bytes);
       }
-      final table = CsvToListConverter(shouldParseNumbers:false, eol:'\n', fieldDelimiter:delimiter).convert(text);
-      final nonEmptyRows = table.where((r)=>r.any((v)=>v.toString().trim().isNotEmpty)).toList();
+      csvText = csvText.replaceFirst('\uFEFF', '').replaceAll('\r\n', '\n').replaceAll('\r', '\n');
+      if (csvText.trim().isEmpty) {
+        throw Exception('Il file "${file.name}" è vuoto: ${bytes.length} byte letti.');
+      }
+      final nonEmptyLines = csvText.split('\n').where((line) => line.trim().isNotEmpty).toList();
+      if (nonEmptyLines.isEmpty) {
+        throw Exception('Il file "${file.name}" contiene solo righe vuote (${bytes.length} byte letti).');
+      }
+      final sample = nonEmptyLines.first;
+      int countDelimiter(String delimiter) => delimiter.allMatches(sample).length;
+      final delimiters = <String>[';', ',', '\t'];
+      delimiters.sort((a, b) => countDelimiter(b).compareTo(countDelimiter(a)));
+      final delimiter = countDelimiter(delimiters.first) == 0 ? ',' : delimiters.first;
+      final table = CsvToListConverter(
+        shouldParseNumbers: false,
+        fieldDelimiter: delimiter,
+        eol: '\n',
+      ).convert(csvText);
+      final nonEmptyRows = table.where((row) =>
+          row.any((value) => value.toString().trim().isNotEmpty)).toList();
       if (nonEmptyRows.length < 2) {
-        final preview = firstLine.length > 100 ? firstLine.substring(0,100) : firstLine;
-        throw Exception('CSV ricevuto (' + bytes.length.toString() + ' byte), ma non riconosco righe dati. Separatore rilevato: "' + delimiter + '". Intestazione: ' + preview);
+        throw Exception('CSV letto (${bytes.length} byte; ${nonEmptyRows.length} righe non vuote; separatore "${delimiter == '\t' ? 'TAB' : delimiter}"), ma non contiene intestazione e righe dati.');
       }
-      final headers = nonEmptyRows.first.map((e)=>e.toString().replaceFirst('\uFEFF','').trim().toLowerCase()).toList();
-      final parsed = <Map<String,dynamic>>[];
-      for (final r in nonEmptyRows.skip(1)) {
-        final row=<String,dynamic>{};
-        for (var i=0;i<headers.length && i<r.length;i++) { final h=headers[i]; if(h.isNotEmpty) row[h]=r[i]; }
-        row['descrizione_oggetto'] ??= row['descrizione'] ?? row['nome'] ?? '';
-        row['quantita'] ??= row['quantita_importazione'] ?? row['quantità'] ?? '1';
+      // Cerca l'intestazione anche se il file contiene righe introduttive.
+      int headerIndex = nonEmptyRows.indexWhere((row) => row.any((value) {
+        final header = value.toString().trim().toLowerCase().replaceAll(' ', '_');
+        return header == 'descrizione_oggetto' || header == 'descrizione' || header == 'nome';
+      }));
+      if (headerIndex < 0) headerIndex = 0;
+      final headers = nonEmptyRows[headerIndex].map((value) =>
+          value.toString().trim().toLowerCase().replaceAll(' ', '_')).toList();
+      final parsed = <Map<String, dynamic>>[];
+      for (final values in nonEmptyRows.skip(headerIndex + 1)) {
+        if (!values.any((value) => value.toString().trim().isNotEmpty)) continue;
+        final row = <String, dynamic>{};
+        for (var i = 0; i < headers.length && i < values.length; i++) {
+          if (headers[i].isNotEmpty) row[headers[i]] = values[i];
+        }
         parsed.add(row);
       }
-      if (parsed.isEmpty) throw Exception('CSV letto: intestazione presente, ma nessun record importabile.');
+      if (parsed.isEmpty) {
+        throw Exception('CSV letto correttamente (${bytes.length} byte; ${nonEmptyRows.length} righe non vuote), ma dopo l’intestazione non sono state trovate righe dati.');
+      }
       return parsed;
     }
     throw Exception('Formato non supportato. Usa XLSX, CSV o JSON.');
   }
 
-  Future<void> _pickImport() async {
-    setState(() {
-      _busy = true;
-      _selectedImportFile = null;
-      _rows = [];
-      _duplicates.clear();
-      _invalid.clear();
-      _status = 'Apertura selettore file…';
-    });
-    try {
-      final picked = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const ['xlsx', 'csv', 'json'],
-        withData: true,
-        withReadStream: true,
-        allowMultiple: false,
-      );
-      if (picked == null || picked.files.isEmpty) {
-        if (mounted) setState(() => _status = 'Selezione annullata. Nessun dato modificato.');
-        return;
-      }
-      final file = picked.files.first;
-      if (mounted) {
-        setState(() {
-          _selectedImportFile = file;
-          _status = 'File selezionato: ${file.name} · ${file.size} byte. Premi ANALIZZA FILE per caricarlo e vedere l’anteprima. Nessun record salvato.';
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _status = 'Selezione file non riuscita: $e');
-    } finally {
-      if (mounted) setState(() => _busy = false);
+  // Uniforma le intestazioni indipendentemente dal formato sorgente (CSV, XLSX, JSON).
+  Map<String, dynamic> _normalizeImportRow(Map<String, dynamic> source) {
+    String normalizeKey(String key) => key
+        .replaceAll(RegExp(r'([a-z0-9])([A-Z])'), r'$1_$2')
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[\s\-]+'), '_');
+    final row = <String, dynamic>{};
+    for (final entry in source.entries) {
+      final key = normalizeKey(entry.key);
+      if (key.isNotEmpty) row[key] = entry.value;
     }
+    const aliases = <String, String>{
+      'nome_oggetto': 'descrizione_oggetto',
+      'descrizione': 'descrizione_oggetto',
+      'nome': 'descrizione_oggetto',
+      'codice': 'codice_oggetto',
+      'codice_prodotto': 'codice_oggetto',
+      'quantita_importazione': 'quantita',
+      'qty': 'quantita',
+      'stato': 'stato_oggetto',
+      'data_inserimento': 'data_inserimento',
+      'data_di_inserimento': 'data_inserimento',
+      'condizioni': 'condizione',
+      'note_oggetto': 'note',
+    };
+    for (final entry in aliases.entries) {
+      if (!row.containsKey(entry.value) && row.containsKey(entry.key)) {
+        row[entry.value] = row[entry.key];
+      }
+    }
+    return row;
   }
 
-  Future<void> _analyzeImport() async {
-    final file = _selectedImportFile;
-    if (file == null) {
-      setState(() => _status = 'Prima seleziona un file.');
-      return;
-    }
-    setState(() {
-      _busy = true;
-      _rows = [];
-      _duplicates.clear();
-      _invalid.clear();
-      _status = 'Caricamento di ${file.name} (${file.size} byte)…';
-    });
+  Future<void> _pickImport() async {
+    setState(() { _busy=true; _status='Seleziona un file da analizzare…'; _rows=[]; _duplicates.clear(); _invalid.clear(); _selectedRows.clear(); });
     try {
-      final rows = await _parse(file);
-      final existing = await _catalog();
-      final descriptions = existing.map((e) => _norm(e['descrizione_oggetto'])).toSet();
-      final codes = existing.map((e) => _norm(e['codice_oggetto'])).toSet();
-      for (var i = 0; i < rows.length; i++) {
-        final desc = _norm(rows[i]['descrizione_oggetto'] ?? rows[i]['descrizione'] ?? rows[i]['nome']);
-        final code = _norm(rows[i]['codice_oggetto']);
-        if (desc.isEmpty) {
-          _invalid.add(i);
-        } else if (descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
-            rows.take(i).any((r) => _norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome']) == desc)) {
-          _duplicates.add(i);
-        }
+      final picked=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:const ['xlsx','csv','json'],withData:true,withReadStream:true);
+      if (picked==null || picked.files.isEmpty) { if(mounted)setState(()=>_status='Importazione annullata. Nessuna modifica eseguita.'); return; }
+      final parsedRows=await _parse(picked.files.first);
+      final rows=parsedRows.map(_normalizeImportRow).toList();
+      final existing=await _catalog();
+      final descriptions=existing.map((e)=>_norm(e['descrizione_oggetto'])).toSet();
+      final codes=existing.map((e)=>_norm(e['codice_oggetto'])).toSet();
+      for(var i=0;i<rows.length;i++) {
+        final desc=_norm(rows[i]['descrizione_oggetto'] ?? rows[i]['descrizione'] ?? rows[i]['nome']);
+        final code=_norm(rows[i]['codice_oggetto'] ?? rows[i]['codice_prodotto'] ?? rows[i]['codice']);
+        if(desc.isEmpty) _invalid.add(i);
+        else if(descriptions.contains(desc) || (code.isNotEmpty && codes.contains(code)) ||
+          rows.take(i).any((r)=>_norm(r['descrizione_oggetto'] ?? r['descrizione'] ?? r['nome'])==desc)) _duplicates.add(i);
       }
-      if (mounted) {
-        setState(() {
-          _rows = rows;
-          _status = 'File letto: ${file.name}. Anteprima: ${rows.length} righe. Possibili duplicati: ${_duplicates.length}. Senza descrizione: ${_invalid.length}. Nessun record salvato.';
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _status = 'Analisi di ${file.name} non riuscita: $e');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+      if(mounted)setState(() { _rows=rows; _importPage=0; _selectedRows.clear(); _status='Anteprima ' + rows.length.toString() + ' righe. Possibili duplicati: ' + _duplicates.length.toString() + '. Senza descrizione: ' + _invalid.length.toString() + '. Seleziona gli oggetti da importare. Nessun record salvato.'; });
+    } catch(e) { if(mounted)setState(()=>_status='Importazione non riuscita: '+e.toString()); }
+    finally { if(mounted)setState(()=>_busy=false); }
   }
 
   String _enumValue(dynamic value, List<String> allowed, String fallback) {
@@ -3430,102 +3336,409 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   }
 
   Future<void> _confirmImport() async {
-    final eligible=<Map<String,dynamic>>[];
-    for(var i=0;i<_rows.length;i++) { if(!_invalid.contains(i)&&!_duplicates.contains(i)) eligible.add(_rows[i]); }
-    if(eligible.isEmpty) { setState(()=>_status='Non ci sono record validi da importare.'); return; }
-    final ok=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
-      title:const Text('CONFERMA IMPORTAZIONE'),
-      content:Text('Saranno creati ' + eligible.length.toString() + ' nuovi oggetti in TEST. I possibili duplicati e le righe senza descrizione saranno esclusi. I codici saranno assegnati dal database. I record esistenti non saranno aggiornati. Procedere?'),
-      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('IMPORTA'))]));
-    if(ok!=true || !mounted)return;
-    setState(()=>_busy=true);
-    var saved=0; var failed=0; final errors=<String>[];
-    try {
-      for(final row in eligible) {
-        final description=(row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
-        final qty=int.tryParse((row['quantita'] ?? '1').toString()) ?? 1;
-        final valueText=(row['valore_oggetto'] ?? '').toString().trim().replaceAll(',','.');
-        final value=valueText.isEmpty?null:double.tryParse(valueText);
-        final yearText=(row['anno_uscita'] ?? '').toString().trim();
-        final year=yearText.isEmpty?null:int.tryParse(yearText);
-        final payload={'oggetti':[{
-          'descrizione':description,
-          'produttore':(row['produttore'] ?? '').toString().trim().isEmpty?null:row['produttore'].toString().trim(),
-          'anno_uscita':year,
-          'codice_prodotto':(row['codice_prodotto'] ?? '').toString().trim().isEmpty?null:row['codice_prodotto'].toString().trim(),
-          'condizione':_enumValue(row['condizione'],const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'],'USATO'),
-          'completezza':_enumValue(row['completezza'],const ['SIGILLATO','COMPLETO','INCOMPLETO'],'COMPLETO'),
-          'destinazione':_enumValue(row['destinazione'],const ['COLLEZIONE','RIVENDITA','ALTRO'],'COLLEZIONE'),
-          'quantita':qty<1?1:qty,
-          if(value!=null&&value>=0)'valore_oggetto':value,
-          'note':(row['note'] ?? '').toString().trim().isEmpty?null:row['note'].toString().trim()
-        }]};
-        final session=_uuid.v4();
-        try {
-          final lock=await _ValoraRuntimeApi.call('acquire_lock',{'session_id':session});
-          final lockResult=lock['result'];
-          if(lockResult is! Map || lockResult['acquisito']!=true) throw Exception('Blocco archivio non acquisito.');
-          await _ValoraRuntimeApi.procedure('PR-01','preview',payload,sessionId:session);
-          final review=Map<String,dynamic>.from(payload)..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=false;
-          await _ValoraRuntimeApi.procedure('PR-01','review',review,sessionId:session);
-          final save=Map<String,dynamic>.from(payload)..['dati_confermati']=true..['altra_operazione']=false..['conferma_finale']=true;
-          final result=await _ValoraRuntimeApi.procedure('PR-01','save',save,sessionId:session,requestId:_uuid.v4());
-          if(result['scrittura_eseguita']!=true) throw Exception('Scrittura non confermata dal runtime.');
-          saved++;
-        } catch(e) { failed++; errors.add(description+': '+e.toString()); }
+    final eligible = <Map<String, dynamic>>[];
+    for (var i = 0; i < _rows.length; i++) {
+      if (_selectedRows.contains(i) && !_invalid.contains(i) && !_duplicates.contains(i)) {
+        eligible.add(_rows[i]);
       }
-      if(mounted)setState(()=>_status='Importazione conclusa. Salvati: '+saved.toString()+'. Errori: '+failed.toString()+(errors.isEmpty?'':'\n'+errors.take(5).join('\n')));
-    } finally { if(mounted)setState(()=>_busy=false); }
+    }
+    if (eligible.isEmpty) {
+      setState(() => _status = 'Seleziona almeno un record valido da importare.');
+      return;
+    }
+
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('CONFERMA IMPORTAZIONE'),
+        content: Text(
+          'Saranno caricati e verificati ${eligible.length} oggetti selezionati, poi salvati con un’unica operazione SQL in TEST. Se un oggetto non supera la validazione, l’intero lotto sarà annullato. I possibili duplicati e le righe senza descrizione saranno esclusi. Procedere?',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('IMPORTA')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    setState(() {
+      _busy = true;
+      _status = 'Preparazione di ${eligible.length} record. Nessuna scrittura ancora eseguita.';
+    });
+
+    final session = _uuid.v4();
+    var lockAcquired = false;
+    try {
+      final lock = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': session});
+      final lockResult = lock['result'];
+      if (lockResult is! Map || lockResult['acquisito'] != true) {
+        final message = lockResult is Map
+            ? (lockResult['messaggio'] ?? lockResult['stato'] ?? 'Blocco archivio non acquisito').toString()
+            : 'Blocco archivio non acquisito';
+        throw Exception(message);
+      }
+      lockAcquired = true;
+
+      // Preparare il lotto in memoria. Il runtime SQL rilascia il blocco dopo una scrittura riuscita:
+      // per questo PR-01 save deve essere chiamata una sola volta per tutto il lotto.
+      final objects = <Map<String, dynamic>>[];
+      for (final row in eligible) {
+        final description = (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
+        final qty = int.tryParse((row['quantita'] ?? row['quantita_importazione'] ?? '1').toString().trim()) ?? 1;
+        final valueText = (row['valore_oggetto'] ?? '').toString().trim().replaceAll(',', '.');
+        final value = valueText.isEmpty ? null : double.tryParse(valueText);
+        final yearText = (row['anno_uscita'] ?? '').toString().trim();
+        final year = yearText.isEmpty ? null : int.tryParse(yearText);
+        objects.add({
+          'descrizione': description,
+          'produttore': (row['produttore'] ?? '').toString().trim().isEmpty ? null : row['produttore'].toString().trim(),
+          'anno_uscita': year,
+          'codice_prodotto': (row['codice_prodotto'] ?? '').toString().trim().isEmpty ? null : row['codice_prodotto'].toString().trim(),
+          'condizione': _enumValue(row['condizione'], const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], 'USATO'),
+          'completezza': _enumValue(row['completezza'], const ['SIGILLATO','COMPLETO','INCOMPLETO'], 'COMPLETO'),
+          'destinazione': _enumValue(row['destinazione'], const ['COLLEZIONE','RIVENDITA','ALTRO'], 'COLLEZIONE'),
+          'quantita': qty < 1 ? 1 : qty,
+          if (value != null && value >= 0) 'valore_oggetto': value,
+          'note': (row['note'] ?? '').toString().trim().isEmpty ? null : row['note'].toString().trim(),
+        });
+      }
+
+      final payload = <String, dynamic>{'oggetti': objects};
+      if (mounted) setState(() => _status = 'Lotto preparato: ${objects.length} record. Verifica e salvataggio unico in corso…');
+
+      await _ValoraRuntimeApi.procedure('PR-01', 'preview', payload, sessionId: session);
+      final review = Map<String, dynamic>.from(payload)
+        ..['dati_confermati'] = true
+        ..['altra_operazione'] = false
+        ..['conferma_finale'] = false;
+      await _ValoraRuntimeApi.procedure('PR-01', 'review', review, sessionId: session);
+
+      final save = Map<String, dynamic>.from(payload)
+        ..['dati_confermati'] = true
+        ..['altra_operazione'] = false
+        ..['conferma_finale'] = true;
+      final result = await _ValoraRuntimeApi.procedure(
+        'PR-01', 'save', save, sessionId: session, requestId: _uuid.v4(),
+      );
+      if (result['scrittura_eseguita'] != true) {
+        throw Exception('Il database non ha confermato il salvataggio del lotto.');
+      }
+      final results = result['risultati'];
+      final savedCount = results is List ? results.length : 0;
+      if (savedCount != eligible.length) {
+        throw Exception('Verifica incompleta: richiesti ${eligible.length}, confermati ${savedCount}. Controllare il database prima di riprovare.');
+      }
+      if (mounted) {
+        setState(() => _status = 'Importazione conclusa. Lotto salvato e verificato: ${savedCount} record su ${eligible.length}.');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _status = 'Importazione non completata: ${e.toString()}');
+      }
+    } finally {
+      // Il runtime SQL può aver rilasciato automaticamente il blocco dopo il commit.
+      if (lockAcquired) {
+        try {
+          await _ValoraRuntimeApi.call('release_lock', {'session_id': session});
+        } catch (_) {
+          // Il blocco potrebbe essere già stato rilasciato dal runtime dopo il commit.
+        }
+      }
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final color=ValoraAppearance.instance.colorFor('CATALOGO');
-    return Scaffold(appBar:AppBar(title:Text(widget.importMode?'IMPORTA OGGETTI':'ESPORTA OGGETTI')),
-      body:SafeArea(child:ListView(padding:const EdgeInsets.all(16),children:[
-        Text(widget.importMode?'Importa Excel, CSV o JSON. VALORA controlla i dati e mostra l’anteprima prima del salvataggio.':'Esporta il catalogo TEST in Excel, CSV o JSON.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
-        const SizedBox(height:16),
-        if(widget.importMode) ...[
-          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_pickImport,icon:const Icon(Icons.file_open),label:const Text('1. SELEZIONA FILE'))),
-          if (_selectedImportFile != null) ...[
-            const SizedBox(height: 10),
-            Card(child: ListTile(
-              leading: const Icon(Icons.attach_file),
-              title: Text(_selectedImportFile!.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-              subtitle: Text('File selezionato · ${_selectedImportFile!.size} byte'),
-              trailing: const Icon(Icons.check_circle_outline),
-            )),
-            SizedBox(width:double.infinity,child:FilledButton.icon(
-              onPressed:_busy?null:_analyzeImport,
-              icon:const Icon(Icons.fact_check),
-              label:const Text('2. CARICA E ANALIZZA FILE'),
-            )),
-          ],
-          if(_rows.isNotEmpty) ...[
-            const SizedBox(height:10),
-            Text('Anteprima record: '+_rows.length.toString(),style:TextStyle(color:color,fontWeight:FontWeight.bold)),
-            ..._rows.take(50).toList().asMap().entries.map((entry){
-              final i=entry.key;final row=entry.value;
-              final desc=(row['descrizione_oggetto']??row['descrizione']??row['nome']??'').toString();
-              final warning=_invalid.contains(i)||_duplicates.contains(i);
-              final label=_invalid.contains(i)?'Escluso: manca la descrizione':_duplicates.contains(i)?'Possibile duplicato, escluso':'Pronto per l’importazione';
-              return Card(child:ListTile(leading:Icon(warning?Icons.warning_amber:Icons.inventory_2_outlined,color:warning?Colors.orange:color),title:Text(desc.isEmpty?'Riga '+(i+2).toString():desc,maxLines:2,overflow:TextOverflow.ellipsis),subtitle:Text(label)));
-            }),
-            if(_rows.length>50)Text('Mostrate le prime 50 righe su '+_rows.length.toString()),
-            SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:_confirmImport,icon:const Icon(Icons.save_alt),label:const Text('CONFERMA E IMPORTA NUOVI OGGETTI')))
-          ]
-        ] else ...[
-          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('xlsx'),icon:const Icon(Icons.table_view),label:const Text('ESPORTA EXCEL (.XLSX)'))),
-          const SizedBox(height:8),
-          SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:_busy?null:()=>_export('csv'),icon:const Icon(Icons.description_outlined),label:const Text('ESPORTA CSV'))),
-          const SizedBox(height:8),
-          SizedBox(width:double.infinity,child:OutlinedButton.icon(onPressed:_busy?null:()=>_export('json'),icon:const Icon(Icons.data_object),label:const Text('ESPORTA JSON')))
+    final appearance = ValoraAppearance.instance;
+    final color = appearance.colorFor('CATALOGO');
+    final status = _status.trim();
+    final isError = status.toLowerCase().contains('non riuscita') ||
+        status.toLowerCase().contains('errore:') ||
+        status.toLowerCase().contains('errori:') ||
+        status.toLowerCase().contains('exception');
+    final isSuccess = status.toLowerCase().contains('importazione conclusa') ||
+        status.toLowerCase().contains('esportati ');
+    final statusColor = isError
+        ? const Color(0xFFE57373)
+        : isSuccess
+            ? const Color(0xFF81C784)
+            : appearance.textSecondary;
+
+    Widget sectionLabel(String label) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(label, style: TextStyle(
+        color: appearance.textSecondary,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.0,
+      )),
+    );
+
+    Widget tip(IconData icon, String title, String detail) => Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 19, color: color),
+          const SizedBox(width: 10),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              const SizedBox(height: 2),
+              Text(detail, style: TextStyle(
+                color: appearance.textSecondary,
+                fontSize: 13,
+                height: 1.35,
+              )),
+            ],
+          )),
         ],
-        if(_busy)const Padding(padding:EdgeInsets.all(16),child:Center(child:CircularProgressIndicator())),
-        const SizedBox(height:16),
-        Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
-        Text('Database TEST. L’importazione crea nuovi record e non aggiorna quelli esistenti.',style:TextStyle(color:ValoraAppearance.instance.textMuted,fontSize:12))
-      ])));
+      ),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(ValoraI18n.tr(widget.importMode ? 'IMPORTA OGGETTI' : 'ESPORTA OGGETTI')), 
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          children: [
+            Text(
+              widget.importMode
+                  ? ValoraI18n.tr('Importa il catalogo da un file e controlla i dati prima di salvarli.')
+                  : ValoraI18n.tr('Esporta una copia del catalogo nel formato che preferisci.'),
+              style: TextStyle(
+                color: appearance.textSecondary,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            if (widget.importMode) ...[
+              const SizedBox(height: 16),
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: ExpansionTile(
+                  initiallyExpanded: false,
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  leading: Icon(Icons.tips_and_updates_outlined, color: color),
+                  title: Text(ValoraI18n.tr('Preparare il file'), style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(ValoraI18n.tr('Requisiti e consigli per l’importazione')),
+                  children: [
+                    Align(alignment: Alignment.centerLeft, child: sectionLabel(ValoraI18n.tr('FORMATO E STRUTTURA'))),
+                    tip(Icons.view_list_outlined, ValoraI18n.tr('Una riga per oggetto'), ValoraI18n.tr('Usa una riga per ogni oggetto e una colonna per ogni informazione.')),
+                    tip(Icons.view_column_outlined, ValoraI18n.tr('Intestazioni riconoscibili'), ValoraI18n.tr('Mantieni le intestazioni del Master Oggetti, se disponibili. La descrizione dell’oggetto è obbligatoria.')),
+                    tip(Icons.cleaning_services_outlined, ValoraI18n.tr('File pulito'), ValoraI18n.tr('Evita titoli sopra la tabella, celle unite e intestazioni duplicate. I dati mancanti possono restare vuoti.')),
+                    const Divider(height: 20),
+                    Row(
+                      children: [
+                        Icon(Icons.file_present_outlined, size: 18, color: color),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text('Formati supportati: XLSX, CSV e JSON', style: TextStyle(color: appearance.textSecondary, fontSize: 13))),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Prima del salvataggio vedrai l’anteprima e gli eventuali duplicati. I record già presenti non vengono aggiornati.',
+                      style: TextStyle(color: appearance.textMuted, fontSize: 12, height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            if (widget.importMode) ...[
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _busy ? null : _pickImport,
+                  icon: const Icon(Icons.file_open_outlined),
+                  label: Text(ValoraI18n.tr(_busy ? 'ANALISI IN CORSO…' : 'SELEZIONA FILE E ANALIZZA')), 
+                ),
+              ),
+              if (_rows.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(child: Text(ValoraI18n.tr('ANTEPRIMA'), style: TextStyle(color: appearance.textSecondary, fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 1.0))),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('${_rows.length} record', style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Selezionati: ${_selectedRows.where((i) => !_invalid.contains(i) && !_duplicates.contains(i)).length} · Esclusi: ${_invalid.length + _duplicates.length}',
+                  style: TextStyle(color: appearance.textSecondary, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : () => setState(() {
+                        final start = _importPage * _importPageSize;
+                        final end = (start + _importPageSize) < _rows.length ? start + _importPageSize : _rows.length;
+                        for (var i = start; i < end; i++) {
+                          if (!_invalid.contains(i) && !_duplicates.contains(i)) {
+                            _selectedRows.add(i);
+                          }
+                        }
+                      }),
+                      icon: const Icon(Icons.library_add_check, size: 18),
+                      label: const Text('SELEZIONA PAGINA'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : () => setState(() {
+                        _selectedRows
+                          ..clear()
+                          ..addAll(List<int>.generate(_rows.length, (i) => i).where((i) => !_invalid.contains(i) && !_duplicates.contains(i)));
+                      }),
+                      icon: const Icon(Icons.select_all, size: 18),
+                      label: const Text('SELEZIONA TUTTI I VALIDI'),
+                    ),
+                    TextButton.icon(
+                      onPressed: _busy ? null : () => setState(() => _selectedRows.clear()),
+                      icon: const Icon(Icons.deselect, size: 18),
+                      label: const Text('DESELEZIONA TUTTI'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ..._rows.skip(_importPage * _importPageSize).take(_importPageSize).toList().asMap().entries.map((entry) {
+                  final i = _importPage * _importPageSize + entry.key;
+                  final row = entry.value;
+                  final desc = (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString().trim();
+                  final invalid = _invalid.contains(i);
+                  final duplicate = _duplicates.contains(i);
+                  final warning = invalid || duplicate;
+                  final itemColor = warning ? const Color(0xFFFFB74D) : color;
+                  final label = invalid
+                      ? 'Non selezionabile: descrizione mancante'
+                      : duplicate
+                          ? 'Non selezionabile: possibile duplicato'
+                          : _selectedRows.contains(i)
+                              ? 'Selezionato per l’importazione'
+                              : 'Disponibile per la selezione';
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: CheckboxListTile(
+                      value: !warning && _selectedRows.contains(i),
+                      onChanged: warning || _busy ? null : (checked) => setState(() {
+                        if (checked == true) {
+                          _selectedRows.add(i);
+                        } else {
+                          _selectedRows.remove(i);
+                        }
+                        _status = 'Selezionati: ' + _selectedRows.where((n) => !_invalid.contains(n) && !_duplicates.contains(n)).length.toString() + '. Nessun record salvato.';
+                      }),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: color,
+                      secondary: Icon(warning ? Icons.warning_amber_rounded : Icons.inventory_2_outlined, color: itemColor),
+                      title: Text(
+                        desc.isEmpty ? 'Riga ${i + 2}' : desc,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(label, style: TextStyle(color: warning ? itemColor : appearance.textSecondary, fontSize: 12)),
+                      ),
+                    ),
+                  );
+                }),
+                if (_rows.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          tooltip: 'Blocco precedente',
+                          onPressed: _busy || _importPage == 0 ? null : () => setState(() => _importPage--),
+                          icon: const Icon(Icons.arrow_back_ios_new),
+                        ),
+                        Expanded(
+                          child: Text(
+                            '${_importPage * _importPageSize + 1}–${((_importPage + 1) * _importPageSize) > _rows.length ? _rows.length : ((_importPage + 1) * _importPageSize)} di ${_rows.length} · Pagina ${_importPage + 1}/${((_rows.length - 1) ~/ _importPageSize) + 1}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: appearance.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Blocco successivo',
+                          onPressed: _busy || (_importPage + 1) * _importPageSize >= _rows.length ? null : () => setState(() => _importPage++),
+                          icon: const Icon(Icons.arrow_forward_ios),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _busy ? null : _confirmImport,
+                    icon: const Icon(Icons.save_outlined),
+                    label: Text('IMPORTA ${_selectedRows.where((i) => !_invalid.contains(i) && !_duplicates.contains(i)).length} SELEZIONATI'),
+                  ),
+                ),
+              ],
+            ] else ...[
+              SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _busy ? null : () => _export('xlsx'), icon: const Icon(Icons.table_view_outlined), label: const Text('ESPORTA EXCEL (.XLSX)'))),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : () => _export('csv'), icon: const Icon(Icons.description_outlined), label: const Text('ESPORTA CSV'))),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : () => _export('json'), icon: const Icon(Icons.data_object_outlined), label: const Text('ESPORTA JSON'))),
+            ],
+            if (_busy) ...[
+              const SizedBox(height: 16),
+              const LinearProgressIndicator(),
+            ],
+            const SizedBox(height: 18),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      isError ? Icons.error_outline : isSuccess ? Icons.check_circle_outline : Icons.info_outline,
+                      color: statusColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(status, style: TextStyle(color: statusColor, fontSize: 13, height: 1.4))),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.shield_outlined, size: 15, color: appearance.textMuted),
+                const SizedBox(width: 7),
+                Expanded(child: Text(
+                  'Ambiente TEST · L’importazione crea nuovi record e non modifica quelli esistenti.',
+                  style: TextStyle(color: appearance.textMuted, fontSize: 11, height: 1.35),
+                )),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -3540,57 +3753,6 @@ class ObjectRuntimePage extends StatefulWidget {
 }
 
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
-  List<Map<String, dynamic>> _merchandiseCategories = [];
-  String? _categoryCode;
-  String? _originalCategoryCode;
-  bool _categoriesLoading = false;
-
-  Future<void> _loadMerchandiseCategories() async {
-    if (_categoriesLoading) return;
-    _categoriesLoading = true;
-    try {
-      final rows = await Supabase.instance.client.schema('collection').from('categorie_merceologiche').select('codice_categoria,nome_categoria').eq('attiva', true).order('nome_categoria');
-      if (mounted) setState(() {
-        _merchandiseCategories = rows.map((e) => Map<String, dynamic>.from(e)).toList();
-        if (_categoryCode != null && !_merchandiseCategories.any((e) => e['codice_categoria'] == _categoryCode)) _categoryCode = null;
-      });
-    } catch (e) { debugPrint('VALORA: caricamento categorie merceologiche fallito: $e'); }
-    finally { _categoriesLoading = false; }
-  }
-
-  Future<void> _createMerchandiseCategory() async {
-    final name = TextEditingController(); final description = TextEditingController();
-    final result = await showDialog<Map<String, String>>(context: context, builder: (context) => AlertDialog(
-      title: const Text('Nuova categoria merceologica'),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Nome categoria *')),
-        TextField(controller: description, decoration: const InputDecoration(labelText: 'Descrizione (facoltativa)')),
-      ]),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('ANNULLA')),
-        FilledButton(onPressed: () { if (name.text.trim().isNotEmpty) Navigator.pop(context, {'nome': name.text.trim(), 'descrizione': description.text.trim()}); }, child: const Text('CREA'))],
-    ));
-    if (result == null) return;
-    try {
-      final existing = _merchandiseCategories.where((e) => (e['nome_categoria'] ?? '').toString().toLowerCase() == result['nome']!.toLowerCase()).toList();
-      if (existing.isNotEmpty) { setState(() => _categoryCode = existing.first['codice_categoria']?.toString()); return; }
-      final normalized = result['nome']!.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '');
-      final rows = await Supabase.instance.client.schema('collection').from('categorie_merceologiche').insert({
-        'codice_categoria': 'CAT-${DateTime.now().microsecondsSinceEpoch}', 'nome_categoria': result['nome'],
-        'nome_normalizzato': normalized, 'descrizione': result['descrizione']!.isEmpty ? null : result['descrizione'], 'attiva': true
-      }).select('codice_categoria,nome_categoria');
-      final created = Map<String, dynamic>.from(rows.first as Map);
-      await _loadMerchandiseCategories();
-      if (mounted) setState(() => _categoryCode = created['codice_categoria']?.toString());
-    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Creazione categoria non riuscita: $e'))); }
-  }
-
-  Widget _merchandiseCategoryField() => Padding(padding: const EdgeInsets.only(bottom: 12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-    DropdownButtonFormField<String>(value: _categoryCode, decoration: const InputDecoration(labelText: 'Categoria merceologica *'),
-      items: _merchandiseCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria']?.toString(), child: Text((e['nome_categoria'] ?? '').toString(), overflow: TextOverflow.ellipsis))).toList(),
-      onChanged: _loading ? null : (v) => setState(() { _categoryCode = v; _dataConfirmed = false; _finalReady = false; })),
-    Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: _loading ? null : _createMerchandiseCategory, icon: const Icon(Icons.add), label: const Text('CREA CATEGORIA'))),
-  ]));
-
   Color get sectionColor => sectionColorForApiCode(widget.apiCode);
   final _search = TextEditingController();
   final _description = TextEditingController();
@@ -3610,7 +3772,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String? _existingImageUrl;
   String _imageStatus = 'Nessuna immagine selezionata.';
   final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
-  final Set<String> _failedImageFallbacks = {};
 
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
@@ -3633,6 +3794,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<Map<String, dynamic>> _pr02SearchResults = [];
   List<Map<String, dynamic>> _pr12IncompleteRecords = [];
   int _pr12NextBatchOffset = 0;
+  int _pr12QueuePage = 0;
+  final Set<String> _pr12SelectedRecordIds = <String>{};
   bool _pr12AiBatchRunning = false;
   String _pr12AiBatchStatus = 'Ricerca multi-fonte non ancora avviata.';
   List<Map<String, dynamic>> _pr12AiResults = [];
@@ -3641,6 +3804,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   bool _pr12RetryRunning = false;
   bool _showPr02TechnicalTab = false;
   int _pr11MasterTabIndex = 0;
+  List<Map<String, dynamic>> _pr11CategoryFieldDefinitions = [];
+  Map<String, dynamic> _pr11CategoryValues = {};
+  String? _pr11CategoryCode;
   bool _pr02SearchCompleted = false;
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
@@ -3697,7 +3863,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   @override
   void initState() {
-    if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02') WidgetsBinding.instance.addPostFrameCallback((_) => _loadMerchandiseCategories());
     super.initState();
     if (widget.apiCode == 'OBJECT_MASTER') {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
@@ -3833,9 +3998,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ? null
           : ((unitPrice * 100 * q).round() / 100.0);
       _recalculateTotal();
-      if (_categoryCode == null || !_merchandiseCategories.any((e) => e['codice_categoria'] == _categoryCode)) throw Exception('Seleziona una categoria merceologica valida.');
       return {'oggetti': [{
-        'codice_categoria': _categoryCode,
         'descrizione': _description.text.trim(),
         'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
         'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
@@ -3876,10 +4039,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         item['anno_uscita'] = year;
       }
       if (_family.text.trim() != (_currentObject?['codice_prodotto'] ?? '').toString()) item['codice_prodotto'] = _family.text.trim().isEmpty ? null : _family.text.trim();
-      if (_categoryCode != null && _categoryCode != _originalCategoryCode) {
-        if (!_merchandiseCategories.any((e) => e['codice_categoria'] == _categoryCode)) throw Exception('Seleziona una categoria primaria valida.');
-        item['codice_categoria'] = _categoryCode;
-      }
       final currentSource = (_currentObject?['fonte_dati_prodotto'] ?? '').toString().trim();
       final proposedSource = (_metadataSourceUrl ?? '').trim();
       if (proposedSource.isNotEmpty && proposedSource != currentSource) {
@@ -4289,10 +4448,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'));
     final producer = valueFor(['produttore']);
     final year = valueFor(['anno_uscita', 'data_uscita', 'data_di_uscita']);
-    final productCode = valueFor(['codice_prodotto', 'codice_identificativo']);
-    final theme = valueFor(['tema']);
-    final section = valueFor(['sezione']);
-    final subtheme = valueFor(['sottotema']);
+    final productCode = valueFor(['codice_prodotto']);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -4317,12 +4473,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               _metadataValue('Data di uscita', year),
               const SizedBox(height: 8),
               _metadataValue('Codice prodotto', productCode),
-              const SizedBox(height: 8),
-              _metadataValue('Tema', theme),
-              const SizedBox(height: 8),
-              _metadataValue('Sezione', section),
-              const SizedBox(height: 8),
-              _metadataValue('Sottotema', subtheme),
             ])),
           ]),
           const SizedBox(height: 8),
@@ -4398,7 +4548,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _detailFieldCard('stato', object['stato']),
           ] else ...[
             _field(_description, 'Descrizione oggetto', focusNode: _descriptionFocus),
-        if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02') _merchandiseCategoryField(),
             _field(_producer, 'Produttore'),
             _field(_line, 'Anno di uscita', type: TextInputType.number),
             _field(_family, 'Codice prodotto'),
@@ -4546,7 +4695,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             Icon(Icons.auto_awesome, color: sectionColor, size: 26),
             const SizedBox(width: 10),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('ASSISTENTE VALORA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(ValoraI18n.tr('ASSISTENTE VALORA'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 3),
               Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
@@ -4610,14 +4759,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 loadingBuilder: (context, child, progress) => progress == null
                   ? child
                   : SizedBox(height: 180, child: Center(child: CircularProgressIndicator(value: progress.expectedTotalBytes == null ? null : progress.cumulativeBytesLoaded / progress.expectedTotalBytes!))),
-                errorBuilder: (_, __, ___) {
-                  _retryImageAfterFailure(imageUrl);
-                  return Column(children: [
+                errorBuilder: (_, __, ___) => Column(children: [
                   Icon(Icons.broken_image_outlined, size: 42, color: ValoraAppearance.instance.textFaint),
                   const SizedBox(height: 6),
                   Text('Immagine registrata, ma anteprima non disponibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                ]);
-                },
+                ]),
               ),
             )
           else
@@ -4674,14 +4820,54 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     return signedUrl;
   }
 
-  Future<void> _loadExistingImage(int objectId, {bool skipCatalogUrl = false, String? failedUrl}) async {
+  Future<void> _loadExistingImage(int objectId) async {
     String? imageUrl;
     bool isHttpUrl(String value) =>
         value.startsWith('https://') || value.startsWith('http://');
 
-    // 1) Prima prova l'immagine catalografica, tranne quando è proprio quella
-    // che il widget ha appena segnalato come non caricabile.
-    if (!skipCatalogUrl) {
+    // 1) Archivio immagini applicativo: preferisce l'immagine principale confermata.
+    try {
+      final rows = await Supabase.instance.client
+          .schema('collection')
+          .from('immagini_oggetto')
+          .select('riferimento_immagine, tipo_immagine, immagine_principale, stato_verifica')
+          .eq('codice_oggetto', objectId)
+          .order('immagine_principale', ascending: false)
+          .limit(10);
+      for (final row in rows) {
+        final candidate = (row['riferimento_immagine'] ?? '').toString().trim();
+        if (isHttpUrl(candidate)) {
+          imageUrl = candidate;
+          break;
+        }
+      }
+    } catch (e) {
+      debugPrint('VALORA: tabella immagini non disponibile per $objectId: $e');
+    }
+
+    // 2) Endpoint immagini: può trasformare un percorso Storage in URL firmato.
+    if (imageUrl == null) {
+      try {
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session != null) {
+          final response = await Supabase.instance.client.functions.invoke(
+            'collection-object-images-test',
+            headers: {'Authorization': 'Bearer ${session.accessToken}'},
+            body: {'action':'get','codice_oggetto':objectId},
+          );
+          if (response.status >= 200 && response.status < 300 && response.data is Map) {
+            final data = Map<String, dynamic>.from(response.data as Map);
+            final signed = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
+            if (isHttpUrl(signed)) imageUrl = signed;
+          }
+        }
+      } catch (e) {
+        debugPrint('VALORA: endpoint immagini non disponibile per $objectId: $e');
+      }
+    }
+
+    // 3) Fallback ai metadati catalografici salvati da PR-12.
+    if (imageUrl == null) {
       try {
         final metadata = await Supabase.instance.client
             .schema('collection')
@@ -4690,55 +4876,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             .eq('codice_oggetto', objectId)
             .maybeSingle();
         final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
-        if (isHttpUrl(candidate) && candidate != failedUrl) imageUrl = candidate;
+        if (isHttpUrl(candidate)) imageUrl = candidate;
       } catch (e) {
-        debugPrint('VALORA: URL immagine catalogo non recuperato per $objectId: $e');
-      }
-    }
-
-    // 2) Chiede al servizio immagini un eventuale URL alternativo / Storage.
-    if (imageUrl == null) {
-      try {
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          final response = await Supabase.instance.client.functions.invoke(
-            'collection-object-images-test',
-            headers: {'Authorization': 'Bearer ${session.accessToken}'},
-            body: {'action': 'get', 'codice_oggetto': objectId},
-          );
-          if (response.status >= 200 && response.status < 300 && response.data is Map) {
-            final data = Map<String, dynamic>.from(response.data as Map);
-            final candidate = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
-            if (isHttpUrl(candidate) && candidate != failedUrl) imageUrl = candidate;
-          }
-        }
-      } catch (e) {
-        debugPrint('VALORA: servizio immagini non disponibile per $objectId: $e');
-      }
-    }
-
-    // 3) Ultimo fallback: URL HTTP distinti presenti nel registro immagini.
-    if (imageUrl == null) {
-      try {
-        final rows = await Supabase.instance.client
-            .schema('collection')
-            .from('immagini_oggetto')
-            .select('riferimento_immagine, url_fonte, immagine_principale, stato_verifica')
-            .eq('codice_oggetto', objectId)
-            .order('immagine_principale', ascending: false)
-            .limit(10);
-        for (final row in rows) {
-          for (final key in ['riferimento_immagine', 'url_fonte']) {
-            final candidate = (row[key] ?? '').toString().trim();
-            if (isHttpUrl(candidate) && candidate != failedUrl) {
-              imageUrl = candidate;
-              break;
-            }
-          }
-          if (imageUrl != null) break;
-        }
-      } catch (e) {
-        debugPrint('VALORA: registro immagini non disponibile per $objectId: $e');
+        debugPrint('VALORA: URL immagine catalogo non disponibile per $objectId: $e');
       }
     }
 
@@ -4747,14 +4887,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _existingImageUrl = imageUrl;
       _imageStatus = imageUrl != null
           ? 'Immagine associata alla scheda.'
-          : 'Anteprima non disponibile: nessun URL alternativo valido.';
+          : 'Nessuna immagine associata a questo oggetto.';
     });
-  }
-
-  Future<void> _retryImageAfterFailure(String failedUrl) async {
-    final objectId = _loadedObjectId;
-    if (objectId == null || failedUrl.isEmpty || !_failedImageFallbacks.add(failedUrl)) return;
-    await _loadExistingImage(objectId, skipCatalogUrl: true, failedUrl: failedUrl);
   }
 
   Future<void> _loadObject() async {
@@ -4773,46 +4907,104 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     if (data is! Map) throw Exception('Scheda non disponibile per il codice $id.');
     final m = Map<String, dynamic>.from(data);
-    // OBJECT_MASTER restituisce i dati operativi; recupera separatamente i metadati
-    // del catalogo, perché l'URL dell'immagine risiede in master_metadati.
+
+    // Carica anche i metadati di catalogo e i campi specifici della categoria.
+    // Le letture sono in sola lettura e non modificano i record.
+    List<Map<String, dynamic>> categoryDefinitions = [];
+    Map<String, dynamic> categoryValues = {};
+    // La categoria è già disponibile nel record di catalogo master_metadati.
+    // Usarla come fallback evita che un errore nella lettura dei valori specifici
+    // nasconda anche le definizioni dei campi della categoria.
+    String? categoryCode = m['codice_categoria']?.toString();
+    // Fonte autorevole per categoria e URL immagine: record catalogo master_metadati.
+    // La scheda oggetto può non includere questi campi nella risposta OBJECT_MASTER.
     try {
-      final metadata = await Supabase.instance.client
-          .schema('collection')
-          .from('master_metadati')
-          .select('url_immagine, codice_identificativo, nome_ufficiale, produttore, anno_uscita, versione_variante, descrizione_ufficiale, tema, sezione, sottotema, codice_categoria')
-          .eq('codice_oggetto', id)
-          .maybeSingle();
-      if (metadata != null) {
-        final md = Map<String, dynamic>.from(metadata);
-        m.addAll(md);
-        final imageUrl = (md['url_immagine'] ?? '').toString().trim();
-        if (imageUrl.isNotEmpty) {
-          // Uniforma le chiavi immagine attese dalla scheda e dal riquadro.
-          m['url_immagine'] = imageUrl;
-          m['image_url'] = imageUrl;
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session == null) throw Exception('Sessione non valida per i metadati.');
+      final response = await Supabase.instance.client.functions.invoke(
+        'collection-object-images-test',
+        headers: {'Authorization': 'Bearer ${session.accessToken}'},
+        body: {'action': 'metadata', 'codice_oggetto': id},
+      );
+      if (response.status < 200 || response.status >= 300 || response.data is! Map) {
+        throw Exception('Endpoint metadati HTTP ${response.status}');
+      }
+      final payload = Map<String, dynamic>.from(response.data as Map);
+      final catalog = payload['metadata'];
+      if (catalog is Map) {
+        final row = Map<String, dynamic>.from(catalog);
+        categoryCode = row['codice_categoria']?.toString() ?? categoryCode;
+        for (final entry in row.entries) {
+          if (entry.value != null && entry.value.toString().trim().isNotEmpty) categoryValues[entry.key] = entry.value;
         }
       }
-    } catch (e) {
-      // La scheda operativa resta consultabile anche se i metadati non sono accessibili.
-      debugPrint('VALORA: metadati immagine non recuperati per oggetto $id: $e');
-    }
-    try {
-      final category = await Supabase.instance.client.schema('collection')
-          .from('oggetto_categoria').select('id_categoria,categorie_merceologiche(codice_categoria,nome_categoria)')
-          .eq('codice_oggetto', id).maybeSingle();
-      if (category != null && category['categorie_merceologiche'] is Map) {
-        final linked = Map<String, dynamic>.from(category['categorie_merceologiche'] as Map);
-        m['codice_categoria'] = linked['codice_categoria'];
-        m['categoria'] = linked['nome_categoria'];
+      final specific = payload['specific'];
+      if (specific is Map) {
+        final row = Map<String, dynamic>.from(specific);
+        categoryCode = row['codice_categoria']?.toString() ?? categoryCode;
+        final rawValues = row['valori'];
+        if (rawValues is Map) categoryValues.addAll(Map<String, dynamic>.from(rawValues));
       }
-    } catch (e) {
-      debugPrint('VALORA: categoria primaria non recuperata per oggetto $id: $e');
+      if (payload['fields'] is List) {
+        categoryDefinitions = List<Map<String, dynamic>>.from((payload['fields'] as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)));
+      }
+    } catch (error) {
+      debugPrint('VALORA: endpoint metadati non disponibile per $id: $error');
     }
+
+    // Fallback di presentazione: le definizioni a database possono essere
+    // incomplete rispetto ai metadati già salvati da PR-12. Non nascondere
+    // campi LEGO disponibili solo perché il registro della categoria è parziale.
+    if (categoryCode == 'CAT-001' ||
+        (m['produttore']?.toString().toUpperCase() == 'LEGO') ||
+        (categoryValues['produttore']?.toString().toUpperCase() == 'LEGO')) {
+      const legoFields = <String, String>{
+        'tema': 'Tema LEGO',
+        'sezione': 'Sezione LEGO',
+        'sottotema': 'Sottotema LEGO',
+        'numero_pezzi': 'Numero di pezzi del set',
+        'numero_minifigure': 'Numero di minifigure',
+        'dettagli_pezzi': 'Dettaglio pezzi',
+        'contenuto_confezione': 'Contenuto della confezione',
+        'caratteristiche_tecniche': 'Caratteristiche tecniche',
+        'identificativi_aggiuntivi': 'Identificativi aggiuntivi',
+        'modalita_alternative': 'Modalità alternative',
+        'prezzo_lancio': 'Prezzo di lancio',
+        'valuta_prezzo_lancio': 'Valuta prezzo di lancio',
+        'mercato_riferimento_uscita': 'Mercato di riferimento',
+        'stato_verifica': 'Stato verifica metadati',
+      };
+      final existing = categoryDefinitions
+          .map((d) => d['nome_campo']?.toString())
+          .whereType<String>().toSet();
+      var order = categoryDefinitions.length * 10 + 10;
+      for (final entry in legoFields.entries) {
+        if (existing.add(entry.key)) {
+          categoryDefinitions.add({
+            'codice_campo': 'LEGO-FALLBACK-${entry.key}',
+            'nome_campo': entry.key,
+            'tipo_dato': 'text',
+            'obbligatorio': false,
+            'applicabilita': 'metadato disponibile',
+            'ordine_visualizzazione': order,
+            'descrizione': entry.value,
+          });
+          order += 10;
+        }
+      }
+      categoryDefinitions.sort((a, b) =>
+          ((a['ordine_visualizzazione'] as num?)?.toInt() ?? 9999)
+              .compareTo(((b['ordine_visualizzazione'] as num?)?.toInt() ?? 9999)));
+    }
+
     String txt(List<String> keys, [String fallback = '']) {
       for (final k in keys) { if (m[k] != null) return m[k].toString(); }
       return fallback;
     }
     setState(() {
+      _pr11CategoryFieldDefinitions = categoryDefinitions;
+      _pr11CategoryValues = categoryValues;
+      _pr11CategoryCode = categoryCode;
       _currentObject = m;
       _loadedObjectId = id;
       _description.text = txt(['descrizione_oggetto', 'descrizione']);
@@ -4822,8 +5014,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _producer.text = txt(['produttore']);
       _line.text = txt(['anno_uscita']);
       _family.text = txt(['codice_prodotto']);
-      _categoryCode = txt(['codice_categoria']).trim().isEmpty ? null : txt(['codice_categoria']).trim();
-      _originalCategoryCode = _categoryCode;
       final c = txt(['condizione'], _condition);
       if (const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
       final cp = txt(['completezza'], _completeness);
@@ -4834,7 +5024,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _existingImageUrl = null; _selectedImageBytes = null; _selectedImageName = null;
       _imageStatus = 'Verifica immagine associata…';
     });
-    if (widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER') await _loadExistingImage(id);
+    // La scheda di consultazione deve caricare l'immagine indipendentemente
+    // dal codice procedura che l'ha aperta (PR-11, PR-02 o accesso diretto).
+    await _loadExistingImage(id);
+    if (mounted && _loadedObjectId == id && _existingImageUrl == null) {
+      final catalogImage = (_pr11CategoryValues['url_immagine'] ??
+          _pr11CategoryValues['image_url'] ??
+          _currentObject?['url_immagine'] ??
+          _currentObject?['image_url'] ??
+          '').toString().trim();
+      if (catalogImage.startsWith('https://') || catalogImage.startsWith('http://')) {
+        setState(() {
+          _existingImageUrl = catalogImage;
+          _imageStatus = 'Immagine caricata dal catalogo metadati.';
+        });
+      }
+    }
   }
 
   Future<void> _loadIncompleteMetadataCatalog() async {
@@ -4842,6 +5047,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _metadataResult = 'PR-12: analisi del catalogo in corso…';
       _output = _metadataResult;
       _pr12IncompleteRecords = [];
+      _pr12QueuePage = 0;
+      _pr12SelectedRecordIds.clear();
       _pr12AiResults = [];
       _pr12UnresolvedRecords = [];
       _pr12SelectedCandidates.clear();
@@ -4910,11 +5117,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
-  Future<void> _runPr12AiBatch({bool retryUnresolved = false, Map<String, dynamic>? singleRecord}) async {
+  Future<void> _runPr12AiBatch({bool retryUnresolved = false, Map<String, dynamic>? singleRecord, List<Map<String, dynamic>>? selectedRecords}) async {
     if (singleRecord == null && _pr12IncompleteRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Prima esegui ANALIZZA CATALOGO.'); return; }
     final List<Map<String, dynamic>> batch;
     if (singleRecord != null) {
       batch = [singleRecord];
+    } else if (selectedRecords != null) {
+      batch = selectedRecords.take(10).toList();
+      if (batch.isEmpty) { setState(() => _pr12AiBatchStatus = 'Seleziona almeno un record nella pagina corrente.'); return; }
     } else if (retryUnresolved) {
       if (_pr12UnresolvedRecords.isEmpty) { setState(() => _pr12AiBatchStatus = 'Non ci sono record da riprovare.'); return; }
       batch = _pr12UnresolvedRecords.take(10).toList();
@@ -4922,7 +5132,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_pr12NextBatchOffset >= _pr12IncompleteRecords.length) { setState(() => _pr12AiBatchStatus = 'Prima passata completata. I record irrisolti restano disponibili per una nuova ricerca.'); return; }
       batch = _pr12IncompleteRecords.skip(_pr12NextBatchOffset).take(10).toList();
     }
-    setState(() { _pr12AiBatchRunning = true; _pr12RetryRunning = retryUnresolved; _pr12AiBatchStatus = singleRecord != null ? 'Ricerca singola per l’oggetto ${singleRecord['codice_oggetto']}…' : (retryUnresolved ? 'Nuovo tentativo sui record irrisolti…' : 'Ricerca multi-fonte del lotto in corso…'); });
+    setState(() { _pr12AiBatchRunning = true; _pr12RetryRunning = retryUnresolved; _pr12AiBatchStatus = singleRecord != null ? 'Ricerca singola per l’oggetto ${singleRecord['codice_oggetto']}…' : (selectedRecords != null ? 'Ricerca su ${batch.length} record selezionati…' : (retryUnresolved ? 'Nuovo tentativo sui record irrisolti…' : 'Ricerca multi-fonte del lotto in corso…')); });
     try {
       final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
         'modalita_ia': 'TEST',
@@ -5060,18 +5270,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final yearText = valueFor(['anno_uscita', 'anno', 'release_year', 'year']);
     final productCode = valueFor(['codice_prodotto', 'codice', 'product_code', 'set_num', 'isbn', 'item_number']);
     final title = valueFor(['titolo_prodotto', 'nome_prodotto', 'product_name', 'title', 'titolo']);
-    final imageCandidate = valueFor(['url_immagine', 'image_url', 'immagine_url', 'foto_url', 'main_image_url', 'image']);
-    final imageUrl = (imageCandidate.startsWith('https://') || imageCandidate.startsWith('http://')) ? imageCandidate : '';
-    final sourceUrl = valueFor(['url_fonte', 'url', 'source_url', 'source']);
-    final theme = valueFor(['tema', 'theme', 'franchise']);
-    final section = valueFor(['sezione', 'section', 'categoria', 'category']);
-    final subtheme = valueFor(['sottotema', 'subtheme', 'linea', 'line', 'serie']);
-    final officialDescription = valueFor(['descrizione_ufficiale', 'descrizione', 'description', 'snippet']);
-    final version = valueFor(['versione_variante', 'variante', 'version', 'variant']);
     final year = int.tryParse(yearText);
     final genericTitles = <String>{'home', 'homepage', 'official website', 'search results', 'catalogo', 'risultati della ricerca'};
     final usefulTitle = title.length >= 5 && !genericTitles.contains(title.toLowerCase());
-    if (maker.isEmpty && year == null && productCode.isEmpty && !usefulTitle && imageUrl.isEmpty && theme.isEmpty && section.isEmpty && subtheme.isEmpty && officialDescription.isEmpty && version.isEmpty) {
+    if (maker.isEmpty && year == null && productCode.isEmpty && !usefulTitle) {
       setState(() => _pr12AiBatchStatus = 'La fonte non contiene metadati strutturati o un titolo prodotto utilizzabile. Nessun dato modificato.');
       return;
     }
@@ -5081,10 +5283,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         .eq('codice_oggetto', id).maybeSingle();
     if (current == null) throw Exception('Oggetto #$id non trovato nel catalogo TEST.');
     final currentDescription = (current['descrizione_oggetto'] ?? '').toString().trim();
-    final existingMetadata = await client.schema('collection').from('master_metadati')
-        .select('codice_identificativo,nome_ufficiale,produttore,anno_uscita,versione_variante,descrizione_ufficiale,tema,sezione,sottotema,isbn,editore,url_fonte,url_immagine,stato_verifica')
-        .eq('codice_oggetto', id).maybeSingle();
-    String existingValue(String key) => (existingMetadata?[key] ?? '').toString().trim();
     final appendTitle = usefulTitle && !currentDescription.toLowerCase().contains(title.toLowerCase());
     final proposedDescription = appendTitle
         ? (currentDescription.isEmpty ? title : currentDescription + ' · ' + title)
@@ -5098,12 +5296,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           'Descrizione proposta: ' + (proposedDescription.isEmpty ? 'nessuna modifica' : proposedDescription) + '\n'
           'Produttore: ' + (maker.isEmpty ? 'non trovato' : maker) + '\n'
           'Anno: ' + (year?.toString() ?? 'non trovato') + '\n'
-          'Codice prodotto: ' + (productCode.isEmpty ? 'non trovato' : productCode) + '\n'
-          + (imageUrl.isEmpty ? 'Nessuna immagine valida in questo candidato: immagine invariata.\n' : 'Immagine scelta da salvare:\n' + imageUrl + '\n')
-          + (theme.isEmpty ? '' : 'Tema: ' + theme + '\n')
-          + (section.isEmpty ? '' : 'Sezione: ' + section + '\n')
-          + (subtheme.isEmpty ? '' : 'Sottotema: ' + subtheme + '\n\n')
-          + 'I campi già compilati vengono conservati. Dopo la conferma verranno salvati anche URL immagine e tassonomia disponibili.',
+          'Codice prodotto: ' + (productCode.isEmpty ? 'non trovato' : productCode) + '\n\n'
+          'La descrizione esistente viene conservata e integrata con il titolo candidato. Gli altri campi vengono compilati soltanto se vuoti. Verifica che il candidato identifichi proprio questo oggetto.',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
@@ -5117,46 +5311,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if ((current['produttore'] ?? '').toString().trim().isEmpty && maker.isNotEmpty) patch['produttore'] = maker;
     if (current['anno_uscita'] == null && year != null && year >= 1800 && year <= DateTime.now().year + 2) patch['anno_uscita'] = year;
     if ((current['codice_prodotto'] ?? '').toString().trim().isEmpty && productCode.isNotEmpty) patch['codice_prodotto'] = productCode;
-    final metadataPatch = <String, dynamic>{};
-    void addIfMissing(String key, String value) {
-      if (value.isNotEmpty && existingValue(key).isEmpty) metadataPatch[key] = value;
+    if (patch.isEmpty) {
+      setState(() => _pr12AiBatchStatus = 'Nessun campo vuoto aggiornabile per l’oggetto #$id. I dati presenti sono stati conservati.');
+      return;
     }
-    addIfMissing('codice_identificativo', productCode);
-    addIfMissing('nome_ufficiale', usefulTitle ? title : '');
-    addIfMissing('produttore', maker);
-    if (existingMetadata?['anno_uscita'] == null && year != null && year >= 1800 && year <= DateTime.now().year + 2) metadataPatch['anno_uscita'] = year;
-    addIfMissing('versione_variante', version);
-    addIfMissing('descrizione_ufficiale', officialDescription);
-    addIfMissing('tema', theme);
-    addIfMissing('sezione', section);
-    addIfMissing('sottotema', subtheme);
-    addIfMissing('isbn', valueFor(['isbn']));
-    addIfMissing('editore', valueFor(['editore', 'publisher']));
-    addIfMissing('url_fonte', sourceUrl);
-    // La conferma del candidato è una scelta esplicita dell'utente: se questo
-    // candidato contiene un URL immagine valido, salva proprio quello anche
-    // quando esiste già una foto diversa. Se non c'è URL valido, non toccare la foto.
-    if (imageUrl.isNotEmpty) metadataPatch['url_immagine'] = imageUrl;
-    if (metadataPatch.isNotEmpty) {
-      metadataPatch['stato_verifica'] = 'PARZIALMENTE_VERIFICATO';
-      metadataPatch['aggiornato_il'] = DateTime.now().toUtc().toIso8601String();
-      if (existingMetadata == null) {
-        await client.schema('collection').from('master_metadati').insert({'codice_oggetto': id, ...metadataPatch});
-      } else {
-        await client.schema('collection').from('master_metadati').update(metadataPatch).eq('codice_oggetto', id);
-      }
-    }
-    if (patch.isNotEmpty) await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
-    final savedMetadata = await client.schema('collection').from('master_metadati')
-        .select('url_immagine,tema,sezione,sottotema')
-        .eq('codice_oggetto', id).maybeSingle();
-    final savedImage = (savedMetadata?['url_immagine'] ?? '').toString().trim();
-    final imagePersisted = savedImage.startsWith('https://') || savedImage.startsWith('http://');
-    final selectedImagePersisted = imageUrl.isEmpty || savedImage == imageUrl;
-    final taxonomy = ['tema', 'sezione', 'sottotema'].where((key) => (savedMetadata?[key] ?? '').toString().trim().isNotEmpty).toList();
+    await client.schema('collection').from('master_oggetti').update(patch).eq('codice_oggetto', id);
     if (!mounted) return;
-    setState(() => _pr12AiBatchStatus = 'Salvataggio verificato per oggetto #$id. Campi aggiornati: ' + [...patch.keys, ...metadataPatch.keys.where((key) => key != 'stato_verifica' && key != 'aggiornato_il')].join(', ') + '. URL immagine presente: ' + (imagePersisted ? 'sì' : 'no') + '. Immagine scelta salvata: ' + (selectedImagePersisted ? 'sì' : 'NO, verificare') + '. Tassonomia presente: ' + (taxonomy.isEmpty ? 'no' : taxonomy.join(', ')) + '.');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('PR-12: salvataggio verificato per oggetto #$id')));
+    setState(() => _pr12AiBatchStatus = 'Metadati applicati all’oggetto #$id: ' + patch.keys.join(', ') + '. Sono stati aggiornati soltanto campi vuoti.');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Oggetto #$id aggiornato: ' + patch.keys.join(', '))));
   }
   String _pr12CategoryFromDescription(String description) {
     final v = description.toLowerCase();
@@ -5264,41 +5426,46 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<void> _consult() async {
     if (widget.apiCode == 'REPORT-COLLECTION-THEME') {
       final term = _search.text.trim();
-      if (term.isEmpty) throw Exception('Inserisci un franchise o tema, ad esempio Batman, LEGO City o Saint Seiya.');
-      final normalized = term.toLowerCase();
+      if (term.isEmpty) {
+        throw Exception('Inserisci un franchise o tema, ad esempio Batman, LEGO City o Saint Seiya.');
+      }
+
+      // La ricerca passa dal runtime autenticato e dalla RPC autorizzata.
+      // Nessuna lettura diretta della tabella master_oggetti dal client.
       final all = <Map<String, dynamic>>[];
       const batchSize = 500;
       var offset = 0;
       while (true) {
-        final page = await Supabase.instance.client.schema('collection')
-            .from('master_oggetti').select('*')
-            .range(offset, offset + batchSize - 1);
-        final rows = (page as List).map((r) => Map<String, dynamic>.from(r as Map)).toList();
+        final response = await _ValoraRuntimeApi.call('consultation', {
+          'session_id': _sessionId,
+          'consultation_code': 'REPORT-COLLECTION-THEME',
+          'arguments': {
+            'cerca': term,
+            'limite': batchSize,
+            'offset': offset,
+          },
+        });
+        final envelope = response['result'];
+        final dynamic resultRows =
+            envelope is Map ? envelope['risultato'] : envelope;
+        if (resultRows is! List) {
+          throw Exception('Il runtime non ha restituito un elenco valido per la ricerca per tema.');
+        }
+        final rows = resultRows
+            .whereType<Map>()
+            .map((row) => Map<String, dynamic>.from(row))
+            .toList();
         all.addAll(rows);
         if (rows.length < batchSize) break;
         offset += batchSize;
-        if (offset >= 100000) throw Exception('Il catalogo supera il limite di sicurezza della ricerca. Riduci il perimetro o usa un indice server.');
-      }
-      // Cerca ricorsivamente in TUTTI i campi del record, inclusi metadati JSON
-      // e colonne non note in anticipo. Non dipende da nomi ipotizzati come "tema".
-      String flattenSearchable(dynamic value) {
-        if (value == null) return '';
-        if (value is Map) {
-          return value.entries
-              .map((entry) => '${entry.key} ${flattenSearchable(entry.value)}')
-              .join(' ');
+        if (offset >= 100000) {
+          throw Exception('Il catalogo supera il limite di sicurezza della ricerca.');
         }
-        if (value is Iterable) {
-          return value.map(flattenSearchable).join(' ');
-        }
-        return value.toString();
       }
 
-      final matched = <Map<String, dynamic>>[];
       final seen = <String>{};
+      final matched = <Map<String, dynamic>>[];
       for (final row in all) {
-        final searchable = flattenSearchable(row).toLowerCase();
-        if (!searchable.contains(normalized)) continue;
         final id = (row['codice_oggetto'] ?? row['id'] ?? '').toString();
         final uniqueKey = id.isNotEmpty ? id : jsonEncode(row);
         if (seen.add(uniqueKey)) matched.add(row);
@@ -5311,6 +5478,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       });
       return;
     }
+
     if (widget.apiCode == 'EXPLORE_RECORDS') {
       final id = int.tryParse(_code.text.trim());
       if (id == null || id <= 0) throw Exception('Inserisci il codice dell’oggetto di cui vuoi leggere lo storico.');
@@ -5563,27 +5731,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       'record_id', 'deleted_at', 'versione_record',
     };
 
-    // La scheda OGGETTO contiene solo i dati inseriti e gestionali.
-    // I dati identificativi del prodotto sono mostrati esclusivamente in METADATI.
-    const metadataKeys = {
-      'produttore', 'marca', 'brand', 'linea', 'famiglia', 'categoria',
-      'anno_uscita', 'anno', 'data_uscita', 'data_di_uscita',
-      'codice_prodotto', 'ean', 'gtin', 'upc', 'isbn', 'issn', 'mpn', 'sku',
-      'serie', 'licenza', 'franchise', 'tema', 'materiale', 'scala',
-      'edizione', 'numero_serie', 'fonte', 'fonte_dati_prodotto',
-      'fonte_dati', 'url_fonte', 'url_prodotto', 'fonte_campi',
-      'metadati', 'metadata',
-    };
-    final entries = object.entries.where((e) {
-      final key = e.key.toLowerCase();
-      final metadataLike = metadataKeys.contains(key) ||
-          key.contains('metad') || key.contains('produttore') ||
-          key.contains('fonte') || key.contains('anno_uscita') ||
-          key == 'codice_prodotto';
-      return !imageKeys.contains(e.key) &&
-          !summaryKeys.contains(e.key) &&
-          !metadataLike;
-    }).toList();
+    final entries = object.entries.where((e) =>
+      !imageKeys.contains(e.key) && !summaryKeys.contains(e.key)
+    ).toList();
     List<MapEntry<String, dynamic>> group(Set<String> keys) =>
       entries.where((e) => keys.contains(e.key)).toList();
     final identity = group(identityKeys);
@@ -5631,92 +5781,148 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Widget _pr11MetadataTab(Map<String, dynamic> object) {
-    const keys = {
-      'produttore', 'marca', 'brand', 'linea', 'famiglia', 'categoria',
-      'anno_uscita', 'anno', 'codice_prodotto', 'ean', 'gtin', 'upc',
-      'isbn', 'issn', 'mpn', 'sku', 'serie', 'licenza', 'franchise',
-      'tema', 'materiale', 'scala', 'edizione', 'numero_serie',
-      'fonte', 'fonte_dati_prodotto', 'fonte_dati', 'url_fonte',
-      'url_prodotto', 'fonte_campi', 'metadati', 'metadata',
+    const baseKeys = [
+      'produttore', 'anno_uscita', 'codice_prodotto', 'categoria', 'tema',
+      'sezione', 'sottotema', 'nome_ufficiale', 'numero_pezzi',
+      'numero_minifigure', 'dettagli_pezzi', 'contenuto_confezione',
+      'modalita_altern', 'attributi_specifici', 'url_fonte', 'url_immagine',
+      'stato_verifica', 'prezzo_lancio',
+    ];
+    String labelFor(String key) => key
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => part[0].toUpperCase() + part.substring(1))
+        .join(' ');
+    final values = <String, dynamic>{};
+    for (final key in baseKeys) {
+      if (object.containsKey(key) && object[key] != null) values[key] = object[key];
+    }
+    // Il record OBJECT_MASTER spesso contiene chiavi nulle o placeholder:
+    // i valori del catalogo e del JSON specifico sono la fonte più completa.
+    for (final entry in _pr11CategoryValues.entries) {
+      final value = entry.value;
+      if (value != null && value.toString().trim().isNotEmpty) {
+        values[entry.key] = value;
+      }
+    }
+    // Alcuni import hanno inserito i campi LEGO sotto attributi_specifici.
+    // Espandere questi valori prima di mostrare "Da completare".
+    final rawSpecific = _pr11CategoryValues['attributi_specifici'];
+    if (rawSpecific is Map) {
+      for (final entry in Map<String, dynamic>.from(rawSpecific).entries) {
+        if (entry.value != null && entry.value.toString().trim().isNotEmpty) {
+          values.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+    }
+    for (final definition in _pr11CategoryFieldDefinitions) {
+      final key = definition['nome_campo']?.toString();
+      if (key != null && key.isNotEmpty && !values.containsKey(key)) {
+        values[key] = null;
+      }
+    }
+    final categoryFields = _pr11CategoryFieldDefinitions
+        .map((d) => d['nome_campo']?.toString() ?? '')
+        .where((k) => k.isNotEmpty)
+        .toSet();
+    // I campi specifici di altre categorie non devono finire nella sezione
+    // "IDENTIFICAZIONE" come se fossero metadati generali (es. personaggi
+    // secondari nei fumetti, contenuti musicali nei CD, parti intercambiabili
+    // nelle Myth Cloth). Restano disponibili solo nella rispettiva categoria.
+    const fieldsOwnedByOtherCategories = <String>{
+      'fazione', 'gruppo_sottogruppo', 'tipo_opera_provenienza',
+      'titolo_opera_provenienza', 'continuita_universo', 'classe_scala',
+      'tipo_variante', 'genere_fumetto', 'numero_ristampa',
+      'tipologia_ristampa', 'autore_storia', 'disegnatore',
+      'personaggio_soggetto', 'personaggi_secondari', 'titolo_storia',
+      'colorista', 'grade', 'mobile_suit_modello', 'serie_provenienza',
+      'scala', 'tipo_kit', 'versione_modello', 'materiali_caratteristiche',
+      'accessori_inclusi', 'materiale', 'altezza', 'opera_provenienza',
+      'numero_collezione_edicola', 'confezione_presente', 'linea_serie',
+      'articolazioni', 'numero_pop', 'licenza_universo', 'linea_funko',
+      'variante_funko', 'formato_funko', 'modalita_catalogazione',
+      'serie_completa', 'numero_componenti_serie', 'dettagli_componenti',
+      'linea_prodotto', 'rango_personaggio', 'costellazione_simbolo',
+      'tipo_armatura_cloth', 'versione_narrativa', 'versione_variante',
+      'configurazione_armatura', 'parti_intercambiabili', 'artista_interprete',
+      'titolo_album_contenuto', 'genere_musicale', 'tipo_edizione_musicale',
+      'numero_supporti', 'contenuti_extra_musicali', 'titolo_concerto',
+      'tour_concerto', 'data_registrazione', 'luogo_registrazione',
+      'durata_minuti', 'formato_video',
     };
-    const excluded = {
-      'url_immagine', 'immagine_url', 'foto_url', 'image_url',
-      'immagine_principale', 'url_foto', 'foto', 'immagine', 'image',
-      'imageUrl', 'photo_url', 'main_image_url', 'id', 'codice_oggetto',
-      'descrizione_oggetto', 'descrizione', 'nome', 'destinazione',
-      'condizione', 'stato', 'stato_oggetto', 'valore_oggetto', 'valore',
-      'valore_stimato', 'prezzo_acquisto', 'prezzo_vendita', 'quantita',
-      'collegato_vendita', 'collegato_acquisto', 'collegato_inserzione',
-      'collegato_piattaforma', 'created_at', 'updated_at', 'deleted_at',
-      'record_id', 'versione_record', 'modificabile_pr02', 'motivo_esclusione',
+    final common = values.keys.where((k) =>
+        !categoryFields.contains(k) &&
+        !fieldsOwnedByOtherCategories.contains(k)).toList();
+    final category = _pr11CategoryFieldDefinitions
+        .map((d) => d['nome_campo']?.toString() ?? '')
+        .where((k) => k.isNotEmpty)
+        .toList();
+    Widget field(String key, {Map<String, dynamic>? definition}) {
+      final value = values[key];
+      final required = definition?['obbligatorio'] == true;
+      final applicability = definition?['applicabilita']?.toString();
+      final shown = value == null || value.toString().trim().isEmpty
+          ? 'Da completare'
+          : value is Map || value is List
+              ? const JsonEncoder.withIndent('  ').convert(value)
+              : value.toString();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Card(
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${labelFor(key)}${required ? ' · OBBLIGATORIO' : ''}',
+                style: TextStyle(color: sectionColor, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              SelectableText(shown),
+              if (definition?['descrizione'] != null &&
+                  definition!['descrizione'].toString().trim().isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(definition['descrizione'].toString(),
+                    style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 12)),
+                ),
+              if (applicability != null && applicability.isNotEmpty)
+                Text('Applicabilità: $applicability',
+                  style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
+            ]),
+          ),
+        ),
+      );
+    }
+    final definitionsByName = <String, Map<String, dynamic>>{
+      for (final d in _pr11CategoryFieldDefinitions)
+        if (d['nome_campo'] != null) d['nome_campo'].toString(): d,
     };
-    final fields = object.entries.where((e) =>
-      !excluded.contains(e.key) &&
-      (keys.contains(e.key) ||
-       e.key.toLowerCase().contains('metad') ||
-       e.key.toLowerCase().contains('fonte') ||
-       e.key.toLowerCase().contains('codice') ||
-       e.key.toLowerCase().contains('produttore') ||
-       e.key.toLowerCase().contains('anno'))
-    ).toList();
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('METADATI DELL’OGGETTO',
-            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+    return Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('METADATI DEL PRODOTTO',
+          style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 4),
+        Text(_pr11CategoryCode == null
+            ? 'Categoria non assegnata: sono mostrati i metadati generali disponibili.'
+            : 'Categoria: $_pr11CategoryCode · campi specifici caricati dal catalogo VALORA.',
+          style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 12)),
+        const SizedBox(height: 12),
+        Text('IDENTIFICAZIONE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ...common.map((key) => field(key)),
+        if (_pr11CategoryFieldDefinitions.isNotEmpty) ...[
           const SizedBox(height: 8),
-          if (fields.isEmpty)
-            const Text('Nessun metadato disponibile nella scheda caricata. La ricerca e il salvataggio dei metadati restano affidati a PR12.')
-          else
-            ...fields.map((e) => _detailFieldCard(e.key, e.value)),
-        ]),
-      ),
-    );
-  }
-
-  Widget _pr11CommercialTab(Map<String, dynamic> object) {
-    const keys = {
-      'destinazione', 'condizione', 'stato', 'stato_oggetto', 'quantita',
-      'completezza', 'valore_mercato', 'valore_mercato_eur', 'valuta_valore',
-      'valuta', 'prezzo_acquisto', 'prezzo_vendita', 'valore_oggetto',
-      'valore', 'valore_stimato', 'collegato_vendita', 'collegato_acquisto',
-      'collegato_inserzione', 'collegato_piattaforma', 'piattaforma',
-      'stato_verifica_dati', 'motivo_esclusione', 'modificabile_pr02',
-      'created_at', 'updated_at', 'data_inserimento', 'data_creazione',
-      'data_modifica', 'record_id', 'deleted_at', 'versione_record',
-      'id', 'costo', 'ricavo', 'margine', 'prezzo', 'vendita', 'acquisto',
-      'valutazione', 'storico',
-    };
-    final fields = object.entries.where((e) =>
-      keys.contains(e.key) ||
-      e.key.toLowerCase().contains('vendit') ||
-      e.key.toLowerCase().contains('acquist') ||
-      e.key.toLowerCase().contains('piattaform') ||
-      e.key.toLowerCase().contains('valutaz') ||
-      e.key.toLowerCase().contains('storico') ||
-      e.key.toLowerCase().contains('prezzo') ||
-      e.key.toLowerCase().contains('margine')
-    ).toList();
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('DATI TECNICI E COMMERCIALI',
-            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text('CAMPI SPECIFICI DELLA CATEGORIA',
+            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          if (fields.isEmpty)
-            const Text('Nessun dato tecnico o commerciale aggiuntivo disponibile nella scheda caricata.')
-          else
-            ...fields.map((e) => _detailFieldCard(e.key, e.value)),
-          const SizedBox(height: 8),
-          Text('Questa vista mostra i dati già caricati nella scheda; acquisti, vendite e storico non vengono interrogati separatamente se non sono inclusi nel record restituito dal database.',
-            style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 12)),
-        ]),
-      ),
-    );
+          ...category.map((key) => field(key, definition: definitionsByName[key])),
+        ] else
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: Text('Non risultano definizioni di campi specifici per questa categoria.'),
+          ),
+      ],
+    )));
   }
 
   Widget _pr11TechnicalDetails(Map<String, dynamic> object) {
@@ -5751,7 +5957,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final destination = _valueFor(item, ['destinazione'], 'Non indicata');
     final condition = _valueFor(item, ['condizione'], 'Non indicata');
     final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
-    final value = _valueFor(item, ['valore_oggetto', 'valore', 'valore_stimato'], 'Non indicato');
+    final rawValue = item['valore_oggetto'] ?? item['valore'] ?? item['valore_stimato'];
+    final currency = (item['valuta_valore'] ?? 'EUR').toString().toUpperCase();
+    final value = rawValue == null || rawValue.toString().trim().isEmpty
+        ? 'Non indicato'
+        : _formatPr11Currency(rawValue, currency);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -5769,6 +5979,17 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     );
   }
 
+  String _formatPr11Currency(dynamic raw, String currency) {
+    final amount = raw is num ? raw : num.tryParse(raw.toString().trim().replaceAll(',', '.'));
+    if (amount == null) return raw.toString();
+    final fixed = amount.abs().toStringAsFixed(2).split('.');
+    final integer = fixed[0];
+    final grouped = integer.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
+    final sign = amount < 0 ? '-' : '';
+    final symbol = currency == 'EUR' ? '€' : currency == 'USD' ? r'$' : currency == 'GBP' ? '£' : currency == 'JPY' ? '¥' : currency;
+    final formatted = '$sign$grouped,${fixed[1]}';
+    return currency == 'EUR' ? '$formatted €' : '$symbol $formatted';
+  }
   Widget _pr11SummaryValue(String label, String value) => Padding(
     padding: const EdgeInsets.only(bottom: 7),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -6156,27 +6377,98 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         ])));
                       }),
                     ],                    if (_pr12IncompleteRecords.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text('RECORD INCOMPLETI · PAGINA ${_pr12QueuePage + 1} DI ${(_pr12IncompleteRecords.length / 10).ceil()}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('Mostro 10 record alla volta. Puoi verificare un singolo oggetto oppure selezionarne fino a 10 per una ricerca combinata.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                       const SizedBox(height: 8),
-                      ..._pr12IncompleteRecords.take(30).map((row) {
+                      Row(children: [
+                        Expanded(child: OutlinedButton.icon(
+                          onPressed: _pr12AiBatchRunning || _pr12QueuePage == 0 ? null : () => setState(() { _pr12QueuePage--; _pr12SelectedRecordIds.clear(); }),
+                          icon: const Icon(Icons.arrow_back),
+                          label: Text(ValoraI18n.tr('PRECEDENTE')),
+                        )),
+                        const SizedBox(width: 10),
+                        Expanded(child: OutlinedButton.icon(
+                          onPressed: _pr12AiBatchRunning || (_pr12QueuePage + 1) * 10 >= _pr12IncompleteRecords.length ? null : () => setState(() { _pr12QueuePage++; _pr12SelectedRecordIds.clear(); }),
+                          icon: const Icon(Icons.arrow_forward),
+                          label: Text(ValoraI18n.tr('SUCCESSIVA')),
+                        )),
+                      ]),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        Expanded(child: Text('Selezionati: ${_pr12SelectedRecordIds.length}/10', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
+                        TextButton(onPressed: _pr12SelectedRecordIds.isEmpty ? null : () => setState(() => _pr12SelectedRecordIds.clear()), child: const Text('ANNULLA SELEZIONE')),
+                      ]),
+                      SizedBox(width: double.infinity, child: FilledButton.icon(
+                        onPressed: _pr12AiBatchRunning || _pr12SelectedRecordIds.isEmpty ? null : () {
+                          final selected = _pr12IncompleteRecords.where((row) => _pr12SelectedRecordIds.contains((row['codice_oggetto'] ?? '').toString())).take(10).toList();
+                          _runPr12AiBatch(selectedRecords: selected);
+                        },
+                        icon: const Icon(Icons.travel_explore),
+                        label: Text('VERIFICA ${_pr12SelectedRecordIds.length} SELEZIONATI'),
+                      )),
+                      const SizedBox(height: 8),
+                      ..._pr12IncompleteRecords.skip(_pr12QueuePage * 10).take(10).map((row) {
+                        final id = (row['codice_oggetto'] ?? '').toString();
                         final missing = <String>[
                           if ((row['produttore'] ?? '').toString().trim().isEmpty) 'produttore',
                           if (row['anno_uscita'] == null) 'anno',
                           if ((row['codice_prodotto'] ?? '').toString().trim().isEmpty) 'codice prodotto',
                         ];
-                        return ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('#${row['codice_oggetto']} · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}'),
-                          subtitle: Text('Mancano: ${missing.join(', ')}'),
-                          trailing: IconButton(
-                            tooltip: 'Cerca metadati per questo singolo record',
-                            onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(singleRecord: row),
-                            icon: const Icon(Icons.manage_search),
+                        final selected = _pr12SelectedRecordIds.contains(id);
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Checkbox(
+                                value: selected,
+                                activeColor: sectionColor,
+                                onChanged: _pr12AiBatchRunning ? null : (value) => setState(() {
+                                  if (value == true) {
+                                    if (_pr12SelectedRecordIds.length < 10) {
+                                      _pr12SelectedRecordIds.add(id);
+                                      _pr12AiBatchStatus = 'Selezionato il record $id.';
+                                    } else {
+                                      _pr12AiBatchStatus = 'Puoi selezionare al massimo 10 record.';
+                                    }
+                                  } else {
+                                    _pr12SelectedRecordIds.remove(id);
+                                  }
+                                }),
+                              ),
+                              Expanded(child: Padding(
+                                padding: const EdgeInsets.only(top: 12, bottom: 8),
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text('#$id · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text('Mancano: ${missing.join(', ')}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                                ]),
+                              )),
+                              IconButton(
+                                tooltip: ValoraI18n.tr('Verifica solo questo record'),
+                                onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(singleRecord: row),
+                                icon: const Icon(Icons.search),
+                              ),
+                            ]),
                           ),
                         );
                       }),
-                      if (_pr12IncompleteRecords.length > 30)
-                        Text('Visualizzati i primi 30 record su ${_pr12IncompleteRecords.length}.'),
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        Expanded(child: OutlinedButton.icon(
+                          onPressed: _pr12AiBatchRunning || _pr12QueuePage == 0 ? null : () => setState(() { _pr12QueuePage--; _pr12SelectedRecordIds.clear(); }),
+                          icon: const Icon(Icons.arrow_back),
+                          label: Text(ValoraI18n.tr('INDIETRO')),
+                        )),
+                        const SizedBox(width: 10),
+                        Expanded(child: OutlinedButton.icon(
+                          onPressed: _pr12AiBatchRunning || (_pr12QueuePage + 1) * 10 >= _pr12IncompleteRecords.length ? null : () => setState(() { _pr12QueuePage++; _pr12SelectedRecordIds.clear(); }),
+                          icon: const Icon(Icons.arrow_forward),
+                          label: Text(ValoraI18n.tr('AVANTI')),
+                        )),
+                      ]),
                     ],
                   ],
                 ),
@@ -6524,45 +6816,26 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(8),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
-                          backgroundColor: _pr11MasterTabIndex == 0 ? sectionColor : ValoraAppearance.instance.card,
-                          foregroundColor: _pr11MasterTabIndex == 0 ? Colors.black : ValoraAppearance.instance.textPrimary,
-                        ),
-                        onPressed: () => setState(() => _pr11MasterTabIndex = 0),
-                        child: const Text('OGGETTO', textAlign: TextAlign.center, maxLines: 1, softWrap: false),
+                child: Row(children: [
+                  for (final tab in const [
+                    (label: 'OGGETTO', icon: Icons.inventory_2_outlined),
+                    (label: 'METADATI', icon: Icons.fact_check_outlined),
+                    (label: 'DATI TECNICI', icon: Icons.analytics_outlined),
+                  ]) ...[
+                    if (tab.label != 'OGGETTO') const SizedBox(width: 4),
+                    Expanded(child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
+                        backgroundColor: _pr11MasterTabIndex == (tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2)
+                            ? sectionColor : ValoraAppearance.instance.card,
+                        foregroundColor: _pr11MasterTabIndex == (tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2)
+                            ? Colors.black : ValoraAppearance.instance.textPrimary,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
-                          backgroundColor: _pr11MasterTabIndex == 1 ? sectionColor : ValoraAppearance.instance.card,
-                          foregroundColor: _pr11MasterTabIndex == 1 ? Colors.black : ValoraAppearance.instance.textPrimary,
-                        ),
-                        onPressed: () => setState(() => _pr11MasterTabIndex = 1),
-                        child: const Text('METADATI', textAlign: TextAlign.center, maxLines: 1, softWrap: false),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 14),
-                          backgroundColor: _pr11MasterTabIndex == 2 ? sectionColor : ValoraAppearance.instance.card,
-                          foregroundColor: _pr11MasterTabIndex == 2 ? Colors.black : ValoraAppearance.instance.textPrimary,
-                        ),
-                        onPressed: () => setState(() => _pr11MasterTabIndex = 2),
-                        child: const Text('DATI TECNICI', textAlign: TextAlign.center, maxLines: 1, softWrap: false),
-                      ),
-                    ),
+                      onPressed: () => setState(() => _pr11MasterTabIndex = tab.label == 'OGGETTO' ? 0 : tab.label == 'METADATI' ? 1 : 2),
+                      child: FittedBox(fit: BoxFit.scaleDown, child: Text(tab.label, maxLines: 1, softWrap: false)),
+                    )),
                   ],
-                ),
+                ]),
               ),
             ),
             const SizedBox(height: 8),
@@ -6574,7 +6847,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 child: Padding(
                   padding: const EdgeInsets.all(14),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('DATI INSERITI NELLA SCHEDA',
+                    Text('DATI DELL’OGGETTO',
                       style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
                     _masterDetails(_currentObject!),
@@ -6584,7 +6857,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ] else if (_pr11MasterTabIndex == 1)
               _pr11MetadataTab(_currentObject!)
             else
-              _pr11CommercialTab(_currentObject!)
+              _pr11TechnicalDetails(_currentObject!),
           ] else if (isHistory) ...[
             Text(
               _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
@@ -6659,7 +6932,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 onTap: () => showDialog<void>(context: context, builder: (context) => AlertDialog(
                   title: const Text('Dettaglio operazione'),
                   content: SingleChildScrollView(child: SelectableText(_pretty(item))),
-                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('CHIUDI'))],
+                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
                 )),
               ));
             }
@@ -7241,18 +7514,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     } else {
       throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
     }
-    if (widget.apiCode == 'PR-02' && _categoryCode != null && _categoryCode != _originalCategoryCode) {
-      final selected = _merchandiseCategories.firstWhere((e) => e['codice_categoria'] == _categoryCode);
-      await Supabase.instance.client.schema('collection').rpc('assegna_categoria_oggetto', params: {
-        'p_codice_oggetto': int.parse(_code.text.trim()),
-        'p_nome_categoria': selected['nome_categoria'],
-        'p_fonte': 'MODIFICA_OGGETTO',
-        'p_confidenza': 1.0,
-      });
-      await Supabase.instance.client.schema('collection').from('master_metadati')
-          .update({'codice_categoria': _categoryCode}).eq('codice_oggetto', int.parse(_code.text.trim()));
-      _originalCategoryCode = _categoryCode;
-    }
     if (widget.apiCode == 'PR-01') {
       final savedRows = result['risultati'];
       final savedRow = savedRows is List && savedRows.isNotEmpty && savedRows.first is Map
@@ -7317,255 +7578,6 @@ class _PurchaseItemDraft {
 }
 
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
-
-class NewSaleLotPage extends StatefulWidget {
-  const NewSaleLotPage({super.key});
-  @override State<NewSaleLotPage> createState() => _NewSaleLotPageState();
-}
-
-class _NewSaleLotPageState extends State<NewSaleLotPage> {
-  final _search = TextEditingController();
-  final _price = TextEditingController();
-  final _notes = TextEditingController();
-  final _session = _uuid.v4();
-  bool _busy = false, _locked = false, _reviewed = false;
-  List<Map<String,dynamic>> _objects = [];
-  List<Map<String,dynamic>> _platforms = [];
-  final Set<int> _selected = {};
-  final Set<int> _platformIds = {};
-  Map<String,dynamic>? _preview;
-  String _status = 'Seleziona almeno due oggetti disponibili e assegna un prezzo unico al lotto.';
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _load(); });
-  }
-  @override
-  void dispose() {
-    if (_locked) _releaseQuietly();
-    _search.dispose(); _price.dispose(); _notes.dispose(); super.dispose();
-  }
-  int? _id(Map<String,dynamic> r) => int.tryParse((r['codice_oggetto'] ?? '').toString());
-  String _desc(Map<String,dynamic> r) => (r['descrizione_oggetto'] ?? r['descrizione'] ?? 'Oggetto').toString();
-  double? _amount() => double.tryParse(_price.text.trim().replaceAll(',', '.'));
-  String _eur(dynamic x) {
-    final n = x is num ? x.toDouble() : (double.tryParse((x ?? '').toString().replaceAll(',', '.')) ?? 0);
-    return '€ ' + n.toStringAsFixed(2).replaceAll('.', ',');
-  }
-  List<Map<String,dynamic>> get _visible {
-    final q = _search.text.trim().toLowerCase();
-    if (q.isEmpty) return _objects;
-    return _objects.where((r) => _desc(r).toLowerCase().contains(q) || (r['codice_oggetto'] ?? '').toString().contains(q)).toList();
-  }
-  List<Map<String,dynamic>> get _chosen => _objects.where((r) => _id(r) != null && _selected.contains(_id(r))).toList();
-
-  Future<void> _load() async {
-    if (_busy) return;
-    setState(() { _busy = true; _status = 'Caricamento oggetti disponibili e piattaforme…'; });
-    try {
-      final all = <Map<String,dynamic>>[];
-      const size = 100;
-      for (var offset = 0; offset < 10000; offset += size) {
-        final response = await _ValoraRuntimeApi.call('consultation', {
-          'session_id': _session, 'consultation_code': 'OBJECTS_SELLABLE',
-          'arguments': {'limite': size, 'offset': offset},
-        });
-        final outer = response['result'];
-        final data = outer is Map ? outer['risultato'] : null;
-        final rows = data is List ? data.whereType<Map>().map((r) => Map<String,dynamic>.from(r)).toList() : <Map<String,dynamic>>[];
-        all.addAll(rows);
-        if (rows.length < size) break;
-      }
-      final raw = await Supabase.instance.client.schema('collection').from('piattaforme')
-          .select('codice_piattaforma,nome_piattaforma').order('codice_piattaforma');
-      if (!mounted) return;
-      setState(() {
-        _objects = all;
-        _platforms = (raw as List).whereType<Map>().map((r) => Map<String,dynamic>.from(r)).toList();
-        _selected.removeWhere((id) => !all.any((r) => _id(r) == id));
-        _status = 'Oggetti disponibili caricati: ' + all.length.toString() + '.';
-      });
-    } catch (e) {
-      if (mounted) setState(() { _status = 'Caricamento non riuscito: ' + e.toString(); });
-    } finally { if (mounted) setState(() { _busy = false; }); }
-  }
-
-  Future<void> _acquire() async {
-    final r = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _session});
-    final x = r['result'];
-    if (x is Map && x['acquisito'] == true) { _locked = true; return; }
-    throw Exception(x is Map ? (x['messaggio'] ?? 'Blocco archivio non acquisito.') : 'Blocco archivio non acquisito.');
-  }
-  Future<void> _release() async {
-    if (!_locked) return;
-    final r = await _ValoraRuntimeApi.call('release_lock', {'session_id': _session});
-    final x = r['result'];
-    if (x is Map && x['rilasciato'] == true) { _locked = false; return; }
-    throw Exception('Il blocco archivio non è stato rilasciato.');
-  }
-  Future<void> _releaseQuietly() async { try { await _release(); } catch (_) {} }
-
-  Map<String,dynamic> _payload() {
-    final amount = _amount();
-    if (_selected.length < 2) throw Exception('Seleziona almeno due oggetti.');
-    if (amount == null || amount <= 0) throw Exception('Inserisci un prezzo totale maggiore di zero.');
-    if (_platformIds.isEmpty) throw Exception('Seleziona almeno una piattaforma.');
-    if (_chosen.length != _selected.length) throw Exception('Un oggetto selezionato non è più disponibile. Aggiorna il catalogo.');
-    return {
-      'prezzo_totale': (amount * 100).round() / 100,
-      'operazioni': _chosen.map((r) => {
-        'codice_oggetto': _id(r), 'codici_piattaforme': _platformIds.toList()..sort(),
-      }).toList(),
-      if (_notes.text.trim().isNotEmpty) 'note': _notes.text.trim(),
-    };
-  }
-
-  Future<void> _previewLot() async {
-    final payload = _payload();
-    setState(() { _busy = true; _preview = null; _reviewed = false; });
-    try {
-      if (!_locked) await _acquire();
-      final r = await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'preview', payload, sessionId: _session);
-      if (mounted) setState(() {
-        _preview = r;
-        _status = 'Anteprima pronta: ' + (r['numero_oggetti'] ?? _selected.length).toString() + ' oggetti, totale ' + _eur(r['prezzo_totale'] ?? _amount()) + '. Nessuna scrittura eseguita.';
-      });
-    } catch (e) { await _releaseQuietly(); rethrow; }
-    finally { if (mounted) setState(() { _busy = false; }); }
-  }
-  Future<void> _reviewLot() async {
-    if (_preview == null) throw Exception('Controlla prima il lotto.');
-    setState(() { _busy = true; });
-    try {
-      await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'review', _payload(), sessionId: _session);
-      if (mounted) setState(() { _reviewed = true; _status = 'Riepilogo confermato. Attende la conferma definitiva.'; });
-    } finally { if (mounted) setState(() { _busy = false; }); }
-  }
-  Future<void> _saveLot() async {
-    if (!_reviewed) throw Exception('Conferma prima il riepilogo.');
-    final platformText = _platforms.where((p) => _platformIds.contains(int.tryParse((p['codice_piattaforma'] ?? '').toString())))
-        .map((p) => (p['nome_piattaforma'] ?? '').toString()).join(', ');
-    final yes = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
-      title: const Text('CONFERMA DEFINITIVA DEL LOTTO'),
-      content: Text('Oggetti: ' + _selected.length.toString() + '\nPrezzo unico: ' + _eur(_amount()) + '\nPiattaforme: ' + platformText + '\n\nConfermi un unico lotto di vendita?'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('MODIFICA')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMA E SALVA')),
-      ],
-    ));
-    if (yes != true || !mounted) return;
-    setState(() { _busy = true; _status = 'Salvataggio del lotto in corso…'; });
-    try {
-      final r = await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'save', _payload(), sessionId: _session, requestId: _uuid.v4());
-      if (r['scrittura_eseguita'] != true) throw Exception('Scrittura del lotto non confermata dal runtime.');
-      if (r['blocco_rilasciato_automaticamente'] == true) { _locked = false; }
-      else { throw Exception('Rilascio del blocco non confermato.'); }
-      if (!mounted) return;
-      setState(() {
-        _selected.clear(); _platformIds.clear(); _price.clear(); _notes.clear(); _preview = null; _reviewed = false;
-        _status = 'LOTTO SALVATO E VERIFICATO · Codice: ' + (r['codice_lotto'] ?? 'non restituito').toString() +
-          ' · Oggetti: ' + (r['numero_oggetti'] ?? 0).toString() + ' · Totale: ' + _eur(r['prezzo_totale'] ?? 0);
-      });
-      await _load();
-    } catch (e) { await _releaseQuietly(); rethrow; }
-    finally { if (mounted) setState(() { _busy = false; }); }
-  }
-  Future<void> _run(Future<void> Function() action) async {
-    if (_busy) return;
-    try { await action(); }
-    catch (e) {
-      if (mounted) setState(() { _status = 'ERRORE: ' + e.toString(); });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Operazione non completata: ' + e.toString())));
-    }
-  }
-  Future<void> _cancel() async { await _releaseQuietly(); if (mounted) Navigator.of(context).pop(); }
-
-  @override Widget build(BuildContext context) {
-    final color = ValoraAppearance.instance.colorFor('VENDITE');
-    final allocations = _preview?['allocazione_per_oggetto'];
-    return Scaffold(
-      appBar: AppBar(title: const Text('NUOVA VENDITA A LOTTO'), actions: [
-        IconButton(onPressed: _busy ? null : _load, tooltip: 'Aggiorna oggetti', icon: const Icon(Icons.refresh)),
-      ]),
-      body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
-        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('UN SOLO PREZZO PER PIÙ OGGETTI', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          const Text('Seleziona almeno due oggetti disponibili, scegli le piattaforme e inserisci un unico importo complessivo. Tutti gli oggetti avranno lo stesso codice lotto.'),
-          const SizedBox(height: 12),
-          TextField(controller: _price, enabled: !_busy, keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(labelText: 'Prezzo totale del lotto (€)', hintText: 'Es. 100,00'),
-            onChanged: (_) => setState(() { _preview = null; _reviewed = false; })),
-          const SizedBox(height: 8),
-          TextField(controller: _notes, enabled: !_busy, decoration: const InputDecoration(labelText: 'Note (facoltative)'),
-            onChanged: (_) => setState(() { _preview = null; _reviewed = false; })),
-        ]))),
-        Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('PIATTAFORME DEL LOTTO', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-          const Text('Le piattaforme selezionate vengono associate a tutti gli oggetti.'),
-          ..._platforms.map((p) {
-            final id = int.tryParse((p['codice_piattaforma'] ?? '').toString());
-            if (id == null) return const SizedBox.shrink();
-            return CheckboxListTile(contentPadding: EdgeInsets.zero, dense: true, value: _platformIds.contains(id),
-              title: Text((p['nome_piattaforma'] ?? 'Piattaforma').toString()),
-              onChanged: _busy ? null : (v) => setState(() {
-                if (v == true) { _platformIds.add(id); } else { _platformIds.remove(id); }
-                _preview = null; _reviewed = false;
-              }));
-          }),
-        ]))),
-        Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(child: Text('OGGETTI DISPONIBILI (' + _objects.length.toString() + ')', style: TextStyle(color: color, fontWeight: FontWeight.bold))),
-            TextButton(onPressed: _busy ? null : _load, child: const Text('AGGIORNA')),
-          ]),
-          TextField(controller: _search, enabled: !_busy, decoration: const InputDecoration(labelText: 'Cerca per descrizione o codice', prefixIcon: Icon(Icons.search)),
-            onChanged: (_) => setState(() {})),
-          ..._visible.map((r) {
-            final id = _id(r);
-            if (id == null) return const SizedBox.shrink();
-            return CheckboxListTile(value: _selected.contains(id),
-              onChanged: _busy ? null : (v) => setState(() {
-                if (v == true) { _selected.add(id); } else { _selected.remove(id); }
-                _preview = null; _reviewed = false;
-              }),
-              title: Text(_desc(r), maxLines: 3, overflow: TextOverflow.ellipsis),
-              subtitle: Text('Codice: ' + id.toString() + ' · ' + (r['stato'] ?? 'DISPONIBILE').toString()),
-              controlAffinity: ListTileControlAffinity.leading);
-          }),
-          const SizedBox(height: 8),
-          Text('Selezionati: ' + _selected.length.toString() + ' · Totale: ' + _eur(_amount() ?? 0), style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-        ]))),
-        if (_preview != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('RIEPILOGO PRELIMINARE', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-          Text('Oggetti: ' + (_preview!['numero_oggetti'] ?? _selected.length).toString()),
-          Text('Prezzo unico del lotto: ' + _eur(_preview!['prezzo_totale'] ?? _amount())),
-          if (allocations is List) ...[
-            const Text('Ripartizione tecnica nei record dei singoli oggetti:'),
-            ...allocations.whereType<Map>().map((a) => Text('Oggetto ' + (a['codice_oggetto'] ?? '').toString() + ' · quota ' + _eur(a['prezzo_allocato']))),
-          ],
-          const Text('La ripartizione tecnica non crea vendite concluse separate: gli oggetti appartengono allo stesso lotto.'),
-          FilledButton.icon(onPressed: _busy ? null : () => _run(_reviewLot), icon: const Icon(Icons.fact_check_outlined), label: const Text('CONFERMA I DATI')),
-        ]))),
-        if (_reviewed) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('CONFERMA DEFINITIVA', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-          Text('Un lotto · ' + _selected.length.toString() + ' oggetti · ' + _eur(_amount())),
-          FilledButton.icon(onPressed: _busy ? null : () => _run(_saveLot), icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA LOTTO')),
-        ]))),
-        if (_busy) const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator())),
-        Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status))),
-        Row(children: [
-          Expanded(child: OutlinedButton(onPressed: _busy ? null : _cancel, child: const Text('ANNULLA'))),
-          const SizedBox(width: 8),
-          Expanded(child: FilledButton.icon(onPressed: _busy ? null : () => _run(_previewLot), icon: const Icon(Icons.preview_outlined), label: const Text('CONTROLLA LOTTO'))),
-        ]),
-        Text('Ambiente TEST. Nessuna scrittura prima della conferma definitiva.', style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
-      ])),
-    );
-  }
-}
-
 class NewPurchasePage extends StatefulWidget {
   const NewPurchasePage({super.key});
   @override
@@ -8157,13 +8169,16 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
   bool _loading = false, _running = false;
   List<Map<String, dynamic>> _queue = [];
   final List<Map<String, dynamic>> _results = [];
+  final Set<String> _selectedIds = <String>{};
+  final Set<String> _processedIds = <String>{};
   int _offset = 0;
+  int _queuePage = 0;
   String _status = 'Carica gli oggetti incompleti. Nessun dato verrà salvato.';
   String? _error;
 
   Future<void> _loadQueue() async {
     if (_loading || _running) return;
-    setState(() { _loading = true; _error = null; _status = 'Preparazione coda protetta PR-12…'; _results.clear(); _offset = 0; });
+    setState(() { _loading = true; _error = null; _status = 'Preparazione coda protetta PR-12…'; _results.clear(); _selectedIds.clear(); _processedIds.clear(); _offset = 0; _queuePage = 0; });
     try {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
@@ -8203,11 +8218,14 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
     return 'COLLEZIONABILE';
   }
 
-  Future<void> _runBatch() async {
+  Future<void> _runBatch({List<Map<String, dynamic>>? selectedBatch, Map<String, dynamic>? singleRecord}) async {
     if (_running || _loading) return;
-    if (_queue.isEmpty || _offset >= _queue.length) { setState(() => _error = 'Carica la coda o tutti i lotti sono già stati elaborati.'); return; }
-    final batch = _queue.skip(_offset).take(10).toList();
-    setState(() { _running = true; _error = null; _status = 'PR-12 sta cercando fonti per ${batch.length} oggetti. Nessuna scrittura database.'; });
+    if (_queue.isEmpty) { setState(() => _error = 'Carica prima la coda degli oggetti incompleti.'); return; }
+    if (singleRecord == null && selectedBatch == null && _queue.every((row) => _processedIds.contains((row['codice_oggetto'] ?? '').toString()))) { setState(() => _error = 'Tutti i record sono già stati elaborati.'); return; }
+    final batch = singleRecord != null ? <Map<String, dynamic>>[singleRecord] : (selectedBatch ?? _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).skip(_queuePage * 10).take(10).toList());
+    if (batch.isEmpty) { setState(() => _error = 'Seleziona almeno un oggetto.'); return; }
+    if (batch.length > 10) { setState(() => _error = 'Puoi elaborare al massimo 10 oggetti per volta.'); return; }
+    setState(() { _running = true; _error = null; _status = singleRecord != null ? 'Verifica singola dell’oggetto ${singleRecord['codice_oggetto']} in corso. Nessuna scrittura database.' : 'PR-12 sta cercando fonti per ${batch.length} oggetti. Nessuna scrittura database.'; });
     try {
       final session = Supabase.instance.client.auth.currentSession;
       if (session == null) throw Exception('Sessione scaduta. Accedi nuovamente.');
@@ -8232,9 +8250,18 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
       final rawResults = decoded['risultati_finali'];
       final batchResults = rawResults is List ? rawResults.whereType<Map>().map((v) => Map<String, dynamic>.from(v)).toList() : <Map<String, dynamic>>[];
       if (mounted) setState(() {
-        _results.addAll(batchResults); _offset += batch.length;
+        _results.addAll(batchResults);
+        for (final result in batchResults) {
+          if (result['ok'] == true) {
+            _processedIds.add((result['oggetto_id'] ?? '').toString());
+          }
+        }
+        for (final row in batch) {
+          _selectedIds.remove((row['codice_oggetto'] ?? '').toString());
+        }
+        _offset = _processedIds.length;
         final good = batchResults.where((v) => v['ok'] == true).length;
-        _status = 'Lotto concluso: $good riusciti, ${batchResults.length - good} errori. Avanzamento $_offset/${_queue.length}. Database invariato.';
+        _status = 'Ricerca conclusa: $good risultati riusciti, ${batchResults.length - good} errori. Elaborati: $_offset/${_queue.length}. Database invariato.';
       });
     } catch (e) {
       if (mounted) setState(() { _error = '$e'; _status = 'Lotto interrotto. Puoi riprovare.'; });
@@ -8243,76 +8270,200 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = (_queue.length - _offset).clamp(0, 10);
-    return Scaffold(appBar: AppBar(title: const Text('PR-12 · RICERCA METADATI')),
+    final remaining = _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length.clamp(0, 10);
+    return Scaffold(appBar: AppBar(title: Text(ValoraI18n.tr('PR-12 · RICERCA METADATI'))),
       body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
-        const Card(child: Padding(padding: EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('RICERCA MULTIPLA IN LOTTI', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-          SizedBox(height: 8), Text('PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.'),
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(ValoraI18n.tr('RICERCA MULTIPLA IN LOTTI'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8), Text(ValoraI18n.tr('PR-12 elabora al massimo 10 oggetti per lotto e mostra fonti, candidati ed errori. Prova in sola lettura: nessun metadato viene scritto o sovrascritto.')), 
         ]))),
         const SizedBox(height: 8),
         FilledButton.icon(onPressed: _loading || _running ? null : _loadQueue,
           icon: _loading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download),
-          label: const Text('CARICA OGGETTI INCOMPLETI')),
+          label: Text(ValoraI18n.tr('CARICA OGGETTI INCOMPLETI'))),
         const SizedBox(height: 8),
-        OutlinedButton.icon(onPressed: _running || _loading || _queue.isEmpty || _offset >= _queue.length ? null : _runBatch,
+        OutlinedButton.icon(onPressed: _running || _loading || _queue.every((row) => _processedIds.contains((row['codice_oggetto'] ?? '').toString())) ? null : _runBatch,
           icon: _running ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
-          label: Text(_running ? 'RICERCA IN CORSO…' : 'ELABORA PROSSIMO LOTTO ($remaining)')),
+          label: Text(_running ? ValoraI18n.tr('RICERCA IN CORSO…') : '${ValoraI18n.tr('ELABORA PROSSIMO LOTTO')} ($remaining)')),
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('STATO', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text(_status),
+          Text(ValoraI18n.tr('STATO'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text(_status),
           if (_queue.isNotEmpty) Text('In coda: ${_queue.length} · elaborati: $_offset · lotti: ${(_queue.length / 10).ceil()}'),
           if (_error != null) SelectableText(_error!, style: const TextStyle(color: Color(0xFFE35D5D))),
         ]))),
-        // Mostra l'anteprima del lotto soltanto prima della prima elaborazione.
-        // Dopo ogni lotto l'elenco operativo si svuota: restano visibili solo risultati già analizzati.
-        if (_queue.isNotEmpty && _results.isEmpty) ...[
-          const Padding(padding: EdgeInsets.only(top: 12, bottom: 4), child: Text('ELENCO DEL LOTTO DA ANALIZZARE', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
-          ..._queue.skip(_offset).take(10).map((v) => ListTile(dense: true, leading: const Icon(Icons.inventory_2_outlined, color: goldColor),
-            title: Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString()),
-            subtitle: Text('ID ${v['codice_oggetto']} · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}'))),
+        if (_queue.any((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString()))) ...[
+          Padding(padding: const EdgeInsets.only(top: 12, bottom: 4), child: Text(ValoraI18n.tr('OGGETTI IN CODA · SELEZIONE FACOLTATIVA'), style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+          Text(ValoraI18n.tr('Puoi elaborare il lotto automatico oppure selezionare fino a 10 oggetti specifici.'), style: TextStyle(color: Colors.white70)),
+          Row(children: [
+            Expanded(child: Text('PAGINA ${_queuePage + 1} DI ${((_queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length) / 10).ceil().clamp(1, 9999)}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
+            Text('${_selectedIds.length}/10 selezionati', style: const TextStyle(color: Colors.white70)),
+          ]),
+          const SizedBox(height: 6),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _running || _loading || _queuePage == 0 ? null : () => setState(() { _queuePage--; _selectedIds.clear(); }),
+              icon: const Icon(Icons.chevron_left), label: const Text('PRECEDENTE'),
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _running || _loading || (_queuePage + 1) * 10 >= _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length ? null : () => setState(() { _queuePage++; _selectedIds.clear(); }),
+              icon: const Icon(Icons.chevron_right), label: const Text('SUCCESSIVA'),
+            )),
+          ]),
+          const SizedBox(height: 8),
+          ..._queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).skip(_queuePage * 10).take(10).map((v) {
+            final id = (v['codice_oggetto'] ?? '').toString();
+            final checked = _selectedIds.contains(id);
+            return Card(
+              margin: const EdgeInsets.only(bottom: 6),
+              child: Row(children: [
+                Checkbox(
+                  value: checked, activeColor: goldColor, checkColor: Colors.black,
+                  onChanged: _running || _loading ? null : (value) => setState(() {
+                    if (value == true) {
+                      if (_selectedIds.length < 10) { _selectedIds.add(id); _error = null; }
+                      else { _error = 'Massimo 10 oggetti selezionabili per ricerca.'; }
+                    } else { _selectedIds.remove(id); _error = null; }
+                  }),
+                ),
+                Expanded(child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text((v['descrizione_oggetto'] ?? 'Senza descrizione').toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('ID $id · produttore: ${v['produttore'] ?? 'mancante'} · anno: ${v['anno_uscita'] ?? 'mancante'} · codice: ${v['codice_prodotto'] ?? 'mancante'}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  ]),
+                )),
+                IconButton(
+                  tooltip: 'Verifica solo questo record',
+                  onPressed: _running || _loading ? null : () => _runBatch(singleRecord: v),
+                  icon: const Icon(Icons.search, color: goldColor),
+                ),
+              ]),
+            );
+          }),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _running || _loading || _queuePage == 0 ? null : () => setState(() { _queuePage--; _selectedIds.clear(); }),
+              icon: const Icon(Icons.chevron_left), label: const Text('INDIETRO'),
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: OutlinedButton.icon(
+              onPressed: _running || _loading || (_queuePage + 1) * 10 >= _queue.where((row) => !_processedIds.contains((row['codice_oggetto'] ?? '').toString())).length ? null : () => setState(() { _queuePage++; _selectedIds.clear(); }),
+              icon: const Icon(Icons.chevron_right), label: const Text('AVANTI'),
+            )),
+          ]),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _running || _loading || _selectedIds.isEmpty ? null : () {
+              final chosen = _queue.where((row) => _selectedIds.contains((row['codice_oggetto'] ?? '').toString())).take(10).toList();
+              _runBatch(selectedBatch: chosen);
+            },
+            icon: const Icon(Icons.checklist),
+            label: Text('${ValoraI18n.tr('ELABORA SELEZIONATI')} (${_selectedIds.length}/10)'),
+          ),
         ],
         if (_results.isNotEmpty) ...[
           const Padding(padding: EdgeInsets.only(top: 16, bottom: 4), child: Text('RISULTATI · SOLA LETTURA', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold))),
           ..._results.map((v) {
             final candidates = v['risultati'] is List ? (v['risultati'] as List).whereType<Map>().toList() : <Map>[];
-            return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${v['oggetto_id'] ?? ''} · ${v['descrizione'] ?? ''}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text(v['ok'] == true ? 'Candidati: ${candidates.length} · nessuna scrittura' : 'ERRORE: ${v['error'] ?? 'non specificato'}'),
-              ...candidates.take(4).map((c) => ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.link, color: goldColor),
-                title: Text((c['title'] ?? 'Risultato senza titolo').toString(), style: const TextStyle(fontSize: 13)),
-                subtitle: Text('${c['url'] ?? ''}\n${c['snippet'] ?? ''}', maxLines: 4, overflow: TextOverflow.ellipsis),
-                onTap: () {
-                  final rawUrl = (c['url'] ?? '').toString().trim();
-                  final uri = Uri.tryParse(rawUrl);
-                  if (uri != null && (uri.scheme == 'https' || uri.scheme == 'http') && uri.host.isNotEmpty) {
-                    launchUrl(uri, mode: LaunchMode.externalApplication);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link candidato non valido.')));
-                  }
-                },
-                trailing: IconButton(
-                  tooltip: 'Prepara proposta metadati',
-                  icon: const Icon(Icons.fact_check_outlined, color: goldColor),
-                  onPressed: () {
-                    final fields = <String, String>{
-                      "Oggetto": (v["descrizione"] ?? "").toString(),
-                      "Candidato": (c["title"] ?? "").toString(),
-                      "Produttore proposto": (c["produttore"] ?? "").toString(),
-                      "Anno proposto": (c["anno_uscita"] ?? "").toString(),
-                      "Codice prodotto proposto": (c["codice_prodotto"] ?? c["isbn"] ?? "").toString(),
-                      "Fonte": (c["url"] ?? "").toString(),
-                    };
-                    showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
-                      title: const Text('Proposta metadati · sola lettura'),
-                      content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
-                        children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? 'non disponibile' : e.value}'))).toList())),
-                      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
-                    ));
-                  },
-                ))),
-              if (v['diagnostica_ricerca'] is Map) SelectableText('Diagnostica: ${jsonEncode(v['diagnostica_ricerca'])}', style: const TextStyle(fontSize: 11, color: Colors.white54)),
-            ])));
+            return Card(
+              margin: const EdgeInsets.only(bottom: 14),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Container(width: 42, height: 42,
+                      decoration: BoxDecoration(color: goldColor.withOpacity(.14), borderRadius: BorderRadius.circular(10)),
+                      child: const Icon(Icons.inventory_2_outlined, color: goldColor)),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('OGGETTO ${v['oggetto_id'] ?? ''}', style: const TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 3),
+                      Text((v['descrizione'] ?? 'Oggetto senza descrizione').toString(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Text(v['ok'] == true ? '${candidates.length} proposte trovate · nessuna scrittura' : 'Ricerca da verificare: ${v['error'] ?? 'errore non specificato'}',
+                        style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                    ])),
+                  ]),
+                  if (candidates.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const Text('PROPOSTE TROVATE', style: TextStyle(color: goldColor, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: .7)),
+                    const SizedBox(height: 8),
+                    ...candidates.take(6).map((c) {
+                      final rawImage = (c['image_url'] ?? c['immagine_url'] ?? '').toString().trim();
+                      final rawUrl = (c['url'] ?? '').toString().trim();
+                      final uri = Uri.tryParse(rawUrl);
+                      final validUrl = uri != null && (uri.scheme == 'https' || uri.scheme == 'http') && uri.host.isNotEmpty;
+                      final values = <String, String>{
+                        'Produttore': (c['produttore'] ?? '').toString(),
+                        'Anno': (c['anno_uscita'] ?? '').toString(),
+                        'Codice / ISBN': (c['codice_prodotto'] ?? c['isbn'] ?? '').toString(),
+                        'Editore': (c['editore'] ?? '').toString(),
+                        'Lingua': (c['lingua'] ?? '').toString(),
+                      };
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.black.withOpacity(.18), borderRadius: BorderRadius.circular(12), border: Border.all(color: goldColor.withOpacity(.22))),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            ClipRRect(borderRadius: BorderRadius.circular(8), child: SizedBox(width: 88, height: 100,
+                              child: rawImage.startsWith('https://') || rawImage.startsWith('http://')
+                                ? Image.network(rawImage, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Container(color: Colors.white10, child: const Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 30)))
+                                : Container(color: Colors.white10, child: const Icon(Icons.image_search_outlined, color: goldColor, size: 30)))),
+                            const SizedBox(width: 12),
+                            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text((c['title'] ?? 'Candidato senza titolo').toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                              const SizedBox(height: 5),
+                              Text((c['motore'] ?? c['tipologia_candidata'] ?? 'Fonte catalogo').toString().replaceAll('_', ' '), style: const TextStyle(fontSize: 11, color: goldColor)),
+                              if ((c['snippet'] ?? '').toString().trim().isNotEmpty) ...[
+                                const SizedBox(height: 5),
+                                Text((c['snippet'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                              ],
+                              const SizedBox(height: 7),
+                              Text(ValoraI18n.tr('Proposta da verificare prima di usarla'), style: TextStyle(fontSize: 11, color: Colors.white54)),
+                            ])),
+                          ]),
+                          ...values.entries.where((e) => e.value.trim().isNotEmpty).map((e) =>
+                            Padding(padding: const EdgeInsets.only(top: 4), child: Text('${e.key}: ${e.value}', style: const TextStyle(fontSize: 12)))),
+                          if (validUrl) Row(children: [
+                            Expanded(child: Text(uri!.host, style: const TextStyle(fontSize: 11, color: Colors.white54), overflow: TextOverflow.ellipsis)),
+                            TextButton.icon(onPressed: () => launchUrl(uri, mode: LaunchMode.externalApplication),
+                              icon: const Icon(Icons.open_in_new, size: 16), label: Text(ValoraI18n.tr('APRI FONTE'))),
+                            IconButton(tooltip: ValoraI18n.tr('Esamina proposta'), icon: const Icon(Icons.fact_check_outlined, color: goldColor),
+                              onPressed: () {
+                                final fields = <String, String>{
+                                  'Oggetto': (v['descrizione'] ?? '').toString(),
+                                  'Candidato': (c['title'] ?? '').toString(),
+                                  'Produttore proposto': (c['produttore'] ?? '').toString(),
+                                  'Anno proposto': (c['anno_uscita'] ?? '').toString(),
+                                  'Codice prodotto / ISBN': (c['codice_prodotto'] ?? c['isbn'] ?? '').toString(),
+                                  'Editore': (c['editore'] ?? '').toString(),
+                                  'Lingua': (c['lingua'] ?? '').toString(),
+                                  'Fonte': rawUrl,
+                                };
+                                showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
+                                  title: Text(ValoraI18n.tr('Scheda proposta · da verificare')),
+                                  content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+                                    children: fields.entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('${e.key}: ${e.value.isEmpty ? 'Non disponibile' : e.value}'))).toList())),
+                                  actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('CHIUDI'))],
+                                ));
+                              }),
+                          ]),
+                        ]),
+                      );
+                    }),
+                  ] else if (v['ok'] == true) ...[
+                    const SizedBox(height: 10),
+                    Text(ValoraI18n.tr('Nessuna scheda verificabile trovata. Prova un altro oggetto o consulta le fonti specialistiche.'), style: TextStyle(fontSize: 12, color: Colors.white70)),
+                  ],
+                  if (v['diagnostica_ricerca'] is Map)
+                    ExpansionTile(tilePadding: EdgeInsets.zero, title: Text(ValoraI18n.tr('Dettagli tecnici'), style: TextStyle(fontSize: 12, color: Colors.white54)),
+                      children: [SelectableText(jsonEncode(v['diagnostica_ricerca']), style: const TextStyle(fontSize: 11, color: Colors.white54))]),
+                ]),
+              ),
+            );
           }),
         ],
       ])));
