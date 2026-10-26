@@ -2189,6 +2189,47 @@ class _HomeDashboardState extends State<HomeDashboard> {
     }
   }
 
+
+  Future<void> _createCategoryDialog() async {
+    final name = TextEditingController();
+    final description = TextEditingController();
+    final color = TextEditingController(text: '#D6B15E');
+    final icon = TextEditingController(text: 'category_outlined');
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Crea categoria'),
+      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: name, autofocus: true, maxLength: 80, decoration: const InputDecoration(labelText: 'Nome categoria')),
+        TextField(controller: description, decoration: const InputDecoration(labelText: 'Descrizione (facoltativa)')),
+        TextField(controller: color, decoration: const InputDecoration(labelText: 'Colore HEX', hintText: '#D6B15E')),
+        TextField(controller: icon, decoration: const InputDecoration(labelText: 'Icona', hintText: 'category_outlined')),
+      ])),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CREA')),
+      ],
+    ));
+    if (confirmed != true) {
+      name.dispose(); description.dispose(); color.dispose(); icon.dispose(); return;
+    }
+    try {
+      final value = name.text.trim();
+      if (value.length < 2) throw Exception('Inserisci un nome di almeno 2 caratteri.');
+      await Supabase.instance.client.schema('collection').rpc('pr_crea_categoria_merceologica', params: {
+        'p_nome': value,
+        'p_descrizione': description.text.trim().isEmpty ? null : description.text.trim(),
+        'p_colore_hex': color.text.trim().isEmpty ? '#D6B15E' : color.text.trim(),
+        'p_icona': icon.text.trim().isEmpty ? 'category_outlined' : icon.text.trim(),
+      });
+      await _loadDashboardCategories();
+      await _loadDashboardCatalog();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Categoria "$value" creata e aggiunta al menu.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Creazione non riuscita: $e'), duration: const Duration(seconds: 6)));
+    } finally {
+      name.dispose(); description.dispose(); color.dispose(); icon.dispose();
+    }
+  }
+
   Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows, {bool retryFailed = false}) async {
     // Prima usa l'URL catalografico di PR-12 salvato in master_metadati.
     // Il registro immagini/Storage è un fallback, non l'unica sorgente.
@@ -2578,6 +2619,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         final entries = <Map<String, dynamic>>[
           {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
           {'title':'NUOVA CATEGORIA','subtitle':'Crea una categoria e genera automaticamente la voce di menu','color':goldColor,'icon':Icons.add_box_outlined,'tap':() => _createCategoryDialog()},
+          {'title':'NUOVA CATEGORIA','subtitle':'Crea una categoria e genera automaticamente la voce di menu','color':goldColor,'icon':Icons.add_box_outlined,'tap':() => _createCategoryDialog()},
           ..._allDashboardSections.map((section)=> {
             'title':section.menuTitle ?? section.title,
             'subtitle':section.description,
@@ -2653,6 +2695,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
         onTap: () => setState(() => showCollection = true),
       ),
+      _menuCard(title: 'NUOVA CATEGORIA', subtitle: 'Crea una categoria e genera automaticamente la sua voce di menu', color: goldColor, icon: Icons.add_box_outlined, onTap: _createCategoryDialog),
       _menuCard(title: 'NUOVA CATEGORIA', subtitle: 'Crea una categoria e genera automaticamente la sua voce di menu', color: goldColor, icon: Icons.add_box_outlined, onTap: _createCategoryDialog),
       ..._allDashboardSections.map((section) => _menuCard(
         title: section.menuTitle ?? section.title,
