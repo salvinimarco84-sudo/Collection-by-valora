@@ -7412,7 +7412,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ]),
           ),
         ],
-        if (_isPeriodReport && widget.apiCode != 'REPORT-CASH' && !_loading && _lastResult != null && _rows.isEmpty) ...[
+        if (_isPeriodReport && widget.apiCode != 'REPORT-CASH' && !_loading && _rows.isEmpty && _output.contains('Periodo:')) ...[
           const SizedBox(height: 20),
           Container(
             width: double.infinity,
