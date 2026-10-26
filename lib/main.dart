@@ -2205,12 +2205,25 @@ class _HomeDashboardState extends State<HomeDashboard> {
       final categories = List<Map<String, dynamic>>.from(
         (categoryResponse as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)),
       );
-      final assignmentResponse = await Supabase.instance.client.schema('collection')
-          .from('oggetto_collezione_categoria')
-          .select('codice_oggetto, codice_categoria');
-      final assignments = List<Map<String, dynamic>>.from(
-        (assignmentResponse as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)),
-      );
+      // PostgREST limita le risposte per pagina: caricare una sola volta
+      // le assegnazioni tagliava i risultati oltre il limite e mostrava, per
+      // esempio, Funko Pop = 0 anche se i 31 record erano presenti nel master.
+      final assignments = <Map<String, dynamic>>[];
+      const assignmentPageSize = 500;
+      var assignmentOffset = 0;
+      while (true) {
+        final assignmentResponse = await Supabase.instance.client.schema('collection')
+            .from('oggetto_collezione_categoria')
+            .select('codice_oggetto, codice_categoria')
+            .order('codice_oggetto')
+            .range(assignmentOffset, assignmentOffset + assignmentPageSize - 1);
+        final page = List<Map<String, dynamic>>.from(
+          (assignmentResponse as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)),
+        );
+        assignments.addAll(page);
+        if (page.length < assignmentPageSize) break;
+        assignmentOffset += assignmentPageSize;
+      }
       final categoryCounts = <String, int>{};
       for (final assignment in assignments) {
         final key = (assignment['codice_categoria'] ?? '').toString();
