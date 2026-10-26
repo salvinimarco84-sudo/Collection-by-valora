@@ -3073,6 +3073,8 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
 
   bool _matchesInitialCategory(Map<String, dynamic> row, String category) {
     final d = _description(row).toLowerCase();
+    final categoryCode = (row['codice_categoria'] ?? '').toString().trim().toUpperCase();
+    final productCategory = (row['categoria_prodotto'] ?? '').toString().trim().toLowerCase();
     switch (category.toUpperCase()) {
       case 'LEGO':
         return RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d);
@@ -3081,7 +3083,13 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       case 'MOTO DIE-CAST':
         return RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja|aprilia rsv|honda vtr').hasMatch(d);
       case 'FUMETTI':
-        return RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman').hasMatch(d);
+        // Prefer the catalog's explicit category. Never classify LEGO Batman sets as comics.
+        if (categoryCode.isNotEmpty) return categoryCode == 'CAT-003';
+        if (productCategory.isNotEmpty) {
+          return productCategory.contains('fumett') || productCategory.contains('manga') || productCategory.contains('comic');
+        }
+        if (RegExp(r'\blego\b|minifig|brickheadz|technic|duplo|bricklink|set lego').hasMatch(d)) return false;
+        return RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex').hasMatch(d);
       case 'GUNDAM':
         return RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d);
       case 'TRANSFORMERS':
