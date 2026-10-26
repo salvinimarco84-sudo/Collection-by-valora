@@ -22,6 +22,16 @@ function isLego(category: string, description: string): boolean {
 }
 function sourcesFor(category: string, query: string): string[] {
   query = canonicalSearchText(query);
+  // Funko Pop! è una categoria dedicata: cercare prima il catalogo ufficiale
+  // e i database specialistici, evitando risultati generici di giocattoli.
+  if (/funko|pop!|pop vinyl|funko pop/i.test(query) || /^(FUNKO_POP|FUNKO POP|CAT-007)$/i.test(category)) return [
+    "site:funko.com",
+    "site:hobbydb.com",
+    "site:poppriceguide.com",
+    "site:entertainmentearth.com Funko Pop",
+    "site:popinabox.us Funko Pop",
+    "site:bigbadtoystore.com Funko Pop"
+  ];
   // Le linee specifiche hanno precedenza sulle categorie generiche: Saint Seiya,
   // per esempio, è una action figure ma richiede prima i cataloghi Myth Cloth.
   if (/beer|birra|birre|birrificio|birrifici|craft beer|lambic|trappist|trappista|breweriana|lattine da collezione|boccali da collezione/i.test(query) || /^(BEER|BIRRA|BIRRE|BIRRA_COLLEZIONE)$/.test(category)) return [
@@ -319,6 +329,8 @@ async function loadConfiguredSources(category: string, description: string, user
     const normalizedMarket = normalizeText(market || "Italia");
     const categoryAliases: Record<string, string[]> = {
       LEGO: ["lego", "costruzioni", "building sets"],
+      FUNKO_POP: ["funko pop", "funko", "pop vinyl", "funko pop!"],
+      "CAT-007": ["funko pop", "funko", "pop vinyl", "funko pop!"],
       FUMETTI: ["fumetti", "comics", "comic books", "manga", "graphic novels"],
       ACTION_FIGURE: ["action figure", "action figures", "figure", "figurines", "statue", "statue da collezione", "giocattoli da collezione", "toys", "giocattoli", "bandai", "hasbro", "tamashii"],
       DIECAST: ["diecast", "modellismo", "modellini", "scale models", "model vehicles", "giocattoli da collezione", "toys", "hot wheels", "matchbox", "maisto"],
@@ -398,6 +410,8 @@ async function loadConfiguredSources(category: string, description: string, user
   const preferredCodes = new Set(activeRules.map(r => normalizeText(r.codice_fonte_preferita)).filter(Boolean));
   const categoryHints: Record<string,string[]> = {
     LEGO: ["lego", "bricklink", "rebrickable"],
+    FUNKO_POP: ["funko", "funko pop", "hobbydb", "poppriceguide", "funko.com", "pop vinyl"],
+    "CAT-007": ["funko", "funko pop", "hobbydb", "poppriceguide", "funko.com", "pop vinyl"],
     FUMETTI: ["fumett", "comic", "panini", "bonelli", "salda", "manga", "graphic novel", "dc", "marvel", "batman", "spider-man"],
     ACTION_FIGURE: ["figure", "action figure", "myth cloth", "saint seiya", "bandai", "tamashii", "toy", "giocattol", "transformer", "robot", "gundam", "dragon ball", "hokuto", "naruto", "one piece", "star wars", "the toys database", "toyvault"],
     DIECAST: ["diecast", "maisto", "modellino", "motorbike", "moto", "auto", "hot wheels", "matchbox", "robotvintage", "the toys database", "vintage toy catalog"],
