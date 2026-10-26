@@ -2959,9 +2959,23 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
         row['_valora_sezione'] = category.isNotEmpty ? category : 'DA CLASSIFICARE';
       }
       final filteredRows = rows
-          .where((row) => categoryMode
-              ? _matchesInitialCategory(row, widget.initialQuery!.trim(), code: widget.initialCategoryCode)
-              : _description(row).toLowerCase().contains(normalizedQuery))
+          .where((row) {
+            if (categoryMode) {
+              return _matchesInitialCategory(
+                row,
+                widget.initialQuery!.trim(),
+                code: widget.initialCategoryCode,
+              );
+            }
+            final description = _description(row).toLowerCase();
+            final objectCode = _code(row).toLowerCase();
+            final category = (row['_valora_categoria'] ?? '').toString().toLowerCase();
+            final categoryCode = (row['_valora_codice_categoria'] ?? '').toString().toLowerCase();
+            return description.contains(normalizedQuery) ||
+                objectCode.contains(normalizedQuery) ||
+                category.contains(normalizedQuery) ||
+                categoryCode.contains(normalizedQuery);
+          })
           .toList()
         ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
 
