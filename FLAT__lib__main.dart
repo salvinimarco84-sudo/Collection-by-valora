@@ -2827,26 +2827,15 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
 
   bool _matchesInitialCategory(Map<String, dynamic> row, String category) {
-    final d = _description(row).toLowerCase();
-    switch (category.toUpperCase()) {
-      case 'LEGO':
-        return RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d);
-      case 'SAINT SEIYA':
-        return RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d);
-      case 'MOTO DIE-CAST':
-        return RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja|aprilia rsv|honda vtr').hasMatch(d);
-      case 'FUMETTI':
-        return RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman').hasMatch(d);
-      case 'GUNDAM':
-        return RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d);
-      case 'TRANSFORMERS':
-        return RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d);
-      case 'ALTRE COLLEZIONI':
-        return !['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS']
-            .any((name) => _matchesInitialCategory(row, name));
-      default:
-        return d.contains(category.toLowerCase());
+    // La schermata "VEDI TUTTI" deve filtrare sulla categoria merceologica
+    // canonica restituita da PR-11, mai su parole della descrizione.
+    // Il vecchio filtro per regex spostava, per esempio, Batman Funko nei fumetti
+    // e tutti gli oggetti non riconosciuti in "Altre collezioni".
+    final canonical = (row['categoria'] ?? '').toString().trim();
+    if (canonical.isEmpty) {
+      return category.trim().toUpperCase() == 'DA CLASSIFICARE';
     }
+    return canonical.toLowerCase() == category.trim().toLowerCase();
   }
 
   Future<void> _search() async {
