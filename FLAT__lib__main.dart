@@ -734,7 +734,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report acquisti', description: 'Riepilogo degli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
   ],
   'VENDITE': [
-    ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'WRITE-PR-06', readOnly: false),
+    ProcedureEntry(title: 'Nuova vendita', description: 'Seleziona un oggetto disponibile, piattaforme e prezzo di vendita.', apiCode: 'WRITE-PR-06', readOnly: false),
     ProcedureEntry(title: 'Nuova vendita a lotto', description: 'Seleziona più oggetti e assegna un unico prezzo totale al lotto.', apiCode: 'WRITE-PR-06-LOTTO', readOnly: false),
     ProcedureEntry(title: 'Chiudi vendita', description: 'Chiude una vendita secondo la procedura VALORA.', enabled: false, readOnly: false),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
@@ -2731,6 +2731,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
                           : procedure.apiCode == 'WRITE-PR-05'
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
+                               : procedure.apiCode == 'WRITE-PR-06'
+                                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSaleLotPage(singleSale: true)))
                                : procedure.apiCode == 'WRITE-PR-06-LOTTO'
                                     ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSaleLotPage()))
                                 : procedure.apiCode != null
@@ -7602,7 +7604,8 @@ class _PurchaseItemDraft {
 }
 
 class NewSaleLotPage extends StatefulWidget {
-  const NewSaleLotPage({super.key});
+  const NewSaleLotPage({super.key, this.singleSale = false});
+  final bool singleSale;
   @override State<NewSaleLotPage> createState() => _NewSaleLotPageState();
 }
 
@@ -7698,14 +7701,16 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
 
   Map<String,dynamic> _payload() {
     final amount = _amount();
-    if (_selected.length < 2) throw Exception('Seleziona almeno due oggetti.');
+    if (widget.singleSale ? _selected.length != 1 : _selected.length < 2) throw Exception(widget.singleSale ? 'Seleziona un solo oggetto.' : 'Seleziona almeno due oggetti.');
     if (amount == null || amount <= 0) throw Exception('Inserisci un prezzo totale maggiore di zero.');
     if (_platformIds.isEmpty) throw Exception('Seleziona almeno una piattaforma.');
     if (_chosen.length != _selected.length) throw Exception('Un oggetto selezionato non è più disponibile. Aggiorna il catalogo.');
     return {
-      'prezzo_totale': (amount * 100).round() / 100,
+      if (!widget.singleSale) 'prezzo_totale': (amount * 100).round() / 100,
       'operazioni': _chosen.map((r) => {
-        'codice_oggetto': _id(r), 'codici_piattaforme': _platformIds.toList()..sort(),
+        'codice_oggetto': _id(r),
+        'prezzo_di_vendita': (amount * 100).round() / 100,
+        'codici_piattaforme': _platformIds.toList()..sort(),
       }).toList(),
       if (_notes.text.trim().isNotEmpty) 'note': _notes.text.trim(),
     };
@@ -7716,7 +7721,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
     setState(() { _busy = true; _preview = null; _reviewed = false; });
     try {
       if (!_locked) await _acquire();
-      final r = await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'preview', payload, sessionId: _session);
+      final r = await _ValoraRuntimeApi.procedure(widget.singleSale ? 'PR-06' : 'PR-06-LOTTO', 'preview', payload, sessionId: _session);
       if (mounted) setState(() {
         _preview = r;
         _status = 'Anteprima pronta: ' + (r['numero_oggetti'] ?? _selected.length).toString() + ' oggetti, totale ' + _eur(r['prezzo_totale'] ?? _amount()) + '. Nessuna scrittura eseguita.';
@@ -7728,7 +7733,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
     if (_preview == null) throw Exception('Controlla prima il lotto.');
     setState(() { _busy = true; });
     try {
-      await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'review', _payload(), sessionId: _session);
+      await _ValoraRuntimeApi.procedure(widget.singleSale ? 'PR-06' : 'PR-06-LOTTO', 'review', _payload(), sessionId: _session);
       if (mounted) setState(() { _reviewed = true; _status = 'Riepilogo confermato. Attende la conferma definitiva.'; });
     } finally { if (mounted) setState(() { _busy = false; }); }
   }
@@ -7737,7 +7742,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
     final platformText = _platforms.where((p) => _platformIds.contains(int.tryParse((p['codice_piattaforma'] ?? '').toString())))
         .map((p) => (p['nome_piattaforma'] ?? '').toString()).join(', ');
     final yes = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
-      title: const Text('CONFERMA DEFINITIVA DEL LOTTO'),
+      title: Text(widget.singleSale ? 'CONFERMA NUOVA VENDITA' : 'CONFERMA DEFINITIVA DEL LOTTO'),
       content: Text('Oggetti: ' + _selected.length.toString() + '\nPrezzo unico: ' + _eur(_amount()) + '\nPiattaforme: ' + platformText + '\n\nConfermi un unico lotto di vendita?'),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('MODIFICA')),
@@ -7747,7 +7752,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
     if (yes != true || !mounted) return;
     setState(() { _busy = true; _status = 'Salvataggio del lotto in corso…'; });
     try {
-      final r = await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'save', _payload(), sessionId: _session, requestId: _uuid.v4());
+      final r = await _ValoraRuntimeApi.procedure(widget.singleSale ? 'PR-06' : 'PR-06-LOTTO', 'save', _payload(), sessionId: _session, requestId: _uuid.v4());
       if (r['scrittura_eseguita'] != true) throw Exception('Scrittura del lotto non confermata dal runtime.');
       if (r['blocco_rilasciato_automaticamente'] == true) { _locked = false; }
       else { throw Exception('Rilascio del blocco non confermato.'); }
@@ -7776,14 +7781,14 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
     final color = ValoraAppearance.instance.colorFor('VENDITE');
     final allocations = _preview?['allocazione_per_oggetto'];
     return Scaffold(
-      appBar: AppBar(title: const Text('NUOVA VENDITA A LOTTO'), actions: [
+      appBar: AppBar(title: Text(widget.singleSale ? 'NUOVA VENDITA' : 'NUOVA VENDITA A LOTTO'), actions: [
         IconButton(onPressed: _busy ? null : _load, tooltip: 'Aggiorna oggetti', icon: const Icon(Icons.refresh)),
       ]),
       body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
         Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('UN SOLO PREZZO PER PIÙ OGGETTI', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          Text(widget.singleSale ? 'NUOVA VENDITA DI UN OGGETTO' : 'UN SOLO PREZZO PER PIÙ OGGETTI', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          const Text('Seleziona almeno due oggetti disponibili, scegli le piattaforme e inserisci un unico importo complessivo. Tutti gli oggetti avranno lo stesso codice lotto.'),
+          Text(widget.singleSale ? 'Seleziona un oggetto disponibile per la rivendita, scegli le piattaforme e inserisci il prezzo richiesto.' : 'Seleziona almeno due oggetti disponibili, scegli le piattaforme e inserisci un unico importo complessivo. Tutti gli oggetti avranno lo stesso codice lotto.'),
           const SizedBox(height: 12),
           TextField(controller: _price, enabled: !_busy, keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(labelText: 'Prezzo totale del lotto (€)', hintText: 'Es. 100,00'),
@@ -7827,7 +7832,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
               controlAffinity: ListTileControlAffinity.leading);
           }),
           const SizedBox(height: 8),
-          Text('Selezionati: ' + _selected.length.toString() + ' · Totale: ' + _eur(_amount() ?? 0), style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          Text('Selezionati: ' + _selected.length.toString() + ' · ' + (widget.singleSale ? 'Prezzo: ' : 'Totale: ') + _eur(_amount() ?? 0), style: TextStyle(color: color, fontWeight: FontWeight.bold)),
         ]))),
         if (_preview != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('RIEPILOGO PRELIMINARE', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
@@ -7843,14 +7848,14 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
         if (_reviewed) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('CONFERMA DEFINITIVA', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
           Text('Un lotto · ' + _selected.length.toString() + ' oggetti · ' + _eur(_amount())),
-          FilledButton.icon(onPressed: _busy ? null : () => _run(_saveLot), icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA LOTTO')),
+          FilledButton.icon(onPressed: _busy ? null : () => _run(_saveLot), icon: const Icon(Icons.save_outlined), label: Text(widget.singleSale ? 'CONFERMA DEFINITIVA E SALVA VENDITA' : 'CONFERMA DEFINITIVA E SALVA LOTTO')),
         ]))),
         if (_busy) const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator())),
         Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status))),
         Row(children: [
           Expanded(child: OutlinedButton(onPressed: _busy ? null : _cancel, child: const Text('ANNULLA'))),
           const SizedBox(width: 8),
-          Expanded(child: FilledButton.icon(onPressed: _busy ? null : () => _run(_previewLot), icon: const Icon(Icons.preview_outlined), label: const Text('CONTROLLA LOTTO'))),
+          Expanded(child: FilledButton.icon(onPressed: _busy ? null : () => _run(_previewLot), icon: const Icon(Icons.preview_outlined), label: Text(widget.singleSale ? 'CONTROLLA VENDITA' : 'CONTROLLA LOTTO'))),
         ]),
         Text('Ambiente TEST. Nessuna scrittura prima della conferma definitiva.', style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
       ])),
