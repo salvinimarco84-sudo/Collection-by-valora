@@ -2785,6 +2785,16 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
         row['_valora_sottotema'] = (row['sottotema'] ?? '').toString().trim();
         row['_valora_sezione'] = category.isNotEmpty ? category : 'DA CLASSIFICARE';
       }
+      // Il menu e il filtro della collezione usano esclusivamente la categoria primaria
+      // proveniente dalla relazione canonica restituita da PR-11. Sezione/sottotema non
+      // devono mai spostare un oggetto in un'altra voce del menu.
+      for (final row in rows) {
+        final category = (row['categoria'] ?? '').toString().trim();
+        row['_valora_categoria'] = category;
+        row['_valora_codice_categoria'] = (row['codice_categoria'] ?? '').toString().trim();
+        row['_valora_sottotema'] = (row['sottotema'] ?? '').toString().trim();
+        row['_valora_sezione'] = category.isNotEmpty ? category : 'DA CLASSIFICARE';
+      }
       final filteredRows = rows
           .where((row) => categoryMode
               ? _matchesInitialCategory(row, widget.initialQuery!.trim())
