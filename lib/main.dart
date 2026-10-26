@@ -2824,16 +2824,57 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
           .toList();
       final ids = rows.map((row) => int.tryParse(_code(row))).whereType<int>().where((id) => id > 0).toSet().toList();
       if (ids.isNotEmpty) {
-        final metadataRows = await Supabase.instance.client
-            .schema('collection')
-            .from('master_metadati')
-            .select('codice_oggetto,sezione')
-            .inFilter('codice_oggetto', ids);
         final sectionById = <int, String>{};
-        for (final item in metadataRows) {
-          final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
-          final section = (item['sezione'] ?? '').toString().trim();
-          if (id != null && section.isNotEmpty) sectionById[id] = section;
+        // Usa la stessa classificazione dinamica della schermata Home.
+        // Senza questo passaggio la ricerca aperta da una scheda categoria
+        // continuava a filtrare esclusivamente il vecchio campo "sezione".
+        try {
+          final assignments = await Supabase.instance.client
+              .schema('collection')
+              .from('oggetto_categoria')
+              .select('codice_oggetto,id_categoria')
+              .inFilter('codice_oggetto', ids);
+          final categoryIds = assignments
+              .map((item) => int.tryParse((item['id_categoria'] ?? '').toString()))
+              .whereType<int>().toSet().toList();
+          final namesById = <int, String>{};
+          if (categoryIds.isNotEmpty) {
+            final categories = await Supabase.instance.client
+                .schema('collection')
+                .from('categorie_merceologiche')
+                .select('id_categoria,nome_categoria,attiva')
+                .inFilter('id_categoria', categoryIds);
+            for (final item in categories) {
+              final id = int.tryParse((item['id_categoria'] ?? '').toString());
+              final name = (item['nome_categoria'] ?? '').toString().trim();
+              if (id != null && name.isNotEmpty && item['attiva'] != false) {
+                namesById[id] = name;
+              }
+            }
+          }
+          for (final item in assignments) {
+            final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
+            final categoryId = int.tryParse((item['id_categoria'] ?? '').toString());
+            final name = categoryId == null ? null : namesById[categoryId];
+            if (id != null && name != null) sectionById[id] = name;
+          }
+        } catch (e) {
+          debugPrint('VALORA: categorie dinamiche non disponibili nella ricerca: $e');
+        }
+        // Fallback solo per gli oggetti non ancora classificati nel registro nuovo.
+        try {
+          final metadataRows = await Supabase.instance.client
+              .schema('collection')
+              .from('master_metadati')
+              .select('codice_oggetto,sezione,categoria_prodotto,linea_prodotto')
+              .inFilter('codice_oggetto', ids);
+          for (final item in metadataRows) {
+            final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
+            final section = (item['sezione'] ?? item['categoria_prodotto'] ?? item['linea_prodotto'] ?? '').toString().trim();
+            if (id != null && section.isNotEmpty) sectionById.putIfAbsent(id, () => section);
+          }
+        } catch (e) {
+          debugPrint('VALORA: metadati fallback non disponibili nella ricerca: $e');
         }
         for (final row in rows) {
           final id = int.tryParse(_code(row));
