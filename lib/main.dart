@@ -7404,6 +7404,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ]),
           ),
         ],
+        if (_isPeriodReport && widget.apiCode != 'REPORT-CASH' && !_loading && _lastResult != null && _rows.isEmpty) ...[
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: sectionColor.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: sectionColor.withValues(alpha: 0.45)),
+            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.info_outline, color: sectionColor, size: 26),
+              const SizedBox(width: 12),
+              Expanded(child: Text(
+                widget.apiCode == 'REPORT-SALES'
+                  ? 'NON RISULTANO VENDITE NEL PERIODO SELEZIONATO'
+                  : 'NON RISULTANO ACQUISTI NEL PERIODO SELEZIONATO',
+                style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontWeight: FontWeight.w700),
+              )),
+            ]),
+          ),
+        ],
         if (_rows.isNotEmpty) ...[
           const SizedBox(height: 16),
           if (!isAvailableList)
@@ -7422,11 +7444,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
                 trailing: amount == null ? null : Text('${amount.toString()} ${item['valuta'] ?? 'EUR'}'),
-                onTap: () => showDialog<void>(context: context, builder: (context) => AlertDialog(
-                  title: const Text('Dettaglio operazione'),
-                  content: SingleChildScrollView(child: SelectableText(_pretty(item))),
-                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
-                )),
+                onTap: () {
+                  if (widget.apiCode == 'REPORT-PURCHASES' || widget.apiCode == 'REPORT-SALES') {
+                    final rawObjectCode = item['codice_oggetto'] ?? item['id_oggetto'] ??
+                      item['oggetto_id'] ?? item['codice_master_oggetto'];
+                    final objectCode = int.tryParse(rawObjectCode?.toString() ?? '');
+                    if (objectCode != null) {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => ObjectRuntimePage(
+                          title: 'Scheda oggetto',
+                          apiCode: 'OBJECT_MASTER',
+                          initialObjectCode: objectCode,
+                        ),
+                      ));
+                      return;
+                    }
+                  }
+                  showDialog<void>(context: context, builder: (context) => AlertDialog(
+                    title: const Text('Dettaglio operazione'),
+                    content: SingleChildScrollView(child: SelectableText(_pretty(item))),
+                    actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
+                  ));
+                },
               ));
             }
             return _objectCard(item, availableStyle: isAvailableList || isThemeReport, onTap: (isAvailableList || isThemeReport)
