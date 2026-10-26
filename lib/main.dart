@@ -2958,6 +2958,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
                           : procedure.apiCode == 'WRITE-PR-05'
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
+                               : procedure.apiCode == 'WRITE-PR-06'
+                                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
                                : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
@@ -7924,6 +7926,312 @@ class _PurchaseItemDraft {
     if (photoUrl != null) 'url_immagine_catalogo': photoUrl,
   };
   void dispose() { description.dispose(); price.dispose(); }
+}
+
+/// PR-06: apertura nuova vendita su un oggetto già esistente, con anteprima e conferma esplicita.
+class NewSalePage extends StatefulWidget {
+  const NewSalePage({super.key});
+  @override
+  State<NewSalePage> createState() => _NewSalePageState();
+}
+
+class _NewSalePageState extends State<NewSalePage> {
+  final String _session = _uuid.v4();
+  final TextEditingController _search = TextEditingController();
+  final TextEditingController _price = TextEditingController();
+  final TextEditingController _notes = TextEditingController();
+  List<Map<String, dynamic>> _objects = [];
+  List<Map<String, dynamic>> _platforms = [];
+  final Set<int> _selectedPlatforms = <int>{};
+  int? _selectedObject;
+  Map<String, dynamic>? _preview;
+  bool _busy = false, _locked = false, _loading = true, _confirmed = false;
+  String _status = 'Caricamento degli oggetti disponibili per la rivendita…';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _search.dispose(); _price.dispose(); _notes.dispose();
+    if (_locked) _releaseSilently();
+    super.dispose();
+  }
+
+  Future<void> _releaseSilently() async {
+    try { await _ValoraRuntimeApi.call('release_lock', {'session_id': _session}); } catch (_) {}
+    _locked = false;
+  }
+
+  void _invalidate() { _preview = null; _confirmed = false; }
+  void _notice(String value) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _status = 'Lettura dal database TEST…'; });
+    try {
+      final response = await _ValoraRuntimeApi.call('consultation', {
+        'session_id': _session, 'consultation_code': 'OBJECTS_SELLABLE',
+        'arguments': {'limite': 500, 'offset': 0},
+      });
+      final outer = response['result'];
+      final dynamic data = outer is Map ? (outer['risultato'] ?? outer) : outer;
+      final rows = data is List
+          ? data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+          : <Map<String, dynamic>>[];
+      final platformResponse = await _ValoraRuntimeApi.call('consultation', {
+        'session_id': _session, 'consultation_code': 'TABLE_VALUES',
+        'arguments': {'tabella': 'piattaforme', 'campo': 'nome_piattaforma'},
+      });
+      final pOuter = platformResponse['result'];
+      final dynamic pData = pOuter is Map ? (pOuter['risultato'] ?? pOuter) : pOuter;
+      final platforms = pData is List
+          ? pData.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).where((e) => int.tryParse((e['codice_piattaforma'] ?? '').toString()) != null).toList()
+          : <Map<String, dynamic>>[];
+      if (!mounted) return;
+      setState(() {
+        _objects = rows;
+        _platforms = platforms;
+        _selectedObject = rows.isNotEmpty ? int.tryParse((rows.first['codice_oggetto'] ?? '').toString()) : null;
+        _selectedPlatforms.clear();
+        if (platforms.isNotEmpty) {
+          final vinted = platforms.where((p) => (p['nome_piattaforma'] ?? '').toString().toLowerCase().contains('vinted'));
+          final first = vinted.isNotEmpty ? vinted.first : platforms.first;
+          final id = int.tryParse((first['codice_piattaforma'] ?? '').toString());
+          if (id != null) _selectedPlatforms.add(id);
+        }
+        _loading = false;
+        _status = rows.isEmpty
+          ? 'Nessun oggetto disponibile con destinazione RIVENDITA e stato DISPONIBILE.'
+          : 'Caricati ${rows.length} oggetti vendibili. La vendita non è ancora stata registrata.';
+      });
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _status = 'Caricamento non riuscito: $e'; });
+    }
+  }
+
+  List<Map<String, dynamic>> get _filteredObjects {
+    final q = _search.text.trim().toLowerCase();
+    if (q.isEmpty) return _objects;
+    return _objects.where((o) => [
+      o['codice_oggetto'], o['descrizione_oggetto'], o['codice_prodotto'], o['produttore']
+    ].any((v) => (v ?? '').toString().toLowerCase().contains(q))).toList();
+  }
+
+  Map<String, dynamic>? get _chosenObject {
+    for (final o in _objects) {
+      if (int.tryParse((o['codice_oggetto'] ?? '').toString()) == _selectedObject) return o;
+    }
+    return null;
+  }
+
+  Map<String, dynamic> _payload({bool confirmed = false, bool finalConfirmation = false}) => {
+    'operazioni': [
+      {
+        'codice_oggetto': _selectedObject,
+        'prezzo_di_vendita': double.parse(double.parse(_price.text.trim().replaceAll(',', '.')).toStringAsFixed(2)),
+        'codici_piattaforme': _selectedPlatforms.toList()..sort(),
+        'note': _notes.text.trim(),
+      }
+    ],
+    'dati_confermati': confirmed,
+    'conferma_finale': finalConfirmation,
+    'altra_operazione': false,
+  };
+
+  Future<bool> _acquire() async {
+    final r = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _session});
+    final data = r['result'];
+    if (data is Map && data['acquisito'] == true) { _locked = true; return true; }
+    if (mounted) setState(() => _status =
+      (data is Map ? (data['messaggio'] ?? data['stato']) : null)?.toString() ?? 'Blocco archivio non acquisito.');
+    return false;
+  }
+
+  Future<void> _release() async {
+    if (!_locked) return;
+    try { await _ValoraRuntimeApi.call('release_lock', {'session_id': _session}); }
+    finally { _locked = false; }
+  }
+
+  bool _valid() {
+    if (_selectedObject == null) { _notice('Seleziona un oggetto da mettere in vendita.'); return false; }
+    final amount = double.tryParse(_price.text.trim().replaceAll(',', '.'));
+    if (amount == null || !amount.isFinite || amount <= 0) { _notice('Inserisci un prezzo di vendita maggiore di zero.'); return false; }
+    if (_selectedPlatforms.isEmpty) { _notice('Seleziona almeno una piattaforma di vendita.'); return false; }
+    return true;
+  }
+
+  Future<void> _previewSale() async {
+    if (!_valid()) return;
+    setState(() { _busy = true; _status = 'Controllo preliminare PR-06 in TEST. Nessuna scrittura…'; _invalidate(); });
+    try {
+      if (!await _acquire()) return;
+      final r = await _ValoraRuntimeApi.procedure('PR-06', 'preview', _payload(), sessionId: _session);
+      if (!mounted) return;
+      setState(() {
+        _preview = r;
+        _status = r['scrittura_eseguita'] == false
+          ? 'Anteprima pronta. Nessuna scrittura eseguita.'
+          : 'Anteprima ricevuta. Verifica i dati prima di confermare.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Controllo preliminare non riuscito: $e');
+    } finally {
+      await _release();
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _saveSale() async {
+    if (_preview == null || !_confirmed) { _notice('Prima controlla il riepilogo e conferma i dati.'); return; }
+    setState(() { _busy = true; _status = 'Salvataggio PR-06 e verifica post-scrittura in corso…'; });
+    try {
+      if (!await _acquire()) return;
+      final r = await _ValoraRuntimeApi.procedure('PR-06', 'save',
+        _payload(confirmed: true, finalConfirmation: true),
+        sessionId: _session, requestId: _uuid.v4());
+      final verifiedRows = r['verifica_post_salvataggio'];
+      final verified = r['scrittura_eseguita'] == true &&
+        (r['stato'] == 'SALVATO_E_VERIFICATO') &&
+        verifiedRows is List && verifiedRows.isNotEmpty &&
+        verifiedRows.every((e) => e is Map &&
+          (e['stato_ciclo_vendita'] ?? '').toString() == 'APERTO' &&
+          (e['stato_oggetto'] ?? '').toString() == 'IN VENDITA');
+      if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
+      if (!mounted) return;
+      setState(() {
+        _preview = r;
+        _status = verified
+          ? 'Vendita aperta e verificata nel database TEST. L’oggetto risulta IN VENDITA.'
+          : 'Esito non verificato completamente: non considerare conclusa la vendita. Controlla il risultato runtime.';
+      });
+      if (verified) {
+        final another = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+          title: const Text('Vendita verificata'),
+          content: const Text('Vuoi inserire un’altra vendita?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('NO, TERMINA')),
+            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SÌ, NUOVA VENDITA')),
+          ],
+        ));
+        if (!mounted) return;
+        if (another == true) {
+          setState(() {
+            _selectedObject = _objects.where((o) => (o['stato'] ?? '').toString() == 'DISPONIBILE')
+              .map((o) => int.tryParse((o['codice_oggetto'] ?? '').toString()))
+              .whereType<int>().firstWhere((id) => id != _selectedObject, orElse: () => _selectedObject ?? 0);
+            _price.clear(); _notes.clear(); _preview = null; _confirmed = false;
+            _status = 'Nuova bozza pronta. Nessuna nuova vendita registrata.';
+          });
+          await _load();
+        } else if (mounted) { Navigator.of(context).pop(); }
+      }
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Salvataggio non confermato: $e');
+    } finally {
+      await _release();
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sectionColor = ValoraAppearance.instance.colorFor('VENDITE');
+    final filtered = _filteredObjects;
+    return Scaffold(
+      appBar: AppBar(title: const Text('PR-06 · NUOVA VENDITA')),
+      body: SafeArea(child: Center(child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 820),
+        child: ListView(padding: const EdgeInsets.all(16), children: [
+          Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(
+            'AMBIENTE TEST · La vendita non viene registrata finché non confermi esplicitamente il riepilogo. Sono selezionabili solo oggetti destinati alla RIVENDITA e disponibili.',
+            style: TextStyle(color: ValoraAppearance.instance.textSecondary)))),
+          const SizedBox(height: 12),
+          Text('1. SELEZIONA L’OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          TextField(controller: _search, decoration: const InputDecoration(
+            labelText: 'Cerca per descrizione, codice o produttore', prefixIcon: Icon(Icons.search)),
+            onChanged: (_) => setState(_invalidate)),
+          const SizedBox(height: 8),
+          if (_loading) const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
+          if (!_loading && filtered.isEmpty) const Text('Nessun oggetto trovato. Verifica che sia disponibile per la rivendita.'),
+          if (!_loading && filtered.isNotEmpty) DropdownButtonFormField<int>(
+            value: filtered.any((o) => int.tryParse((o['codice_oggetto'] ?? '').toString()) == _selectedObject)
+              ? _selectedObject : int.tryParse((filtered.first['codice_oggetto'] ?? '').toString()),
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Oggetto da mettere in vendita *'),
+            items: filtered.map((o) {
+              final id = int.tryParse((o['codice_oggetto'] ?? '').toString());
+              final desc = (o['descrizione_oggetto'] ?? 'Oggetto senza descrizione').toString();
+              return DropdownMenuItem<int>(value: id, child: Text('${id == null ? '' : '#$id · '}$desc', overflow: TextOverflow.ellipsis));
+            }).toList(),
+            onChanged: _busy ? null : (v) => setState(() { _selectedObject = v; _invalidate(); }),
+          ),
+          if (_chosenObject != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text((_chosenObject!['descrizione_oggetto'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('Codice oggetto: ${_selectedObject} · Stato: ${_chosenObject!['stato'] ?? 'DISPONIBILE'}'),
+              Text('Valore inventario: ${_chosenObject!['valore_oggetto'] ?? 'non indicato'} ${_chosenObject!['valuta_valore'] ?? 'EUR'}'),
+            ]))),
+          const SizedBox(height: 16),
+          Text('2. DATI DI VENDITA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          TextField(controller: _price, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Prezzo di vendita richiesto (€) *', prefixIcon: Icon(Icons.euro)),
+            onChanged: (_) => setState(_invalidate)),
+          const SizedBox(height: 8),
+          const Text('Piattaforme di vendita *'),
+          if (_platforms.isEmpty) const Text('Non sono riuscito a caricare le piattaforme. Riprova il caricamento.'),
+          ..._platforms.map((p) {
+            final id = int.tryParse((p['codice_piattaforma'] ?? '').toString());
+            if (id == null) return const SizedBox.shrink();
+            return CheckboxListTile(
+              contentPadding: EdgeInsets.zero, value: _selectedPlatforms.contains(id),
+              title: Text((p['nome_piattaforma'] ?? 'Piattaforma $id').toString()),
+              onChanged: _busy ? null : (v) => setState(() { if (v == true) { _selectedPlatforms.add(id); } else { _selectedPlatforms.remove(id); } _invalidate(); }),
+            );
+          }),
+          const SizedBox(height: 8),
+          TextField(controller: _notes, minLines: 2, maxLines: 4,
+            decoration: const InputDecoration(labelText: 'Note (facoltative)', alignLabelWithHint: true),
+            onChanged: (_) => setState(_invalidate)),
+          const SizedBox(height: 16),
+          FilledButton.icon(onPressed: _busy || _loading || _objects.isEmpty ? null : _previewSale,
+            icon: const Icon(Icons.fact_check_outlined), label: const Text('CONTROLLA E MOSTRA RIEPILOGO')),
+          const SizedBox(height: 12),
+          if (_preview != null) Card(color: ValoraAppearance.instance.card, child: Padding(padding: const EdgeInsets.all(12), child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('3. RIEPILOGO PRIMA DEL SALVATAGGIO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              SelectableText(const JsonEncoder.withIndent('  ').convert(_preview)),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero, value: _confirmed,
+                title: const Text('Confermo che oggetto, prezzo e piattaforme sono corretti.'),
+                onChanged: _busy ? null : (v) => setState(() => _confirmed = v == true),
+              ),
+              FilledButton.icon(onPressed: _busy || !_confirmed ? null : _saveSale,
+                icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA')),
+            ]))),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(onPressed: _busy ? null : _load,
+            icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI DISPONIBILI')),
+          const SizedBox(height: 12),
+          Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(_status.contains('non riuscito') || _status.contains('non confermato') ? Icons.error_outline : Icons.info_outline, color: sectionColor),
+              const SizedBox(width: 8), Expanded(child: Text(_status)),
+            ]))),
+          if (_preview != null) const SizedBox(height: 8),
+          if (_preview != null) SelectableText(const JsonEncoder.withIndent('  ').convert(_preview!)),
+        ]),
+      ))),
+    );
+  }
 }
 
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
