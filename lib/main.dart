@@ -3353,6 +3353,56 @@ class ObjectRuntimePage extends StatefulWidget {
 }
 
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
+  List<Map<String, dynamic>> _merchandiseCategories = [];
+  String? _categoryCode;
+  bool _categoriesLoading = false;
+
+  Future<void> _loadMerchandiseCategories() async {
+    if (_categoriesLoading) return;
+    _categoriesLoading = true;
+    try {
+      final rows = await Supabase.instance.client.schema('collection').from('categorie_merceologiche').select('codice_categoria,nome_categoria').eq('attiva', true).order('nome_categoria');
+      if (mounted) setState(() {
+        _merchandiseCategories = rows.map((e) => Map<String, dynamic>.from(e)).toList();
+        if (_categoryCode != null && !_merchandiseCategories.any((e) => e['codice_categoria'] == _categoryCode)) _categoryCode = null;
+      });
+    } catch (e) { debugPrint('VALORA: caricamento categorie merceologiche fallito: $e'); }
+    finally { _categoriesLoading = false; }
+  }
+
+  Future<void> _createMerchandiseCategory() async {
+    final name = TextEditingController(); final description = TextEditingController();
+    final result = await showDialog<Map<String, String>>(context: context, builder: (context) => AlertDialog(
+      title: const Text('Nuova categoria merceologica'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: name, autofocus: true, decoration: const InputDecoration(labelText: 'Nome categoria *')),
+        TextField(controller: description, decoration: const InputDecoration(labelText: 'Descrizione (facoltativa)')),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('ANNULLA')),
+        FilledButton(onPressed: () { if (name.text.trim().isNotEmpty) Navigator.pop(context, {'nome': name.text.trim(), 'descrizione': description.text.trim()}); }, child: const Text('CREA'))],
+    ));
+    if (result == null) return;
+    try {
+      final existing = _merchandiseCategories.where((e) => (e['nome_categoria'] ?? '').toString().toLowerCase() == result['nome']!.toLowerCase()).toList();
+      if (existing.isNotEmpty) { setState(() => _categoryCode = existing.first['codice_categoria']?.toString()); return; }
+      final normalized = result['nome']!.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '');
+      final rows = await Supabase.instance.client.schema('collection').from('categorie_merceologiche').insert({
+        'codice_categoria': 'CAT-${DateTime.now().microsecondsSinceEpoch}', 'nome_categoria': result['nome'],
+        'nome_normalizzato': normalized, 'descrizione': result['descrizione']!.isEmpty ? null : result['descrizione'], 'attiva': true
+      }).select('codice_categoria,nome_categoria');
+      final created = Map<String, dynamic>.from(rows.first as Map);
+      await _loadMerchandiseCategories();
+      if (mounted) setState(() => _categoryCode = created['codice_categoria']?.toString());
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Creazione categoria non riuscita: $e'))); }
+  }
+
+  Widget _merchandiseCategoryField() => Padding(padding: const EdgeInsets.only(bottom: 12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    DropdownButtonFormField<String>(value: _categoryCode, decoration: const InputDecoration(labelText: 'Categoria merceologica *'),
+      items: _merchandiseCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria']?.toString(), child: Text((e['nome_categoria'] ?? '').toString(), overflow: TextOverflow.ellipsis))).toList(),
+      onChanged: _loading ? null : (v) => setState(() { _categoryCode = v; _dataConfirmed = false; _finalReady = false; })),
+    Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: _loading ? null : _createMerchandiseCategory, icon: const Icon(Icons.add), label: const Text('CREA CATEGORIA'))),
+  ]));
+
   Color get sectionColor => sectionColorForApiCode(widget.apiCode);
   final _search = TextEditingController();
   final _description = TextEditingController();
@@ -3459,6 +3509,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   @override
   void initState() {
+    if (widget.apiCode == 'PR-01') WidgetsBinding.instance.addPostFrameCallback((_) => _loadMerchandiseCategories());
     super.initState();
     if (widget.apiCode == 'OBJECT_MASTER') {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
@@ -3594,7 +3645,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ? null
           : ((unitPrice * 100 * q).round() / 100.0);
       _recalculateTotal();
+      if (_categoryCode == null || !_merchandiseCategories.any((e) => e['codice_categoria'] == _categoryCode)) throw Exception('Seleziona una categoria merceologica valida.');
       return {'oggetti': [{
+        'codice_categoria': _categoryCode,
         'descrizione': _description.text.trim(),
         'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
         'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
@@ -4153,6 +4206,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _detailFieldCard('stato', object['stato']),
           ] else ...[
             _field(_description, 'Descrizione oggetto', focusNode: _descriptionFocus),
+        if (widget.apiCode == 'PR-01') _merchandiseCategoryField(),
             _field(_producer, 'Produttore'),
             _field(_line, 'Anno di uscita', type: TextInputType.number),
             _field(_family, 'Codice prodotto'),
