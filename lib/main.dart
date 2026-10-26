@@ -2777,20 +2777,9 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
-      // Usa sempre la categoria primaria canonica restituita da PR-11.
-      // Non sovrascriverla con master_metadati.sezione: quel campo è storico/descrittivo
-      // e causava la ricomparsa degli oggetti nella sezione sbagliata quando si apriva
-      // una categoria dalla dashboard.
-      for (final row in rows) {
-        final category = (row['categoria'] ?? '').toString().trim();
-        row['_valora_categoria'] = category;
-        row['_valora_codice_categoria'] = (row['codice_categoria'] ?? '').toString().trim();
-        row['_valora_sottotema'] = (row['sottotema'] ?? '').toString().trim();
-        row['_valora_sezione'] = category.isNotEmpty ? category : 'DA CLASSIFICARE';
-      }
-      // Il menu e il filtro della collezione usano esclusivamente la categoria primaria
-      // proveniente dalla relazione canonica restituita da PR-11. Sezione/sottotema non
-      // devono mai spostare un oggetto in un'altra voce del menu.
+      // Fonte unica per raggruppamento e filtro: categoria primaria restituita da PR-11.
+      // Non usare master_metadati.sezione/categoria_prodotto/tema per classificare:
+      // sono attributi descrittivi e non devono spostare l'oggetto tra le categorie.
       for (final row in rows) {
         final category = (row['categoria'] ?? '').toString().trim();
         row['_valora_categoria'] = category;
