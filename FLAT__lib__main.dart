@@ -2881,7 +2881,14 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
               final canonical = (row['categoria'] ?? '').toString().trim().toLowerCase();
               return canonical.isEmpty || !primaryDashboardCategories.contains(canonical);
             }
-            return _description(row).toLowerCase().contains(normalizedQuery);
+            final description = _description(row).toLowerCase();
+            final objectCode = _code(row).toLowerCase();
+            final category = (row['categoria'] ?? '').toString().toLowerCase().trim();
+            final categoryCode = (row['codice_categoria'] ?? '').toString().toLowerCase().trim();
+            return description.contains(normalizedQuery) ||
+                objectCode.contains(normalizedQuery) ||
+                category.contains(normalizedQuery) ||
+                categoryCode.contains(normalizedQuery);
           })
           .toList()
         ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
