@@ -7943,6 +7943,8 @@ class _NewSalePageState extends State<NewSalePage> {
   List<Map<String, dynamic>> _objects = [];
   List<Map<String, dynamic>> _platforms = [];
   final Set<int> _selectedPlatforms = <int>{};
+  final List<Map<String, dynamic>> _pendingSales = [];
+  final List<String> _pendingDescriptions = [];
   int? _selectedObject;
   Map<String, dynamic>? _preview;
   bool _busy = false, _locked = false, _loading = true, _confirmed = false;
@@ -8027,8 +8029,8 @@ class _NewSalePageState extends State<NewSalePage> {
     return null;
   }
 
-  Map<String, dynamic> _payload({bool confirmed = false, bool finalConfirmation = false}) => {
-    'operazioni': [
+  Map<String, dynamic> _payload({bool confirmed = false, bool finalConfirmation = false, List<Map<String, dynamic>>? operations}) => {
+    'operazioni': operations ?? [
       {
         'codice_oggetto': _selectedObject,
         'prezzo_di_vendita': double.parse(double.parse(_price.text.trim().replaceAll(',', '.')).toStringAsFixed(2)),
@@ -8066,19 +8068,68 @@ class _NewSalePageState extends State<NewSalePage> {
 
   Future<void> _previewSale() async {
     if (!_valid()) return;
+    final operation = <String, dynamic>{
+      'codice_oggetto': _selectedObject,
+      'prezzo_di_vendita': double.parse(double.parse(_price.text.trim().replaceAll(',', '.')).toStringAsFixed(2)),
+      'codici_piattaforme': _selectedPlatforms.toList()..sort(),
+      'note': _notes.text.trim(),
+    };
+    final chosenDescription = (_chosenObject?['descrizione_oggetto'] ?? 'Oggetto #'+_selectedObject.toString()).toString();
+    if (_pendingSales.any((e) => int.tryParse((e['codice_oggetto'] ?? '').toString()) == _selectedObject)) {
+      _notice('Questo oggetto è già stato inserito nel lotto. Selezionane un altro.');
+      return;
+    }
     setState(() { _busy = true; _status = 'Controllo preliminare PR-06 in TEST. Nessuna scrittura…'; _invalidate(); });
     try {
       if (!await _acquire()) return;
-      final r = await _ValoraRuntimeApi.procedure('PR-06', 'preview', _payload(), sessionId: _session);
+      final r = await _ValoraRuntimeApi.procedure('PR-06', 'preview',
+        _payload(operations: [operation]), sessionId: _session);
+      if (r['scrittura_eseguita'] == true || (r['stato'] != null && r['stato'] != 'BOZZA')) {
+        throw StateError('La verifica preliminare ha restituito un esito inatteso.');
+      }
       if (!mounted) return;
       setState(() {
-        _preview = r;
-        _status = r['scrittura_eseguita'] == false
-          ? 'Anteprima pronta. Nessuna scrittura eseguita.'
-          : 'Anteprima ricevuta. Verifica i dati prima di confermare.';
+        _pendingSales.add(operation);
+        _pendingDescriptions.add(chosenDescription);
+        _preview = null;
+        _confirmed = false;
+        _status = 'Vendita aggiunta alla coda ('+_pendingSales.length.toString()+'). Nessuna vendita è ancora stata salvata.';
       });
+      final another = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Vuoi registrare un’altra vendita?'),
+          content: Text(chosenDescription+' è pronta. Vendite in attesa: '+_pendingSales.length.toString()+'.\n\nSÌ riparte con una nuova vendita. NO salva tutte le vendite in attesa insieme.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('NO, SALVA IL LOTTO')),
+            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SÌ, ALTRA VENDITA')),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      if (another == true) {
+        setState(() {
+          _selectedObject = _objects.map((o) => int.tryParse((o['codice_oggetto'] ?? '').toString()))
+            .whereType<int>().firstWhere((id) =>
+              !_pendingSales.any((sale) => int.tryParse((sale['codice_oggetto'] ?? '').toString()) == id),
+              orElse: () => 0);
+          if (_selectedObject == 0) _selectedObject = null;
+          _price.clear(); _notes.clear(); _search.clear();
+          _selectedPlatforms.clear(); _selectedPlatforms.add(1);
+          _preview = null; _confirmed = false;
+          _status = _selectedObject == null
+            ? 'Non ci sono altri oggetti disponibili. Puoi terminare salvando il lotto.'
+            : 'Nuova vendita pronta. Le vendite precedenti sono ancora in bozza.';
+        });
+        if (_selectedObject == null) {
+          _notice('Non ci sono altri oggetti da inserire. Premi SALVA LOTTO per registrare le vendite in attesa.');
+        }
+      } else {
+        await _saveSale();
+      }
     } catch (e) {
-      if (mounted) setState(() => _status = 'Controllo preliminare non riuscito: $e');
+      if (mounted) setState(() => _status = 'Controllo preliminare non riuscito: $e. Nessuna vendita del lotto è stata salvata.');
     } finally {
       await _release();
       if (mounted) setState(() => _busy = false);
@@ -8086,17 +8137,22 @@ class _NewSalePageState extends State<NewSalePage> {
   }
 
   Future<void> _saveSale() async {
-    if (_preview == null || !_confirmed) { _notice('Prima controlla il riepilogo e conferma i dati.'); return; }
-    setState(() { _busy = true; _status = 'Salvataggio PR-06 e verifica post-scrittura in corso…'; });
+    if (_pendingSales.isEmpty) { _notice('Non ci sono vendite in attesa di salvataggio.'); return; }
+    setState(() { _busy = true; _status = 'Verifica del lotto completo e salvataggio atomico PR-06 in corso…'; });
     try {
       if (!await _acquire()) return;
+      final preview = await _ValoraRuntimeApi.procedure('PR-06', 'preview',
+        _payload(operations: _pendingSales), sessionId: _session);
+      if (preview['scrittura_eseguita'] == true || preview['stato'] != 'BOZZA') {
+        throw StateError('Riepilogo finale non valido. Nessuna vendita del lotto è stata salvata.');
+      }
       final r = await _ValoraRuntimeApi.procedure('PR-06', 'save',
-        _payload(confirmed: true, finalConfirmation: true),
+        _payload(confirmed: true, finalConfirmation: true, operations: _pendingSales),
         sessionId: _session, requestId: _uuid.v4());
       final verifiedRows = r['verifica_post_salvataggio'];
       final verified = r['scrittura_eseguita'] == true &&
-        (r['stato'] == 'SALVATO_E_VERIFICATO') &&
-        verifiedRows is List && verifiedRows.isNotEmpty &&
+        r['stato'] == 'SALVATO_E_VERIFICATO' &&
+        verifiedRows is List && verifiedRows.length == _pendingSales.length &&
         verifiedRows.every((e) => e is Map &&
           (e['stato_ciclo_vendita'] ?? '').toString() == 'APERTO' &&
           (e['stato_oggetto'] ?? '').toString() == 'IN VENDITA');
@@ -8105,32 +8161,19 @@ class _NewSalePageState extends State<NewSalePage> {
       setState(() {
         _preview = r;
         _status = verified
-          ? 'Vendita aperta e verificata nel database TEST. L’oggetto risulta IN VENDITA.'
-          : 'Esito non verificato completamente: non considerare conclusa la vendita. Controlla il risultato runtime.';
+          ? 'LOTTO SALVATO E VERIFICATO: '+verifiedRows.length.toString()+' vendite registrate. Ogni oggetto risulta IN VENDITA.'
+          : 'Esito non verificato completamente: non considerare concluso il lotto. Controlla il risultato runtime.';
       });
       if (verified) {
-        final another = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
-          title: const Text('Vendita verificata'),
-          content: const Text('Vuoi inserire un’altra vendita?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('NO, TERMINA')),
-            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SÌ, NUOVA VENDITA')),
-          ],
+        await showDialog<void>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+          title: const Text('Lotto salvato e verificato'),
+          content: Text(verifiedRows.length.toString()+' vendite sono state registrate e verificate nel database TEST.'),
+          actions: [FilledButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('FINE'))],
         ));
-        if (!mounted) return;
-        if (another == true) {
-          setState(() {
-            _selectedObject = _objects.where((o) => (o['stato'] ?? '').toString() == 'DISPONIBILE')
-              .map((o) => int.tryParse((o['codice_oggetto'] ?? '').toString()))
-              .whereType<int>().firstWhere((id) => id != _selectedObject, orElse: () => _selectedObject ?? 0);
-            _price.clear(); _notes.clear(); _preview = null; _confirmed = false;
-            _status = 'Nuova bozza pronta. Nessuna nuova vendita registrata.';
-          });
-          await _load();
-        } else if (mounted) { Navigator.of(context).pop(); }
+        if (mounted) Navigator.of(context).pop();
       }
     } catch (e) {
-      if (mounted) setState(() => _status = 'Salvataggio non confermato: $e');
+      if (mounted) setState(() => _status = 'Lotto non confermato: $e. La procedura SQL salva tutte le operazioni insieme oppure annulla l’intera transazione.');
     } finally {
       await _release();
       if (mounted) setState(() => _busy = false);
@@ -8149,6 +8192,18 @@ class _NewSalePageState extends State<NewSalePage> {
           Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(
             'AMBIENTE TEST · La vendita non viene registrata finché non confermi esplicitamente il riepilogo. Sono selezionabili solo oggetti destinati alla RIVENDITA e disponibili.',
             style: TextStyle(color: ValoraAppearance.instance.textSecondary)))),
+          const SizedBox(height: 12),
+          if (_pendingSales.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('VENDITE IN ATTESA: '+_pendingSales.length.toString(), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ...List.generate(_pendingSales.length, (i) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Text((i + 1).toString()+'. '+_pendingDescriptions[i]+' · €'+_pendingSales[i]['prezzo_di_vendita'].toString()),
+              )),
+              Text('Totale prezzi richiesti: €'+_pendingSales.fold<double>(0, (sum, row) => sum + ((row['prezzo_di_vendita'] as num?)?.toDouble() ?? 0)).toStringAsFixed(2)),
+              OutlinedButton.icon(onPressed: _busy ? null : _saveSale, icon: const Icon(Icons.save_outlined), label: const Text('TERMINA E SALVA IL LOTTO ORA')),
+            ]))),
           const SizedBox(height: 12),
           Text('1. SELEZIONA L’OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
@@ -8215,7 +8270,7 @@ class _NewSalePageState extends State<NewSalePage> {
                 onChanged: _busy ? null : (v) => setState(() => _confirmed = v == true),
               ),
               FilledButton.icon(onPressed: _busy || !_confirmed ? null : _saveSale,
-                icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA')),
+                icon: const Icon(Icons.save_outlined), label: const Text('SALVA LOTTO')),
             ]))),
           const SizedBox(height: 12),
           OutlinedButton.icon(onPressed: _busy ? null : _load,
