@@ -8095,6 +8095,9 @@ class _NewSalePageState extends State<NewSalePage> {
         _confirmed = false;
         _status = 'Vendita aggiunta alla coda ('+_pendingSales.length.toString()+'). Nessuna vendita è ancora stata salvata.';
       });
+      // Rilascia il blocco prima di attendere la risposta dell’utente; il salvataggio
+      // finale riacquisirà il blocco per tutta la transazione del lotto.
+      await _release();
       final another = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
