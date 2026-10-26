@@ -8071,7 +8071,7 @@ class _PurchaseItemDraft {
 }
 
 
-/// PR-09: annullamento di una vendita conclusa, con anteprima e conferma esplicita.
+/// PR-09: annullamento vendite concluse con coda, anteprima e conferma finale.
 class CancelSalePage extends StatefulWidget {
   const CancelSalePage({super.key});
   @override
@@ -8080,11 +8080,11 @@ class CancelSalePage extends StatefulWidget {
 class _CancelSalePageState extends State<CancelSalePage> {
   final String _session = _uuid.v4();
   List<Map<String, dynamic>> _sales = [];
+  final List<Map<String, dynamic>> _pending = [];
   int? _selected;
   bool _relist = false, _busy = false, _locked = false;
   String _status = 'Caricamento vendite concluse…';
   Map<String, dynamic>? _preview;
-
   @override
   void initState() { super.initState(); _load(); }
   @override
@@ -8093,11 +8093,11 @@ class _CancelSalePageState extends State<CancelSalePage> {
     try { await _ValoraRuntimeApi.call('release_lock', {'session_id': _session}); } catch (_) {}
     _locked = false;
   }
-  Future<bool> _acquire() async {
+  Future<void> _acquire() async {
     final r = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _session});
     final result = r['result'];
-    if (result is Map && (result['acquisito'] == true || result['stato'] == 'ATTIVO')) { _locked = true; return true; }
-    if (r['acquired'] == true || r['stato'] == 'ATTIVO') { _locked = true; return true; }
+    if ((result is Map && (result['acquisito'] == true || result['stato'] == 'ATTIVO')) ||
+        r['acquired'] == true || r['stato'] == 'ATTIVO') { _locked = true; return; }
     throw StateError('Blocco archivio non acquisito.');
   }
   Future<void> _load() async {
@@ -8105,77 +8105,141 @@ class _CancelSalePageState extends State<CancelSalePage> {
     try {
       final response = await Supabase.instance.client.schema('collection').from('master_vendite')
         .select('codice_vendita,codice_oggetto,descrizione_oggetto,data_vendita,importo_vendita,valuta,stato_vendita,codice_lotto')
-        .eq('stato_vendita','CONCLUSA').order('data_vendita', ascending: false).limit(500);
+        .eq('stato_vendita', 'CONCLUSA').order('data_vendita', ascending: false).limit(500);
       if (!mounted) return;
-      setState(() { _sales = response.map((e) => Map<String,dynamic>.from(e)).toList(); _status = _sales.isEmpty ? 'Non ci sono vendite concluse da annullare.' : 'Seleziona la vendita da annullare.'; });
-    } catch (e) { if (mounted) setState(() => _status = 'Lettura vendite non riuscita: $e'); }
-    finally { if (mounted) setState(() => _busy = false); }
+      final pendingIds = _pending.map((x) => x['codice_vendita']).toSet();
+      setState(() {
+        _sales = response.map((e) => Map<String, dynamic>.from(e))
+          .where((e) => !pendingIds.contains(e['codice_vendita'])).toList();
+        _status = _sales.isEmpty
+          ? (_pending.isEmpty ? 'Non ci sono vendite concluse da annullare.' : 'Nessun’altra vendita disponibile. Puoi confermare la coda.')
+          : 'Seleziona la vendita da annullare.';
+      });
+    } catch (e) {
+      if (mounted) setState(() { _status = 'Lettura vendite non riuscita: $e'; });
+    } finally { if (mounted) setState(() { _busy = false; }); }
   }
-  Map<String,dynamic> _payload({required bool dataConfirmed, required bool finalConfirm}) => {
-    'operazioni': [{'codice_vendita': _selected, 'rimetti_in_vendita': _relist}],
-    'dati_confermati': dataConfirmed, 'conferma_finale': finalConfirm, 'altra_operazione': false,
+  Map<String, dynamic> _operation(Map<String, dynamic> sale) => {
+    'codice_vendita': sale['codice_vendita'],
+    'rimetti_in_vendita': _relist,
+    '_descrizione': sale['descrizione_oggetto'] ?? 'Oggetto #${sale['codice_oggetto']}',
+    '_codice_oggetto': sale['codice_oggetto'],
+    '_data_vendita': sale['data_vendita'],
+    '_importo_vendita': sale['importo_vendita'],
   };
-  Future<void> _previewCancel() async {
+  Future<void> _prepareCancellation() async {
     if (_selected == null) { _notice('Seleziona una vendita.'); return; }
-    setState(() { _busy = true; _preview = null; _status = 'Preparazione anteprima annullamento…'; });
-    try {
-      if (!await _acquire()) return;
-      final r = await _ValoraRuntimeApi.procedure('PR-09','preview',_payload(dataConfirmed:false,finalConfirm:false),sessionId:_session);
-      if (r['stato'] != 'BOZZA' || r['scrittura_eseguita'] == true) throw StateError('Anteprima PR-09 non valida.');
-      if (!mounted) return;
-      setState(() { _preview = r; _status = 'Anteprima pronta. Nessuna modifica è stata salvata.'; });
-    } catch (e) { if (mounted) setState(() => _status = 'Anteprima non riuscita: $e'); }
-    finally { await _releaseSilently(); if (mounted) setState(() => _busy = false); }
-  }
-  Future<void> _saveCancel() async {
-    if (_selected == null) { _notice('Seleziona una vendita.'); return; }
-    final sale = _sales.firstWhere((x) => x['codice_vendita'] == _selected);
-    final yes = await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
-      title: const Text('Conferma annullamento'),
-      content: Text('Annullare la vendita #$_selected di ${sale['descrizione_oggetto']}? '+(_relist ? 'L’oggetto tornerà IN VENDITA.' : 'L’oggetto tornerà DISPONIBILE.')+' L’operazione verrà registrata nello storico.'),
-      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('INDIETRO')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('ANNULLA VENDITA'))],
+    Map<String, dynamic>? sale;
+    for (final row in _sales) {
+      if ((row['codice_vendita'] as num).toInt() == _selected) { sale = row; break; }
+    }
+    if (sale == null) { _notice('La vendita selezionata non è più disponibile. Aggiorna l’elenco.'); return; }
+    final op = _operation(sale);
+    final another = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Annullamento preparato'),
+      content: Text('Vendita #${_selected} · ${op['_descrizione']}\n'
+        '${_relist ? 'L’oggetto tornerà IN VENDITA.' : 'L’oggetto tornerà DISPONIBILE.'}\n\n'
+        'Vuoi annullare un’altra vendita? Nessuna modifica è stata ancora salvata.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('NO, RIEPILOGO')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('SÌ, ALTRA VENDITA')),
+      ],
     ));
-    if (yes != true) return;
-    setState(() { _busy = true; _status = 'Annullamento e verifica database…'; });
-    try {
-      if (!await _acquire()) return;
-      final r = await _ValoraRuntimeApi.procedure('PR-09','save',_payload(dataConfirmed:true,finalConfirm:true),sessionId:_session,requestId:_uuid.v4());
-      final ok = r['stato']=='SALVATO_E_VERIFICATO' && r['scrittura_eseguita']==true;
-      if (!mounted) return;
-      setState(() => _status = ok ? 'VENDITA ANNULLATA E VERIFICATA.' : 'Esito non verificato. Controllare il database prima di riprovare.');
-      if (ok) { await _releaseSilently(); await _load(); }
-    } catch (e) { if (mounted) setState(() => _status = 'Annullamento non riuscito: $e'); }
-    finally { await _releaseSilently(); if (mounted) setState(() => _busy = false); }
+    if (another == null || !mounted) return;
+    setState(() {
+      _pending.add(op);
+      _sales.removeWhere((x) => (x['codice_vendita'] as num).toInt() == _selected);
+      _selected = null; _relist = false; _preview = null;
+      _status = '${_pending.length} annullamenti in coda; non ancora salvati.';
+    });
+    if (another && _sales.isNotEmpty) return;
+    await _reviewAndConfirm();
   }
-  void _notice(String value) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(value)));
+  String _summaryLine(Map<String, dynamic> x) =>
+    '#${x['codice_vendita']} · ${x['_descrizione']} · '
+    '${(x['rimetti_in_vendita'] == true) ? 'RITORNA IN VENDITA' : 'TORNA DISPONIBILE'}';
+  Future<void> _reviewAndConfirm() async {
+    if (_pending.isEmpty) return;
+    final summary = _pending.map(_summaryLine).join('\n');
+    final yes = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Riepilogo finale annullamenti'),
+      content: SingleChildScrollView(child: Text('$summary\n\nConfermi l’annullamento di ${_pending.length} vendite? Lo storico sarà conservato. Solo dopo questa conferma verranno salvate le modifiche.')),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('INDIETRO')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMA E SALVA')),
+      ],
+    ));
+    if (yes != true || !mounted) return;
+    setState(() { _busy = true; _status = 'Verifica anteprima PR-09…'; });
+    try {
+      await _acquire();
+      final ops = _pending.map((x) => <String, dynamic>{
+        'codice_vendita': x['codice_vendita'],
+        'rimetti_in_vendita': x['rimetti_in_vendita'] == true,
+      }).toList();
+      final preview = await _ValoraRuntimeApi.procedure('PR-09', 'preview', {
+        'operazioni': ops, 'dati_confermati': false,
+        'conferma_finale': false, 'altra_operazione': false,
+      }, sessionId: _session);
+      if (preview['stato'] != 'BOZZA' || preview['scrittura_eseguita'] == true) {
+        throw StateError('Anteprima PR-09 non valida.');
+      }
+      if (!mounted) return;
+      setState(() { _preview = preview; _status = 'Anteprima valida. Salvataggio finale in corso…'; });
+      final saved = await _ValoraRuntimeApi.procedure('PR-09', 'save', {
+        'operazioni': ops, 'dati_confermati': true,
+        'conferma_finale': true, 'altra_operazione': false,
+      }, sessionId: _session, requestId: _uuid.v4());
+      final ok = saved['stato'] == 'SALVATO_E_VERIFICATO' && saved['scrittura_eseguita'] == true;
+      if (!mounted) return;
+      setState(() {
+        _status = ok ? 'ANNULLAMENTI SALVATI E VERIFICATI (${_pending.length}).' : 'Esito non verificato. Controllare il database prima di riprovare.';
+        if (ok) { _preview = saved; _pending.clear(); }
+      });
+      if (ok) { await _releaseSilently(); await _load(); }
+    } catch (e) {
+      if (mounted) setState(() { _status = 'Annullamento non riuscito: $e'; });
+    } finally {
+      await _releaseSilently();
+      if (mounted) setState(() { _busy = false; });
+    }
+  }
+  void _notice(String value) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
   @override
   Widget build(BuildContext context) {
     final color = ValoraAppearance.instance.colorFor('VENDITE');
     return Scaffold(
       appBar: AppBar(title: const Text('ANNULLA VENDITA')),
-      body: SafeArea(child: ListView(padding:const EdgeInsets.all(16),children:[
-        Text('Seleziona una vendita conclusa. L’annullamento non elimina lo storico: cambia lo stato della vendita e dell’oggetto.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
-        const SizedBox(height:12),
-        if (_sales.isEmpty && !_busy) Text('Nessuna vendita conclusa disponibile.',style:TextStyle(color:color)),
+      body: SafeArea(child: ListView(padding: const EdgeInsets.all(16), children: [
+        Text('Seleziona una vendita conclusa e prepara l’annullamento. Puoi accodarne più di una: lo storico viene conservato e nessuna modifica è salvata prima della conferma finale.',
+          style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+        const SizedBox(height: 12),
+        if (_sales.isEmpty && !_busy) Text('Nessun’altra vendita conclusa disponibile.', style: TextStyle(color: color)),
         ..._sales.map((sale) {
           final id = (sale['codice_vendita'] as num).toInt();
           return RadioListTile<int>(
-            value:id, groupValue:_selected, activeColor:color,
-            title:Text('#$id · ${sale['descrizione_oggetto'] ?? 'Oggetto'}'),
-            subtitle:Text('Oggetto #${sale['codice_oggetto']} · ${sale['data_vendita']} · €${sale['importo_vendita']}${sale['codice_lotto'] != null ? ' · LOTTO' : ''}'),
-            onChanged:_busy ? null : (v)=>setState((){_selected=v;_preview=null;}),
+            value: id, groupValue: _selected, activeColor: color,
+            title: Text('#$id · ${sale['descrizione_oggetto'] ?? 'Oggetto'}'),
+            subtitle: Text('Oggetto #${sale['codice_oggetto']} · ${sale['data_vendita']} · €${sale['importo_vendita']}${sale['codice_lotto'] != null ? ' · LOTTO' : ''}'),
+            onChanged: _busy ? null : (v) => setState(() { _selected = v; }),
           );
         }),
-        SwitchListTile(value:_relist, onChanged:_busy ? null : (v)=>setState(()=>_relist=v),
-          title:const Text('RIMETTI IN VENDITA'),subtitle:const Text('Attivo: l’oggetto torna IN VENDITA. Disattivo: torna DISPONIBILE.')),
-        const SizedBox(height:12),
-        FilledButton.icon(onPressed:_busy ? null : _previewCancel,icon:const Icon(Icons.visibility_outlined),label:const Text('ANTEPRIMA ANNULLAMENTO')),
-        const SizedBox(height:8),
-        FilledButton.icon(onPressed:_busy || _preview==null ? null : _saveCancel,icon:const Icon(Icons.cancel_outlined),label:const Text('CONFERMA ANNULLAMENTO')),
-        const SizedBox(height:12),
-        Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
-        if (_preview != null) Card(child:Padding(padding:const EdgeInsets.all(12),child:Text('Anteprima: ${jsonEncode(_preview)}'))),
-        OutlinedButton(onPressed:_busy ? null : _load,child:const Text('AGGIORNA ELENCO')),
+        SwitchListTile(value: _relist, onChanged: _busy ? null : (v) => setState(() { _relist = v; }),
+          title: const Text('RIMETTI IN VENDITA'),
+          subtitle: const Text('Attivo: l’oggetto torna IN VENDITA. Disattivo: torna DISPONIBILE.')),
+        const SizedBox(height: 12),
+        FilledButton.icon(onPressed: _busy ? null : _prepareCancellation,
+          icon: const Icon(Icons.playlist_add_check_circle_outlined), label: const Text('PREPARA ANNULLAMENTO')),
+        if (_pending.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text('IN CODA: ${_pending.length} annullamenti'),
+          ..._pending.map((x) => Text(_summaryLine(x))),
+          OutlinedButton(onPressed: _busy ? null : _reviewAndConfirm, child: const Text('RIEPILOGO E CONFERMA FINALE')),
+        ],
+        const SizedBox(height: 12),
+        Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status))),
+        if (_preview != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text('Esito PR-09: ${jsonEncode(_preview)}'))),
+        OutlinedButton(onPressed: _busy ? null : _load, child: const Text('AGGIORNA ELENCO')),
       ])),
     );
   }
