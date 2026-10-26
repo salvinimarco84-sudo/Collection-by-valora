@@ -16,7 +16,7 @@ on:
       - repair/pr12-preserve-full-app
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-android:
@@ -25,6 +25,42 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Keep main.dart source copies synchronized
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          changed="$(git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA" -- lib/main.dart FLAT__lib__main.dart || true)"
+          lib_changed=false
+          flat_changed=false
+          grep -qx 'lib/main.dart' <<< "$changed" && lib_changed=true || true
+          grep -qx 'FLAT__lib__main.dart' <<< "$changed" && flat_changed=true || true
+          if [[ "$lib_changed" == true && "$flat_changed" == true ]]; then
+            if ! cmp -s lib/main.dart FLAT__lib__main.dart; then
+              echo "::error::Both main.dart copies changed differently in the same push. Reconcile them manually; no file was overwritten."
+              exit 1
+            fi
+          elif [[ "$lib_changed" == true ]]; then
+            cp lib/main.dart FLAT__lib__main.dart
+          elif [[ "$flat_changed" == true ]]; then
+            cp FLAT__lib__main.dart lib/main.dart
+          else
+            echo "Neither source copy changed in this push; no synchronization needed."
+            exit 0
+          fi
+          if ! git diff --quiet -- lib/main.dart FLAT__lib__main.dart; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib/main.dart FLAT__lib__main.dart
+            git commit -m "chore: synchronize main.dart source copies [skip ci]"
+            git push origin HEAD:main
+          fi
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
