@@ -2163,6 +2163,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   bool showCollection = false;
   bool _catalogLoading = true;
   List<Map<String, dynamic>> _catalogRows = [];
+  List<Map<String, dynamic>> _collectionCategories = [];
   String? _catalogError;
   final Map<int, String> _dashboardImageUrls = {};
   final Set<int> _dashboardImageLookups = {};
@@ -2196,7 +2197,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
               !['VENDUTO', 'PERSO', 'DISTRUTTO', 'USCITO', 'ACCORPATO']
                   .contains((row['stato'] ?? '').toString().trim().toUpperCase()))
           .toList();
-      if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
+      final categoryResponse = await Supabase.instance.client.schema('collection')
+          .from('master_categorie_collezione')
+          .select('codice_categoria, descrizione, icona, colore_hex, ordine_menu, visibile')
+          .eq('visibile', true).order('ordine_menu').order('descrizione');
+      final categories = List<Map<String, dynamic>>.from(
+        (categoryResponse as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)),
+      );
+      if (mounted) setState(() {
+        _catalogRows = rows;
+        _collectionCategories = categories;
+        _catalogLoading = false;
+      });
       await _loadDashboardImages(rows);
     } catch (e) {
       if (mounted) setState(() { _catalogError = '$e'; _catalogLoading = false; });
@@ -2641,6 +2653,24 @@ class _HomeDashboardState extends State<HomeDashboard> {
   );
   }
 
+  Widget _collectionCategoryMasterPanel(String name, String subtitle, Color color, IconData icon, int count) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.20), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.75))),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        leading: _categoryBrandMark(name, color, icon),
+        title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text('$count', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 8), const Icon(Icons.chevron_right, color: Colors.white70),
+        ]),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: name))),
+      ),
+    );
+  }
+
   Widget buildCollection() => ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
     children: [
@@ -2664,20 +2694,23 @@ class _HomeDashboardState extends State<HomeDashboard> {
           child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
         ),
       if (!_catalogLoading) ...[
-        if (_catalogRows.any((row) => _dashboardCategory(row) == 'LEGO'))
-          _dashboardCategoryPanel('LEGO', 'Mattoncini, set, minifigure e collezioni', const Color(0xFFE31B23), Icons.extension),
-        if (_catalogRows.any((row) => _dashboardCategory(row) == 'SAINT SEIYA'))
-          _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth, personaggi e accessori', const Color(0xFF7137B8), Icons.shield_outlined),
-        if (_catalogRows.any((row) => _dashboardCategory(row) == 'MOTO DIE-CAST'))
-          _dashboardCategoryPanel('MOTO DIE-CAST', 'Modellini in scala, marchi e serie', const Color(0xFFDD741D), Icons.two_wheeler),
-        if (_catalogRows.any((row) => _dashboardCategory(row) == 'FUMETTI'))
-          _dashboardCategoryPanel('FUMETTI', 'Manga, comics e collezioni', const Color(0xFF008C4A), Icons.menu_book_outlined),
-        if (_catalogRows.any((row) => _dashboardCategory(row) == 'GUNDAM'))
-          _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
-        if (_catalogRows.any((row) => _dashboardCategory(row) == 'TRANSFORMERS'))
-          _dashboardCategoryPanel('TRANSFORMERS', 'Autobot, Decepticon e personaggi', const Color(0xFF2476C8), Icons.smart_toy_outlined),
-        if (_catalogRows.any((row) => _dashboardCategory(row) == 'ALTRE COLLEZIONI'))
-          _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
+        if (_collectionCategories.isEmpty)
+          const Padding(padding: EdgeInsets.all(12), child: Text('Nessuna categoria configurata nel master.', style: TextStyle(color: Colors.white70))),
+        ..._collectionCategories.map((category) {
+          final name = (category['descrizione'] ?? '').toString();
+          final hex = (category['colore_hex'] ?? '#D6B15E').toString().replaceFirst('#', '');
+          final parsed = int.tryParse(hex, radix: 16) ?? 0xD6B15E;
+          final color = Color(0xFF000000 | parsed);
+          final rawIcon = (category['icona'] ?? '').toString();
+          final icon = rawIcon.contains('extension') ? Icons.extension
+              : rawIcon.contains('menu_book') ? Icons.menu_book_outlined
+              : rawIcon.contains('two_wheeler') ? Icons.two_wheeler
+              : rawIcon.contains('shield') ? Icons.shield_outlined
+              : rawIcon.contains('smart_toy') ? Icons.smart_toy_outlined
+              : Icons.category_outlined;
+          final count = _catalogRows.where((row) => _dashboardCategory(row).toUpperCase() == name.toUpperCase()).length;
+          return _collectionCategoryMasterPanel(name, 'Apri la categoria e consulta gli oggetti', color, icon, count);
+        }),
       ],
     ],
   );
