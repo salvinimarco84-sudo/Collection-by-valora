@@ -741,7 +741,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report acquisti', description: 'Riepilogo degli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
   ],
   'VENDITE': [
-    ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'WRITE-PR-06', readOnly: false),
+    ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'PR-06', readOnly: false),
     ProcedureEntry(title: 'Chiudi vendita', description: 'Chiude una vendita secondo la procedura VALORA.', enabled: false, readOnly: false),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
@@ -2958,7 +2958,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
                           : procedure.apiCode == 'WRITE-PR-05'
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
-                               : procedure.apiCode == 'WRITE-PR-06'
+                               : (procedure.apiCode == 'WRITE-PR-06' || procedure.apiCode == 'PR-06')
                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
                                : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
