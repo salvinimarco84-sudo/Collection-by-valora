@@ -2153,6 +2153,19 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
   );
 }
 
+String _valoraCollectionCategory(String description) {
+  final d = description.toLowerCase();
+  // Regole uniche condivise tra HOME e "VEDI TUTTI".
+  // Prima identifichiamo i giocattoli/collezioni specifici, poi i fumetti.
+  if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d)) return 'LEGO';
+  if (RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d)) return 'SAINT SEIYA';
+  if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
+  if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
+  if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
+  if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|from hell|alan moore|eddie campbell|magic press').hasMatch(d)) return 'FUMETTI';
+  return 'ALTRE COLLEZIONI';
+}
+
 class HomeDashboard extends StatefulWidget {
   const HomeDashboard({super.key});
   @override
@@ -2263,16 +2276,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
   String _dashboardDescription(Map<String, dynamic> row) =>
       (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome'] ?? '').toString();
 
-  String _dashboardCategory(Map<String, dynamic> row) {
-    final d = _dashboardDescription(row).toLowerCase();
-    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d)) return 'LEGO';
-    if (RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d)) return 'SAINT SEIYA';
-    if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
-    if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman|from hell|alan moore|eddie campbell|magic press').hasMatch(d)) return 'FUMETTI';
-    if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
-    if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
-    return 'ALTRE COLLEZIONI';
-  }
+  String _dashboardCategory(Map<String, dynamic> row) =>
+      _valoraCollectionCategory(_dashboardDescription(row));
 
   String? _dashboardImageUrl(Map<String, dynamic> row) {
     final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
@@ -2831,18 +2836,8 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
 
   String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
 
-  String _categoryForDescription(String description) {
-    final d = description.toLowerCase();
-    // Stesso ordine e stesse regole della HOME: ogni record appartiene
-    // a una sola categoria. In particolare LEGO Batman non diventa fumetto.
-    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d)) return 'LEGO';
-    if (RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d)) return 'SAINT SEIYA';
-    if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
-    if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman|from hell|alan moore|eddie campbell|magic press').hasMatch(d)) return 'FUMETTI';
-    if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
-    if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
-    return 'ALTRE COLLEZIONI';
-  }
+  String _categoryForDescription(String description) =>
+      _valoraCollectionCategory(description);
 
   bool _matchesInitialCategory(Map<String, dynamic> row, String category) {
     final destination = (row['destinazione'] ?? '').toString().trim().toUpperCase();
