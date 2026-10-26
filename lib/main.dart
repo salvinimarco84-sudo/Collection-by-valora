@@ -2164,6 +2164,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   bool _catalogLoading = true;
   List<Map<String, dynamic>> _catalogRows = [];
   List<Map<String, dynamic>> _collectionCategories = [];
+  final Map<String, int> _collectionCategoryCounts = {};
   String? _catalogError;
   final Map<int, String> _dashboardImageUrls = {};
   final Set<int> _dashboardImageLookups = {};
@@ -2204,9 +2205,23 @@ class _HomeDashboardState extends State<HomeDashboard> {
       final categories = List<Map<String, dynamic>>.from(
         (categoryResponse as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)),
       );
+      final assignmentResponse = await Supabase.instance.client.schema('collection')
+          .from('oggetto_collezione_categoria')
+          .select('codice_oggetto, codice_categoria');
+      final assignments = List<Map<String, dynamic>>.from(
+        (assignmentResponse as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)),
+      );
+      final categoryCounts = <String, int>{};
+      for (final assignment in assignments) {
+        final key = (assignment['codice_categoria'] ?? '').toString();
+        if (key.isNotEmpty) categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
+      }
       if (mounted) setState(() {
         _catalogRows = rows;
         _collectionCategories = categories;
+        _collectionCategoryCounts
+          ..clear()
+          ..addAll(categoryCounts);
         _catalogLoading = false;
       });
       await _loadDashboardImages(rows);
@@ -2653,7 +2668,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   );
   }
 
-  Widget _collectionCategoryMasterPanel(String name, String subtitle, Color color, IconData icon, int count) {
+  Widget _collectionCategoryMasterPanel(String code, String name, String subtitle, Color color, IconData icon, int count) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.20), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.75))),
@@ -2666,7 +2681,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           Text('$count', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           const SizedBox(width: 8), const Icon(Icons.chevron_right, color: Colors.white70),
         ]),
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: name))),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: name, initialCategoryCode: code))),
       ),
     );
   }
@@ -2708,8 +2723,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
               : rawIcon.contains('shield') ? Icons.shield_outlined
               : rawIcon.contains('smart_toy') ? Icons.smart_toy_outlined
               : Icons.category_outlined;
-          final count = _catalogRows.where((row) => _dashboardCategory(row).toUpperCase() == name.toUpperCase()).length;
-          return _collectionCategoryMasterPanel(name, 'Apri la categoria e consulta gli oggetti', color, icon, count);
+          final code = (category['codice_categoria'] ?? '').toString();
+          final count = _collectionCategoryCounts[code] ?? 0;
+          return _collectionCategoryMasterPanel(code, name, 'Apri la categoria e consulta gli oggetti', color, icon, count);
         }),
       ],
     ],
@@ -2828,8 +2844,9 @@ class _ValoraRuntimeApi {
 }
 
 class CategoryObjectSearchPage extends StatefulWidget {
-  const CategoryObjectSearchPage({super.key, this.initialQuery});
+  const CategoryObjectSearchPage({super.key, this.initialQuery, this.initialCategoryCode});
   final String? initialQuery;
+  final String? initialCategoryCode;
 
   @override
   State<CategoryObjectSearchPage> createState() => _CategoryObjectSearchPageState();
@@ -2886,7 +2903,19 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       _message = 'Ricerca nel catalogo in corso…';
     });
     try {
-      final categoryMode = widget.initialQuery?.trim().isNotEmpty ?? false;
+      final categoryMode = (widget.initialQuery?.trim().isNotEmpty ?? false) ||
+          (widget.initialCategoryCode?.trim().isNotEmpty ?? false);
+      Set<String>? assignedObjectCodes;
+      if (widget.initialCategoryCode?.trim().isNotEmpty ?? false) {
+        final assignmentResponse = await Supabase.instance.client.schema('collection')
+            .from('oggetto_collezione_categoria')
+            .select('codice_oggetto')
+            .eq('codice_categoria', widget.initialCategoryCode!.trim());
+        assignedObjectCodes = (assignmentResponse as List)
+            .whereType<Map>()
+            .map((row) => (row['codice_oggetto'] ?? '').toString())
+            .toSet();
+      }
       final normalizedInput = query.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
       final otherCollectionsMode = !categoryMode &&
           (normalizedInput == 'altre collezioni' || normalizedInput == 'altre collezione');
@@ -2907,6 +2936,9 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
           .where((row) {
+            if (widget.initialCategoryCode?.trim().isNotEmpty ?? false) {
+              return assignedObjectCodes!.contains(_code(row));
+            }
             if (categoryMode) {
               return _matchesInitialCategory(row, widget.initialQuery!.trim());
             }
