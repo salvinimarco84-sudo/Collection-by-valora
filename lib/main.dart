@@ -7981,15 +7981,15 @@ class _NewSalePageState extends State<NewSalePage> {
       final rows = data is List
           ? data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
           : <Map<String, dynamic>>[];
-      final platformResponse = await _ValoraRuntimeApi.call('consultation', {
-        'session_id': _session, 'consultation_code': 'TABLE_VALUES',
-        'arguments': {'tabella': 'piattaforme', 'campo': 'nome_piattaforma'},
-      });
-      final pOuter = platformResponse['result'];
-      final dynamic pData = pOuter is Map ? (pOuter['risultato'] ?? pOuter) : pOuter;
-      final platforms = pData is List
-          ? pData.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).where((e) => int.tryParse((e['codice_piattaforma'] ?? '').toString()) != null).toList()
-          : <Map<String, dynamic>>[];
+      // Piattaforme configurate nel database TEST. Gli ID corrispondono a collection.piattaforme.
+      // Non usare TABLE_VALUES qui: restituisce conteggi per valore, non righe della tabella.
+      final platforms = <Map<String, dynamic>>[
+        {'codice_piattaforma': 1, 'nome_piattaforma': 'Vinted'},
+        {'codice_piattaforma': 2, 'nome_piattaforma': '[TEST-CBV] eBay'},
+        {'codice_piattaforma': 3, 'nome_piattaforma': '[TEST-CBV] Mercatino'},
+        {'codice_piattaforma': 6, 'nome_piattaforma': 'Subito'},
+        {'codice_piattaforma': 7, 'nome_piattaforma': 'BrickLink'},
+      ];
       if (!mounted) return;
       setState(() {
         _objects = rows;
