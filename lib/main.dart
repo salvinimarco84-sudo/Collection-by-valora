@@ -62,6 +62,7 @@ class ValoraAppearance extends ChangeNotifier {
     'FUMETTI': Color(0xFF008C4A),
     'GUNDAM': Color(0xFFC62828),
     'TRANSFORMERS': Color(0xFF2476C8),
+    'FUNKO POP': Color(0xFF00AEEF),
     'ALTRE COLLEZIONI': Color(0xFF466B87),
   };
   static const List<Color> palette = [
@@ -241,7 +242,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
   static const List<String> _allPersonalizableSections = [
     'COLLEZIONE','CATALOGO','ACQUISTI','VENDITE','FLUSSI DI CASSA',
     'VALUTAZIONI','REPORT','RICERCHE','CONTROLLO','LEGO','SAINT SEIYA',
-    'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','ALTRE COLLEZIONI'
+    'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','FUNKO POP','ALTRE COLLEZIONI'
   ];
   void refresh(){
     if(!mounted)return;
@@ -591,6 +592,7 @@ const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
   DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFF252525)),
   DashboardSection(title: 'CONTROLLO', description: 'Stato e verifiche del sistema', icon: Icons.admin_panel_settings_outlined, color: Color(0xFF777777)),
+  DashboardSection(title: 'FUNKO POP', description: 'Visualizza le schede Funko Pop già catalogate', icon: Icons.toys_outlined, color: Color(0xFF00AEEF)),
 ];
 
 class ProcedureEntry {
@@ -2468,7 +2470,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             'subtitle':section.description,
             'color':ValoraAppearance.instance.colorFor(section.title),
             'icon':section.icon,
-            'tap':() => setState(()=>selectedSection=section),
+            'tap':() => section.title == 'FUNKO POP'
+                ? Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoryObjectSearchPage(initialQuery: 'Funko Pop')))
+                : setState(()=>selectedSection=section),
           }),
         ];
         return GridView.builder(
@@ -2538,7 +2542,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
         subtitle: section.description,
         color: ValoraAppearance.instance.colorFor(section.title),
         icon: section.icon,
-        onTap: () => setState(() => selectedSection = section),
+        onTap: () => section.title == 'FUNKO POP'
+            ? Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoryObjectSearchPage(initialQuery: 'Funko Pop')))
+            : setState(() => selectedSection = section),
       )),
       if (_catalogError != null)
         Padding(
