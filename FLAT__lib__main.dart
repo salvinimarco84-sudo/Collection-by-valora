@@ -2831,27 +2831,28 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
 
   String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
 
+  String _categoryForDescription(String description) {
+    final d = description.toLowerCase();
+    // Stesso ordine e stesse regole della HOME: ogni record appartiene
+    // a una sola categoria. In particolare LEGO Batman non diventa fumetto.
+    if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d)) return 'LEGO';
+    if (RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d)) return 'SAINT SEIYA';
+    if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
+    if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman|from hell|alan moore|eddie campbell|magic press').hasMatch(d)) return 'FUMETTI';
+    if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
+    if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
+    return 'ALTRE COLLEZIONI';
+  }
+
   bool _matchesInitialCategory(Map<String, dynamic> row, String category) {
-    final d = _description(row).toLowerCase();
-    switch (category.toUpperCase()) {
-      case 'LEGO':
-        return RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d);
-      case 'SAINT SEIYA':
-        return RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d);
-      case 'MOTO DIE-CAST':
-        return RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja|aprilia rsv|honda vtr').hasMatch(d);
-      case 'FUMETTI':
-        return RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman').hasMatch(d);
-      case 'GUNDAM':
-        return RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d);
-      case 'TRANSFORMERS':
-        return RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d);
-      case 'ALTRE COLLEZIONI':
-        return !['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS']
-            .any((name) => _matchesInitialCategory(row, name));
-      default:
-        return d.contains(category.toLowerCase());
+    final destination = (row['destinazione'] ?? '').toString().trim().toUpperCase();
+    final status = (row['stato'] ?? '').toString().trim().toUpperCase();
+    // "Vedi tutti" deve mostrare esattamente lo stesso insieme della HOME.
+    if (destination != 'COLLEZIONE' || row['archiviato_test'] == true ||
+        const {'VENDUTO', 'PERSO', 'DISTRUTTO', 'USCITO', 'ACCORPATO'}.contains(status)) {
+      return false;
     }
+    return _categoryForDescription(_description(row)) == category.toUpperCase();
   }
 
   Future<void> _search() async {
