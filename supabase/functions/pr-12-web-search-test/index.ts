@@ -271,16 +271,16 @@ async function enrichFunkoImages(results: SearchResult[]): Promise<SearchResult[
   // immagine utilizzabile e distinto per ciascun candidato, senza salvare nulla.
   const candidates = results.slice(0, 8);
   await mapWithConcurrency(candidates, 4, async (item) => {
-    if (item.image_url || !/^https?:\\/\\//i.test(item.url)) return;
+    if (item.image_url || !/^https?:\/\//i.test(item.url)) return;
     try {
       const html = await fetchText(item.url, 5000);
       const raw =
-        html.match(/<meta\\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
-        html.match(/<meta\\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1] ??
-        html.match(/<meta\\b[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
-        html.match(/<meta\\b[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image["']/i)?.[1];
+        html.match(/<meta\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
+        html.match(/<meta\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1] ??
+        html.match(/<meta\b[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i)?.[1] ??
+        html.match(/<meta\b[^>]*content=["']([^"']+)["'][^>]*name=["']twitter:image["']/i)?.[1];
       const image = raw ? decodeEntities(raw.replace(/&amp;/gi, "&")).trim() : "";
-      if (/^https?:\\/\\//i.test(image) && !/placeholder|no[-_ ]?image|default[-_ ]?image/i.test(image)) {
+      if (/^https?:\/\//i.test(image) && !/placeholder|no[-_ ]?image|default[-_ ]?image/i.test(image)) {
         item.image_url = image;
       }
     } catch {
