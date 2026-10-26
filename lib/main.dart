@@ -7086,12 +7086,19 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
         all.addAll(rows);
         if (rows.length < size) break;
       }
-      final raw = await Supabase.instance.client.schema('collection').from('piattaforme')
-          .select('codice_piattaforma,nome_piattaforma').order('codice_piattaforma');
+      final platformResponse = await _ValoraRuntimeApi.call('consultation', {
+        'session_id': _session, 'consultation_code': 'EXPLORE_RECORDS',
+        'arguments': {'tabella': 'piattaforme', 'limite': 100, 'offset': 0},
+      });
+      final platformOuter = platformResponse['result'];
+      final platformData = platformOuter is Map ? platformOuter['risultato'] : null;
+      final platforms = platformData is List
+          ? platformData.whereType<Map>().map((r) => Map<String,dynamic>.from(r)).toList()
+          : <Map<String,dynamic>>[];
       if (!mounted) return;
       setState(() {
         _objects = all;
-        _platforms = (raw as List).whereType<Map>().map((r) => Map<String,dynamic>.from(r)).toList();
+        _platforms = platforms;
         _selected.removeWhere((id) => !all.any((r) => _id(r) == id));
         _status = 'Oggetti disponibili caricati: ' + all.length.toString() + '.';
       });
