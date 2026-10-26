@@ -5607,6 +5607,32 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     catch (_) { return data?.toString() ?? ''; }
   }
 
+  String _procedureResultText(dynamic data) {
+    if (data is Map) {
+      final m = Map<String, dynamic>.from(data);
+      final code = widget.apiCode.toUpperCase();
+      if (code == 'PR-06' || code == 'PR-06-LOTTO' || code == 'WRITE-PR-06' || code == 'WRITE-PR-06-LOTTO') {
+        final count = m['numero_oggetti'] ?? (m['oggetti'] is List ? (m['oggetti'] as List).length : null);
+        final price = m['prezzo_totale'] ?? m['importo_vendita'] ?? m['prezzo_di_vendita'];
+        final currency = (m['valuta'] ?? 'EUR').toString();
+        final lines = <String>[];
+        if (count != null) lines.add('Oggetti selezionati: $count');
+        if (price != null) lines.add('Prezzo complessivo: ${price.toString()} $currency');
+        final platforms = m['piattaforme'] ?? m['nomi_piattaforme'];
+        if (platforms is List && platforms.isNotEmpty) lines.add('Piattaforme: ${platforms.join(', ')}');
+        final saved = m['scrittura_eseguita'] == true || m['salvato'] == true;
+        if (saved) lines.add('Salvataggio confermato.');
+        else if (m['conferma_finale_richiesta'] == true) lines.add('Riepilogo pronto. Conferma per salvare.');
+        else if (lines.isEmpty) lines.add('Operazione verificata. Controlla il riepilogo prima di continuare.');
+        return lines.join('\\n');
+      }
+    }
+    if (data is String) return data;
+    return 'Operazione elaborata. Controlla i dati visualizzati e conferma per proseguire.';
+  }
+
+
+
   String _valueFor(Map<String, dynamic> m, List<String> keys, [String fallback = 'Non indicato']) {
     for (final k in keys) {
       final v = m[k];
@@ -7304,7 +7330,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _lastResult = result;
         _dataConfirmed = false;
         _finalReady = false;
-        _output = _pretty(result);
+        _output = _procedureResultText(result);
       });
     } catch (_) {
       if (_lockHeld) {
@@ -7329,7 +7355,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       ..['altra_operazione'] = false
       ..['conferma_finale'] = false;
     final result = await _ValoraRuntimeApi.procedure(widget.apiCode, 'review', payload, sessionId: _sessionId);
-    setState(() { _lastResult = result; _dataConfirmed = true; _finalReady = true; _output = _pretty(result); });
+    setState(() { _lastResult = result; _dataConfirmed = true; _finalReady = true; _output = _procedureResultText(result); });
   }
 
   Map<String, dynamic> _pr02ConfirmationPayload() {
