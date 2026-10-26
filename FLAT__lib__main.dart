@@ -6802,8 +6802,36 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               : isHistory ? 'VISUALIZZA STORICO OGGETTO'
               : 'ESEGUI CONSULTAZIONE')),
         if (_currentObject != null && code != 'PR-02' && code != 'PR-03') ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (isMaster) ...[
+            Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  FilledButton.icon(
+                    onPressed: _loading || _loadedObjectId == null ? null : () {
+                      Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
+                        title: 'Modifica oggetto', apiCode: 'PR-02', initialObjectCode: _loadedObjectId,
+                      )));
+                    },
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('MODIFICA OGGETTO'),
+                  ),
+                  const SizedBox(height: 8),
+                  if ((_currentObject?['destinazione'] ?? '').toString().toUpperCase() == 'COLLEZIONE')
+                    FilledButton.icon(
+                      onPressed: _loading || _loadedObjectId == null ? null : () {
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
+                          title: 'Nuova vendita', apiCode: 'PR-06', initialObjectCode: _loadedObjectId,
+                        )));
+                      },
+                      icon: const Icon(Icons.sell_outlined),
+                      label: const Text('METTI IN VENDITA'),
+                    ),
+                ]),
+              ),
+            ),
             Text(
               _valueFor(_currentObject!, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione'),
               style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
