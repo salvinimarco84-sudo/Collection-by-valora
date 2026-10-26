@@ -475,10 +475,17 @@ const sections = <SectionInfo>[
           readOnly: true,
         ),
         Operation(
-          'Report vendite',
-          'Totali e numero vendite per periodo',
+          'Report vendite concluse',
+          'Totali e numero delle vendite effettivamente concluse per periodo',
           Icons.query_stats_outlined,
           apiCode: 'REPORT-SALES',
+          readOnly: true,
+        ),
+        Operation(
+          'Report vendite aperte',
+          'Oggetti attualmente in vendita, prezzi richiesti e stato delle inserzioni',
+          Icons.pending_actions_outlined,
+          apiCode: 'REPORT-ACTIVE-LISTINGS',
           readOnly: true,
         ),
         Operation(
@@ -577,8 +584,8 @@ const sections = <SectionInfo>[
           Icons.wb_sunny_outlined,
         ),
         Operation(
-          'Report vendite',
-          'Vendite per anno, mese o intervallo date',
+          'Report vendite concluse',
+          'Vendite concluse per anno, mese o intervallo date',
           Icons.trending_up_outlined,
         ),
         Operation(
