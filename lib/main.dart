@@ -2057,13 +2057,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
 
-      // Fonte unica per la classificazione della schermata principale:
-      // il campo categoria del record master_oggetti restituito dal catalogo.
-      // Non usare metadati storici o tabelle di associazione per decidere la categoria.
+      // Categoria primaria canonica: codice stabile + nome restituiti da PR-11
+      // dalla relazione oggetto_categoria -> categorie_merceologiche.
+      // Tema e sottotema sono descrittivi e non spostano mai un oggetto di categoria.
       for (final row in rows) {
         final category = (row['categoria'] ?? '').toString().trim();
-        row['_valora_sezione'] = category;
+        final categoryCode = (row['codice_categoria'] ?? '').toString().trim();
         row['_valora_categoria'] = category;
+        row['_valora_codice_categoria'] = categoryCode;
+        row['_valora_sottotema'] = (row['sottotema'] ?? '').toString().trim();
+        row['_valora_sezione'] = category.isNotEmpty ? category : 'DA CLASSIFICARE';
       }
       if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
       await _loadDashboardImages(rows);
