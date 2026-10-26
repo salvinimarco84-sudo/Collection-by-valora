@@ -2057,50 +2057,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
 
-      // Priorità alla sezione catalografica (tema/linea); fallback alla
-      // categoria merceologica ufficiale se la sezione manca. Mai dedurre dal testo.
-      final ids = rows.map((row) => int.tryParse(
-        (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
-      )).whereType<int>().where((id) => id > 0).toSet().toList();
-      if (ids.isNotEmpty) {
-        final sectionById = <int, String>{};
-        final categoryById = <int, String>{};
-        try {
-          final metadataRows = await Supabase.instance.client
-              .schema('collection')
-              .from('master_metadati')
-              .select('codice_oggetto,sezione')
-              .inFilter('codice_oggetto', ids);
-          for (final item in metadataRows) {
-            final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
-            final section = (item['sezione'] ?? '').toString().trim();
-            if (id != null && section.isNotEmpty) sectionById[id] = section;
-          }
-        } catch (e) {
-          debugPrint('VALORA: sezioni catalogo non disponibili: $e');
-        }
-        try {
-          final categoryRows = await Supabase.instance.client
-              .schema('collection')
-              .from('oggetto_categoria')
-              .select('codice_oggetto,id_categoria,categorie_merceologiche(nome_categoria)')
-              .inFilter('codice_oggetto', ids);
-          for (final item in categoryRows) {
-            final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
-            final linked = item['categorie_merceologiche'];
-            final category = linked is Map ? (linked['nome_categoria'] ?? '').toString().trim() : '';
-            if (id != null && category.isNotEmpty) categoryById[id] = category;
-          }
-        } catch (e) {
-          debugPrint('VALORA: associazioni categoria non disponibili: $e');
-        }
-        for (final row in rows) {
-          final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
-          final section = id == null ? '' : (sectionById[id] ?? '');
-          final category = id == null ? '' : (categoryById[id] ?? '');
-          row['_valora_sezione'] = section.isNotEmpty ? section : category;
-          row['_valora_categoria'] = category;
-        }
+      // Fonte unica per la classificazione della schermata principale:
+      // il campo categoria del record master_oggetti restituito dal catalogo.
+      // Non usare metadati storici o tabelle di associazione per decidere la categoria.
+      for (final row in rows) {
+        final category = (row['categoria'] ?? '').toString().trim();
+        row['_valora_sezione'] = category;
+        row['_valora_categoria'] = category;
       }
       if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
       await _loadDashboardImages(rows);
