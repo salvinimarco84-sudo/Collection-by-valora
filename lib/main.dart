@@ -7939,7 +7939,10 @@ class _NewSalePageState extends State<NewSalePage> {
   final String _session = _uuid.v4();
   final TextEditingController _search = TextEditingController();
   final TextEditingController _price = TextEditingController();
+  final TextEditingController _lotTotalPrice = TextEditingController();
   final TextEditingController _notes = TextEditingController();
+  bool _lotMode = false;
+  final Set<int> _selectedLotObjects = <int>{};
   List<Map<String, dynamic>> _objects = [];
   List<Map<String, dynamic>> _platforms = [];
   final Set<int> _selectedPlatforms = <int>{};
@@ -7958,7 +7961,7 @@ class _NewSalePageState extends State<NewSalePage> {
 
   @override
   void dispose() {
-    _search.dispose(); _price.dispose(); _notes.dispose();
+    _search.dispose(); _price.dispose(); _lotTotalPrice.dispose(); _notes.dispose();
     if (_locked) _releaseSilently();
     super.dispose();
   }
@@ -8067,6 +8070,7 @@ class _NewSalePageState extends State<NewSalePage> {
   }
 
   Future<void> _previewSale() async {
+    if (_lotMode) { await _previewLotSale(); return; }
     if (!_valid()) return;
     final operation = <String, dynamic>{
       'codice_oggetto': _selectedObject,
@@ -8139,7 +8143,64 @@ class _NewSalePageState extends State<NewSalePage> {
     }
   }
 
+  Future<void> _previewLotSale() async {
+    final ids = _selectedLotObjects.toList()..sort();
+    final total = double.tryParse(_lotTotalPrice.text.trim().replaceAll(',', '.'));
+    if (ids.length < 2) { _notice('Per creare un lotto unico seleziona almeno due oggetti.'); return; }
+    if (total == null || !total.isFinite || total <= 0) { _notice('Inserisci un prezzo totale del lotto maggiore di zero.'); return; }
+    if (_selectedPlatforms.isEmpty) { _notice('Seleziona almeno una piattaforma di vendita.'); return; }
+    final operations = ids.map((id) => <String, dynamic>{'codice_oggetto': id, 'codici_piattaforme': _selectedPlatforms.toList()..sort(), 'note': _notes.text.trim()}).toList();
+    setState(() { _busy = true; _status = 'Verifica del lotto unico in TEST. Nessuna scrittura…'; _preview = null; _confirmed = false; });
+    try {
+      if (!await _acquire()) return;
+      final r = await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'preview', {
+        'operazioni': operations, 'prezzo_totale': double.parse(total.toStringAsFixed(2)),
+        'note': _notes.text.trim(), 'conferma_finale': false,
+      }, sessionId: _session);
+      if (r['scrittura_eseguita'] == true || r['stato'] != 'BOZZA') throw StateError('Anteprima lotto con esito inatteso.');
+      if (!mounted) return;
+      setState(() { _preview = r; _status = 'Anteprima pronta: '+ids.length.toString()+' oggetti, prezzo unico €'+total.toStringAsFixed(2)+'. Nessuna scrittura eseguita.'; });
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Anteprima lotto non riuscita: $e. Nessun oggetto è stato messo in vendita.');
+    } finally { await _release(); if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _saveLotSale() async {
+    final ids = _selectedLotObjects.toList()..sort();
+    final total = double.tryParse(_lotTotalPrice.text.trim().replaceAll(',', '.'));
+    if (ids.length < 2 || total == null || !total.isFinite || total <= 0 || _selectedPlatforms.isEmpty) {
+      _notice('Controlla oggetti selezionati, prezzo totale e piattaforma.'); return;
+    }
+    setState(() { _busy = true; _status = 'Salvataggio atomico del lotto in TEST e verifica database…'; });
+    try {
+      if (!await _acquire()) return;
+      final operations = ids.map((id) => <String, dynamic>{'codice_oggetto': id, 'codici_piattaforme': _selectedPlatforms.toList()..sort(), 'note': _notes.text.trim()}).toList();
+      final r = await _ValoraRuntimeApi.procedure('PR-06-LOTTO', 'save', {
+        'operazioni': operations, 'prezzo_totale': double.parse(total.toStringAsFixed(2)),
+        'note': _notes.text.trim(), 'dati_confermati': true, 'conferma_finale': true, 'altra_operazione': false,
+      }, sessionId: _session, requestId: _uuid.v4());
+      final verified = r['scrittura_eseguita'] == true && r['stato'] == 'SALVATO_E_VERIFICATO' &&
+        (r['codice_lotto'] ?? '').toString().isNotEmpty && (r['numero_oggetti'] as num?)?.toInt() == ids.length;
+      if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
+      if (!mounted) return;
+      setState(() { _preview = r; _status = verified
+        ? 'LOTTO UNICO SALVATO: '+ids.length.toString()+' oggetti, totale €'+total.toStringAsFixed(2)+', codice '+r['codice_lotto'].toString()+'.'
+        : 'Esito lotto non verificato completamente. Non considerare conclusa la registrazione.'; });
+      if (verified) {
+        await showDialog<void>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+          title: const Text('Lotto unico salvato e verificato'),
+          content: Text(ids.length.toString()+' oggetti collegati al lotto '+r['codice_lotto'].toString()+'. Prezzo complessivo: €'+total.toStringAsFixed(2)+'.'),
+          actions: [FilledButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('FINE'))],
+        ));
+        if (mounted) Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Lotto non salvato: $e. La transazione deve essere interamente annullata in caso di errore.');
+    } finally { await _release(); if (mounted) setState(() => _busy = false); }
+  }
+
   Future<void> _saveSale() async {
+    if (_lotMode) { await _saveLotSale(); return; }
     if (_pendingSales.isEmpty) { _notice('Non ci sono vendite in attesa di salvataggio.'); return; }
     setState(() { _busy = true; _status = 'Verifica del lotto completo e salvataggio atomico PR-06 in corso…'; });
     try {
@@ -8208,7 +8269,14 @@ class _NewSalePageState extends State<NewSalePage> {
               OutlinedButton.icon(onPressed: _busy ? null : _saveSale, icon: const Icon(Icons.save_outlined), label: const Text('TERMINA E SALVA IL LOTTO ORA')),
             ]))),
           const SizedBox(height: 12),
-          Text('1. SELEZIONA L’OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          Text('1. TIPO DI VENDITA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          SwitchListTile(contentPadding: EdgeInsets.zero, value: _lotMode,
+            title: const Text('Vendi più oggetti come LOTTO UNICO'),
+            subtitle: Text(_lotMode ? 'Un solo prezzo complessivo per tutti gli oggetti selezionati.' : 'Modalità standard: prezzo separato per ciascun oggetto.'),
+            onChanged: _busy || _pendingSales.isNotEmpty ? null : (v) => setState(() { _lotMode = v; _selectedLotObjects.clear(); _lotTotalPrice.clear(); _invalidate(); }),
+          ),
+          const SizedBox(height: 8),
+          Text(_lotMode ? '2. SELEZIONA GLI OGGETTI DEL LOTTO' : '2. SELEZIONA L’OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           TextField(controller: _search, decoration: const InputDecoration(
             labelText: 'Cerca per descrizione, codice o produttore', prefixIcon: Icon(Icons.search)),
@@ -8216,7 +8284,7 @@ class _NewSalePageState extends State<NewSalePage> {
           const SizedBox(height: 8),
           if (_loading) const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
           if (!_loading && filtered.isEmpty) const Text('Nessun oggetto trovato. Verifica che sia disponibile per la rivendita.'),
-          if (!_loading && filtered.isNotEmpty) DropdownButtonFormField<int>(
+          if (!_loading && filtered.isNotEmpty && !_lotMode) DropdownButtonFormField<int>(
             value: filtered.any((o) => int.tryParse((o['codice_oggetto'] ?? '').toString()) == _selectedObject)
               ? _selectedObject : int.tryParse((filtered.first['codice_oggetto'] ?? '').toString()),
             isExpanded: true,
@@ -8228,7 +8296,17 @@ class _NewSalePageState extends State<NewSalePage> {
             }).toList(),
             onChanged: _busy ? null : (v) => setState(() { _selectedObject = v; _invalidate(); }),
           ),
-          if (_chosenObject != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+          if (_lotMode && !_loading && filtered.isNotEmpty) ...filtered.map((o) {
+            final id = int.tryParse((o['codice_oggetto'] ?? '').toString());
+            if (id == null) return const SizedBox.shrink();
+            return CheckboxListTile(contentPadding: EdgeInsets.zero, value: _selectedLotObjects.contains(id),
+              title: Text((o['descrizione_oggetto'] ?? 'Oggetto #$id').toString()),
+              subtitle: Text('Codice oggetto: $id · Stato: ${o['stato'] ?? 'DISPONIBILE'}'),
+              onChanged: _busy ? null : (v) => setState(() { if (v == true) { _selectedLotObjects.add(id); } else { _selectedLotObjects.remove(id); } _invalidate(); }),
+            );
+          }),
+          if (_lotMode) Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text('Oggetti selezionati nel lotto: ${_selectedLotObjects.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
+          if (!_lotMode && _chosenObject != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
             crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text((_chosenObject!['descrizione_oggetto'] ?? '').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
@@ -8236,9 +8314,12 @@ class _NewSalePageState extends State<NewSalePage> {
               Text('Valore inventario: ${_chosenObject!['valore_oggetto'] ?? 'non indicato'} ${_chosenObject!['valuta_valore'] ?? 'EUR'}'),
             ]))),
           const SizedBox(height: 16),
-          Text('2. DATI DI VENDITA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          Text(_lotMode ? '3. PREZZO UNICO DEL LOTTO' : '3. DATI DI VENDITA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          TextField(controller: _price, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          if (_lotMode) TextField(controller: _lotTotalPrice, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(labelText: 'Prezzo totale per tutti gli oggetti (€) *', prefixIcon: Icon(Icons.euro)),
+            onChanged: (_) => setState(_invalidate)),
+          if (!_lotMode) TextField(controller: _price, keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(labelText: 'Prezzo di vendita richiesto (€) *', prefixIcon: Icon(Icons.euro)),
             onChanged: (_) => setState(_invalidate)),
           const SizedBox(height: 8),
@@ -8269,7 +8350,7 @@ class _NewSalePageState extends State<NewSalePage> {
               const SizedBox(height: 8),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero, value: _confirmed,
-                title: const Text('Confermo che oggetto, prezzo e piattaforme sono corretti.'),
+                title: Text(_lotMode ? 'Confermo oggetti, prezzo totale del lotto e piattaforme.' : 'Confermo che oggetto, prezzo e piattaforme sono corretti.'),
                 onChanged: _busy ? null : (v) => setState(() => _confirmed = v == true),
               ),
               FilledButton.icon(onPressed: _busy || !_confirmed ? null : _saveSale,
