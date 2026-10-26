@@ -7288,6 +7288,35 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 22),
             ),
             const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _loading ? null : _openObjectForEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('MODIFICA OGGETTO', textAlign: TextAlign.center),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _loading ? null : _putObjectForSale,
+                    icon: const Icon(Icons.sell_outlined),
+                    label: const Text('METTI IN VENDITA', textAlign: TextAlign.center),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ValoraAppearance.instance.colorFor('VENDITE'),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -7328,35 +7357,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     _masterDetails(_currentObject!),
                   ]),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _loading ? null : _openObjectForEdit,
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('MODIFICA OGGETTO', textAlign: TextAlign.center),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _loading ? null : _putObjectForSale,
-                      icon: const Icon(Icons.sell_outlined),
-                      label: const Text('METTI IN VENDITA', textAlign: TextAlign.center),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: ValoraAppearance.instance.colorFor('VENDITE'),
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ] else if (_pr11MasterTabIndex == 1)
               _pr11MetadataTab(_currentObject!)
