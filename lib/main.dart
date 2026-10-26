@@ -2243,9 +2243,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
     }
   }
 
-  Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows) async {
-    // Le anteprime visibili interrogano il registro immagini ufficiale:
-    // immagini_oggetto + Storage privato, tramite URL firmati a scadenza.
+  Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows, {bool retryFailed = false}) async {
+    // Ripristino della logica funzionante: prima URL catalografico PR-12,
+    // poi registro immagini/Storage. Un errore non deve bloccare i tentativi futuri.
     final selected = <Map<String, dynamic>>[];
     final activeCategories = rows.map(_dashboardCategory).toSet();
     for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'FUNKO POP', 'MODEL KIT', 'G.I. JOE', 'ALTRE COLLEZIONI']) {
@@ -2255,48 +2255,59 @@ class _HomeDashboardState extends State<HomeDashboard> {
     }
     final ids = selected.map((row) => int.tryParse(
       (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
-    )).whereType<int>().where((id) => id > 0 && !_dashboardImageLookups.contains(id)).toSet();
+    )).whereType<int>().where((id) => id > 0 &&
+      (retryFailed || !_dashboardImageLookups.contains(id))).toSet();
     if (ids.isEmpty) return;
-    _dashboardImageLookups.addAll(ids);
+
     await Future.wait(ids.map((id) async {
+      var resolved = false;
       try {
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session == null) return;
-        final response = await Supabase.instance.client.functions.invoke(
-          'collection-object-images-test',
-          headers: {'Authorization': 'Bearer ${session.accessToken}'},
-          body: {'action': 'get', 'codice_oggetto': id},
-        );
-        if (response.status >= 200 && response.status < 300 && response.data is Map) {
-          final data = Map<String, dynamic>.from(response.data as Map);
-          final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? data['url_immagine'] ?? '').toString().trim();
-          if (url.startsWith('https://') || url.startsWith('http://')) {
-            _dashboardImageUrls[id] = url;
-            return;
-          }
-        }
-        // Una risposta non valida dal servizio immagini non deve interrompere
-        // la funzione: deve proseguire al fallback master_metadati sottostante.
-      } catch (_) {
-        // Se il registro immagini non restituisce una foto, proviamo il catalogo.
-      }
-      // Fallback al catalogo metadati: le anteprime della HOME non devono
-      // dipendere esclusivamente dall'archivio immagini/URL firmato.
-      try {
-        final metadata = await Supabase.instance.client.schema('collection')
+        final metadata = await Supabase.instance.client
+            .schema('collection')
             .from('master_metadati')
             .select('url_immagine')
             .eq('codice_oggetto', id)
             .maybeSingle();
-        final url = (metadata?['url_immagine'] ?? '').toString().trim();
-        if (url.startsWith('https://') || url.startsWith('http://')) {
-          _dashboardImageUrls[id] = url;
+        final catalogUrl = (metadata?['url_immagine'] ?? '').toString().trim();
+        if (catalogUrl.startsWith('https://') || catalogUrl.startsWith('http://')) {
+          _dashboardImageUrls[id] = catalogUrl;
+          resolved = true;
         }
       } catch (e) {
-        debugPrint('VALORA: immagine catalogo HOME non recuperata per $id: $e');
+        debugPrint('VALORA: URL catalografico non disponibile per $id: $e');
+      }
+
+      if (!resolved) {
+        try {
+          final session = Supabase.instance.client.auth.currentSession;
+          final response = await Supabase.instance.client.functions.invoke(
+            'collection-object-images-test',
+            headers: session == null ? null : {'Authorization': 'Bearer ${session.accessToken}'},
+            body: {'action': 'get', 'codice_oggetto': id},
+          );
+          if (response.status >= 200 && response.status < 300 && response.data is Map) {
+            final data = Map<String, dynamic>.from(response.data as Map);
+            final url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? data['url_immagine'] ?? '').toString().trim();
+            if (url.startsWith('https://') || url.startsWith('http://')) {
+              _dashboardImageUrls[id] = url;
+              resolved = true;
+            }
+          }
+        } catch (e) {
+          debugPrint('VALORA: immagine registro non disponibile per $id: $e');
+        }
+      }
+      if (resolved) {
+        _dashboardImageLookups.add(id);
+      } else {
+        _dashboardImageLookups.remove(id);
       }
     }));
     if (mounted) setState(() {});
+  }
+
+  Future<void> _retryDashboardImages() async {
+    await _loadDashboardImages(_catalogRows, retryFailed: true);
   }
 
   String _dashboardDescription(Map<String, dynamic> row) =>
