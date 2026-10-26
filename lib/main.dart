@@ -2962,6 +2962,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
                                : (procedure.apiCode == 'WRITE-PR-06' || procedure.apiCode == 'PR-06')
                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
+                               : procedure.apiCode == 'PR-07'
+                                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditSalePage()))
                                : procedure.apiCode == 'PR-08'
                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CloseSalePage()))
                                : procedure.apiCode == 'PR-09'
@@ -8289,6 +8291,262 @@ class _CancelSalePageState extends State<CancelSalePage> {
         if (_preview != null) Card(child: Padding(padding: const EdgeInsets.all(12), child: Text('Esito PR-09: ${jsonEncode(_preview)}'))),
         OutlinedButton(onPressed: _busy ? null : _load, child: const Text('AGGIORNA ELENCO')),
       ])),
+    );
+  }
+}
+
+
+
+/// PR-07: modifica una vendita esistente preservando codice e storico.
+class EditSalePage extends StatefulWidget {
+  const EditSalePage({super.key});
+  @override
+  State<EditSalePage> createState() => _EditSalePageState();
+}
+
+class _EditSalePageState extends State<EditSalePage> {
+  final _query = TextEditingController();
+  final _date = TextEditingController();
+  final _amount = TextEditingController();
+  final _notes = TextEditingController();
+  final _session = _uuid.v4();
+  bool _busy = false, _locked = false, _confirmed = false;
+  String _status = 'Cerca una vendita esistente per codice o descrizione.';
+  List<Map<String, dynamic>> _found = [];
+  Map<String, dynamic>? _sale, _preview;
+  List<Map<String, dynamic>> _platforms = [];
+  int? _platform;
+
+  @override
+  void dispose() {
+    _query.dispose(); _date.dispose(); _amount.dispose(); _notes.dispose();
+    if (_locked) _unlock();
+    super.dispose();
+  }
+
+  Map<String, dynamic> _unwrap(Map<String, dynamic> r) {
+    final v = r['result'];
+    return v is Map ? Map<String, dynamic>.from(v) : r;
+  }
+  String _code(Map<String, dynamic> r) =>
+      (r['codice_vendita'] ?? r['sale_code'] ?? r['id'] ?? '').toString();
+  String _description(Map<String, dynamic> r) =>
+      (r['descrizione_oggetto'] ?? r['descrizione'] ?? r['description'] ?? 'Vendita').toString();
+  double? _money(dynamic v) {
+    if (v == null) return null;
+    var s = v.toString().trim().replaceAll('€', '').replaceAll(' ', '');
+    if (s.contains(',')) s = s.replaceAll('.', '').replaceAll(',', '.');
+    return double.tryParse(s);
+  }
+  void _notice(String v) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(v)));
+  void _invalidate() { _preview = null; _confirmed = false; }
+
+  Future<void> _search() async {
+    if (_query.text.trim().isEmpty) { _notice('Inserisci il codice o la descrizione della vendita.'); return; }
+    setState(() { _busy = true; _status = 'Ricerca vendite registrate in TEST…'; });
+    try {
+      final r = await _ValoraRuntimeApi.procedure('PR-07', 'search', {
+        'query': _query.text.trim(), 'codice_vendita': _query.text.trim(),
+      }, sessionId: _session);
+      final d = _unwrap(r);
+      final raw = d['vendite'] ?? d['risultati'] ?? d['results'] ?? d['rows'];
+      if (raw is! List) throw Exception('Il runtime PR-07 non ha restituito un elenco vendite.');
+      if (!mounted) return;
+      setState(() {
+        _found = raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _sale = null; _preview = null; _confirmed = false;
+        _status = _found.isEmpty ? 'Nessuna vendita trovata.' : 'Seleziona la vendita da modificare.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Ricerca non completata: $e');
+    } finally { if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _load(Map<String, dynamic> row) async {
+    final code = _code(row);
+    if (code.isEmpty) { _notice('Codice vendita mancante: modifica bloccata.'); return; }
+    setState(() { _busy = true; _status = 'Caricamento scheda vendita completa…'; });
+    try {
+      final r = await _ValoraRuntimeApi.procedure('PR-07', 'load', {
+        'codice_vendita': code, 'sale_code': code,
+      }, sessionId: _session);
+      final d = _unwrap(r);
+      final raw = d['vendita'] is Map ? Map<String, dynamic>.from(d['vendita']) : d;
+      final date = DateTime.tryParse((raw['data_vendita'] ?? raw['data'] ?? raw['sale_date'] ?? '').toString());
+      final amount = _money(raw['importo_vendita'] ?? raw['prezzo_di_vendita'] ?? raw['amount']);
+      final platform = int.tryParse((raw['codice_piattaforma'] ?? raw['platform_id'] ?? '').toString());
+      if (date == null || amount == null) throw Exception('Dati originari incompleti (data/importo). Modifica bloccata.');
+      if (!mounted) return;
+      setState(() {
+        _sale = raw;
+        _date.text = date.toIso8601String().substring(0, 10);
+        _amount.text = amount.toStringAsFixed(2);
+        _notes.text = (raw['note'] ?? raw['notes'] ?? '').toString();
+        _platform = platform;
+        _platforms = [
+          {'id': 1, 'name': 'Vinted'}, {'id': 2, 'name': '[TEST-CBV] eBay'},
+          {'id': 3, 'name': '[TEST-CBV] Mercatino'}, {'id': 6, 'name': 'Subito'},
+          {'id': 7, 'name': 'BrickLink'},
+        ];
+        _preview = null; _confirmed = false;
+        _status = 'Scheda caricata. Il codice vendita e il collegamento all’oggetto devono essere conservati.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Scheda non caricata: $e');
+    } finally { if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _lock() async {
+    final r = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _session});
+    final d = r['result'];
+    if (d is Map && d['acquisito'] == true) { _locked = true; return; }
+    throw Exception(d is Map ? (d['messaggio'] ?? 'Blocco archivio non acquisito.') : 'Blocco archivio non acquisito.');
+  }
+  Future<void> _unlock() async {
+    if (!_locked) return;
+    try { await _ValoraRuntimeApi.call('release_lock', {'session_id': _session}); }
+    finally { _locked = false; }
+  }
+  bool _valid() {
+    if (_sale == null || _code(_sale!).isEmpty) { _notice('Seleziona una vendita valida.'); return false; }
+    if (DateTime.tryParse(_date.text.trim()) == null) { _notice('Data non valida. Usa AAAA-MM-GG.'); return false; }
+    final n = _money(_amount.text);
+    if (n == null || n <= 0) { _notice('L’importo deve essere maggiore di zero.'); return false; }
+    return true;
+  }
+  Map<String, dynamic> _payload({bool confirmed = false, bool finalConfirmation = false}) => {
+    'codice_vendita': _code(_sale!), 'sale_code': _code(_sale!),
+    'codice_oggetto': _sale!['codice_oggetto'] ?? _sale!['object_code'],
+    'data_vendita': _date.text.trim(), 'importo_vendita': _money(_amount.text),
+    'codice_piattaforma': _platform, 'note': _notes.text.trim(),
+    'dati_confermati': confirmed, 'conferma_finale': finalConfirmation,
+    'mantieni_codice_vendita': true, 'mantieni_codice_oggetto': true,
+    'non_eliminare_ricreare': true, 'registra_storico': true,
+    'aggiorna_cassa': true, 'verifica_post_scrittura': true,
+  };
+
+  Future<void> _makePreview() async {
+    if (!_valid()) return;
+    setState(() { _busy = true; _invalidate(); _status = 'Verifica preliminare della modifica…'; });
+    try {
+      await _lock();
+      final r = await _ValoraRuntimeApi.procedure('PR-07', 'preview', _payload(), sessionId: _session);
+      if (r['scrittura_eseguita'] == true || (r['stato'] != null && r['stato'] != 'BOZZA')) {
+        throw StateError('Anteprima PR-07 inattesa: non è stata autorizzata alcuna scrittura.');
+      }
+      if (!mounted) return;
+      setState(() { _preview = r; _status = 'Anteprima pronta. Controlla i dati e conferma prima del salvataggio.'; });
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Anteprima non riuscita: $e');
+    } finally { await _unlock(); if (mounted) setState(() => _busy = false); }
+  }
+
+  Future<void> _save() async {
+    if (!_confirmed || _preview == null || !_valid()) {
+      _notice('Esegui l’anteprima e conferma i dati prima di salvare.'); return;
+    }
+    final yes = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+      title: const Text('Conferma modifica vendita'),
+      content: Text('Vendita #${_code(_sale!)} · ${_description(_sale!)}\nNuova data: ${_date.text}\nNuovo importo: €${_money(_amount.text)!.toStringAsFixed(2)}\n\nConfermi il salvataggio? Lo storico deve essere conservato.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('INDIETRO')),
+        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMA E SALVA')),
+      ],
+    ));
+    if (yes != true || !mounted) return;
+    setState(() { _busy = true; _status = 'Salvataggio e verifica della modifica…'; });
+    try {
+      await _lock();
+      final r = await _ValoraRuntimeApi.procedure('PR-07', 'save',
+        _payload(confirmed: true, finalConfirmation: true),
+        sessionId: _session, requestId: _uuid.v4());
+      final reread = r['rilettura_database'];
+      final verified = r['rilettura_verificata'] == true ||
+        r['verifica_post_scrittura'] == 'OK' || r['stato'] == 'SALVATO_E_VERIFICATO';
+      final audit = r['storico_aggiornato'] == true || r['audit_registrato'] == true;
+      final cash = r['cassa_aggiornata'] == true || r['movimenti_cassa_aggiornati'] == true;
+      final sameCode = (r['codice_vendita'] ?? r['sale_code'] ?? _code(_sale!)).toString() == _code(_sale!);
+      final saved = r['scrittura_eseguita'] == true && verified && audit && cash && sameCode && reread is Map;
+      if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
+      if (!mounted) return;
+      setState(() => _status = saved
+        ? 'Modifica vendita salvata e verificata. Codice e storico conservati.'
+        : 'Modifica NON considerata conclusa: il runtime non ha confermato tutti i controlli richiesti.');
+      if (!saved) return;
+      final another = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+        title: const Text('Modifica verificata'),
+        content: const Text('Vuoi modificare un’altra vendita?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('NO, TERMINA')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('SÌ, ALTRA VENDITA')),
+        ],
+      ));
+      if (!mounted) return;
+      if (another == true) {
+        setState(() {
+          _query.clear(); _found = []; _sale = null; _preview = null; _confirmed = false;
+          _date.clear(); _amount.clear(); _notes.clear(); _platform = null;
+          _status = 'Cerca un’altra vendita da modificare.';
+        });
+      } else {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _status = 'Modifica non confermata: $e');
+    } finally { await _unlock(); if (mounted) setState(() => _busy = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ValoraAppearance.instance.colorFor('VENDITE');
+    return Scaffold(
+      appBar: AppBar(title: const Text('PR-07 · MODIFICA VENDITA')),
+      body: SafeArea(child: Center(child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 820),
+        child: ListView(padding: const EdgeInsets.all(16), children: [
+          const Card(child: Padding(padding: EdgeInsets.all(12), child: Text(
+            'AMBIENTE TEST · Modifica una vendita esistente senza eliminare o ricreare i record. Codice vendita, collegamento oggetto, storico e cassa devono essere verificati.'))),
+          Text('1 · CERCA VENDITA', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          TextField(controller: _query, decoration: const InputDecoration(labelText: 'Codice vendita o descrizione oggetto'), onSubmitted: (_) => _search()),
+          FilledButton(onPressed: _busy ? null : _search, child: const Text('CERCA')),
+          for (final row in _found) Card(child: ListTile(
+            title: Text(_description(row)),
+            subtitle: Text('Vendita #${_code(row)} · Oggetto #${row['codice_oggetto'] ?? row['object_code'] ?? 'n/d'} · €${row['importo_vendita'] ?? row['amount'] ?? 'n/d'}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _busy ? null : () => _load(row),
+          )),
+          if (_sale != null) ...[
+            const Divider(height: 24),
+            Text('2 · MODIFICA DATI', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+            Text('Codice vendita: ${_code(_sale!)}'),
+            Text('Oggetto collegato: #${_sale!['codice_oggetto'] ?? _sale!['object_code'] ?? 'non restituito'}'),
+            TextField(controller: _date, decoration: const InputDecoration(labelText: 'Data vendita (AAAA-MM-GG) *'), onChanged: (_) => setState(_invalidate)),
+            TextField(controller: _amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Importo vendita (€) *'), onChanged: (_) => setState(_invalidate)),
+            DropdownButtonFormField<int>(
+              value: _platform,
+              decoration: const InputDecoration(labelText: 'Piattaforma'),
+              items: _platforms.map((p) => DropdownMenuItem<int>(value: p['id'] as int, child: Text(p['name'] as String))).toList(),
+              onChanged: _busy ? null : (v) => setState(() { _platform = v; _invalidate(); }),
+            ),
+            TextField(controller: _notes, minLines: 2, maxLines: 4, decoration: const InputDecoration(labelText: 'Note'), onChanged: (_) => setState(_invalidate)),
+            const SizedBox(height: 12),
+            OutlinedButton(onPressed: _busy ? null : _makePreview, child: const Text('VERIFICA MODIFICA')),
+            if (_preview != null) ...[
+              Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('ANTEPRIMA · Nessuna scrittura ancora eseguita', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text('Dati proposti: ${jsonEncode(_payload())}'),
+                CheckboxListTile(value: _confirmed, onChanged: _busy ? null : (v) => setState(() => _confirmed = v == true),
+                  title: const Text('Confermo che i dati della modifica sono corretti.')),
+              ]))),
+              FilledButton(onPressed: _busy ? null : _save, child: const Text('CONFERMA E SALVA')),
+            ],
+          ],
+          const SizedBox(height: 12),
+          Text(_status),
+          if (_busy) const LinearProgressIndicator(),
+          OutlinedButton(onPressed: _busy ? null : _search, child: const Text('AGGIORNA RICERCA')),
+        ]),
+      ))),
     );
   }
 }
