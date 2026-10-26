@@ -2715,6 +2715,8 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   bool _loading = false;
   String _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
   List<Map<String, dynamic>> _results = [];
+  static const int _pageSize = 50;
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -2754,6 +2756,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
     setState(() {
       _loading = true;
       _results = [];
+      _currentPage = 0;
       _message = 'Ricerca nel catalogo in corso…';
     });
     try {
@@ -2818,6 +2821,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       if (!mounted) return;
       setState(() {
         _results = filteredRows;
+        _currentPage = 0;
         _message = filteredRows.isEmpty
             ? 'Nessun record contiene “$query”. Prova una dicitura più breve.'
             : 'Trovati ${filteredRows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
@@ -2826,6 +2830,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       if (!mounted) return;
       setState(() {
         _results = [];
+        _currentPage = 0;
         _message = 'Ricerca non riuscita: $e';
       });
     } finally {
@@ -2885,6 +2890,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
                     _query.clear();
                     setState(() {
                       _results = [];
+                      _currentPage = 0;
                       _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
                     });
                   },
@@ -2906,19 +2912,57 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
             const SizedBox(height: 16),
             Text(_message, style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
             const SizedBox(height: 8),
-            ..._results.map((row) => Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: color.withValues(alpha: 0.16),
-                  child: Icon(Icons.inventory_2_outlined, color: color),
-                ),
-                title: Text(_description(row), maxLines: 3, overflow: TextOverflow.ellipsis),
-                subtitle: Text('Codice oggetto: ${_code(row)}'),
-                trailing: Icon(Icons.chevron_right, color: color),
-                onTap: () => _openRecord(row),
+            if (_results.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Blocco ${_currentPage + 1} di ${(_results.length / _pageSize).ceil()}',
+                    style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontWeight: FontWeight.w600)),
+                  Text('Oggetti ${_currentPage * _pageSize + 1}–${((_currentPage + 1) * _pageSize).clamp(0, _results.length)} di ${_results.length}',
+                    style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+                ],
               ),
-            )),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
+                  icon: const Icon(Icons.chevron_left), label: const Text('PRECEDENTE'),
+                )),
+                const SizedBox(width: 12),
+                Expanded(child: FilledButton.icon(
+                  onPressed: (_currentPage + 1) * _pageSize < _results.length
+                      ? () => setState(() => _currentPage++) : null,
+                  icon: const Icon(Icons.chevron_right), label: const Text('SUCCESSIVO'),
+                )),
+              ]),
+              const SizedBox(height: 8),
+              ..._results.skip(_currentPage * _pageSize).take(_pageSize).map((row) => Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: color.withValues(alpha: 0.16),
+                    child: Icon(Icons.inventory_2_outlined, color: color),
+                  ),
+                  title: Text(_description(row), maxLines: 3, overflow: TextOverflow.ellipsis),
+                  subtitle: Text('Codice oggetto: ${_code(row)}'),
+                  trailing: Icon(Icons.chevron_right, color: color),
+                  onTap: () => _openRecord(row),
+                ),
+              )),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
+                  icon: const Icon(Icons.chevron_left), label: const Text('PRECEDENTE'),
+                )),
+                const SizedBox(width: 12),
+                Expanded(child: FilledButton.icon(
+                  onPressed: (_currentPage + 1) * _pageSize < _results.length
+                      ? () => setState(() => _currentPage++) : null,
+                  icon: const Icon(Icons.chevron_right), label: const Text('SUCCESSIVO'),
+                )),
+              ]),
+            ],
           ],
         ),
       ),
