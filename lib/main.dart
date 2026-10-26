@@ -2961,6 +2961,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
                                : (procedure.apiCode == 'WRITE-PR-06' || procedure.apiCode == 'PR-06')
                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
+                               : procedure.apiCode == 'PR-08'
+                                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CloseSalePage()))
                                : procedure.apiCode == 'PR-09'
                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CancelSalePage()))
                                : procedure.apiCode != null
@@ -8178,6 +8180,63 @@ class _CancelSalePageState extends State<CancelSalePage> {
     );
   }
 }
+
+
+/// PR-08: chiude cicli di vendita con o senza vendita effettiva, in coda.
+class CloseSalePage extends StatefulWidget {
+ const CloseSalePage({super.key});
+ @override State<CloseSalePage> createState()=>_CloseSalePageState();
+}
+class _CloseSalePageState extends State<CloseSalePage>{
+ final String _session=_uuid.v4();
+ final _amount=TextEditingController(),_notes=TextEditingController();
+ List<Map<String,dynamic>> _cycles=[],_platforms=[];
+ final List<Map<String,dynamic>> _pending=[];
+ int? _selected,_platform=1;
+ String _outcome='VENDITA EFFETTIVA',_destination='',_status='Caricamento cicli aperti…';
+ bool _busy=false,_locked=false;
+ Map<String,dynamic>? _preview;
+ @override void initState(){super.initState();_load();}
+ @override void dispose(){_amount.dispose();_notes.dispose();if(_locked)_release();super.dispose();}
+ Future<void> _release()async{try{await _ValoraRuntimeApi.call('release_lock',{'session_id':_session});}catch(_){}_locked=false;}
+ Future<void> _acquire()async{final r=await _ValoraRuntimeApi.call('acquire_lock',{'session_id':_session});final x=r['result'];if((x is Map&&(x['acquisito']==true||x['stato']=='ATTIVO'))||r['acquired']==true||r['stato']=='ATTIVO'){_locked=true;return;}throw StateError('Blocco archivio non acquisito.');}
+ Future<void> _load()async{setState(()=>_busy=true);try{
+ final rows=await Supabase.instance.client.schema('collection').from('master_oggetti_in_vendita').select('codice_vendita_aperta,codice_oggetto,descrizione_oggetto,data_inizio_vendita,prezzo_di_vendita,codice_lotto,stato_ciclo_vendita').eq('stato_ciclo_vendita','APERTO').order('data_inizio_vendita',ascending:false).limit(500);
+ final ps=await Supabase.instance.client.schema('collection').from('piattaforme').select('*').limit(100);
+ if(!mounted)return;setState(()=>{_cycles=rows.map((e)=>Map<String,dynamic>.from(e)).toList(),_platforms=ps.map((e)=>Map<String,dynamic>.from(e)).toList(),_status=rows.isEmpty?'Nessun ciclo aperto.':'Seleziona un ciclo e l’esito.'});
+ }catch(e){if(mounted)setState(()=>_status='Errore lettura: '+e.toString());}finally{if(mounted)setState(()=>_busy=false);}}
+ Map<String,dynamic>? get _cycle{for(final x in _cycles){if((x['codice_vendita_aperta'] as num?)?.toInt()==_selected)return x;}return null;}
+ Map<String,dynamic> _op(){final sold=_outcome=='VENDITA EFFETTIVA',x=_cycle!;final d=DateTime.now();return {'codice_vendita_aperta':_selected,'esito':_outcome,'data_vendita':d.year.toString().padLeft(4,'0')+'-'+d.month.toString().padLeft(2,'0')+'-'+d.day.toString().padLeft(2,'0'),if(sold)'importo_vendita':double.parse(_amount.text.trim().replaceAll(',','.')),if(sold)'codice_piattaforma':_platform,if(!sold)'nuova_destinazione':_destination,if(_notes.text.trim().isNotEmpty)'note':_notes.text.trim(),'descrizione_oggetto':x['descrizione_oggetto']??'Oggetto #'+x['codice_oggetto'].toString()};}
+ Future<void> _prepare()async{
+ if(_cycle==null){_notice('Seleziona un ciclo aperto.');return;}final sold=_outcome=='VENDITA EFFETTIVA';final amount=double.tryParse(_amount.text.trim().replaceAll(',','.'));
+ if(sold&&(amount==null||amount<0)){_notice('Inserisci un importo valido.');return;}if(sold&&_platform==null){_notice('Scegli la piattaforma.');return;}if(!sold&&!['COLLEZIONE','RIVENDITA'].contains(_destination)){_notice('Scegli la nuova destinazione: COLLEZIONE o RIVENDITA.');return;}
+ final op=_op();final another=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Chiusura preparata'),content:Text('Ciclo #'+_selected.toString()+' · '+_outcome+(sold?' · €'+op['importo_vendita'].toString():' · Destinazione '+_destination)+'\nVuoi chiudere un’altra vendita?'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('NO, RIEPILOGO')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('SÌ, ALTRA VENDITA'))]));
+ if(another==null)return;setState(()=>{_pending.add(op),_cycles.removeWhere((x)=>(x['codice_vendita_aperta'] as num?)?.toInt()==_selected),_selected=null,_amount.clear(),_notes.clear(),_destination='',_outcome='VENDITA EFFETTIVA',_status=_pending.length.toString()+' operazioni in coda; non ancora salvate.'});
+ if(another&&_cycles.isNotEmpty)return;await _review();
+ }
+ Future<void> _review()async{if(_pending.isEmpty)return;final summary=_pending.map((x)=>'#'+x['codice_vendita_aperta'].toString()+' '+x['descrizione_oggetto'].toString()+' · '+x['esito'].toString()+(x['importo_vendita']!=null?' · €'+x['importo_vendita'].toString():' · '+x['nuova_destinazione'].toString())).join('\n');
+ final yes=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Riepilogo finale'),content:SingleChildScrollView(child:Text(summary+'\nConfermi il salvataggio?')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('INDIETRO')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('CONFERMA E SALVA'))]));if(yes!=true)return;
+ setState(()=>_busy=true);try{await _acquire();final ops=_pending.map((x){final z=Map<String,dynamic>.from(x)..remove('descrizione_oggetto');return z;}).toList();
+ final p=await _ValoraRuntimeApi.procedure('PR-08','preview',{'operazioni':ops,'dati_confermati':false,'conferma_finale':false,'altra_operazione':false},sessionId:_session);if(p['stato']!='BOZZA'||p['scrittura_eseguita']==true)throw StateError('Anteprima non valida.');
+ final r=await _ValoraRuntimeApi.procedure('PR-08','save',{'operazioni':ops,'dati_confermati':true,'conferma_finale':true,'altra_operazione':false},sessionId:_session,requestId:_uuid.v4());final ok=r['stato']=='SALVATO_E_VERIFICATO'&&r['scrittura_eseguita']==true;
+ if(!mounted)return;setState(()=>{_status=ok?'Chiusure salvate e verificate.':'Esito non verificato: controllare il database.',if(ok)_preview=r,if(ok)_pending.clear()});if(ok){await _release();await _load();}
+ }catch(e){if(mounted)setState(()=>_status='Salvataggio non riuscito: '+e.toString());}finally{await _release();if(mounted)setState(()=>_busy=false);}}
+ void _notice(String s)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(s)));
+ @override Widget build(BuildContext context){final color=ValoraAppearance.instance.colorFor('VENDITE');return Scaffold(appBar:AppBar(title:const Text('CHIUDI VENDITA')),body:SafeArea(child:ListView(padding:const EdgeInsets.all(16),children:[
+ Text('Chiusura effettiva o senza vendita. La nuova destinazione è obbligatoria se non venduto.',style:TextStyle(color:ValoraAppearance.instance.textSecondary)),
+ ..._cycles.map((x){final id=(x['codice_vendita_aperta'] as num).toInt();return RadioListTile<int>(value:id,groupValue:_selected,activeColor:color,title:Text('#'+id.toString()+' · '+(x['descrizione_oggetto']??'Oggetto #'+x['codice_oggetto'].toString()).toString()),subtitle:Text('Dal '+(x['data_inizio_vendita']??'n/d').toString()+' · Prezzo €'+(x['prezzo_di_vendita']??'-').toString()),onChanged:_busy?null:(v)=>setState(()=>_selected=v));}),
+ const Text('ESITO'),RadioListTile<String>(value:'VENDITA EFFETTIVA',groupValue:_outcome,title:const Text('VENDITA EFFETTIVA'),onChanged:_busy?null:(v)=>setState(()=>_outcome=v!)),
+ RadioListTile<String>(value:'CHIUSURA SENZA VENDITA',groupValue:_outcome,title:const Text('CHIUSURA SENZA VENDITA'),onChanged:_busy?null:(v)=>setState(()=>_outcome=v!)),
+ if(_outcome=='VENDITA EFFETTIVA')...[
+ TextField(controller:_amount,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Importo effettivo (€)')),
+ DropdownButtonFormField<int>(value:_platform,decoration:const InputDecoration(labelText:'Piattaforma'),items:_platforms.map((p){final id=(p['id'] as num?)?.toInt();return DropdownMenuItem<int>(value:id,child:Text((p['nome']??p['descrizione']??p['piattaforma']??'Piattaforma').toString()));}).where((x)=>x.value!=null).toList(),onChanged:_busy?null:(v)=>setState(()=>_platform=v))
+ ]else DropdownButtonFormField<String>(value:_destination.isEmpty?null:_destination,decoration:const InputDecoration(labelText:'Nuova destinazione obbligatoria'),items:const[DropdownMenuItem(value:'COLLEZIONE',child:Text('COLLEZIONE')),DropdownMenuItem(value:'RIVENDITA',child:Text('RIVENDITA'))],onChanged:_busy?null:(v)=>setState(()=>_destination=v??'')),
+ TextField(controller:_notes,decoration:const InputDecoration(labelText:'Note facoltative')),FilledButton(onPressed:_busy?null:_prepare,child:const Text('PREPARA CHIUSURA')),
+ if(_pending.isNotEmpty)...[Text('IN CODA: '+_pending.length.toString()),..._pending.map((x)=>Text('#'+x['codice_vendita_aperta'].toString()+' '+x['esito'].toString())),TextButton(onPressed:_busy?null:_review,child:const Text('RIEPILOGO E CONFERMA FINALE'))],
+ Text(_status),if(_preview!=null)Text(jsonEncode(_preview)),OutlinedButton(onPressed:_busy?null:_load,child:const Text('AGGIORNA ELENCO'))
+ ])));}
+}
+
 
 /// PR-06: apertura nuova vendita su un oggetto già esistente, con anteprima e conferma esplicita.
 class NewSalePage extends StatefulWidget {
