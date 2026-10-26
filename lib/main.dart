@@ -573,6 +573,7 @@ class _LoginPageState extends State<LoginPage> {
       );
 }
 
+// Le categorie del catalogo vengono renderizzate dalla configurazione SQL, non da voci Flutter dedicate.
 class DashboardSection {
   const DashboardSection({required this.title, required this.description,
     required this.icon, required this.color, this.menuTitle, this.categoryName, this.categoryCode});
