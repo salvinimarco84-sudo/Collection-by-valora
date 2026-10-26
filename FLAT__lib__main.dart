@@ -64,6 +64,7 @@ class ValoraAppearance extends ChangeNotifier {
     'FUMETTI': Color(0xFF008C4A),
     'GUNDAM': Color(0xFFC62828),
     'TRANSFORMERS': Color(0xFF2476C8),
+    'G.I. JOE': Color(0xFFB33A3A),
     'ALTRE COLLEZIONI': Color(0xFF466B87),
   };
   static const List<Color> palette = [
@@ -319,7 +320,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
   static const List<String> _allPersonalizableSections = [
     'COLLEZIONE','CATALOGO','ACQUISTI','VENDITE',
     'VALUTAZIONI','REPORT','RICERCHE','CONTROLLO','LEGO','SAINT SEIYA',
-    'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','ALTRE COLLEZIONI'
+    'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','G.I. JOE','ALTRE COLLEZIONI'
   ];
   void refresh(){
     if(!mounted)return;
@@ -2157,6 +2158,7 @@ String _valoraCollectionCategory(String description) {
   final d = description.toLowerCase();
   // Regole uniche condivise tra HOME e "VEDI TUTTI".
   // Prima identifichiamo i giocattoli/collezioni specifici, poi i fumetti.
+  if (RegExp(r'gi\s*joe|g\.i\.\s*joe|gijoe|g i joe|cobra commander|duke \(gi joe\)|destro \(gi joe\)').hasMatch(d)) return 'G.I. JOE';
   if (RegExp(r'lego|minifig|brickheadz|technic|duplo|bricklink').hasMatch(d)) return 'LEGO';
   if (RegExp(r'saint seiya|myth cloth|cavalieri dello zodiaco').hasMatch(d)) return 'SAINT SEIYA';
   if (RegExp(r'maisto|die.?cast|modellin|ducati panigale|yamaha r1|kawasaki ninja').hasMatch(d)) return 'MOTO DIE-CAST';
@@ -2222,7 +2224,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     // immagini_oggetto + Storage privato, tramite URL firmati a scadenza.
     final selected = <Map<String, dynamic>>[];
     final activeCategories = rows.map(_dashboardCategory).toSet();
-    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
+    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'G.I. JOE', 'ALTRE COLLEZIONI']) {
       if (activeCategories.contains(category)) {
         selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
       }
@@ -2682,6 +2684,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
           _dashboardCategoryPanel('GUNDAM', 'Gunpla, modelli e action figure', const Color(0xFFC62828), Icons.smart_toy_outlined),
         if (_catalogRows.any((row) => _dashboardCategory(row) == 'TRANSFORMERS'))
           _dashboardCategoryPanel('TRANSFORMERS', 'Autobot, Decepticon e personaggi', const Color(0xFF2476C8), Icons.smart_toy_outlined),
+        if (_catalogRows.any((row) => _dashboardCategory(row) == 'G.I. JOE'))
+          _dashboardCategoryPanel('G.I. JOE', 'Action figure, personaggi e veicoli G.I. Joe', const Color(0xFFB33A3A), Icons.shield_outlined),
         if (_catalogRows.any((row) => _dashboardCategory(row) == 'ALTRE COLLEZIONI'))
           _dashboardCategoryPanel('ALTRE COLLEZIONI', 'Tutti gli altri oggetti catalogati', const Color(0xFF466B87), Icons.category_outlined),
       ],
