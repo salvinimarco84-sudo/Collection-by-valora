@@ -2057,30 +2057,63 @@ class _HomeDashboardState extends State<HomeDashboard> {
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
 
-      // La sezione viene letta dai metadati SQL, non dedotta dalla descrizione.
+      // La categoria salvata è la fonte primaria. I metadati restano fallback per
+      // gli oggetti precedenti alla classificazione dinamica.
       final ids = rows.map((row) => int.tryParse(
         (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
       )).whereType<int>().where((id) => id > 0).toSet().toList();
+      final sectionById = <int, String>{};
       if (ids.isNotEmpty) {
+        try {
+          final assignments = await Supabase.instance.client
+              .schema('collection')
+              .from('oggetto_categoria')
+              .select('codice_oggetto,id_categoria')
+              .inFilter('codice_oggetto', ids);
+          final categoryIds = assignments.map((item) => int.tryParse(
+            (item['id_categoria'] ?? '').toString(),
+          )).whereType<int>().toSet().toList();
+          final namesByCategoryId = <int, String>{};
+          if (categoryIds.isNotEmpty) {
+            final categoryRows = await Supabase.instance.client
+                .schema('collection')
+                .from('categorie_merceologiche')
+                .select('id_categoria,nome_categoria,attiva')
+                .inFilter('id_categoria', categoryIds);
+            for (final item in categoryRows) {
+              final id = int.tryParse((item['id_categoria'] ?? '').toString());
+              final name = (item['nome_categoria'] ?? '').toString().trim();
+              if (id != null && name.isNotEmpty && item['attiva'] != false) {
+                namesByCategoryId[id] = name;
+              }
+            }
+          }
+          for (final item in assignments) {
+            final objectId = int.tryParse((item['codice_oggetto'] ?? '').toString());
+            final categoryId = int.tryParse((item['id_categoria'] ?? '').toString());
+            final name = categoryId == null ? null : namesByCategoryId[categoryId];
+            if (objectId != null && name != null) sectionById[objectId] = name;
+          }
+        } catch (e) {
+          debugPrint('VALORA: assegnazioni categorie non disponibili: $e');
+        }
         try {
           final metadataRows = await Supabase.instance.client
               .schema('collection')
               .from('master_metadati')
-              .select('codice_oggetto,sezione')
+              .select('codice_oggetto,sezione,categoria_prodotto,linea_prodotto')
               .inFilter('codice_oggetto', ids);
-          final sectionById = <int, String>{};
           for (final item in metadataRows) {
             final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
-            final section = (item['sezione'] ?? '').toString().trim();
-            if (id != null && section.isNotEmpty) sectionById[id] = section;
-          }
-          for (final row in rows) {
-            final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
-            row['_valora_sezione'] = id == null ? '' : (sectionById[id] ?? '');
+            final section = (item['sezione'] ?? item['categoria_prodotto'] ?? item['linea_prodotto'] ?? '').toString().trim();
+            if (id != null && section.isNotEmpty) sectionById.putIfAbsent(id, () => section);
           }
         } catch (e) {
-          debugPrint('VALORA: sezioni catalogo non disponibili: $e');
-          for (final row in rows) { row['_valora_sezione'] = ''; }
+          debugPrint('VALORA: metadati sezione non disponibili: $e');
+        }
+        for (final row in rows) {
+          final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
+          row['_valora_sezione'] = id == null ? '' : (sectionById[id] ?? '');
         }
       }
       if (mounted) setState(() { _catalogRows = rows; _catalogLoading = false; });
