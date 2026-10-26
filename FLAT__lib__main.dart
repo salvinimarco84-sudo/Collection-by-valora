@@ -7790,6 +7790,37 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
           ' · Oggetti: ' + (r['numero_oggetti'] ?? 0).toString() + ' · Totale: ' + _eur(r['prezzo_totale'] ?? 0);
       });
       await _load();
+      if (!mounted) return;
+      final addAnother = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: Text(widget.singleSale ? 'Vendita salvata' : 'Lotto salvato'),
+          content: Text(widget.singleSale
+              ? 'La vendita è stata salvata e verificata. Vuoi inserire una nuova vendita?'
+              : 'Il lotto è stato salvato e verificato. Vuoi inserire una nuova vendita?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('NO, TERMINA'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('SÌ, NUOVA VENDITA'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      if (addAnother == true) {
+        setState(() {
+          _status = widget.singleSale
+              ? 'Pronto per inserire una nuova vendita.'
+              : 'Pronto per creare un nuovo lotto di vendita.';
+        });
+      } else {
+        Navigator.of(context).pop(true);
+      }
     } catch (e) { await _releaseQuietly(); rethrow; }
     finally { if (mounted) setState(() { _busy = false; }); }
   }
