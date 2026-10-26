@@ -7778,6 +7778,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
           ]),
           TextField(controller: _search, enabled: !_busy, decoration: const InputDecoration(labelText: 'Cerca per descrizione o codice', prefixIcon: Icon(Icons.search)),
             onChanged: (_) => setState(() {})),
+          if (_objects.isEmpty && !_busy) const Padding(padding: EdgeInsets.all(12), child: Text('Nessun oggetto è attualmente disponibile per la rivendita. Controlla la destinazione e lo stato degli oggetti.')),
           ..._visible.map((r) {
             final id = _id(r);
             if (id == null) return const SizedBox.shrink();
