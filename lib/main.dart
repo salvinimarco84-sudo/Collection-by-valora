@@ -2235,7 +2235,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     // immagini_oggetto + Storage privato, tramite URL firmati a scadenza.
     final selected = <Map<String, dynamic>>[];
     final activeCategories = rows.map(_dashboardCategory).toSet();
-    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'ALTRE COLLEZIONI']) {
+    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'FUNKO POP', 'MODEL KIT', 'G.I. JOE', 'ALTRE COLLEZIONI']) {
       if (activeCategories.contains(category)) {
         selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
       }
@@ -2297,6 +2297,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
     if (RegExp(r'fumett|comic|manga|panini|salda.?press|dragon ball|one piece|tex|batman|from hell|alan moore|eddie campbell|magic press').hasMatch(d)) return 'FUMETTI';
     if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
     if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
+    if (RegExp(r'funko\s*pop|funko pop!').hasMatch(d)) return 'FUNKO POP';
+    if (RegExp(r'g\.i\.\s*joe|cobra commander|cobra officer|cobra trooper|sgt\. stalker').hasMatch(d)) return 'G.I. JOE';
+    if (RegExp(r'model kit|mechanic collection|gunpla|plastic model kit').hasMatch(d)) return 'MODEL KIT';
     return 'ALTRE COLLEZIONI';
   }
 
@@ -2663,6 +2666,17 @@ class _HomeDashboardState extends State<HomeDashboard> {
           child: Text('Conteggio catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
         ),
       const SizedBox(height: 12),
+      if (!_catalogLoading) ...[
+        _dashboardCategoryPanel('LEGO', 'Set, veicoli e minifigure', const Color(0xFFE31B23), Icons.extension),
+        _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth e cavalieri', const Color(0xFF7137B8), Icons.auto_awesome),
+        _dashboardCategoryPanel('MOTO DIE-CAST', 'Moto e modellini', const Color(0xFFDD741D), Icons.two_wheeler),
+        _dashboardCategoryPanel('FUMETTI', 'Fumetti, manga e graphic novel', const Color(0xFF008C4A), Icons.menu_book),
+        _dashboardCategoryPanel('GUNDAM', 'Gunpla e modelli Gundam', const Color(0xFFC62828), Icons.precision_manufacturing),
+        _dashboardCategoryPanel('TRANSFORMERS', 'Action figure trasformabili', const Color(0xFF2476C8), Icons.smart_toy),
+        _dashboardCategoryPanel('FUNKO POP', 'Funko Pop da collezione', const Color(0xFF8E24AA), Icons.toys),
+        _dashboardCategoryPanel('MODEL KIT', 'Kit di montaggio', const Color(0xFF546E7A), Icons.precision_manufacturing),
+        _dashboardCategoryPanel('G.I. JOE', 'Personaggi e veicoli G.I. Joe', const Color(0xFF5C6BC0), Icons.shield),
+      ],
       Center(child: Text('COLLECTION by VALORA', style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
     ],
   );
@@ -2857,6 +2871,8 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   bool _loading = false;
   String _message = 'Inserisci una categoria o una dicitura, per esempio TRANSFORMERS.';
   List<Map<String, dynamic>> _results = [];
+  int _resultsPage = 0;
+  static const int _resultsPageSize = 50;
   List<Map<String, dynamic>> _themes = [];
   String? _selectedThemeId;
 
@@ -3001,6 +3017,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       if (!mounted) return;
       setState(() {
         _results = rows;
+        _resultsPage = 0;
         _message = rows.isEmpty
             ? 'Nessun record contiene “$query”. Prova una dicitura più breve.'
             : 'Trovati ${rows.length} record su $total totali (${percentage.toStringAsFixed(1).replaceAll('.', ',')}% della collezione). Seleziona una scheda per aprire il dettaglio completo.';
@@ -3042,6 +3059,10 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
   @override
   Widget build(BuildContext context) {
     final color = ValoraAppearance.instance.colorFor('RICERCHE');
+    final pageCount = (_results.length / _resultsPageSize).ceil();
+    final pageStart = (_resultsPage * _resultsPageSize).clamp(0, _results.length);
+    final pageEnd = (pageStart + _resultsPageSize).clamp(0, _results.length);
+    final visibleResults = _results.sublist(pageStart, pageEnd);
     return Scaffold(
       appBar: AppBar(title: const Text('RICERCA OGGETTI PER CATEGORIA')),
       body: SafeArea(
@@ -3109,8 +3130,18 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
             ),
             const SizedBox(height: 16),
             Text(_message, style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
+            if (_results.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(children: [
+                Text('Visualizzazione ${pageStart + 1}–$pageEnd di ${_results.length}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                const Spacer(),
+                IconButton(tooltip: 'Blocco precedente', onPressed: _resultsPage > 0 ? () => setState(() => _resultsPage--) : null, icon: const Icon(Icons.chevron_left)),
+                Text('${_resultsPage + 1}/$pageCount', style: const TextStyle(fontWeight: FontWeight.bold)),
+                IconButton(tooltip: 'Blocco successivo', onPressed: _resultsPage + 1 < pageCount ? () => setState(() => _resultsPage++) : null, icon: const Icon(Icons.chevron_right)),
+              ]),
+            ],
             const SizedBox(height: 8),
-            ..._results.map((row) => Card(
+            ...visibleResults.map((row) => Card(
               margin: const EdgeInsets.only(bottom: 10),
               child: ListTile(
                 leading: CircleAvatar(
