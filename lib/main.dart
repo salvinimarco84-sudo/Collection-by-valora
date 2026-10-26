@@ -2717,20 +2717,63 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   Widget _collectionCategoryMasterPanel(String code, String name, String subtitle, Color color, IconData icon, int count) {
+    final categoryKey = name.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+    final previewRows = _catalogRows.where((row) {
+      final category = _dashboardCategory(row).toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+      final rawCategory = (row['categoria'] ?? row['codice_categoria'] ?? '').toString()
+          .toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+      final matches = category == categoryKey || rawCategory == categoryKey ||
+          (categoryKey == 'SAINTSEIYA' && category == 'SAINTSEIYA') ||
+          (categoryKey == 'MOTODIECAST' && category == 'MOTODIECAST') ||
+          (categoryKey == 'GIJOE' && category == 'GIJOE') ||
+          (categoryKey == 'MODELKIT' && category == 'MODELKIT') ||
+          (categoryKey == 'FUNKOPOP' && category == 'FUNKOPOP');
+      return matches && _dashboardImageUrl(row) != null;
+    }).take(4).toList();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.20), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.75))),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        leading: _categoryBrandMark(name, color, icon),
-        title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text('$count', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          const SizedBox(width: 8), const Icon(Icons.chevron_right, color: Colors.white70),
-        ]),
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: name, initialCategoryCode: code))),
-      ),
+      child: Column(children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          leading: _categoryBrandMark(name, color, icon),
+          title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text('$count', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8), const Icon(Icons.chevron_right, color: Colors.white70),
+          ]),
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: name, initialCategoryCode: code))),
+        ),
+        if (previewRows.isNotEmpty)
+          SizedBox(
+            height: 86,
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+              scrollDirection: Axis.horizontal,
+              itemCount: previewRows.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final row = previewRows[index];
+                final url = _dashboardImageUrl(row)!;
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: 76,
+                    decoration: BoxDecoration(color: const Color(0xFF111111), border: Border.all(color: Colors.white24), borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.all(3),
+                    child: Image.network(
+                      _valoraImageProxyUrl(url),
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 30),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ]),
     );
   }
 
