@@ -2774,23 +2774,16 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
-      final ids = rows.map((row) => int.tryParse(_code(row))).whereType<int>().where((id) => id > 0).toSet().toList();
-      if (ids.isNotEmpty) {
-        final metadataRows = await Supabase.instance.client
-            .schema('collection')
-            .from('master_metadati')
-            .select('codice_oggetto,sezione')
-            .inFilter('codice_oggetto', ids);
-        final sectionById = <int, String>{};
-        for (final item in metadataRows) {
-          final id = int.tryParse((item['codice_oggetto'] ?? '').toString());
-          final section = (item['sezione'] ?? '').toString().trim();
-          if (id != null && section.isNotEmpty) sectionById[id] = section;
-        }
-        for (final row in rows) {
-          final id = int.tryParse(_code(row));
-          row['_valora_sezione'] = id == null ? '' : (sectionById[id] ?? '');
-        }
+      // Usa sempre la categoria primaria canonica restituita da PR-11.
+      // Non sovrascriverla con master_metadati.sezione: quel campo è storico/descrittivo
+      // e causava la ricomparsa degli oggetti nella sezione sbagliata quando si apriva
+      // una categoria dalla dashboard.
+      for (final row in rows) {
+        final category = (row['categoria'] ?? '').toString().trim();
+        row['_valora_categoria'] = category;
+        row['_valora_codice_categoria'] = (row['codice_categoria'] ?? '').toString().trim();
+        row['_valora_sottotema'] = (row['sottotema'] ?? '').toString().trim();
+        row['_valora_sezione'] = category.isNotEmpty ? category : 'DA CLASSIFICARE';
       }
       final filteredRows = rows
           .where((row) => categoryMode
