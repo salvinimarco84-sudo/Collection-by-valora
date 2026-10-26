@@ -3873,7 +3873,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _code.text = widget.initialObjectCode.toString();
       // Quando si apre la scheda da un elemento dell'elenco, carica subito
       // il record selezionato invece di mostrare una maschera vuota.
-      if (widget.apiCode == 'OBJECT_MASTER') {
+      if (widget.apiCode == 'OBJECT_MASTER' || widget.apiCode == 'PR-02') {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _run(_loadObject);
         });
@@ -6850,8 +6850,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   if ((_currentObject?['destinazione'] ?? '').toString().toUpperCase() == 'COLLEZIONE')
                     FilledButton.icon(
                       onPressed: _loading || _loadedObjectId == null ? null : () {
-                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
-                          title: 'Nuova vendita', apiCode: 'PR-06', initialObjectCode: _loadedObjectId,
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => NewSaleLotPage(
+                          singleSale: true, initialObjectCode: _loadedObjectId,
                         )));
                       },
                       icon: const Icon(Icons.sell_outlined),
@@ -7630,8 +7630,9 @@ class _PurchaseItemDraft {
 }
 
 class NewSaleLotPage extends StatefulWidget {
-  const NewSaleLotPage({super.key, this.singleSale = false});
+  const NewSaleLotPage({super.key, this.singleSale = false, this.initialObjectCode});
   final bool singleSale;
+  final int? initialObjectCode;
   @override State<NewSaleLotPage> createState() => _NewSaleLotPageState();
 }
 
@@ -7651,6 +7652,7 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialObjectCode != null) _selected.add(widget.initialObjectCode!);
     WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _load(); });
   }
   @override
@@ -7915,6 +7917,19 @@ class _NewSaleLotPageState extends State<NewSaleLotPage> {
           Expanded(child: FilledButton.icon(onPressed: _busy ? null : () => _run(_previewLot), icon: const Icon(Icons.preview_outlined), label: Text(widget.singleSale ? 'CONTROLLA VENDITA' : 'CONTROLLA LOTTO'))),
         ]),
         Text('Ambiente TEST. Nessuna scrittura prima della conferma definitiva.', style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
+        const SizedBox(height: 28),
+        SafeArea(
+          top: false,
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _busy ? null : _cancel,
+              icon: const Icon(Icons.arrow_back),
+              label: const Text('TORNA AL MENU'),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
       ])),
     );
   }
