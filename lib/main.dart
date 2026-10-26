@@ -575,12 +575,14 @@ class _LoginPageState extends State<LoginPage> {
 
 class DashboardSection {
   const DashboardSection({required this.title, required this.description,
-    required this.icon, required this.color, this.menuTitle});
+    required this.icon, required this.color, this.menuTitle, this.categoryName, this.categoryCode});
   final String title;
   final String? menuTitle;
   final String description;
   final IconData icon;
   final Color color;
+  final String? categoryName;
+  final String? categoryCode;
 }
 
 const List<DashboardSection> dashboardSections = [
@@ -592,7 +594,6 @@ const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
   DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFF252525)),
   DashboardSection(title: 'CONTROLLO', description: 'Stato e verifiche del sistema', icon: Icons.admin_panel_settings_outlined, color: Color(0xFF777777)),
-  DashboardSection(title: 'FUNKO POP', description: 'Visualizza le schede Funko Pop già catalogate', icon: Icons.toys_outlined, color: Color(0xFF00AEEF)),
 ];
 
 class ProcedureEntry {
@@ -2033,6 +2034,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
   bool _catalogLoading = true;
   List<Map<String, dynamic>> _catalogRows = [];
   String? _catalogError;
+  List<Map<String, dynamic>> _menuCategories = [];
+  String? _menuCategoriesError;
   final Map<int, String> _dashboardImageUrls = {};
   final Set<int> _dashboardImageLookups = {};
 
@@ -2040,6 +2043,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   void initState() {
     super.initState();
     _loadDashboardCatalog();
+    _loadDashboardCategories();
   }
 
   Future<void> _loadDashboardCatalog() async {
@@ -2075,6 +2079,72 @@ class _HomeDashboardState extends State<HomeDashboard> {
     } catch (e) {
       if (mounted) setState(() { _catalogError = '$e'; _catalogLoading = false; });
     }
+  }
+
+
+  Future<void> _loadDashboardCategories() async {
+    try {
+      final response = await Supabase.instance.client.schema('collection')
+          .from('config_menu_categorie')
+          .select('codice_categoria,nome_categoria,descrizione_menu,icona,colore_hex,ordine_menu,visibile')
+          .eq('visibile', true).order('ordine_menu');
+      final rows = (response as List).whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .where((row) => (row['nome_categoria'] ?? '').toString().trim().isNotEmpty).toList();
+      if (mounted) setState(() { _menuCategories = rows; _menuCategoriesError = null; });
+    } catch (e) {
+      if (mounted) setState(() => _menuCategoriesError = '$e');
+    }
+  }
+
+  IconData _menuIcon(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'extension': return Icons.extension;
+      case 'menu_book_outlined': return Icons.menu_book_outlined;
+      case 'two_wheeler': return Icons.two_wheeler;
+      case 'shield_outlined': return Icons.shield_outlined;
+      case 'smart_toy_outlined': case 'toys_outlined': return Icons.smart_toy_outlined;
+      default: return Icons.category_outlined;
+    }
+  }
+
+  Color _menuHexColor(String raw) {
+    final value = raw.trim().replaceFirst('#', '');
+    if (RegExp(r'^[0-9A-Fa-f]{6}$').hasMatch(value)) return Color(0xFF000000 | int.parse(value, radix: 16));
+    return goldColor;
+  }
+
+  List<DashboardSection> get _allDashboardSections {
+    final base = dashboardSections.map((e) => e.title.toLowerCase()).toSet();
+    final result = <DashboardSection>[...dashboardSections];
+    if (_menuCategories.isNotEmpty) {
+      for (final row in _menuCategories) {
+        final name = (row['nome_categoria'] ?? '').toString().trim();
+        if (name.isEmpty || base.contains(name.toLowerCase())) continue;
+        final count = _catalogRows.where((item) => _dashboardCategory(item).toLowerCase() == name.toLowerCase()).length;
+        final code = (row['codice_categoria'] ?? '').toString().trim();
+        result.add(DashboardSection(
+          title: name,
+          description: (row['descrizione_menu'] ?? 'Consulta la categoria').toString() + ' · ' + count.toString() + ' oggetti',
+          icon: _menuIcon((row['icona'] ?? '').toString()),
+          color: _menuHexColor((row['colore_hex'] ?? '').toString()),
+          categoryName: name,
+          categoryCode: code.isEmpty ? null : code,
+        ));
+      }
+    } else {
+      for (final name in _collectionSections()) {
+        if (base.contains(name.toLowerCase())) continue;
+        result.add(DashboardSection(title: name, description: 'Consulta gli oggetti della categoria',
+          icon: _sectionIcon(name), color: _sectionColor(name), categoryName: name));
+      }
+    }
+    result.sort((a,b) {
+      if (a.categoryName == null && b.categoryName != null) return -1;
+      if (a.categoryName != null && b.categoryName == null) return 1;
+      return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+    });
+    return result;
   }
 
   Future<void> _loadDashboardImages(List<Map<String, dynamic>> rows, {bool retryFailed = false}) async {
@@ -2465,14 +2535,17 @@ class _HomeDashboardState extends State<HomeDashboard> {
         final columns = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 600 ? 3 : 2;
         final entries = <Map<String, dynamic>>[
           {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
-          ...dashboardSections.map((section)=> {
+          ..._allDashboardSections.map((section)=> {
             'title':section.menuTitle ?? section.title,
             'subtitle':section.description,
-            'color':ValoraAppearance.instance.colorFor(section.title),
+            'color':section.categoryName != null ? section.color : ValoraAppearance.instance.colorFor(section.title),
             'icon':section.icon,
-            'tap':() => section.title == 'FUNKO POP'
-                ? Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoryObjectSearchPage(initialQuery: 'Funko Pop')))
-                : setState(()=>selectedSection=section),
+            'tap':() {
+              if (section.categoryName != null) {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(
+                  initialQuery: section.categoryName, initialCategoryCode: section.categoryCode)));
+              } else { setState(()=>selectedSection=section); }
+            },
           }),
         ];
         return GridView.builder(
@@ -2537,14 +2610,17 @@ class _HomeDashboardState extends State<HomeDashboard> {
         trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
         onTap: () => setState(() => showCollection = true),
       ),
-      ...dashboardSections.map((section) => _menuCard(
+      ..._allDashboardSections.map((section) => _menuCard(
         title: section.menuTitle ?? section.title,
         subtitle: section.description,
-        color: ValoraAppearance.instance.colorFor(section.title),
+        color: section.categoryName != null ? section.color : ValoraAppearance.instance.colorFor(section.title),
         icon: section.icon,
-        onTap: () => section.title == 'FUNKO POP'
-            ? Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoryObjectSearchPage(initialQuery: 'Funko Pop')))
-            : setState(() => selectedSection = section),
+        onTap: () {
+          if (section.categoryName != null) {
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(
+              initialQuery: section.categoryName, initialCategoryCode: section.categoryCode)));
+          } else { setState(() => selectedSection = section); }
+        },
       )),
       if (_catalogError != null)
         Padding(
@@ -2709,8 +2785,9 @@ class _ValoraRuntimeApi {
 }
 
 class CategoryObjectSearchPage extends StatefulWidget {
-  const CategoryObjectSearchPage({super.key, this.initialQuery});
+  const CategoryObjectSearchPage({super.key, this.initialQuery, this.initialCategoryCode});
   final String? initialQuery;
+  final String? initialCategoryCode;
 
   @override
   State<CategoryObjectSearchPage> createState() => _CategoryObjectSearchPageState();
@@ -2742,11 +2819,12 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
 
   String _code(Map<String, dynamic> row) => (row['codice_oggetto'] ?? '').toString();
 
-  bool _matchesInitialCategory(Map<String, dynamic> row, String category) {
+  bool _matchesInitialCategory(Map<String, dynamic> row, String category, {String? code}) {
+    final wantedCode = code?.trim() ?? '';
+    final rowCode = (row['_valora_codice_categoria'] ?? '').toString().trim();
+    if (wantedCode.isNotEmpty) return rowCode == wantedCode;
     final metadataSection = (row['_valora_sezione'] ?? '').toString().trim();
-    if (metadataSection.isNotEmpty) {
-      return metadataSection.toLowerCase() == category.trim().toLowerCase();
-    }
+    if (metadataSection.isNotEmpty) return metadataSection.toLowerCase() == category.trim().toLowerCase();
     return category.trim().toUpperCase() == 'DA CLASSIFICARE';
   }
 
@@ -2795,7 +2873,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       }
       final filteredRows = rows
           .where((row) => categoryMode
-              ? _matchesInitialCategory(row, widget.initialQuery!.trim())
+              ? _matchesInitialCategory(row, widget.initialQuery!.trim(), code: widget.initialCategoryCode)
               : _description(row).toLowerCase().contains(normalizedQuery))
           .toList()
         ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
