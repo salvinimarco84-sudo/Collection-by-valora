@@ -4155,9 +4155,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _code.text = widget.initialObjectCode.toString();
       // Quando si apre la scheda da un elemento dell'elenco, carica subito
       // il record selezionato invece di mostrare una maschera vuota.
-      if (widget.apiCode == 'OBJECT_MASTER') {
+      if (widget.apiCode == 'OBJECT_MASTER' || widget.apiCode == 'PR-02') {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _run(_loadObject);
+          if (mounted) {
+            _run(() async {
+              await _loadObject();
+              if (widget.apiCode == 'PR-02' && mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
+                });
+              }
+            });
+          }
         });
       }
     }
@@ -6578,6 +6587,105 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     ),
   );
 
+  Future<void> _openObjectForEdit() async {
+    final id = _loadedObjectId;
+    if (id == null || _currentObject == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleziona prima una scheda oggetto valida.')),
+      );
+      return;
+    }
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => ObjectRuntimePage(
+        title: 'Modifica oggetto',
+        apiCode: 'PR-02',
+        initialObjectCode: id,
+      ),
+    ));
+    if (mounted) await _run(_loadObject);
+  }
+
+  Future<void> _putObjectForSale() async {
+    final id = _loadedObjectId;
+    final object = _currentObject;
+    if (id == null || object == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleziona prima una scheda oggetto valida.')),
+      );
+      return;
+    }
+    final state = (object['stato'] ?? '').toString().trim().toUpperCase();
+    if (state != 'DISPONIBILE') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Impossibile mettere in vendita: lo stato attuale è ${state.isEmpty ? 'non indicato' : state}.')),
+      );
+      return;
+    }
+    final currentDestination = (object['destinazione'] ?? '').toString().trim().toUpperCase();
+    final needsDestinationChange = currentDestination != 'RIVENDITA';
+    if (needsDestinationChange) {
+      final accepted = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Metti in vendita'),
+          content: Text(
+            'L’oggetto “${(object['descrizione_oggetto'] ?? object['descrizione'] ?? 'Oggetto #$id').toString()}” '
+            'ha destinazione ${currentDestination.isEmpty ? 'non indicata' : currentDestination}. '
+            'Vuoi impostare RIVENDITA e proseguire alla maschera NUOVA VENDITA?',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA')),
+          ],
+        ),
+      );
+      if (accepted != true || !mounted) return;
+    }
+
+    try {
+      if (needsDestinationChange) {
+        await _acquireLock();
+        final payload = <String, dynamic>{
+          'oggetti': [{'codice_oggetto': id, 'destinazione': 'RIVENDITA'}],
+          'dati_confermati': true,
+          'altra_operazione': false,
+          'conferma_finale': true,
+        };
+        final preview = await _ValoraRuntimeApi.procedure(
+          'PR-02', 'preview', payload, sessionId: _sessionId);
+        if (preview['errore'] != null) {
+          throw Exception(preview['errore'].toString());
+        }
+        await _ValoraRuntimeApi.procedure(
+          'PR-02', 'review', payload, sessionId: _sessionId);
+        final saved = await _ValoraRuntimeApi.procedure(
+          'PR-02', 'save', payload, sessionId: _sessionId, requestId: _uuid.v4());
+        if (saved['scrittura_eseguita'] != true) {
+          throw Exception('Il database non ha confermato il cambio di destinazione.');
+        }
+        if (saved['blocco_rilasciato_automaticamente'] != true) {
+          throw Exception('Il cambio è stato segnalato come salvato, ma il rilascio del blocco non è stato confermato.');
+        }
+        if (mounted) setState(() => _lockHeld = false);
+      }
+
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => NewSalePage(initialObjectCode: id),
+      ));
+      if (mounted) await _run(_loadObject);
+    } catch (e) {
+      if (_lockHeld) {
+        try { await _releaseLock(); } catch (_) {}
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Operazione non completata: $e'), duration: const Duration(seconds: 6)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final code = widget.apiCode;
@@ -7204,6 +7312,35 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     _masterDetails(_currentObject!),
                   ]),
                 ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _loading ? null : _openObjectForEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('MODIFICA OGGETTO', textAlign: TextAlign.center),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _loading ? null : _putObjectForSale,
+                      icon: const Icon(Icons.sell_outlined),
+                      label: const Text('METTI IN VENDITA', textAlign: TextAlign.center),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ValoraAppearance.instance.colorFor('VENDITE'),
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ] else if (_pr11MasterTabIndex == 1)
               _pr11MetadataTab(_currentObject!)
@@ -7930,7 +8067,8 @@ class _PurchaseItemDraft {
 
 /// PR-06: apertura nuova vendita su un oggetto già esistente, con anteprima e conferma esplicita.
 class NewSalePage extends StatefulWidget {
-  const NewSalePage({super.key});
+  const NewSalePage({super.key, this.initialObjectCode});
+  final int? initialObjectCode;
   @override
   State<NewSalePage> createState() => _NewSalePageState();
 }
@@ -7999,7 +8137,13 @@ class _NewSalePageState extends State<NewSalePage> {
       setState(() {
         _objects = rows;
         _platforms = platforms;
-        _selectedObject = rows.isNotEmpty ? int.tryParse((rows.first['codice_oggetto'] ?? '').toString()) : null;
+        final requestedId = widget.initialObjectCode;
+        final requestedExists = requestedId != null && rows.any(
+          (row) => int.tryParse((row['codice_oggetto'] ?? '').toString()) == requestedId,
+        );
+        _selectedObject = requestedExists
+          ? requestedId
+          : (rows.isNotEmpty ? int.tryParse((rows.first['codice_oggetto'] ?? '').toString()) : null);
         _selectedPlatforms.clear();
         if (platforms.isNotEmpty) {
           final vinted = platforms.where((p) => (p['nome_piattaforma'] ?? '').toString().toLowerCase().contains('vinted'));
