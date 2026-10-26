@@ -2224,10 +2224,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
         if (page.length < assignmentPageSize) break;
         assignmentOffset += assignmentPageSize;
       }
+      // Conta soltanto oggetti ancora disponibili e destinati alla COLLEZIONE.
+      // Le assegnazioni storiche restano nel database, ma non gonfiano i contatori.
+      final eligibleCodes = rows.map((row) =>
+        (row['codice_oggetto'] ?? row['id'] ?? '').toString().trim()
+      ).where((code) => code.isNotEmpty).toSet();
       final categoryCounts = <String, int>{};
+      final countedPairs = <String>{};
       for (final assignment in assignments) {
-        final key = (assignment['codice_categoria'] ?? '').toString();
-        if (key.isNotEmpty) categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
+        final objectCode = (assignment['codice_oggetto'] ?? '').toString().trim();
+        final key = (assignment['codice_categoria'] ?? '').toString().trim();
+        final pair = '$objectCode|$key';
+        if (eligibleCodes.contains(objectCode) && key.isNotEmpty && countedPairs.add(pair)) {
+          categoryCounts[key] = (categoryCounts[key] ?? 0) + 1;
+        }
       }
       if (mounted) setState(() {
         _catalogRows = rows;
@@ -3003,6 +3013,14 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
           .where((row) {
+            // Le ricerche della collezione escludono sempre oggetti non più disponibili,
+            // anche quando esiste ancora una vecchia assegnazione di categoria.
+            final destination = (row['destinazione'] ?? '').toString().trim().toUpperCase();
+            final state = (row['stato'] ?? '').toString().trim().toUpperCase();
+            if (destination != 'COLLEZIONE' || row['archiviato_test'] == true ||
+                ['VENDUTO', 'PERSO', 'DISTRUTTO', 'USCITO', 'ACCORPATO'].contains(state)) {
+              return false;
+            }
             if (widget.initialCategoryCode?.trim().isNotEmpty ?? false) {
               return assignedObjectCodes!.contains(_code(row));
             }
