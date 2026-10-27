@@ -7690,7 +7690,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         content: Text(
           'Vuoi inserire un altro oggetto?\n\n'
           'Se scegli NO, verranno salvati tutti i '
-          '\${_pr01PendingObjects.length} oggetti raccolti finora.',
+          '${_pr01PendingObjects.length} oggetti raccolti finora.',
         ),
         actions: [
           TextButton(
@@ -7726,7 +7726,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _selectedImageName = null;
         _imageStatus = 'Nessuna immagine selezionata.';
         _metadataResult = 'La ricerca dei metadati è disponibile esclusivamente tramite PR-12.';
-        _output = 'Blocco provvisorio: \${_pr01PendingObjects.length} oggetti. Inserisci il prossimo.';
+        _output = 'Blocco provvisorio: ${_pr01PendingObjects.length} oggetti. Inserisci il prossimo.';
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
@@ -7778,7 +7778,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ? Map<String, dynamic>.from(savedRows[index] as Map)
           : <String, dynamic>{};
         final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
-        if (savedId == null) throw Exception('Codice oggetto mancante nell’elemento \${index + 1}.');
+        if (savedId == null) throw Exception('Codice oggetto mancante nell’elemento ${index + 1}.');
         final category = pending[index]['categoria']?.toString();
         if (category != null && category.isNotEmpty) {
           await Supabase.instance.client.schema('collection')
@@ -7810,7 +7810,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _value.clear(); _marketValue.text = '0.00'; _selectedCollectionCategory = null;
         _selectedImageBytes = null; _selectedImageName = null;
         _imageStatus = 'Nessuna immagine selezionata.';
-        _output = 'Blocco PR-01 salvato e verificato: \${pending.length} oggetti.';
+        _output = 'Blocco PR-01 salvato e verificato: ${pending.length} oggetti.';
       });
     } catch (e) {
       if (_lockHeld) { try { await _releaseLock(); } catch (_) {} }
