@@ -7839,6 +7839,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
 
     if (_lockHeld) await _releaseLock();
+
+    // Salva subito l'oggetto confermato, senza lasciare modifiche in coda
+    // in attesa della scelta di modificare un altro oggetto.
+    await _savePr02PendingChanges(closeOnComplete: false);
     if (!mounted) return;
 
     final another = await showDialog<bool>(
@@ -7899,7 +7903,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     await _savePr02PendingChanges();
   }
 
-  Future<void> _savePr02PendingChanges() async {
+  Future<void> _savePr02PendingChanges({bool closeOnComplete = true}) async {
     final pending = _pr02PendingChanges
         .map((e) => Map<String, dynamic>.from(e))
         .toList(growable: false);
@@ -7965,7 +7969,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }
     }
     _pr02PendingChanges.clear();
-    if (!mounted) return;
+    if (!mounted || !closeOnComplete) return;
     Navigator.of(context).pop();
   }
 
