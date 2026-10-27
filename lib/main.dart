@@ -1171,17 +1171,21 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
   @override void initState(){super.initState();_load();}
   Future<void> _load() async { setState(()=>_loading=true); try { final data=await Supabase.instance.client.schema('collection').from('master_categorie_collezione').select('codice_categoria, descrizione, icona, colore_hex, ordine_menu, visibile').order('ordine_menu').order('descrizione'); if(!mounted)return; setState(()=>_rows=(data as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList()); } catch(e){if(mounted)setState(()=>_error=e.toString());} finally {if(mounted)setState(()=>_loading=false);} }
 
+  Future<String?> _saveCategoryLogo(Uint8List? bytes,String? fileName,String? code,String? existingUrl) async { if(bytes==null)return existingUrl; final ext=(fileName??'logo.jpg').toLowerCase().split('.').last; final safeExt=['png','webp'].contains(ext)?ext:'jpg'; final mime=safeExt=='png'?'image/png':safeExt=='webp'?'image/webp':'image/jpeg'; final path='${code??'category'}-${DateTime.now().millisecondsSinceEpoch}.$safeExt'; await Supabase.instance.client.storage.from('valora-category-logos-test').uploadBinary(path,bytes,fileOptions:FileOptions(contentType:mime,upsert:true)); return Supabase.instance.client.storage.from('valora-category-logos-test').getPublicUrl(path); }
+
   Future<void> _editCategory(Map<String,dynamic> row) async {
     final name=TextEditingController(text:(row['descrizione']??'').toString());
     String iconKey=_icons.containsKey(row['icona'])?row['icona'].toString():'category_outlined';
     final matchingColors=_colors.entries.where((e)=>e.value.toUpperCase()==(row['colore_hex']??'').toString().toUpperCase()).toList(); String colorName=matchingColors.isEmpty?'Oro':matchingColors.first.key;
-    bool visible=row['visibile']==true;
+    bool visible=row['visibile']==true; Uint8List? logoBytes; String? logoName; String? logoUrl=(row['logo_url']??'').toString().trim().isEmpty?null:row['logo_url'].toString();
     final accepted=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,sd)=>AlertDialog(
       title:Text('MODIFICA CATEGORIA ${row['codice_categoria']}'),
       content:SizedBox(width:460,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:name,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'Descrizione categoria')),
         const SizedBox(height:14),
         DropdownButtonFormField<String>(value:iconKey,decoration:const InputDecoration(labelText:'Logo della categoria'),items:_icons.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Icon(e.value,size:20),const SizedBox(width:10),Text(e.key.replaceAll('_',' '))]))).toList(),onChanged:(v){if(v!=null)sd(()=>iconKey=v);}),
+        const SizedBox(height:14),
+        StatefulBuilder(builder:(ctx,logoSet)=>Column(children:[if(logoBytes!=null) Image.memory(logoBytes!,height:90,fit:BoxFit.contain) else if(logoUrl!=null) Image.network(logoUrl!,height:90,errorBuilder:(c,e,s)=>const Icon(Icons.broken_image,size:48)),Row(children:[Expanded(child:Text(logoName??(logoUrl!=null?'Logo personalizzato presente':'Nessuna immagine personalizzata'))),TextButton.icon(onPressed:() async {final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:85,maxWidth:1200);if(picked!=null){logoSet(()=>{logoBytes=null,logoName=picked.name});logoBytes=await picked.readAsBytes();logoSet((){});}},icon:const Icon(Icons.image_outlined),label:const Text('SCEGLI IMMAGINE')),if(logoUrl!=null||logoBytes!=null) IconButton(onPressed:()=>logoSet(()=>{logoBytes=null,logoName=null,logoUrl=null}),icon:const Icon(Icons.delete_outline),tooltip:'Rimuovi immagine')])])),
         const SizedBox(height:14),
         DropdownButtonFormField<String>(value:colorName,decoration:const InputDecoration(labelText:'Colore della scheda'),items:_colors.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Container(width:20,height:20,decoration:BoxDecoration(color:Color(int.parse(e.value.substring(1),radix:16)+0xFF000000),borderRadius:BorderRadius.circular(5))),const SizedBox(width:10),Text(e.key)]))).toList(),onChanged:(v){if(v!=null)sd(()=>colorName=v);}),
         SwitchListTile(title:const Text('Visibile nel menu principale'),value:visible,onChanged:(v)=>sd(()=>visible=v),contentPadding:EdgeInsets.zero),
@@ -1197,7 +1201,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
       if((duplicate as List).any((e)=>(e as Map)['codice_categoria']!=row['codice_categoria'])){
         if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Esiste già una categoria con questa descrizione.')));return;
       }
-      await Supabase.instance.client.schema('collection').from('master_categorie_collezione').update({'descrizione':description,'icona':iconKey,'colore_hex':_colors[colorName],'visibile':visible}).eq('codice_categoria',row['codice_categoria']);
+      await Supabase.instance.client.schema('collection').from('master_categorie_collezione').update({'descrizione':description,'icona':iconKey,'colore_hex':_colors[colorName],'visibile':visible,'logo_url':await _saveCategoryLogo(logoBytes,logoName,row['codice_categoria']?.toString(),logoUrl)}).eq('codice_categoria',row['codice_categoria']);
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Categoria aggiornata.')));
       await _load();
     }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Modifica non riuscita: '+e.toString())));}
@@ -1206,12 +1210,12 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
 
   Future<void> _addCategory() async {
     if(Supabase.instance.client.auth.currentUser==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Accedi per creare una categoria.')));return;}
-    final name=TextEditingController(); String iconKey='category_outlined', colorName='Oro';
+    final name=TextEditingController(); String iconKey='category_outlined', colorName='Oro'; Uint8List? logoBytes; String? logoName;
     final accepted=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,sd)=>AlertDialog(
       title:const Text('CREA CATEGORIA COLLEZIONE'), content:SizedBox(width:460,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         TextField(controller:name,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'Descrizione categoria',hintText:'Es. Orologi Swatch')), const SizedBox(height:14),
         DropdownButtonFormField<String>(value:iconKey,decoration:const InputDecoration(labelText:'Logo della categoria'),items:_icons.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Icon(e.value,size:20),const SizedBox(width:10),Text(e.key.replaceAll('_',' '))]))).toList(),onChanged:(v){if(v!=null)sd(()=>iconKey=v);}),
-        const SizedBox(height:14), DropdownButtonFormField<String>(value:colorName,decoration:const InputDecoration(labelText:'Colore della scheda'),items:_colors.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Container(width:20,height:20,decoration:BoxDecoration(color:Color(int.parse(e.value.substring(1),radix:16)+0xFF000000),borderRadius:BorderRadius.circular(5))),const SizedBox(width:10),Text(e.key)]))).toList(),onChanged:(v){if(v!=null)sd(()=>colorName=v);}),
+        const SizedBox(height:14), StatefulBuilder(builder:(ctx,logoSet)=>Column(children:[if(logoBytes!=null) Image.memory(logoBytes!,height:90,fit:BoxFit.contain),Row(children:[Expanded(child:Text(logoName??'Nessuna immagine personalizzata')),TextButton.icon(onPressed:() async {final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:85,maxWidth:1200);if(picked!=null){logoBytes=await picked.readAsBytes();logoSet(()=>logoName=picked.name);}},icon:const Icon(Icons.image_outlined),label:const Text('SCEGLI IMMAGINE')),if(logoBytes!=null) IconButton(onPressed:()=>logoSet(()=>{logoBytes=null,logoName=null}),icon:const Icon(Icons.delete_outline))])])), const SizedBox(height:14), DropdownButtonFormField<String>(value:colorName,decoration:const InputDecoration(labelText:'Colore della scheda'),items:_colors.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Container(width:20,height:20,decoration:BoxDecoration(color:Color(int.parse(e.value.substring(1),radix:16)+0xFF000000),borderRadius:BorderRadius.circular(5))),const SizedBox(width:10),Text(e.key)]))).toList(),onChanged:(v){if(v!=null)sd(()=>colorName=v);}),
         const SizedBox(height:8),const Text('Il codice progressivo univoco viene assegnato automaticamente.',style:TextStyle(fontSize:12)),
       ]))), actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('CREA CATEGORIA'))])));
     if(accepted!=true){name.dispose();return;} final description=name.text.trim(); if(description.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Inserisci la descrizione della categoria.')));name.dispose();return;}
@@ -1221,7 +1225,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
       final codes=_rows.map((r)=>(r['codice_categoria']??'').toString()).where((v)=>RegExp(r'^CAT-\d+$').hasMatch(v)).map((v)=>int.tryParse(v.substring(4))??0).toList();
       final maxCode=codes.isEmpty?0:codes.reduce((a,b)=>a>b?a:b); final code='CAT-'+(maxCode+1).toString().padLeft(3,'0');
       final maxOrder=_rows.map((r)=>int.tryParse('${r['ordine_menu']??0}')??0).fold<int>(0,(a,b)=>a>b?a:b);
-      await Supabase.instance.client.schema('collection').from('master_categorie_collezione').insert({'codice_categoria':code,'descrizione':description,'icona':iconKey,'colore_hex':_colors[colorName],'ordine_menu':maxOrder+10,'visibile':true});
+      await Supabase.instance.client.schema('collection').from('master_categorie_collezione').insert({'codice_categoria':code,'descrizione':description,'icona':iconKey,'colore_hex':_colors[colorName],'ordine_menu':maxOrder+10,'visibile':true,'logo_url':await _saveCategoryLogo(logoBytes,logoName,code,null)});
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Categoria '+code+' creata.'))); await _load();
     } catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Creazione categoria non riuscita: '+e.toString())));} finally{name.dispose();if(mounted)setState(()=>_saving=false);}
   }
@@ -1253,7 +1257,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: parsed.withValues(alpha: 0.18),
-                          child: Icon(_icons[iconKey] ?? Icons.category_outlined, color: parsed),
+                          child: (row['logo_url']??'').toString().trim().isNotEmpty ? ClipOval(child:Image.network(row['logo_url'].toString(),fit:BoxFit.cover,width:48,height:48,errorBuilder:(c,e,s)=>Icon(_icons[iconKey]??Icons.category_outlined,color:parsed))) : Icon(_icons[iconKey] ?? Icons.category_outlined, color: parsed),
                         ),
                         title: Text((row['descrizione'] ?? 'Categoria').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('${row['codice_categoria']} · ${row['visibile'] == true ? 'Visibile nel menu' : 'Nascosta dal menu'}'),
