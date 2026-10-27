@@ -4713,10 +4713,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final amount = double.tryParse(enteredAmount.replaceAll(',', '.'));
       if (amount == null || amount < 0) throw Exception('Importo non valido per la chiusura $id.');
       final draftOutcome = (draft['esito'] ?? 'CHIUSURA SENZA VENDITA').toString();
-      final outcome = amount > 0
-          ? 'VENDITA EFFETTIVA'
-          : (draftOutcome == 'VENDITA EFFETTIVA' ? 'CHIUSURA SENZA VENDITA' : draftOutcome);
-      if (outcome == 'VENDITA EFFETTIVA') {
+      final specialCauses = {'PERSO', 'DANNEGGIATO', 'DISTRUTTO', 'ANNULLATA_PER_ERRORE'};
+      final outcome = specialCauses.contains(draftOutcome)
+          ? draftOutcome
+          : (amount > 0 ? 'VENDITA EFFETTIVA' : (draftOutcome == 'VENDITA EFFETTIVA' ? 'CHIUSURA SENZA VENDITA' : draftOutcome));
+      if (specialCauses.contains(outcome)) {
+        if (amount > 0) throw Exception('Per la causa $outcome non inserire un importo di vendita.');
+        _pr08PendingClosures.add({
+          'codice_vendita_aperta': id,
+          'esito': outcome,
+          if ((draft['note'] ?? '').toString().trim().isNotEmpty) 'note': draft['note'].toString().trim(),
+        });
+      } else if (outcome == 'VENDITA EFFETTIVA') {
         final platform = draft['codice_piattaforma'];
         final external = (draft['canale_esterno'] ?? '').toString().trim();
         if ((platform == null || platform.toString().isEmpty) == external.isEmpty) {
@@ -4789,12 +4797,31 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (confirm != true || !mounted) return;
     setState(() { _pr08Saving = true; _loading = true; });
     try {
-      final result = await Supabase.instance.client.schema('collection').rpc(
-        'pr_07_chiudi_vendite_batch',
-        params: {'p_chiusure': _pr08PendingClosures},
-      );
+      final special = _pr08PendingClosures.where((e) => {'PERSO', 'DANNEGGIATO', 'DISTRUTTO', 'ANNULLATA_PER_ERRORE'}.contains(e['esito'])).toList();
+      final ordinary = _pr08PendingClosures.where((e) => !{'PERSO', 'DANNEGGIATO', 'DISTRUTTO', 'ANNULLATA_PER_ERRORE'}.contains(e['esito'])).toList();
+      if (special.isNotEmpty && ordinary.isNotEmpty) {
+        throw Exception('Per sicurezza salva separatamente le chiusure con causa speciale e le chiusure ordinarie.');
+      }
+      dynamic result;
+      if (special.isNotEmpty) {
+        if (special.length != 1) throw Exception('Salva una sola chiusura con causa speciale alla volta.');
+        final item = special.single;
+        result = await Supabase.instance.client.schema('collection').rpc(
+          'pr_08_chiudi_senza_vendita_con_causa',
+          params: {
+            'p_codice_vendita_aperta': item['codice_vendita_aperta'],
+            'p_causa': item['esito'],
+            'p_note': item['note'],
+          },
+        );
+      } else {
+        result = await Supabase.instance.client.schema('collection').rpc(
+          'pr_07_chiudi_vendite_batch',
+          params: {'p_chiusure': ordinary},
+        );
+      }
       if (!mounted) return;
-      final saved = result is List ? result.length : _pr08PendingClosures.length;
+      final saved = special.isNotEmpty ? 1 : (result is List ? result.length : ordinary.length);
       setState(() {
         _pr08PendingClosures.clear();
         _output = 'Salvataggio completato e verificato: $saved chiusure. Le entrate di cassa sono state registrate solo per le vendite effettive.';
@@ -4859,7 +4886,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             CheckboxListTile(contentPadding: EdgeInsets.zero, value: selected, onChanged: _loading ? null : (v) => setState(() => draft['selected'] = v == true), title: Text('#$id · ${(row['descrizione_oggetto'] ?? 'Oggetto').toString()}', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text('Oggetto #${row['codice_oggetto']}  •  Apertura ${row['data_inizio_vendita'] ?? 'n.d.'}\nPrezzo richiesto: € ${row['prezzo_di_vendita'] ?? 'n.d.'}'))),
             if (selected) ...[
               const Divider(),
-              if (_pr08ActionMode == 'CHIUDI') DropdownButtonFormField<String>(value: outcome, decoration: const InputDecoration(labelText: 'Tipo di chiusura', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')), DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza incasso'))], onChanged: (v) => setState(() { draft['esito'] = v; if (v != 'VENDITA EFFETTIVA') { draft['importo_vendita'] = '0'; draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } else if ((double.tryParse(amount.replaceAll(',', '.')) ?? 0) <= 0) { draft['importo_vendita'] = ''; } })),
+              if (_pr08ActionMode == 'CHIUDI') DropdownButtonFormField<String>(value: outcome, decoration: const InputDecoration(labelText: 'Tipo di chiusura', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')), DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza incasso')), DropdownMenuItem(value: 'PERSO', child: Text('Oggetto perso')), DropdownMenuItem(value: 'DANNEGGIATO', child: Text('Oggetto danneggiato')), DropdownMenuItem(value: 'DISTRUTTO', child: Text('Oggetto distrutto')), DropdownMenuItem(value: 'ANNULLATA_PER_ERRORE', child: Text('Inserzione creata per errore'))], onChanged: (v) => setState(() { draft['esito'] = v; if (v != 'VENDITA EFFETTIVA') { draft['importo_vendita'] = '0'; draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } else if ((double.tryParse(amount.replaceAll(',', '.')) ?? 0) <= 0) { draft['importo_vendita'] = ''; } })),
               const SizedBox(height: 10),
               TextFormField(initialValue: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: _pr08ActionMode == 'MODIFICA' ? 'Nuovo prezzo richiesto (€)' : 'Importo effettivamente incassato (€)', helperText: _pr08ActionMode == 'MODIFICA' ? 'Prezzo attuale: € ${row['prezzo_di_vendita'] ?? 'n.d.'}' : 'Inserisci l’importo reale solo se hai venduto', prefixIcon: const Icon(Icons.euro), border: const OutlineInputBorder()), onChanged: (v) => setState(() { draft['importo_vendita'] = v; final parsed = double.tryParse(v.replaceAll(',', '.')); if (parsed != null && parsed > 0) draft['esito'] = 'VENDITA EFFETTIVA'; if (parsed == 0) { draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } })),
               if (_pr08ActionMode == 'CHIUDI' && outcome == 'VENDITA EFFETTIVA') ...[
