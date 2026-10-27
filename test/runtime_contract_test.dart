@@ -42,7 +42,10 @@ void main() {
 
     test('PR-01 non inventa stime e mantiene la valutazione separata dal salvataggio', () {
       expect(pr19Source, contains('scrittura_database: false'));
-      expect(source, contains("'valore_mercato': double.parse"));
+      expect(source, contains("'valore_mercato': marketValue"));
+      expect(source, contains("'valore_mercato': _marketValue.text.trim().isEmpty ? null"));
+      expect(source, contains("_merchCategoryCodeForCollection(_selectedCollectionCategory)"));
+      expect(source, isNot(contains("'codice_categoria_collezione': _selectedCollectionCategory")));
       expect(source, contains('Nessun valore inventato'));
       expect(source, contains('_pr19ValuationResult'));
     });
