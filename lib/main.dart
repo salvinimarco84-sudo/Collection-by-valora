@@ -6637,7 +6637,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
       if (!mounted) return;
       await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => NewSalePage(),
+        builder: (_) => NewSalePage(initialObjectCode: id),
       ));
       if (mounted) await _run(_loadObject);
     } catch (e) {
@@ -8061,7 +8061,9 @@ class _PurchaseItemDraft {
 
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
 class NewSalePage extends StatefulWidget {
-  const NewSalePage({super.key});
+  const NewSalePage({super.key, this.initialObjectCode});
+  final int? initialObjectCode;
+
   @override
   State<NewSalePage> createState() => _NewSalePageState();
 }
@@ -8130,7 +8132,10 @@ class _NewSalePageState extends State<NewSalePage> {
       setState(() {
         _objects = rows;
         _platforms = platforms;
-        _selectedObject = rows.isNotEmpty ? int.tryParse((rows.first['codice_oggetto'] ?? '').toString()) : null;
+        _selectedObject = widget.initialObjectCode != null &&
+            rows.any((row) => int.tryParse((row['codice_oggetto'] ?? '').toString()) == widget.initialObjectCode)
+          ? widget.initialObjectCode
+          : (rows.isNotEmpty ? int.tryParse((rows.first['codice_oggetto'] ?? '').toString()) : null);
         _selectedPlatforms.clear();
         if (platforms.isNotEmpty) {
           final vinted = platforms.where((p) => (p['nome_piattaforma'] ?? '').toString().toLowerCase().contains('vinted'));
