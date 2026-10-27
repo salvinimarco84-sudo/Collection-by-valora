@@ -34,6 +34,12 @@ void main() {
       expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
     });
 
+    test('Visualizza scheda cerca anche il codice numerico direttamente nel master', () {
+      expect(source, contains(".from('master_oggetti')"));
+      expect(source, contains(".eq('codice_oggetto', exactCode)"));
+      expect(source, contains('codeOf(item) == phrase.trim()'));
+    });
+
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
       expect(source, contains('_loadIncompleteMetadataCatalog'));
       expect(source, contains('_runPr12AiBatch'));

@@ -4408,6 +4408,31 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toList();
     List<Map<String, dynamic>> results = await searchPhrase(query);
 
+    // Un codice numerico va cercato anche direttamente nella tabella master:
+    // le RPC testuali possono non includere un record se non corrisponde alla
+    // descrizione o se la loro selezione applica filtri di stato.
+    final exactCode = int.tryParse(query);
+    if (exactCode != null) {
+      try {
+        final direct = await Supabase.instance.client
+            .schema('collection')
+            .from('master_oggetti')
+            .select()
+            .eq('codice_oggetto', exactCode)
+            .limit(1);
+        if (direct is List) {
+          for (final row in direct.whereType<Map>()) {
+            final item = Map<String, dynamic>.from(row);
+            if (!results.any((existing) => codeOf(existing) == codeOf(item))) {
+              results.insert(0, item);
+            }
+          }
+        }
+      } catch (_) {
+        // La ricerca RPC resta disponibile se la lettura diretta non è autorizzata.
+      }
+    }
+
     bool matchesPhrase(Map<String, dynamic> item, String phrase) {
       final q = normalize(phrase);
       if (q.isEmpty) return false;
