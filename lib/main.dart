@@ -734,9 +734,9 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
   'VENDITE': [
     ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'WRITE-PR-06', readOnly: false),
-    ProcedureEntry(title: 'Chiudi vendita', description: 'Seleziona una vendita attiva e registra la chiusura.', apiCode: 'WRITE-PR-07', readOnly: false),
+    ProcedureEntry(title: 'Chiudi vendita', description: 'Seleziona una vendita attiva e registra la chiusura.', apiCode: 'WRITE-PR-08', readOnly: false),
     ProcedureEntry(title: 'Annulla vendita', description: 'Annulla una vendita registrata tramite la procedura dedicata.', apiCode: 'WRITE-PR-09', readOnly: false),
-    ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-SALES-ACTIVE'),
+    ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
   'VALUTAZIONI': [
@@ -1189,7 +1189,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
         StatefulBuilder(builder:(ctx,logoSet)=>Column(children:[if(logoBytes!=null) Image.memory(logoBytes!,height:90,fit:BoxFit.contain) else if(logoUrl!=null) Image.network(logoUrl!,height:90,errorBuilder:(c,e,s)=>const Icon(Icons.broken_image,size:48)),Row(children:[Expanded(child:Text(logoName??(logoUrl!=null?'Logo personalizzato presente':'Nessuna immagine personalizzata'))),TextButton.icon(onPressed:() async {final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:85,maxWidth:1200);if(picked!=null){logoSet(()=>{logoBytes=null,logoName=picked.name});logoBytes=await picked.readAsBytes();logoSet((){});}},icon:const Icon(Icons.image_outlined),label:const Text('SCEGLI IMMAGINE')),if(logoUrl!=null||logoBytes!=null) IconButton(onPressed:()=>logoSet(()=>{logoBytes=null,logoName=null,logoUrl=null}),icon:const Icon(Icons.delete_outline),tooltip:'Rimuovi immagine')])])),
         const SizedBox(height:14),
         DropdownButtonFormField<String>(value:colorName,decoration:const InputDecoration(labelText:'Colore della scheda'),items:_colors.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Container(width:20,height:20,decoration:BoxDecoration(color:Color(int.parse(e.value.substring(1),radix:16)+0xFF000000),borderRadius:BorderRadius.circular(5))),const SizedBox(width:10),Text(e.key)]))).toList(),onChanged:(v){if(v!=null)sd(()=>colorName=v);}),
-        SwitchListTile(title:const Text('Visibile nel menu principale'),value:visible,onChanged:(v)=>sd(()=>visible=v),contentPadding:EdgeInsets.zero),
+        SwitchListTile(title:const Text('Visibile in COLLEZIONE'),value:visible,onChanged:(v)=>sd(()=>visible=v),contentPadding:EdgeInsets.zero),
         const SizedBox(height:8),Text('Il codice ${row['codice_categoria']} resta invariato.',style:const TextStyle(fontSize:12)),
       ]))),
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('SALVA MODIFICHE'))])));
@@ -2724,7 +2724,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   );
   }
 
-  Widget _collectionCategoryMasterPanel(String code, String name, String subtitle, Color color, IconData icon, int count) {
+  Widget _collectionCategoryMasterPanel(String code, String name, String subtitle, Color color, IconData icon, int count, {String? logoUrl}) {
     final categoryKey = name.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
     final previewRows = _catalogRows.where((row) {
       final category = _dashboardCategory(row).toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
@@ -2745,7 +2745,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       child: Column(children: [
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          leading: _categoryBrandMark(name, color, icon),
+          leading: (logoUrl ?? '').trim().isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.network(logoUrl!, width: 62, height: 46, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _categoryBrandMark(name, color, icon))) : _categoryBrandMark(name, color, icon),
           title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -2843,7 +2843,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               : Icons.category_outlined;
           final code = (category['codice_categoria'] ?? '').toString();
           final count = _collectionCategoryCounts[code] ?? 0;
-          return _collectionCategoryMasterPanel(code, name, 'Apri la categoria e consulta gli oggetti', color, icon, count);
+          return _collectionCategoryMasterPanel(code, name, 'Apri la categoria e consulta gli oggetti', color, icon, count, logoUrl: (category['logo_url'] ?? '').toString());
           });
         })(),
       ],
