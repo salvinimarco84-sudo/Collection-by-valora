@@ -4057,6 +4057,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   int _availablePage = 0;
   static const int _availablePageSize = 50;
   final Map<int, String> _activeReportImageUrls = <int, String>{};
+  final Map<String, int> _reportImageObjectIdsByDescription = <String, int>{};
   Map<String, dynamic>? _currentObject;
   List<Map<String, dynamic>> _pr02SearchResults = [];
   List<Map<String, dynamic>> _pr12IncompleteRecords = [];
@@ -4092,9 +4093,25 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES'}.contains(widget.apiCode);
 
   Future<void> _loadActiveReportImages(List<dynamic> records) async {
-    final ids = records.whereType<Map>().map((row) => int.tryParse(
-      (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
-    )).whereType<int>().where((id) => id > 0).toSet();
+    final ids = <int>{};
+    for (final raw in records.whereType<Map>()) {
+      var id = int.tryParse((raw['codice_oggetto'] ?? raw['id'] ?? '').toString());
+      final description = (raw['descrizione_oggetto'] ?? raw['descrizione'] ?? raw['nome_oggetto'] ?? '').toString().trim();
+      if ((id == null || id <= 0) && description.isNotEmpty) {
+        try {
+          final match = await Supabase.instance.client.schema('collection')
+              .from('master_oggetti').select('codice_oggetto')
+              .ilike('descrizione_oggetto', description).limit(1).maybeSingle();
+          id = int.tryParse((match?['codice_oggetto'] ?? '').toString());
+        } catch (e) {
+          debugPrint('VALORA: associazione immagine acquisto non disponibile: $e');
+        }
+      }
+      if (id != null && id > 0) {
+        ids.add(id);
+        if (description.isNotEmpty) _reportImageObjectIdsByDescription[description.toLowerCase()] = id;
+      }
+    }
     await Future.wait(ids.map((id) async {
       var url = '';
       try {
@@ -4129,7 +4146,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _rows = _rows.map((raw) {
         if (raw is! Map) return raw;
         final row = Map<String, dynamic>.from(raw);
-        final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
+        var id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
+        final description = (row['descrizione_oggetto'] ?? row['descrizione'] ?? row['nome_oggetto'] ?? '').toString().trim();
+        id ??= _reportImageObjectIdsByDescription[description.toLowerCase()];
         final url = id == null ? null : _activeReportImageUrls[id];
         if (url != null && url.isNotEmpty) row['url_immagine_catalogo'] = url;
         return row;
@@ -6062,10 +6081,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       ].join('\\n');
       setState(() {
         _rows = list;
+        if (widget.apiCode == 'REPORT-PURCHASES') _availablePage = 0;
         // Per questi report mostriamo un riepilogo leggibile, non il JSON grezzo.
         _output = summary;
         _currentObject = null;
       });
+      if (widget.apiCode == 'REPORT-PURCHASES' && list.isNotEmpty) {
+        await _loadActiveReportImages(list.take(_availablePageSize).toList());
+      }
       return;
     }
     final list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
@@ -6087,6 +6110,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     setState(() => _availablePage = nextPage);
     final visible = _rows.skip(nextPage * _availablePageSize).take(_availablePageSize).toList();
     await _loadActiveReportImages(visible);
+  }
+
+  Future<void> _changePurchaseReportPage(int nextPage) async {
+    if (widget.apiCode != 'REPORT-PURCHASES') return;
+    await _changeAvailablePage(nextPage);
   }
 
   String _pretty(dynamic data) {
@@ -7639,7 +7667,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (!isAvailableList)
             Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
               style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
-          ...(isAvailableList
+          ...((isAvailableList || widget.apiCode == 'REPORT-PURCHASES')
               ? _rows.skip(_availablePage * _availablePageSize).take(_availablePageSize)
               : _rows).map((r) {
             if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
@@ -7649,8 +7677,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               final dateValue = item['data_vendita'] ?? item['data_acquisto'] ?? item['data'] ?? item['data_inizio_vendita'] ?? 'Data non indicata';
               final description = item['descrizione_oggetto'] ?? item['descrizione'] ?? item['tipologia'] ?? item['tipo_movimento'] ?? 'Operazione';
               final amount = item['importo_vendita'] ?? item['importo_totale_acquisto'] ?? item['importo'] ?? item['prezzo_di_vendita'];
+              final imageUrl = (item['url_immagine_catalogo'] ?? item['url_immagine'] ?? '').toString().trim();
               return Card(child: ListTile(
-                leading: Icon(Icons.receipt_long_outlined, color: sectionColor),
+                leading: widget.apiCode == 'REPORT-PURCHASES' && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))
+                    ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(imageUrl, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.receipt_long_outlined, color: sectionColor)))
+                    : Icon(Icons.receipt_long_outlined, color: sectionColor),
                 title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
                 trailing: amount == null ? null : Text('${amount.toString()} ${item['valuta'] ?? 'EUR'}'),
@@ -7671,7 +7702,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   )).then((_) {})
               : null);
           }),
-          if (isAvailableList && availablePageCount > 1) ...[
+          if ((isAvailableList || widget.apiCode == 'REPORT-PURCHASES') && availablePageCount > 1) ...[
             const SizedBox(height: 8),
             Card(child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
