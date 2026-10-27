@@ -4457,8 +4457,37 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         throw Exception('Risposta PR-02 non valida per la ricerca: ' + phrase);
       }
       final raw = payload['oggetti'];
-      if (raw is! List) return <Map<String, dynamic>>[];
-      return raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList();
+      final found = raw is List
+          ? raw.whereType<Map>().map((entry) => Map<String, dynamic>.from(entry)).toList()
+          : <Map<String, dynamic>>[];
+
+      // Fallback diretto sul catalogo: le RPC testuali possono non trovare
+      // codici prodotto presenti nella descrizione (es. "LEGO 4433").
+      // La lettura è limitata alla tabella master e resta in sola lettura.
+      try {
+        final escapedPhrase = phrase.replaceAll('%', r'\%').replaceAll('_', r'\_').trim();
+        if (escapedPhrase.isNotEmpty) {
+          final direct = await Supabase.instance.client
+              .schema('collection')
+              .from('master_oggetti')
+              .select()
+              .ilike('descrizione_oggetto', '%$escapedPhrase%')
+              .limit(100);
+          if (direct is List) {
+            for (final entry in direct.whereType<Map>()) {
+              final item = Map<String, dynamic>.from(entry);
+              final id = (item['codice_oggetto'] ?? '').toString().trim();
+              if (!found.any((existing) =>
+                  (existing['codice_oggetto'] ?? '').toString().trim() == id && id.isNotEmpty)) {
+                found.add(item);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('VALORA: fallback ricerca diretta catalogo non disponibile: $e');
+      }
+      return found;
     }
 
     String descriptionOf(Map<String, dynamic> item) =>
