@@ -4655,6 +4655,47 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     });
   }
 
+  Future<void> _pr08ModifySelectedPrices() async {
+    final selected = _pr08OpenSales.where((row) {
+      final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+      return id != null && _pr08Drafts[id]?['selected'] == true;
+    }).toList();
+    if (selected.isEmpty) throw Exception('Seleziona almeno un’inserzione aperta.');
+    final changes = <Map<String, dynamic>>[];
+    for (final row in selected) {
+      final id = int.parse(row['codice_vendita_aperta'].toString());
+      final draft = _pr08Drafts[id]!;
+      final raw = (draft['importo_vendita'] ?? '').toString().trim();
+      final price = double.tryParse(raw.replaceAll(',', '.'));
+      if (price == null || price <= 0) throw Exception('Inserisci un nuovo prezzo maggiore di zero per l’inserzione $id.');
+      if (price == (double.tryParse((row['prezzo_di_vendita'] ?? '').toString()) ?? -1)) throw Exception('Il prezzo dell’inserzione $id non è cambiato.');
+      changes.add({'id': id, 'price': price, 'note': (draft['note'] ?? '').toString().trim()});
+    }
+    final accepted = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+      title: const Text('CONFERMA MODIFICA PREZZI'),
+      content: Text(changes.map((c) {
+        final row = _pr08OpenSales.firstWhere((r) => r['codice_vendita_aperta'].toString() == c['id'].toString());
+        return '#${c['id']} · ${row['descrizione_oggetto']}\n€ ${row['prezzo_di_vendita']} → € ${(c['price'] as double).toStringAsFixed(2)}';
+      }).join('\n\n') + '\n\nLe inserzioni resteranno aperte. Le variazioni saranno registrate nello storico.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMA'))],
+    ));
+    if (accepted != true || !mounted) return;
+    setState(() { _pr08Saving = true; _loading = true; });
+    try {
+      for (final change in changes) {
+        await Supabase.instance.client.schema('collection').rpc('pr_08_modifica_prezzo_inserzione', params: {
+          'p_codice_vendita_aperta': change['id'], 'p_nuovo_prezzo': change['price'],
+          'p_note': (change['note'] as String).isEmpty ? null : change['note'],
+        });
+      }
+      if (!mounted) return;
+      setState(() {
+        for (final change in changes) { final id = change['id'] as int; _pr08Drafts[id]?['selected'] = false; _pr08Drafts[id]?['importo_vendita'] = ''; }
+        _output = 'Prezzi aggiornati: ${changes.length}. Le inserzioni sono rimaste aperte e le variazioni sono state registrate nello storico.';
+      });
+      await _loadPr08OpenSales();
+    } finally { if (mounted) setState(() { _pr08Saving = false; _loading = false; }); }
+  }
   Future<void> _pr08CollectCurrentSelection() async {
     final selected = _pr08OpenSales.where((row) {
       final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
@@ -4818,10 +4859,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             CheckboxListTile(contentPadding: EdgeInsets.zero, value: selected, onChanged: _loading ? null : (v) => setState(() => draft['selected'] = v == true), title: Text('#$id · ${(row['descrizione_oggetto'] ?? 'Oggetto').toString()}', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text('Oggetto #${row['codice_oggetto']}  •  Apertura ${row['data_inizio_vendita'] ?? 'n.d.'}\nPrezzo richiesto: € ${row['prezzo_di_vendita'] ?? 'n.d.'}'))),
             if (selected) ...[
               const Divider(),
-              DropdownButtonFormField<String>(value: outcome, decoration: const InputDecoration(labelText: 'Tipo di chiusura', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')), DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza incasso'))], onChanged: (v) => setState(() { draft['esito'] = v; if (v != 'VENDITA EFFETTIVA') { draft['importo_vendita'] = '0'; draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } else if ((double.tryParse(amount.replaceAll(',', '.')) ?? 0) <= 0) { draft['importo_vendita'] = ''; } })),
+              if (_pr08ActionMode == 'CHIUDI') DropdownButtonFormField<String>(value: outcome, decoration: const InputDecoration(labelText: 'Tipo di chiusura', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')), DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza incasso'))], onChanged: (v) => setState(() { draft['esito'] = v; if (v != 'VENDITA EFFETTIVA') { draft['importo_vendita'] = '0'; draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } else if ((double.tryParse(amount.replaceAll(',', '.')) ?? 0) <= 0) { draft['importo_vendita'] = ''; } })),
               const SizedBox(height: 10),
-              TextFormField(initialValue: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Importo effettivamente incassato (€)', helperText: 'Inserisci 0 se non hai ricevuto denaro', prefixIcon: Icon(Icons.euro), border: OutlineInputBorder()), onChanged: (v) => setState(() { draft['importo_vendita'] = v; final parsed = double.tryParse(v.replaceAll(',', '.')); if (parsed != null && parsed > 0) draft['esito'] = 'VENDITA EFFETTIVA'; if (parsed == 0) { draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } })),
-              if (outcome == 'VENDITA EFFETTIVA') ...[
+              TextFormField(initialValue: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: _pr08ActionMode == 'MODIFICA' ? 'Nuovo prezzo richiesto (€)' : 'Importo effettivamente incassato (€)', helperText: _pr08ActionMode == 'MODIFICA' ? 'Prezzo attuale: € ${row['prezzo_di_vendita'] ?? 'n.d.'}' : 'Inserisci l’importo reale solo se hai venduto', prefixIcon: const Icon(Icons.euro), border: const OutlineInputBorder()), onChanged: (v) => setState(() { draft['importo_vendita'] = v; final parsed = double.tryParse(v.replaceAll(',', '.')); if (parsed != null && parsed > 0) draft['esito'] = 'VENDITA EFFETTIVA'; if (parsed == 0) { draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } })),
+              if (_pr08ActionMode == 'CHIUDI' && outcome == 'VENDITA EFFETTIVA') ...[
                 const SizedBox(height: 10),
                 TextFormField(initialValue: (draft['data_vendita'] ?? '').toString(), decoration: const InputDecoration(labelText: 'Data effettiva della vendita', hintText: 'AAAA-MM-GG', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()), onChanged: (v) => draft['data_vendita'] = v),
                 const SizedBox(height: 10),
@@ -4835,7 +4876,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ])));
         }),
         const SizedBox(height: 12),
-        FilledButton.icon(onPressed: _loading || _pr08Saving || selectedCount == 0 ? null : () => _run(_pr08CollectCurrentSelection), icon: const Icon(Icons.playlist_add_check), label: Text('AGGIUNGI $selectedCount SELEZIONATE ALLA BOZZA')),
+        FilledButton.icon(onPressed: _loading || _pr08Saving || selectedCount == 0 ? null : () => _run(_pr08ActionMode == 'MODIFICA' ? _pr08ModifySelectedPrices : _pr08CollectCurrentSelection), icon: Icon(_pr08ActionMode == 'MODIFICA' ? Icons.save_as_outlined : Icons.playlist_add_check), label: Text(_pr08ActionMode == 'MODIFICA' ? 'CONFERMA MODIFICA PREZZI ($selectedCount)' : 'AGGIUNGI $selectedCount ALLA BOZZA DI CHIUSURA')),
       ],
       if (_pr08PendingClosures.isNotEmpty) ...[
         const SizedBox(height: 12),
