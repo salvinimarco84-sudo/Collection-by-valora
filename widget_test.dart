@@ -18,13 +18,13 @@ await Supabase.initialize(
 });
 
 testWidgets('La schermata di accesso è visibile', (tester) async {
-await tester.pumpWidget(const CollectionByValoraApp());
+await tester.pumpWidget(const CollectionValoraApp());
 await tester.pump();
 
 expect(find.text('COLLECTION by VALORA'), findsOneWidget);
 expect(find.text('ACCEDI'), findsOneWidget);
 expect(
-  find.text('DEMON SOFTWARE HOUSE · AMBIENTE TEST'),
+  find.text('AMBIENTE TEST'),
   findsOneWidget,
 );
 
@@ -32,7 +32,7 @@ expect(
 
 testWidgets('La schermata di accesso contiene i campi necessari',
 (tester) async {
-await tester.pumpWidget(const CollectionByValoraApp());
+await tester.pumpWidget(const CollectionValoraApp());
 await tester.pump();
 
 expect(find.byType(TextField), findsNWidgets(2));
@@ -44,7 +44,7 @@ expect(find.text('ACCEDI'), findsOneWidget);
 
 testWidgets('Le procedure operative non sono accessibili senza login',
 (tester) async {
-await tester.pumpWidget(const CollectionByValoraApp());
+await tester.pumpWidget(const CollectionValoraApp());
 await tester.pump();
 
 expect(find.text('ACCEDI'), findsOneWidget);

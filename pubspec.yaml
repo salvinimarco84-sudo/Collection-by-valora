@@ -38,4 +38,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/valora_logo.png
+    - valora_logo.png

@@ -616,7 +616,7 @@ class _LoginPageState extends State<LoginPage> {
                         width: 228,
                         height: 228,
                         child: Image.asset(
-                          'assets/valora_logo.png',
+                          'valora_logo.png',
                           fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) => Container(
                             decoration: BoxDecoration(
