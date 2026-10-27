@@ -461,6 +461,18 @@ const sections = <SectionInfo>[
           apiCode: 'WRITE-PR-06',
         ),
         Operation(
+          'Chiudi vendita',
+          'Seleziona una vendita aperta, verifica il riepilogo e conferma la chiusura',
+          Icons.check_circle_outline,
+          apiCode: 'WRITE-PR-08',
+        ),
+        Operation(
+          'Annulla vendita',
+          'Seleziona la vendita da annullare, indica la motivazione e conferma l’annullamento',
+          Icons.cancel_outlined,
+          apiCode: 'WRITE-PR-09',
+        ),
+        Operation(
           'Vendita multipla Vinted',
           'Registra più vendite nella stessa sessione operativa',
           Icons.playlist_add_check_outlined,
