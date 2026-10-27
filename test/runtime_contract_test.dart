@@ -19,7 +19,8 @@ void main() {
     test('PR-02 accumula le modifiche fino alla risposta finale e mantiene separata la categoria', () {
       expect(source, contains('_selectedCollectionCategory'));
       expect(source, contains('categoria_collezione_selezionata'));
-      expect(source, contains("content: Text('Vuoi modificare un altro oggetto?')"));
+      expect(source, contains('_pr02AwaitingNextChoice'));
+      expect(source, contains('_continuePr02WithAnotherObject()'));
       expect(source, contains('await _savePr02PendingChanges();'));
       expect(source, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(source, contains('oggetto_collezione_categoria'));
