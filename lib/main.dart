@@ -736,7 +736,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'WRITE-PR-06', readOnly: false),
     ProcedureEntry(title: 'Chiudi vendita', description: 'Seleziona una vendita attiva e registra la chiusura.', apiCode: 'WRITE-PR-08', readOnly: false),
     ProcedureEntry(title: 'Annulla vendita', description: 'Annulla una vendita registrata tramite la procedura dedicata.', apiCode: 'WRITE-PR-09', readOnly: false),
-    ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
+    ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-SALES-ACTIVE'),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
   'VALUTAZIONI': [
