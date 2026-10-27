@@ -16,10 +16,11 @@ void main() {
       expect(source, contains('final int? initialObjectCode;'));
     });
 
-    test('PR-02 mantiene la categoria selezionata separata dal payload oggetto', () {
+    test('PR-02 salva subito dopo la conferma finale e mantiene separata la categoria', () {
       expect(source, contains('_selectedCollectionCategory'));
       expect(source, contains('categoria_collezione_selezionata'));
-      expect(source, contains('_savePr02PendingChanges'));
+      expect(source, contains('_savePr02PendingChanges(closeOnComplete: false)'));
+      expect(source, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(source, contains('oggetto_collezione_categoria'));
     });
 

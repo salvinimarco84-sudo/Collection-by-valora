@@ -24,6 +24,8 @@ jobs:
           cache: true
       - name: Show Flutter version
         run: flutter --version
+      - name: Generate Android platform files
+        run: flutter create . --platforms=android
       - name: Resolve dependencies
         run: flutter pub get
       - name: Analyze source
