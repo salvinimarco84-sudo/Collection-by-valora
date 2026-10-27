@@ -1158,7 +1158,15 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
     'watch_outlined': Icons.watch_outlined, 'sports_esports_outlined': Icons.sports_esports_outlined, 'palette_outlined': Icons.palette_outlined,
     'collections_outlined': Icons.collections_outlined, 'shield_outlined': Icons.shield_outlined, 'directions_car_outlined': Icons.directions_car_outlined,
   };
-  static const Map<String,String> _colors = {'Rosso':'#C62828','Blu':'#2476C8','Verde':'#008C4A','Viola':'#7137B8','Arancione':'#DD741D','Oro':'#D6B15E','Turchese':'#00897B','Grigio':'#607D8B','Rosa':'#AD1457','Marrone':'#6D4C41'};
+  static const Map<String,String> _colors = {
+    'Rosso':'#C62828','Rosso scuro':'#8E0000','Corallo':'#FF6F61','Bordeaux':'#800020','Arancione':'#DD741D','Pesca':'#FFB07C',
+    'Giallo':'#F9A825','Oro':'#D6B15E','Giallo limone':'#D4E157','Verde':'#008C4A','Verde chiaro':'#7CB342','Verde foresta':'#1B5E20',
+    'Menta':'#66CDAA','Turchese':'#00897B','Acquamarina':'#00BFA5','Azzurro':'#29B6F6','Blu':'#2476C8','Blu navy':'#1A237E',
+    'Blu notte':'#283593','Indaco':'#3F51B5','Viola':'#7137B8','Lilla':'#B39DDB','Lavanda':'#9575CD','Magenta':'#C2185B',
+    'Rosa':'#EC407A','Rosa chiaro':'#F8BBD0','Fucsia':'#D500F9','Marrone':'#6D4C41','Cuoio':'#8D6E63','Sabbia':'#D7CCC8',
+    'Beige':'#DCC7A1','Avorio':'#FFF8E1','Grigio':'#607D8B','Grigio chiaro':'#B0BEC5','Antracite':'#37474F','Nero':'#212121',
+    'Bianco':'#FFFFFF','Argento':'#B0BEC5','Bronzo':'#A66A3F','Petrolio':'#006064','Prugna':'#6A1B9A','Oliva':'#827717',
+  };
   @override void initState(){super.initState();_load();}
   Future<void> _load() async { setState(()=>_loading=true); try { final data=await Supabase.instance.client.schema('collection').from('master_categorie_collezione').select('codice_categoria, descrizione, icona, colore_hex, ordine_menu, visibile').order('ordine_menu').order('descrizione'); if(!mounted)return; setState(()=>_rows=(data as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList()); } catch(e){if(mounted)setState(()=>_error=e.toString());} finally {if(mounted)setState(()=>_loading=false);} }
   Future<void> _addCategory() async {
