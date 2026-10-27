@@ -106,29 +106,43 @@ class _ActiveListingsReportScreenState extends State<ActiveListingsReportScreen>
       if (supabase.auth.currentSession == null) {
         throw Exception('Sessione assente. Accedi nuovamente.');
       }
-      final response = await supabase.functions.invoke(
-        'collection-procedure-runtime-test',
-        body: {
-          'action': 'report',
-          'report_code': 'ACTIVE_LISTINGS_REPORT',
-          'arguments': {'limite': 500, 'offset': 0},
-          'session_id': newUuid(),
-        },
-      );
-      final data = response.data;
-      if (response.status < 200 || response.status >= 300 || data is! Map) {
-        final details = data is Map ? data['error'] : null;
-        throw Exception(details?.toString() ?? 'Errore runtime ${response.status}');
-      }
-      final envelope = Map<String, dynamic>.from(data);
-      if (envelope.containsKey('error')) throw Exception(envelope['error'].toString());
-      final raw = envelope['result'];
-      if (raw is! Map) throw Exception('Il report non ha restituito un riepilogo valido.');
-      final parsed = Map<String, dynamic>.from(raw);
-      final rawRecords = parsed['record'];
-      final rows = rawRecords is List
-          ? rawRecords.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList()
-          : <Map<String, dynamic>>[];
+      const pageSize = 500;
+      var offset = 0;
+      var expectedCount = 0;
+      final allRows = <Map<String, dynamic>>[];
+      Map<String, dynamic>? parsedReport;
+      do {
+        final response = await supabase.functions.invoke(
+          'collection-procedure-runtime-test',
+          body: {
+            'action': 'report',
+            'report_code': 'ACTIVE_LISTINGS_REPORT',
+            'arguments': {'limite': pageSize, 'offset': offset},
+            'session_id': newUuid(),
+          },
+        );
+        final data = response.data;
+        if (response.status < 200 || response.status >= 300 || data is! Map) {
+          final details = data is Map ? data['error'] : null;
+          throw Exception(details?.toString() ?? 'Errore runtime ${response.status}');
+        }
+        final envelope = Map<String, dynamic>.from(data);
+        if (envelope.containsKey('error')) throw Exception(envelope['error'].toString());
+        final raw = envelope['result'];
+        if (raw is! Map) throw Exception('Il report non ha restituito un riepilogo valido.');
+        final parsed = Map<String, dynamic>.from(raw);
+        parsedReport ??= parsed;
+        expectedCount = (parsed['numero_inserzioni_attive'] as num?)?.toInt() ?? 0;
+        final rawRecords = parsed['record'];
+        final pageRows = rawRecords is List
+            ? rawRecords.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList()
+            : <Map<String, dynamic>>[];
+        allRows.addAll(pageRows);
+        if (pageRows.isEmpty) break;
+        offset += pageRows.length;
+      } while (allRows.length < expectedCount);
+      final parsed = parsedReport ?? <String, dynamic>{};
+      final rows = allRows;
       if (!mounted) return;
       setState(() {
         report = parsed;
