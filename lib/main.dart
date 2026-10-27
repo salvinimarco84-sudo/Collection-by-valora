@@ -4662,10 +4662,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_pr08PendingClosures.any((e) => e['codice_vendita_aperta'] == id)) {
         throw Exception('La vendita aperta $id è già nella coda di chiusura.');
       }
-      final outcome = (draft['esito'] ?? '').toString();
+      final enteredAmount = (draft['importo_vendita'] ?? '').toString().trim();
+      if (enteredAmount.isEmpty) throw Exception('Inserisci un importo, anche 0, per la chiusura $id.');
+      final amount = double.tryParse(enteredAmount.replaceAll(',', '.'));
+      if (amount == null || amount < 0) throw Exception('Importo non valido per la chiusura $id.');
+      final outcome = amount > 0 ? 'VENDITA EFFETTIVA' : (draft['esito'] ?? 'CHIUSURA SENZA VENDITA').toString();
       if (outcome == 'VENDITA EFFETTIVA') {
-        final amount = double.tryParse((draft['importo_vendita'] ?? '').toString().replaceAll(',', '.'));
-        if (amount == null || amount <= 0) throw Exception('Inserisci un importo effettivo maggiore di zero per la vendita $id.');
         final platform = draft['codice_piattaforma'];
         final external = (draft['canale_esterno'] ?? '').toString().trim();
         if ((platform == null || platform.toString().isEmpty) == external.isEmpty) {
@@ -4791,19 +4793,25 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 onChanged: (v) => setState(() {
                   draft['esito'] = v;
                   if (v != 'VENDITA EFFETTIVA') {
-                    draft['importo_vendita'] = '';
+                    draft['importo_vendita'] = '0';
                     draft['codice_piattaforma'] = null;
                     draft['canale_esterno'] = '';
+                  } else if ((draft['importo_vendita'] ?? '').toString().trim().isEmpty || (double.tryParse(draft['importo_vendita'].toString().replaceAll(',', '.')) ?? 0) <= 0) {
+                    draft['importo_vendita'] = '';
                   }
                 }),
               ),
+              TextFormField(
+                initialValue: (draft['importo_vendita'] ?? '').toString(),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Importo (€), inserire 0 se non c’è incasso *'),
+                onChanged: (v) => setState(() {
+                  draft['importo_vendita'] = v;
+                  final amount = double.tryParse(v.replaceAll(',', '.'));
+                  if (amount != null && amount > 0) draft['esito'] = 'VENDITA EFFETTIVA';
+                }),
+              ),
               if (outcome == 'VENDITA EFFETTIVA') ...[
-                TextFormField(
-                  initialValue: (draft['importo_vendita'] ?? '').toString(),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Importo effettivo (€) *'),
-                  onChanged: (v) => draft['importo_vendita'] = v,
-                ),
                 TextFormField(
                   initialValue: (draft['data_vendita'] ?? '').toString(),
                   decoration: const InputDecoration(labelText: 'Data vendita (AAAA-MM-GG) *'),
