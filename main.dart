@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const supabasePublishableKey =
@@ -1307,26 +1308,59 @@ class _OperationTile extends StatelessWidget {
           ),
         ),
         trailing: const Icon(Icons.chevron_right, color: muted),
-        onTap: () => showDialog<void>(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            icon: Icon(operation.icon, color: color, size: 30),
-            title: Text(operation.title),
-            content: Text(
-              '${operation.description}\n\n'
-              '${operation.apiCode == null ? 'Questa voce non è ancora associata a un contratto runtime verificato.' : 'Codice catalogo candidato: ${operation.apiCode}.'}\n\n'
-              'In questa fase il collegamento reale viene provato tramite '
-              'Verifica runtime e Leggi catalogo API nella schermata iniziale. '
-              'Questa voce non esegue scritture.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: const Text('Chiudi'),
+        onTap: () async {
+          final procedureCode = switch (operation.apiCode) {
+            'WRITE-PR-08' => 'PR-08',
+            'WRITE-PR-09' => 'PR-09',
+            _ => null,
+          };
+          if (procedureCode != null) {
+            final uri = Uri.parse(
+              'https://eeiekkflpnkummxtvljy.supabase.co/functions/v1/'
+              'collection-procedure-runtime-test',
+            ).replace(queryParameters: {'procedure': procedureCode});
+            try {
+              final opened = await launchUrl(
+                uri,
+                mode: LaunchMode.externalApplication,
+              );
+              if (!opened && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Impossibile aprire la maschera runtime.'),
+                  ),
+                );
+              }
+            } catch (error) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Apertura maschera non riuscita: $error')),
+                );
+              }
+            }
+            return;
+          }
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              icon: Icon(operation.icon, color: color, size: 30),
+              title: Text(operation.title),
+              content: Text(
+                '${operation.description}\n\n'
+                '${operation.apiCode == null ? 'Questa voce non è ancora associata a un contratto runtime verificato.' : 'Codice catalogo candidato: ${operation.apiCode}.'}\n\n'
+                'In questa fase il collegamento reale viene provato tramite '
+                'Verifica runtime e Leggi catalogo API nella schermata iniziale. '
+                'Questa voce non esegue scritture.',
               ),
-            ],
-          ),
-        ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Chiudi'),
+                ),
+              ],
+            ),
+          );
+        },
       );
 }
 
