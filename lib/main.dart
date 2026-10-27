@@ -479,39 +479,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       const SizedBox(height:8),
       const Text('La modalità iniziale è Schede con sfondo nero. Cambiare modalità modifica solo la presentazione, non le procedure o i dati.'),
       const SizedBox(height:20),
-      const Text('SFONDO',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
-      const SizedBox(height:8),
-      SegmentedButton<bool>(
-        segments: const [
-          ButtonSegment<bool>(value:false, icon:Icon(Icons.dark_mode_outlined), label:Text('Nero')),
-          ButtonSegment<bool>(value:true, icon:Icon(Icons.light_mode_outlined), label:Text('Bianco')),
-        ],
-        selected: <bool>{a.whiteBackground},
-        onSelectionChanged:(values)=>a.setBackground(values.first),
-        showSelectedIcon:true,
-      ),
-      const SizedBox(height:12),
-      const Text('COLORI DELLE SEZIONI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
-      const SizedBox(height:4),
-      const Text('Scegli il colore distintivo di ciascuna sezione.'),
-      ...ValoraAppearance.defaults.keys.map((section){
-        final current=a.colorFor(section);
-        final available=ValoraAppearance.palette.where((c)=>c.value==current.value||
-          !a.colors.entries.any((e)=>e.key!=section&&e.value.value==c.value)).toList();
-        return Card(color:const Color(0xFF171717),child:Padding(
-          padding:const EdgeInsets.symmetric(horizontal:12,vertical:6),
-          child:Row(children:[
-            Container(width:22,height:22,decoration:BoxDecoration(color:current,borderRadius:BorderRadius.circular(5))),
-            const SizedBox(width:10),
-            Expanded(child:Text(section,style:TextStyle(color:a.textPrimary))),
-            DropdownButton<int>(value:current.value,items:available.map((c)=>DropdownMenuItem<int>(
-              value:c.value,child:Row(children:[
-                Container(width:20,height:20,decoration:BoxDecoration(color:c,borderRadius:BorderRadius.circular(4))),
-                const SizedBox(width:8),Text('#${c.value.toRadixString(16).substring(2).toUpperCase()}')
-              ]))).toList(),
-              onChanged:(v){if(v!=null)a.setColor(section,Color(v));}),
-          ])));
-      }),
+      const Text('I colori e lo sfondo sono gestiti dal tema predefinito selezionato. Puoi continuare a personalizzare il layout della Home e le immagini delle sezioni.',style:TextStyle(color:goldColor)),
       const SizedBox(height:20),
       const Text('IMMAGINE PERSONALIZZATA PER SEZIONE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:4),
