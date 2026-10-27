@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final pr19Source = File('supabase/functions/pr-19-object-valuation-test/index.ts').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('la scheda oggetto espone modifica e avvio vendita', () {
@@ -40,7 +41,7 @@ void main() {
     });
 
     test('PR-01 non inventa stime e mantiene la valutazione separata dal salvataggio', () {
-      expect(source, contains("'scrittura_database': false"));
+      expect(pr19Source, contains('scrittura_database: false'));
       expect(source, contains("'valore_mercato': double.parse"));
       expect(source, contains('Nessun valore inventato'));
       expect(source, contains('_pr19ValuationResult'));
