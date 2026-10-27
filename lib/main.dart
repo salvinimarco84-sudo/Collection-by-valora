@@ -1174,7 +1174,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
   Future<void> _editCategory(Map<String,dynamic> row) async {
     final name=TextEditingController(text:(row['descrizione']??'').toString());
     String iconKey=_icons.containsKey(row['icona'])?row['icona'].toString():'category_outlined';
-    String colorName=_colors.entries.where((e)=>e.value.toUpperCase()==(row['colore_hex']??'').toString().toUpperCase()).map((e)=>e.key).firstOrNull??'Oro';
+    final matchingColors=_colors.entries.where((e)=>e.value.toUpperCase()==(row['colore_hex']??'').toString().toUpperCase()).toList(); String colorName=matchingColors.isEmpty?'Oro':matchingColors.first.key;
     bool visible=row['visibile']==true;
     final accepted=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,sd)=>AlertDialog(
       title:Text('MODIFICA CATEGORIA ${row['codice_categoria']}'),
