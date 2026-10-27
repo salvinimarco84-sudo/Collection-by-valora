@@ -318,8 +318,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
   }
   static const List<String> _allPersonalizableSections = [
     'COLLEZIONE','CATALOGO','ACQUISTI','VENDITE',
-    'VALUTAZIONI','REPORT','RICERCHE','CONTROLLO','LEGO','SAINT SEIYA',
-    'MOTO DIE-CAST','FUMETTI','GUNDAM','TRANSFORMERS','ALTRE COLLEZIONI'
+    'VALUTAZIONI','REPORT','RICERCHE','CONTROLLO'
   ];
   void refresh(){
     if(!mounted)return;
@@ -735,7 +734,9 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
   'VENDITE': [
     ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'WRITE-PR-06', readOnly: false),
-    ProcedureEntry(title: 'Chiudi vendita', description: 'Chiude una vendita secondo la procedura VALORA.', enabled: false, readOnly: false),
+    ProcedureEntry(title: 'Chiudi vendita', description: 'Seleziona una vendita attiva e registra la chiusura.', apiCode: 'WRITE-PR-07', readOnly: false),
+    ProcedureEntry(title: 'Annulla vendita', description: 'Annulla una vendita registrata tramite la procedura dedicata.', apiCode: 'WRITE-PR-09', readOnly: false),
+    ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-SALES-ACTIVE'),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
   'VALUTAZIONI': [
@@ -1169,7 +1170,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
     'Bianco':'#FFFFFF','Argento':'#B0BEC5','Bronzo':'#A66A3F','Petrolio':'#006064','Prugna':'#6A1B9A','Oliva':'#827717',
   };
   @override void initState(){super.initState();_load();}
-  Future<void> _load() async { setState(()=>_loading=true); try { final data=await Supabase.instance.client.schema('collection').from('master_categorie_collezione').select('codice_categoria, descrizione, icona, colore_hex, ordine_menu, visibile').order('ordine_menu').order('descrizione'); if(!mounted)return; setState(()=>_rows=(data as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList()); } catch(e){if(mounted)setState(()=>_error=e.toString());} finally {if(mounted)setState(()=>_loading=false);} }
+  Future<void> _load() async { setState(()=>_loading=true); try { final data=await Supabase.instance.client.schema('collection').from('master_categorie_collezione').select('codice_categoria, descrizione, icona, colore_hex, logo_url, ordine_menu, visibile').order('ordine_menu').order('descrizione'); if(!mounted)return; setState(()=>_rows=(data as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList()); } catch(e){if(mounted)setState(()=>_error=e.toString());} finally {if(mounted)setState(()=>_loading=false);} }
 
   Future<String?> _saveCategoryLogo(Uint8List? bytes,String? fileName,String? code,String? existingUrl) async { if(bytes==null)return existingUrl; final ext=(fileName??'logo.jpg').toLowerCase().split('.').last; final safeExt=['png','webp'].contains(ext)?ext:'jpg'; final mime=safeExt=='png'?'image/png':safeExt=='webp'?'image/webp':'image/jpeg'; final path='${code??'category'}-${DateTime.now().millisecondsSinceEpoch}.$safeExt'; await Supabase.instance.client.storage.from('valora-category-logos-test').uploadBinary(path,bytes,fileOptions:FileOptions(contentType:mime,upsert:true)); return Supabase.instance.client.storage.from('valora-category-logos-test').getPublicUrl(path); }
 
@@ -2718,17 +2719,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
           child: Text('Conteggio catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
         ),
       const SizedBox(height: 12),
-      if (!_catalogLoading) ...[
-        _dashboardCategoryPanel('LEGO', 'Set, veicoli e minifigure', const Color(0xFFE31B23), Icons.extension),
-        _dashboardCategoryPanel('SAINT SEIYA', 'Myth Cloth e cavalieri', const Color(0xFF7137B8), Icons.auto_awesome),
-        _dashboardCategoryPanel('MOTO DIE-CAST', 'Moto e modellini', const Color(0xFFDD741D), Icons.two_wheeler),
-        _dashboardCategoryPanel('FUMETTI', 'Fumetti, manga e graphic novel', const Color(0xFF008C4A), Icons.menu_book),
-        _dashboardCategoryPanel('GUNDAM', 'Gunpla e modelli Gundam', const Color(0xFFC62828), Icons.precision_manufacturing),
-        _dashboardCategoryPanel('TRANSFORMERS', 'Action figure trasformabili', const Color(0xFF2476C8), Icons.smart_toy),
-        _dashboardCategoryPanel('FUNKO POP', 'Funko Pop da collezione', const Color(0xFF8E24AA), Icons.toys),
-        _dashboardCategoryPanel('MODEL KIT', 'Kit di montaggio', const Color(0xFF546E7A), Icons.precision_manufacturing),
-        _dashboardCategoryPanel('G.I. JOE', 'Personaggi e veicoli G.I. Joe', const Color(0xFF5C6BC0), Icons.shield),
-      ],
       Center(child: Text('COLLECTION by VALORA', style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
     ],
   );
@@ -2755,7 +2745,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       child: Column(children: [
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          leading: _categoryBrandMark(name, color, icon),
+          leading: (category['logo_url'] ?? '').toString().trim().isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.network(category['logo_url'].toString(), width: 62, height: 46, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _categoryBrandMark(name, color, icon))) : _categoryBrandMark(name, color, icon),
           title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -4086,7 +4076,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _reportPeriodMode = 'month';
   DateTime _reportStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
   DateTime _reportEnd = DateTime.now();
-  bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES'}.contains(widget.apiCode);
+  bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES', 'REPORT-SALES-ACTIVE'}.contains(widget.apiCode);
 
   String _dateLabel(DateTime date) => '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
 
@@ -7354,7 +7344,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               final total = _rows.whereType<Map>()
                   .map((item) => amountFor(Map<String, dynamic>.from(item)))
                   .fold<double>(0, (sum, value) => sum + value);
-              final label = widget.apiCode == 'REPORT-SALES'
+              final label = widget.apiCode == 'REPORT-SALES' || widget.apiCode == 'REPORT-SALES-ACTIVE'
                   ? 'TOTALE VENDITE'
                   : widget.apiCode == 'REPORT-PURCHASES'
                       ? 'TOTALE ACQUISTI'
@@ -7417,7 +7407,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ]),
           ),
         ],
-        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory && code != 'REPORT-CASH' && code != 'REPORT-PURCHASES' && code != 'REPORT-SALES') ...[
+        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory && code != 'REPORT-CASH' && code != 'REPORT-PURCHASES' && code != 'REPORT-SALES' && code != 'REPORT-SALES-ACTIVE') ...[
           const SizedBox(height: 16),
           Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
