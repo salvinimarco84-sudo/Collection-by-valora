@@ -2780,11 +2780,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           leading: (logoUrl ?? '').trim().isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.network(logoUrl!, width: 62, height: 46, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _categoryBrandMark(name, color, icon))) : _categoryBrandMark(name, color, icon),
-          title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          title: Text(name, style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontWeight: FontWeight.bold)),
+          subtitle: Text(subtitle, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11)),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text('$count', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8), const Icon(Icons.chevron_right, color: Colors.white70),
+            Text('$count', style: TextStyle(color: ValoraAppearance.instance.textPrimary, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8), Icon(Icons.chevron_right, color: ValoraAppearance.instance.textSecondary),
           ]),
           onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: name, initialCategoryCode: code))),
         ),
@@ -2827,12 +2827,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
       Padding(
         padding: const EdgeInsets.only(bottom: 14),
         child: Row(children: [
-          const Icon(Icons.inventory_2_outlined, color: goldColor, size: 34),
+          Icon(Icons.inventory_2_outlined, color: ValoraAppearance.instance.accent, size: 34),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(ValoraI18n.tr('COLLEZIONE'), style: const TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
+            Text(ValoraI18n.tr('COLLEZIONE'), style: TextStyle(color: ValoraAppearance.instance.accent, fontSize: 21, fontWeight: FontWeight.bold)),
             SizedBox(height: 3),
-            Text(ValoraI18n.tr('Seleziona un tema per consultare i relativi oggetti.'), style: TextStyle(color: Colors.white70, fontSize: 12)),
+            Text(ValoraI18n.tr('Seleziona un tema per consultare i relativi oggetti.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
           ])),
           Text(_catalogLoading ? '…' : '${_catalogRows.length}', style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
         ]),
@@ -2840,8 +2840,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
       if (_catalogError != null)
         Container(
           margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
-          child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
+          decoration: BoxDecoration(color: ValoraAppearance.instance.card, border: Border.all(color: ValoraAppearance.instance.accent.withValues(alpha: 0.5)), borderRadius: BorderRadius.circular(ValoraAppearance.instance.comicStyle ? 3 : 10)),
+          child: Text('Catalogo non disponibile: $_catalogError', style: TextStyle(color: ValoraAppearance.instance.textPrimary)),
         ),
       if (!_catalogLoading) ...[
         if (_collectionCategories.isEmpty)
