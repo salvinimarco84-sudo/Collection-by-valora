@@ -2219,7 +2219,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           .toList();
       final categoryResponse = await Supabase.instance.client.schema('collection')
           .from('master_categorie_collezione')
-          .select('codice_categoria, descrizione, icona, colore_hex, ordine_menu, visibile')
+          .select('codice_categoria, descrizione, icona, colore_hex, logo_url, ordine_menu, visibile')
           .eq('visibile', true).order('ordine_menu').order('descrizione');
       final categories = List<Map<String, dynamic>>.from(
         (categoryResponse as List).whereType<Map>().map((row) => Map<String, dynamic>.from(row)),
@@ -2704,7 +2704,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         color: goldColor,
         icon: Icons.inventory_2_outlined,
         trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
-        onTap: () => setState(() => showCollection = true),
+        onTap: () { setState(() => showCollection = true); _loadDashboardCatalog(); },
       ),
       ...dashboardSections.map((section) => _menuCard(
         title: ValoraI18n.tr(section.menuTitle ?? section.title),
@@ -2889,7 +2889,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                       : procedure.apiCode == 'SOURCE-REGISTRY'
                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
                   : (procedure.apiCode == 'CREATE-COLLECTION-CATEGORY' || procedure.apiCode == 'EDIT-COLLECTION-CATEGORY')
-                      ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage()))
+                      ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())); await _loadDashboardCatalog(); }
                   : procedure.apiCode == 'USER-SALES-PLATFORMS'
                       ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
                       : procedure.apiCode == 'LAUNCH-VALORA'
