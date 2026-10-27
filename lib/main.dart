@@ -4443,9 +4443,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toList();
     List<Map<String, dynamic>> results = await searchPhrase(query);
 
-    // Un codice numerico va cercato anche direttamente nella tabella master:
-    // le RPC testuali possono non includere un record se non corrisponde alla
-    // descrizione o se la loro selezione applica filtri di stato.
+    // La ricerca RPC può escludere record in vendita o chiusi. Interroghiamo
+    // anche il master completo per descrizione, senza filtri di stato.
+    // Esempio reale: "lego 4433" deve trovare LEGO 4433 Dirt Bike Transporter
+    // (codice oggetto 1448), anche se il codice prodotto non è il codice record.
+    try {
+      final direct = await Supabase.instance.client
+          .schema('collection')
+          .from('master_oggetti')
+          .select()
+          .ilike('descrizione_oggetto', '%$query%')
+          .limit(100);
+      if (direct is List) {
+        for (final row in direct.whereType<Map>()) {
+          final item = Map<String, dynamic>.from(row);
+          if (!results.any((existing) => codeOf(existing) == codeOf(item))) {
+            results.add(item);
+          }
+        }
+      }
+    } catch (_) {
+      // La ricerca RPC resta disponibile se la lettura diretta non è autorizzata.
+    }
+
+    // Un codice oggetto numerico va cercato anche direttamente nella tabella master.
     final exactCode = int.tryParse(query);
     if (exactCode != null) {
       try {
