@@ -12,6 +12,8 @@ void main() {
       expect(source, contains('Future<void> _openObjectForEdit()'));
       expect(source, contains('Future<void> _putObjectForSale()'));
       expect(source, contains('class NewSalePage'));
+      expect(source, contains('NewSalePage(initialObjectCode: id)'));
+      expect(source, contains('final int? initialObjectCode;'));
     });
 
     test('PR-02 mantiene la categoria selezionata separata dal payload oggetto', () {
