@@ -7921,7 +7921,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             .from('oggetto_collezione_categoria').upsert({
               'codice_oggetto': savedId,
               'codice_categoria': category,
-              'fonte_assegnazione': 'UTENTE_PR01',
+              'fonte_assegnazione': 'MANUALE',
               'stato_verifica': 'VERIFICATO',
               'aggiornato_il': DateTime.now().toIso8601String(),
             }, onConflict: 'codice_oggetto');
@@ -8151,7 +8151,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (categoryCode != null && categoryCode.isNotEmpty) {
             await Supabase.instance.client.schema('collection').from('oggetto_collezione_categoria').upsert({
               'codice_oggetto': objectIdForCategory, 'codice_categoria': categoryCode,
-              'fonte_assegnazione': 'UTENTE_PR02', 'stato_verifica': 'VERIFICATO',
+              'fonte_assegnazione': 'MANUALE', 'stato_verifica': 'VERIFICATO',
               'aggiornato_il': DateTime.now().toIso8601String(),
             }, onConflict: 'codice_oggetto');
           } else {
@@ -8205,7 +8205,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (savedId != null && _destination == 'COLLEZIONE' && _selectedCollectionCategory != null) {
         await Supabase.instance.client.schema('collection').from('oggetto_collezione_categoria').upsert({
           'codice_oggetto': savedId, 'codice_categoria': _selectedCollectionCategory,
-          'fonte_assegnazione': 'UTENTE_PR01', 'stato_verifica': 'VERIFICATO',
+          'fonte_assegnazione': 'MANUALE', 'stato_verifica': 'VERIFICATO',
           'aggiornato_il': DateTime.now().toIso8601String(),
         }, onConflict: 'codice_oggetto');
       }
