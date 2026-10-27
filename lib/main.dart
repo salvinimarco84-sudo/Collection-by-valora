@@ -4253,10 +4253,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       await action();
     } catch (e) {
       if (mounted) {
-        setState(() => _output = 'ERRORE: $e');
-        if (widget.apiCode == 'OBJECT_MASTER') {
+        final message = 'ERRORE: $e';
+        setState(() => _output = message);
+        // Non nascondere gli errori di PR-01 tornando silenziosamente alla scheda.
+        // Il messaggio persistente e lo SnackBar rendono visibile il punto di arresto.
+        if (widget.apiCode == 'PR-01' || widget.apiCode == 'OBJECT_MASTER') {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ricerca non riuscita: $e'), duration: const Duration(seconds: 5)),
+            SnackBar(
+              content: Text(widget.apiCode == 'PR-01' ? 'PR-01 non completata: $e' : 'Ricerca non riuscita: $e'),
+              duration: const Duration(seconds: 10),
+            ),
           );
         }
       }
@@ -7998,14 +8004,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       'altra_operazione': false,
       'conferma_finale': true,
     };
+    if (mounted) setState(() => _output =
+      'PR-01: ${pending.length} oggetti confermati. Verifica e salvataggio nel database TEST in corso…');
     await _acquireLock();
     try {
       final preview = await _ValoraRuntimeApi.procedure(
         'PR-01', 'preview', payload, sessionId: _sessionId);
-      if (preview['errore'] != null) throw Exception(preview['errore'].toString());
+      if (preview['errore'] != null) throw Exception('Preview PR-01: ${preview['errore']}');
       final review = await _ValoraRuntimeApi.procedure(
         'PR-01', 'review', payload, sessionId: _sessionId);
-      if (review['errore'] != null) throw Exception(review['errore'].toString());
+      if (review['errore'] != null) throw Exception('Review PR-01: ${review['errore']}');
+      if (mounted) setState(() => _output =
+        'PR-01: controlli superati. Scrittura degli oggetti nel database TEST…');
       final result = await _ValoraRuntimeApi.procedure(
         'PR-01', 'save', payload, sessionId: _sessionId,
         requestId: _pr01PendingRequestId ??= _uuid.v4());
