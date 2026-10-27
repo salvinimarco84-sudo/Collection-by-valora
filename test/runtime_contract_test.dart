@@ -40,6 +40,16 @@ void main() {
       expect(source, contains('codeOf(item) == phrase.trim()'));
     });
 
+    test('PR-02 usa maschera dedicata e scelta successiva inline', () {
+      expect(source, contains('_buildPr02Screen()'));
+      expect(source, contains("PageStorageKey<String>('pr02-replacement-screen')"));
+      expect(source, contains('_pr02AwaitingNextChoice'));
+      expect(source, contains('_continuePr02WithAnotherObject()'));
+      expect(source, contains('_finishPr02PendingChanges()'));
+      expect(source, contains('CONFERMA DATI E AGGIUNGI AL BLOCCO'));
+      expect(source, contains('NO, SALVA IL BLOCCO E TERMINA'));
+    });
+
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
       expect(source, contains('_loadIncompleteMetadataCatalog'));
       expect(source, contains('_runPr12AiBatch'));

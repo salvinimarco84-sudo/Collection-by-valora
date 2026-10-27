@@ -4073,6 +4073,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String? _pr11CategoryCode;
   bool _pr02SearchCompleted = false;
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
+  bool _pr02AwaitingNextChoice = false;
+  final ScrollController _pr02ScrollController = ScrollController();
   final List<Map<String, dynamic>> _pr01PendingObjects = [];
   String? _pr01PendingRequestId;
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
@@ -4212,6 +4214,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _pr11SearchFocusNode.dispose();
     _descriptionFocus.dispose();
     _searchFocusNode.dispose();
+    _pr02ScrollController.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
     _quantity.dispose(); _unitPrice.dispose(); _totalValue.dispose(); _value.dispose(); _marketValue.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
     super.dispose();
@@ -4479,6 +4482,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     });
 
     if (!mounted) return;
+    if (widget.apiCode == 'PR-02') return;
     if (results.isEmpty) {
       await showDialog<void>(
         context: context,
@@ -6678,8 +6682,115 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
+  Widget _buildPr02Screen() {
+    return Scaffold(
+      appBar: AppBar(title: const Text('PR-02 · MODIFICA OGGETTO')),
+      body: ListView(
+        controller: _pr02ScrollController,
+        key: const PageStorageKey<String>('pr02-replacement-screen'),
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('1 · CERCA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              TextField(controller: _search, focusNode: _searchFocusNode,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _run(_searchPr02Objects),
+                decoration: InputDecoration(
+                  labelText: 'Codice oggetto o descrizione',
+                  hintText: 'Codice esatto o parte della descrizione',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(tooltip: 'Cerca',
+                    onPressed: _loading ? null : () => _run(_searchPr02Objects),
+                    icon: const Icon(Icons.search)),
+                )),
+              if (_loading) const LinearProgressIndicator(),
+              if (_pr02SearchCompleted && _pr02SearchResults.isEmpty)
+                const Padding(padding: EdgeInsets.only(top: 8), child: Text('Nessun risultato. Verifica il codice o prova una descrizione più breve.')),
+              if (_pr02SearchResults.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text('Risultati: ${_pr02SearchResults.length}. Tocca il record da modificare.'),
+                ..._pr02SearchResults.map((item) => Card(
+                  margin: const EdgeInsets.only(top: 6),
+                  child: ListTile(
+                    title: Text('${item['codice_oggetto'] ?? ''} · ${item['descrizione_oggetto'] ?? item['descrizione'] ?? item['nome'] ?? 'Senza descrizione'}'),
+                    subtitle: Text('Stato: ${item['stato'] ?? 'Non indicato'}'),
+                    trailing: const Icon(Icons.chevron_right),
+                    selected: _currentObject?['codice_oggetto']?.toString() == item['codice_oggetto']?.toString(),
+                    onTap: _loading ? null : () => _run(() => _selectPr02Object(item)),
+                  ),
+                )),
+              ],
+            ],
+          ))),
+          if (_pr02PendingChanges.isNotEmpty)
+            Card(child: Padding(padding: const EdgeInsets.all(12), child: Text('Blocco provvisorio: ${_pr02PendingChanges.length} oggetti confermati', style: const TextStyle(fontWeight: FontWeight.bold)))),
+          if (_currentObject != null && !_pr02AwaitingNextChoice) ...[
+            Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('2 · DATI OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                _pr02MetadataCard(_currentObject!),
+                if (_destination == 'COLLEZIONE') _collectionCategoryField(),
+                const SizedBox(height: 8),
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('SCHEDA OGGETTO'), icon: Icon(Icons.edit_note)),
+                    ButtonSegment(value: true, label: Text('DATI TECNICI'), icon: Icon(Icons.info_outline)),
+                  ],
+                  selected: {_showPr02TechnicalTab},
+                  onSelectionChanged: (value) => setState(() => _showPr02TechnicalTab = value.first),
+                ),
+                const SizedBox(height: 10),
+                if (_showPr02TechnicalTab) _pr02TechnicalCard(_currentObject!)
+                else LayoutBuilder(builder: (context, constraints) {
+                  if (constraints.maxWidth < 620) return Column(children: [_pr02Side(oldValues: true), _pr02Side(oldValues: false)]);
+                  return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(child: _pr02Side(oldValues: true)), const SizedBox(width: 12),
+                    Expanded(child: _pr02Side(oldValues: false)),
+                  ]);
+                }),
+                const SizedBox(height: 12),
+                SizedBox(width: double.infinity, child: FilledButton.icon(
+                  onPressed: _loading ? null : () => _run(_confirmPr02Changes),
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('CONFERMA DATI E AGGIUNGI AL BLOCCO'),
+                )),
+              ],
+            ))),
+          ],
+          if (_pr02AwaitingNextChoice) Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('3 · MODIFICA CONFERMATA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Oggetti nel blocco provvisorio: ${_pr02PendingChanges.length}. Le modifiche non sono ancora state salvate.'),
+              const SizedBox(height: 12),
+              SizedBox(width: double.infinity, child: FilledButton.icon(
+                onPressed: _loading ? null : _continuePr02WithAnotherObject,
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('SÌ, MODIFICA UN ALTRO OGGETTO'),
+              )),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                onPressed: _loading ? null : () => _run(_finishPr02PendingChanges),
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('NO, SALVA IL BLOCCO E TERMINA'),
+              )),
+            ],
+          ))),
+          if (_output.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Text(_output)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.apiCode == 'PR-02') return _buildPr02Screen();
     final code = widget.apiCode;
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
     final isHistory = code == 'EXPLORE_RECORDS';
@@ -7971,27 +8082,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
     if (!mounted) return;
 
-    final another = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('Modifica confermata'),
-        content: Text('Vuoi modificare un altro oggetto?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('NO, SALVA E TERMINA'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('SÌ, MODIFICA UN ALTRO'),
-          ),
-        ],
-      ),
-    );
-
     if (!mounted) return;
-    if (another == true) {
+    setState(() {
+      _pr02AwaitingNextChoice = true;
+      _output = 'Oggetto ${item['codice_oggetto']} aggiunto al blocco provvisorio. Scegli se continuare o salvare.';
+    });
+    return;
+  }
+
+  Future<void> _continuePr02WithAnotherObject() async {
       setState(() {
         _search.clear();
         _code.clear();
@@ -8019,9 +8118,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) FocusScope.of(context).requestFocus(_searchFocusNode);
       });
+      setState(() => _pr02AwaitingNextChoice = false);
       return;
-    }
+  }
 
+  Future<void> _finishPr02PendingChanges() async {
     if (_pr02PendingChanges.isEmpty) {
       Navigator.of(context).pop();
       return;
