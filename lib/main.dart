@@ -4083,6 +4083,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final Map<int, Map<String, dynamic>> _pr08Drafts = {};
   final List<Map<String, dynamic>> _pr08PendingClosures = [];
   String _pr08SearchQuery = '';
+  String _pr08ActionMode = 'CHIUDI';
   List<Map<String, dynamic>> _pr08Platforms = [];
   bool _pr08Loaded = false;
   bool _pr08Saving = false;
@@ -4780,9 +4781,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }).length;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [Icon(Icons.point_of_sale, color: sectionColor, size: 28), const SizedBox(width: 10), const Expanded(child: Text('CHIUSURA VENDITE', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
+        Row(children: [Icon(Icons.point_of_sale, color: sectionColor, size: 28), const SizedBox(width: 10), Expanded(child: Text(_pr08ActionMode == 'MODIFICA' ? 'MODIFICA PREZZO INSERZIONE' : 'MODIFICA E CHIUDI VENDITA', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
+        const SizedBox(height: 10),
+        const Text('Seleziona le inserzioni aperte e scegli l’operazione da eseguire.'),
         const SizedBox(height: 8),
-        const Text('1. Seleziona le vendite.  2. Inserisci l’incasso reale.  3. Controlla e salva.'),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'MODIFICA', label: Text('Modifica prezzo'), icon: Icon(Icons.edit_outlined)),
+            ButtonSegment(value: 'CHIUDI', label: Text('Chiudi vendita'), icon: Icon(Icons.point_of_sale)),
+          ],
+          selected: {_pr08ActionMode},
+          onSelectionChanged: _loading ? null : (value) => setState(() => _pr08ActionMode = value.first),
+        ),
+        const SizedBox(height: 8),
+        Text(_pr08ActionMode == 'MODIFICA' ? 'Modifica soltanto il prezzo richiesto. Nessuna chiusura e nessun movimento di cassa.' : 'Seleziona le inserzioni, scegli il tipo di chiusura e registra l’incasso reale solo se c’è stata una vendita.'),
         const SizedBox(height: 12),
         Wrap(spacing: 8, runSpacing: 8, children: [
           Chip(avatar: const Icon(Icons.pending_actions, size: 18), label: Text('Aperte: ${_pr08OpenSales.length}')),
