@@ -760,6 +760,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Stato runtime', description: 'Verifica lo stato del servizio runtime.', apiCode: 'RUNTIME-HEALTH'),
     ProcedureEntry(title: 'Catalogo API', description: 'Consulta il catalogo delle API runtime.', apiCode: 'RUNTIME-CATALOG'),
     ProcedureEntry(title: 'Pulizia file', description: 'Operazione non disponibile nell’app runtime.', enabled: false),
+    ProcedureEntry(title: 'CREA CATEGORIA COLLEZIONE', description: 'Crea una nuova categoria per organizzare gli oggetti della tua collezione.', apiCode: 'CREATE-COLLECTION-CATEGORY', readOnly: false),
   ],
 };
 
@@ -2880,6 +2881,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                             builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
                       : procedure.apiCode == 'SOURCE-REGISTRY'
                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
+                  : procedure.apiCode == 'CREATE-COLLECTION-CATEGORY'
+                      ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage()))
                   : procedure.apiCode == 'USER-SALES-PLATFORMS'
                       ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
                       : procedure.apiCode == 'LAUNCH-VALORA'
