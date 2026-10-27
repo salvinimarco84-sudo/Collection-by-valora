@@ -2745,7 +2745,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       child: Column(children: [
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          leading: (category['logo_url'] ?? '').toString().trim().isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.network(category['logo_url'].toString(), width: 62, height: 46, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _categoryBrandMark(name, color, icon))) : _categoryBrandMark(name, color, icon),
+          leading: _categoryBrandMark(name, color, icon),
           title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
