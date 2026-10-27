@@ -4095,16 +4095,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<void> _loadActiveReportImages(List<dynamic> records) async {
     final ids = <int>{};
     for (final raw in records.whereType<Map>()) {
-      var id = int.tryParse((raw['codice_oggetto'] ?? raw['id'] ?? '').toString());
-      final description = (raw['descrizione_oggetto'] ?? raw['descrizione'] ?? raw['nome_oggetto'] ?? '').toString().trim();
+      var id = int.tryParse((raw['codice_oggetto'] ?? raw['id_oggetto'] ?? '').toString());
+      final description = (raw['descrizione_oggetto'] ?? raw['descrizione'] ?? raw['nome_oggetto'] ?? raw['titolo'] ?? '').toString().trim();
       if ((id == null || id <= 0) && description.isNotEmpty) {
-        try {
-          final match = await Supabase.instance.client.schema('collection')
-              .from('master_oggetti').select('codice_oggetto')
-              .ilike('descrizione_oggetto', description).limit(1).maybeSingle();
-          id = int.tryParse((match?['codice_oggetto'] ?? '').toString());
-        } catch (e) {
-          debugPrint('VALORA: associazione immagine acquisto non disponibile: $e');
+        // Le righe acquisto spesso contengono un prefisso operativo, non la
+        // descrizione catalogo esatta. Proviamo titolo pulito e codice prodotto.
+        final cleaned = description.replaceFirst(
+          RegExp(r'^(nuovo\\s+acquisto|acquisto)\\s+', caseSensitive: false),
+          '',
+        ).trim();
+        final candidates = <String>[cleaned];
+        final productCode = RegExp(r'\\b\\d{4,6}\\b').firstMatch(cleaned)?.group(0);
+        if (productCode != null) candidates.add(productCode);
+        final colon = cleaned.indexOf(':');
+        if (colon > 0 && colon + 1 < cleaned.length) candidates.add(cleaned.substring(colon + 1).trim());
+        for (final candidate in candidates) {
+          try {
+            final match = await Supabase.instance.client.schema('collection')
+                .from('master_oggetti').select('codice_oggetto')
+                .ilike('descrizione_oggetto', '%$candidate%').limit(1).maybeSingle();
+            id = int.tryParse((match?['codice_oggetto'] ?? '').toString());
+            if (id != null && id > 0) break;
+          } catch (e) {
+            debugPrint('VALORA: associazione immagine acquisto non disponibile: $e');
+          }
         }
       }
       if (id != null && id > 0) {
