@@ -4054,6 +4054,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _output = 'Pronto. Le consultazioni sono in sola lettura.';
   Map<String, dynamic>? _lastResult;
   List<dynamic> _rows = [];
+  int _availablePage = 0;
+  static const int _availablePageSize = 50;
   final Map<int, String> _activeReportImageUrls = <int, String>{};
   Map<String, dynamic>? _currentObject;
   List<Map<String, dynamic>> _pr02SearchResults = [];
@@ -4195,7 +4197,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _loadCollectionCategories();
       _unitPrice.addListener(_recalculateTotal);
     }
-    if (_isActiveListingsReport) {
+    if (_isActiveListingsReport || widget.apiCode == 'OBJECTS_AVAILABLE') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _run(_consult);
       });
@@ -6039,11 +6041,23 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     final list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
     setState(() {
+      if (widget.apiCode == 'OBJECTS_AVAILABLE') _availablePage = 0;
       _rows = list;
       _output = list.isEmpty ? 'Nessun risultato.' : 'Risultati: ${list.length}.';
       _currentObject = widget.apiCode == 'OBJECT_MASTER' && list.isNotEmpty && list.first is Map
         ? Map<String, dynamic>.from(list.first as Map) : null;
     });
+    if (widget.apiCode == 'OBJECTS_AVAILABLE' && list.isNotEmpty) {
+      await _loadActiveReportImages(list.take(_availablePageSize).toList());
+    }
+  }
+
+  Future<void> _changeAvailablePage(int nextPage) async {
+    final pageCount = (_rows.length / _availablePageSize).ceil();
+    if (_loading || nextPage < 0 || nextPage >= pageCount || nextPage == _availablePage) return;
+    setState(() => _availablePage = nextPage);
+    final visible = _rows.skip(nextPage * _availablePageSize).take(_availablePageSize).toList();
+    await _loadActiveReportImages(visible);
   }
 
   String _pretty(dynamic data) {
@@ -6881,6 +6895,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (widget.apiCode == 'PR-02') return _buildPr02Screen();
     final code = widget.apiCode;
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
+    final availablePageCount = (_rows.length / _availablePageSize).ceil();
     final isHistory = code == 'EXPLORE_RECORDS';
     final isMaster = code == 'OBJECT_MASTER';
 
@@ -7390,8 +7405,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ),
           ),
         ],
-        if (!_isWrite && isAvailableList)
-          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text('Mostra tutti gli oggetti con stato DISPONIBILE, senza obbligo di ricerca.', style: TextStyle(color: ValoraAppearance.instance.textSecondary))),
         if (_isPeriodReport) ...[
           Card(child: Padding(
             padding: const EdgeInsets.all(14),
@@ -7451,7 +7464,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
             icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
-        ] else if (!isMaster && !_isActiveListingsReport)
+        ] else if (!isMaster && !isAvailableList && !_isActiveListingsReport)
           FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
             icon: Icon(Icons.search),
             label: Text(_loading ? 'RICERCA...' : isAvailableList
@@ -7598,7 +7611,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (!isAvailableList)
             Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
               style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
-          ..._rows.map((r) {
+          ...(isAvailableList
+              ? _rows.skip(_availablePage * _availablePageSize).take(_availablePageSize)
+              : _rows).map((r) {
             if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
             final item = Map<String, dynamic>.from(r);
             if (isHistory) return _historyCard(item);
@@ -7628,6 +7643,29 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   )).then((_) {})
               : null);
           }),
+          if (isAvailableList && availablePageCount > 1) ...[
+            const SizedBox(height: 8),
+            Card(child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: Row(children: [
+                IconButton(
+                  tooltip: 'Gruppo precedente',
+                  onPressed: _loading || _availablePage == 0 ? null : () => _changeAvailablePage(_availablePage - 1),
+                  icon: const Icon(Icons.arrow_back_ios_new),
+                ),
+                Expanded(child: Text(
+                  '${_availablePage * _availablePageSize + 1}–${((_availablePage + 1) * _availablePageSize) > _rows.length ? _rows.length : ((_availablePage + 1) * _availablePageSize)} di ${_rows.length} · Gruppo ${_availablePage + 1}/$availablePageCount',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontWeight: FontWeight.w600),
+                )),
+                IconButton(
+                  tooltip: 'Gruppo successivo',
+                  onPressed: _loading || _availablePage + 1 >= availablePageCount ? null : () => _changeAvailablePage(_availablePage + 1),
+                  icon: const Icon(Icons.arrow_forward_ios),
+                ),
+              ]),
+            )),
+          ],
           if (widget.apiCode == 'REPORT-CASH') ...[
             const SizedBox(height: 18),
             Builder(builder: (context) {
@@ -7786,7 +7824,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               label: const Text('CREA FILE PDF'),
             )),
           ]),
-        ] else if (isAvailableList && !_loading) ...[
+        ] else if (isAvailableList && !_loading && _rows.isEmpty) ...[
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -7798,11 +7836,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Column(children: [
               Icon(Icons.inventory_2_outlined, size: 42, color: sectionColor),
               const SizedBox(height: 12),
-              const Text('Nessun oggetto da mostrare',
+              const Text('Nessun oggetto disponibile trovato',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                 textAlign: TextAlign.center),
               const SizedBox(height: 6),
-              Text('Premi “Visualizza elenco oggetti disponibili” per caricare l’elenco.',
+              Text('La consultazione automatica non ha restituito record.',
                 style: TextStyle(color: ValoraAppearance.instance.textSecondary), textAlign: TextAlign.center),
             ]),
           ),
