@@ -4082,6 +4082,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<Map<String, dynamic>> _pr08OpenSales = [];
   final Map<int, Map<String, dynamic>> _pr08Drafts = {};
   final List<Map<String, dynamic>> _pr08PendingClosures = [];
+  String _pr08SearchQuery = '';
   List<Map<String, dynamic>> _pr08Platforms = [];
   bool _pr08Loaded = false;
   bool _pr08Saving = false;
@@ -4764,109 +4765,78 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Widget _pr08ClosurePanel() {
-    if (!_pr08Loaded) return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
-    if (_pr08OpenSales.isEmpty && _pr08PendingClosures.isEmpty) {
-      return const Padding(padding: EdgeInsets.all(12), child: Text('Non ci sono vendite aperte da chiudere.'));
-    }
+    if (!_pr08Loaded) return const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()));
+    final pendingIds = _pr08PendingClosures.map((e) => e['codice_vendita_aperta'].toString()).toSet();
+    final query = _pr08SearchQuery.trim().toLowerCase();
+    final available = _pr08OpenSales.where((row) {
+      if (pendingIds.contains(row['codice_vendita_aperta'].toString())) return false;
+      if (query.isEmpty) return true;
+      return [row['codice_vendita_aperta'], row['codice_oggetto'], row['descrizione_oggetto']]
+          .any((v) => (v ?? '').toString().toLowerCase().contains(query));
+    }).toList();
+    final selectedCount = available.where((row) {
+      final id = int.tryParse(row['codice_vendita_aperta'].toString());
+      return id != null && _pr08Drafts[id]?['selected'] == true;
+    }).length;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('VENDITE APERTE · ${_pr08OpenSales.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-      if (_pr08PendingClosures.isNotEmpty)
-        Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('In coda non ancora salvate: ${_pr08PendingClosures.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
-      ..._pr08OpenSales.where((row) => !_pr08PendingClosures.any((pending) => pending['codice_vendita_aperta'].toString() == row['codice_vendita_aperta'].toString())).map((row) {
-        final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
-        if (id == null) return const SizedBox.shrink();
-        final draft = _pr08Drafts[id]!;
-        final selected = draft['selected'] == true;
-        final outcome = (draft['esito'] ?? 'VENDITA EFFETTIVA').toString();
-        return Card(key: ValueKey('pr08-sale-$id'), child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: selected,
-              onChanged: _loading ? null : (v) => setState(() => draft['selected'] = v == true),
-              title: Text('#$id · ${row['descrizione_oggetto'] ?? 'Oggetto'}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('Oggetto #${row['codice_oggetto']} · Apertura: ${row['data_inizio_vendita'] ?? 'n.d.'} · Prezzo richiesto: € ${row['prezzo_di_vendita'] ?? 'n.d.'}'),
-            ),
-            if (selected) ...[
-              DropdownButtonFormField<String>(
-                value: outcome,
-                decoration: const InputDecoration(labelText: 'Causale di chiusura'),
-                items: const [
-                  DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')),
-                  DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza vendita')),
-                ],
-                onChanged: (v) => setState(() {
-                  draft['esito'] = v;
-                  if (v != 'VENDITA EFFETTIVA') {
-                    draft['importo_vendita'] = '0';
-                    draft['codice_piattaforma'] = null;
-                    draft['canale_esterno'] = '';
-                  } else if ((draft['importo_vendita'] ?? '').toString().trim().isEmpty || (double.tryParse(draft['importo_vendita'].toString().replaceAll(',', '.')) ?? 0) <= 0) {
-                    draft['importo_vendita'] = '';
-                  }
-                }),
-              ),
-              TextFormField(
-                initialValue: (draft['importo_vendita'] ?? '').toString(),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Importo (€), inserire 0 se non c’è incasso *'),
-                onChanged: (v) => setState(() {
-                  draft['importo_vendita'] = v;
-                  final amount = double.tryParse(v.replaceAll(',', '.'));
-                  if (amount != null && amount > 0) draft['esito'] = 'VENDITA EFFETTIVA';
-                }),
-              ),
-              if (outcome == 'VENDITA EFFETTIVA') ...[
-                TextFormField(
-                  initialValue: (draft['data_vendita'] ?? '').toString(),
-                  decoration: const InputDecoration(labelText: 'Data vendita (AAAA-MM-GG) *'),
-                  onChanged: (v) => draft['data_vendita'] = v,
-                ),
-                DropdownButtonFormField<String>(
-                  value: draft['codice_piattaforma']?.toString(),
-                  decoration: const InputDecoration(labelText: 'Piattaforma effettiva'),
-                  items: _pr08Platforms.map((p) => DropdownMenuItem<String>(
-                    value: p['codice_piattaforma'].toString(),
-                    child: Text((p['nome_piattaforma'] ?? 'Piattaforma').toString()),
-                  )).toList(),
-                  onChanged: (v) => setState(() {
-                    draft['codice_piattaforma'] = v;
-                    if (v != null) draft['canale_esterno'] = '';
-                  }),
-                ),
-                TextFormField(
-                  initialValue: (draft['canale_esterno'] ?? '').toString(),
-                  decoration: const InputDecoration(labelText: 'Oppure canale esterno (se non scegli una piattaforma)'),
-                  onChanged: (v) => draft['canale_esterno'] = v,
-                ),
-              ],
-              TextFormField(
-                initialValue: (draft['note'] ?? '').toString(),
-                decoration: const InputDecoration(labelText: 'Note (facoltative)'),
-                onChanged: (v) => draft['note'] = v,
-              ),
-            ],
-          ]),
-        ));
-      }),
-      const SizedBox(height: 12),
-      FilledButton.icon(
-        onPressed: _loading || _pr08Saving ? null : () => _run(_pr08CollectCurrentSelection),
-        icon: const Icon(Icons.playlist_add_check),
-        label: Text(_pr08Saving ? 'SALVATAGGIO…' : 'AGGIUNGI SELEZIONATE ALLA CHIUSURA'),
-      ),
-      if (_pr08PendingClosures.isNotEmpty) ...[
+      Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.point_of_sale, color: sectionColor, size: 28), const SizedBox(width: 10), const Expanded(child: Text('CHIUSURA VENDITE', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _loading || _pr08Saving ? null : () => _run(_pr08FinalSave),
-          icon: const Icon(Icons.save_outlined),
-          label: const Text('CONFERMA DEFINITIVA E SALVA TUTTO'),
-        ),
+        const Text('1. Seleziona le vendite.  2. Inserisci l’incasso reale.  3. Controlla e salva.'),
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          Chip(avatar: const Icon(Icons.pending_actions, size: 18), label: Text('Aperte: ${_pr08OpenSales.length}')),
+          Chip(avatar: const Icon(Icons.checklist, size: 18), label: Text('Selezionate: $selectedCount')),
+          if (_pr08PendingClosures.isNotEmpty) Chip(avatar: const Icon(Icons.save_outlined, size: 18), label: Text('In bozza: ${_pr08PendingClosures.length}')),
+        ]),
+      ]))),
+      if (_pr08OpenSales.isEmpty && _pr08PendingClosures.isEmpty) const Padding(padding: EdgeInsets.all(20), child: Text('Non ci sono vendite aperte da chiudere.'))
+      else ...[
+        TextField(decoration: const InputDecoration(labelText: 'Cerca una vendita', hintText: 'Descrizione o codice vendita/oggetto', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()), onChanged: (v) => setState(() => _pr08SearchQuery = v)),
+        const SizedBox(height: 10),
+        if (available.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Nessuna vendita corrisponde alla ricerca.')),
+        ...available.map((row) {
+          final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+          if (id == null) return const SizedBox.shrink();
+          final draft = _pr08Drafts[id]!;
+          final selected = draft['selected'] == true;
+          final outcome = (draft['esito'] ?? 'VENDITA EFFETTIVA').toString();
+          final amount = (draft['importo_vendita'] ?? '').toString();
+          return Card(key: ValueKey('pr08-sale-$id'), margin: const EdgeInsets.symmetric(vertical: 5), child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            CheckboxListTile(contentPadding: EdgeInsets.zero, value: selected, onChanged: _loading ? null : (v) => setState(() => draft['selected'] = v == true), title: Text('#$id · ${(row['descrizione_oggetto'] ?? 'Oggetto').toString()}', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text('Oggetto #${row['codice_oggetto']}  •  Apertura ${row['data_inizio_vendita'] ?? 'n.d.'}\nPrezzo richiesto: € ${row['prezzo_di_vendita'] ?? 'n.d.'}'))),
+            if (selected) ...[
+              const Divider(),
+              DropdownButtonFormField<String>(value: outcome, decoration: const InputDecoration(labelText: 'Tipo di chiusura', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')), DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza incasso'))], onChanged: (v) => setState(() { draft['esito'] = v; if (v != 'VENDITA EFFETTIVA') { draft['importo_vendita'] = '0'; draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } else if ((double.tryParse(amount.replaceAll(',', '.')) ?? 0) <= 0) { draft['importo_vendita'] = ''; } })),
+              const SizedBox(height: 10),
+              TextFormField(initialValue: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Importo effettivamente incassato (€)', helperText: 'Inserisci 0 se non hai ricevuto denaro', prefixIcon: Icon(Icons.euro), border: OutlineInputBorder()), onChanged: (v) => setState(() { draft['importo_vendita'] = v; final parsed = double.tryParse(v.replaceAll(',', '.')); if (parsed != null && parsed > 0) draft['esito'] = 'VENDITA EFFETTIVA'; if (parsed == 0) { draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } })),
+              if (outcome == 'VENDITA EFFETTIVA') ...[
+                const SizedBox(height: 10),
+                TextFormField(initialValue: (draft['data_vendita'] ?? '').toString(), decoration: const InputDecoration(labelText: 'Data effettiva della vendita', hintText: 'AAAA-MM-GG', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()), onChanged: (v) => draft['data_vendita'] = v),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(value: draft['codice_piattaforma']?.toString(), decoration: const InputDecoration(labelText: 'Dove hai venduto?', border: OutlineInputBorder()), items: _pr08Platforms.map((p) => DropdownMenuItem<String>(value: p['codice_piattaforma'].toString(), child: Text((p['nome_piattaforma'] ?? 'Piattaforma').toString()))).toList(), onChanged: (v) => setState(() { draft['codice_piattaforma'] = v; if (v != null) draft['canale_esterno'] = ''; })),
+                const SizedBox(height: 10),
+                TextFormField(initialValue: (draft['canale_esterno'] ?? '').toString(), decoration: const InputDecoration(labelText: 'Canale alternativo (facoltativo)', helperText: 'Usalo solo se non hai scelto una piattaforma', border: OutlineInputBorder()), onChanged: (v) => draft['canale_esterno'] = v),
+              ],
+              const SizedBox(height: 10),
+              TextFormField(initialValue: (draft['note'] ?? '').toString(), decoration: const InputDecoration(labelText: 'Note (facoltative)', border: OutlineInputBorder()), onChanged: (v) => draft['note'] = v),
+            ],
+          ])));
+        }),
+        const SizedBox(height: 12),
+        FilledButton.icon(onPressed: _loading || _pr08Saving || selectedCount == 0 ? null : () => _run(_pr08CollectCurrentSelection), icon: const Icon(Icons.playlist_add_check), label: Text('AGGIUNGI $selectedCount SELEZIONATE ALLA BOZZA')),
+      ],
+      if (_pr08PendingClosures.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('RIEPILOGO PRONTO PER IL SALVATAGGIO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text('${_pr08PendingClosures.length} chiusure in bozza. Nessun dato viene registrato fino alla conferma finale.'),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(onPressed: _loading || _pr08Saving ? null : () => _run(_pr08FinalSave), icon: const Icon(Icons.save_outlined), label: Text(_pr08Saving ? 'SALVATAGGIO…' : 'CONTROLLA E CONFERMA IL SALVATAGGIO')),
+        ]))),
       ],
     ]);
   }
-
   Future<void> _selectHistoryObject(Map<String, dynamic> item) async {
     final id=int.tryParse(item['codice_oggetto']?.toString()??'');
     if(id==null||id<=0)throw Exception('Il risultato non contiene un codice oggetto valido.');
