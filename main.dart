@@ -78,6 +78,174 @@ class RuntimeService {
   }
 }
 
+class ActiveListingsReportScreen extends StatefulWidget {
+  const ActiveListingsReportScreen({super.key});
+
+  @override
+  State<ActiveListingsReportScreen> createState() => _ActiveListingsReportScreenState();
+}
+
+class _ActiveListingsReportScreenState extends State<ActiveListingsReportScreen> {
+  bool loading = true;
+  String? errorMessage;
+  Map<String, dynamic> report = const {};
+  List<Map<String, dynamic>> records = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadReport();
+  }
+
+  Future<void> loadReport() async {
+    setState(() {
+      loading = true;
+      errorMessage = null;
+    });
+    try {
+      if (supabase.auth.currentSession == null) {
+        throw Exception('Sessione assente. Accedi nuovamente.');
+      }
+      final response = await supabase.functions.invoke(
+        'collection-procedure-runtime-test',
+        body: {
+          'action': 'report',
+          'report_code': 'ACTIVE_LISTINGS_REPORT',
+          'arguments': {'limite': 500, 'offset': 0},
+          'session_id': newUuid(),
+        },
+      );
+      final data = response.data;
+      if (response.status < 200 || response.status >= 300 || data is! Map) {
+        final details = data is Map ? data['error'] : null;
+        throw Exception(details?.toString() ?? 'Errore runtime ${response.status}');
+      }
+      final envelope = Map<String, dynamic>.from(data);
+      if (envelope.containsKey('error')) throw Exception(envelope['error'].toString());
+      final raw = envelope['result'];
+      if (raw is! Map) throw Exception('Il report non ha restituito un riepilogo valido.');
+      final parsed = Map<String, dynamic>.from(raw);
+      final rawRecords = parsed['record'];
+      final rows = rawRecords is List
+          ? rawRecords.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList()
+          : <Map<String, dynamic>>[];
+      if (!mounted) return;
+      setState(() {
+        report = parsed;
+        records = rows;
+        loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        errorMessage = error.toString().replaceFirst('Exception: ', '');
+        loading = false;
+      });
+    }
+  }
+
+  String money(dynamic value) {
+    final amount = value is num ? value.toDouble() : double.tryParse('${value ?? ''}') ?? 0;
+    return '${amount.toStringAsFixed(2).replaceAll('.', ',')} €';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Report vendite attive'),
+        actions: [
+          IconButton(
+            tooltip: 'Aggiorna report',
+            onPressed: loading ? null : loadReport,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, color: red, size: 40),
+                        const SizedBox(height: 12),
+                        Text(errorMessage!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: loadReport,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Riprova'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
+                  onRefresh: loadReport,
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${report['numero_inserzioni_attive'] ?? records.length} inserzioni aperte',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Valore nominale totale: ${money(report['valore_nominale_inserzioni_attive'])}',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(color: gold),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text('Elenco completo delle inserzioni con stato APERTO.'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (records.isEmpty)
+                        const Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text('Nessuna inserzione attiva al momento.'),
+                          ),
+                        ),
+                      ...records.map((row) {
+                        final description = (row['descrizione_oggetto'] ?? row['descrizione'] ?? 'Oggetto senza descrizione').toString();
+                        final code = row['codice_oggetto']?.toString() ?? 'N/D';
+                        final listingCode = row['codice_vendita_aperta']?.toString() ?? 'N/D';
+                        final date = row['data_inizio_vendita']?.toString() ?? '';
+                        return Card(
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              backgroundColor: Color(0xFF244A39),
+                              child: Icon(Icons.sell_outlined, color: Color(0xFF7FD6A5)),
+                            ),
+                            title: Text(description),
+                            subtitle: Text('Oggetto #$code · Inserzione #$listingCode${date.isEmpty ? '' : '\nDal $date'}'),
+                            isThreeLine: date.isNotEmpty,
+                            trailing: Text(
+                              money(row['prezzo_di_vendita']),
+                              style: const TextStyle(color: gold, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+    );
+  }
+}
+
 class CollectionByValoraApp extends StatelessWidget {
   const CollectionByValoraApp({super.key});
 
@@ -1309,6 +1477,14 @@ class _OperationTile extends StatelessWidget {
         ),
         trailing: const Icon(Icons.chevron_right, color: muted),
         onTap: () async {
+          if (operation.apiCode == 'REPORT-ACTIVE-LISTINGS') {
+            await Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ActiveListingsReportScreen(),
+              ),
+            );
+            return;
+          }
           final procedureCode = switch (operation.apiCode) {
             'WRITE-PR-08' => 'PR-08',
             'WRITE-PR-09' => 'PR-09',
