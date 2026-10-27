@@ -83,7 +83,7 @@ void main() {
     });
 
     test('la consultazione inserzioni attive ha un codice dedicato', () {
-      expect(source, contains('REPORT-ACTIVE-LISTINGS'));
+      expect(source, contains("apiCode: 'REPORT-SALES-ACTIVE'"));
     });
 
     test('le procedure di base e i controlli di blocco sono presenti', () {
