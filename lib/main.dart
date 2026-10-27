@@ -4719,7 +4719,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_pr08PendingClosures.isEmpty) throw Exception('Non ci sono chiusure da salvare.');
     final preview = _pr08PendingClosures.map((e) {
       final id = e['codice_vendita_aperta'];
-      final row = _pr08OpenSales.where((r) => r['codice_vendita_aperta'].toString() == id.toString()).firstOrNull;
+      final matches = _pr08OpenSales.where((r) => r['codice_vendita_aperta'].toString() == id.toString());
+      final row = matches.isEmpty ? null : matches.first;
       return '${id} · ${row?['descrizione_oggetto'] ?? 'Oggetto'} · ${e['esito']}${e['importo_vendita'] == null ? '' : ' · € ${e['importo_vendita']}'}';
     }).join('\n');
     final confirm = await showDialog<bool>(
@@ -4763,7 +4764,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       Text('VENDITE APERTE · ${_pr08OpenSales.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
       if (_pr08PendingClosures.isNotEmpty)
         Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('In coda non ancora salvate: ${_pr08PendingClosures.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
-      ..._pr08OpenSales.map((row) {
+      ..._pr08OpenSales.where((row) => !_pr08PendingClosures.any((pending) => pending['codice_vendita_aperta'].toString() == row['codice_vendita_aperta'].toString())).map((row) {
         final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
         if (id == null) return const SizedBox.shrink();
         final draft = _pr08Drafts[id]!;
@@ -7738,7 +7739,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           )),
           const SizedBox(height: 10),
         ],
-        if (code != 'REPORT-SALES-ACTIVE' && (!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
+        if (code != 'REPORT-SALES-ACTIVE' && code != 'PR-08' && (!_isWrite || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
           _field(_search, 'Cerca'),
         if (_isWrite && code == 'PR-01') ...[
           FilledButton.icon(
