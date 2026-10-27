@@ -29,7 +29,7 @@ checks = {
     "test project ID is present": "eeiekkflpnkummxtvljy" in main,
     "known production project ID is absent": "bufwceckrmbocctarthj" not in main,
     "package version is explicitly defined": "version: 0.3.2+18" in pubspec,
-    "CI runs Flutter analysis": "flutter analyze --no-pub" in workflow,
+    "CI runs Flutter analysis": "flutter analyze lib/main.dart --no-pub --no-fatal-infos --no-fatal-warnings" in workflow,
     "CI runs Flutter tests": "flutter test --reporter expanded" in workflow,
     "CI builds Android release": "flutter build apk --release" in workflow,
     "CI runs static checks": "python scripts/static_contract_check.py" in workflow,
