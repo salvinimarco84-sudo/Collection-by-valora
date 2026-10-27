@@ -47,6 +47,26 @@ const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
 
 class ValoraAppearance extends ChangeNotifier {
+  // Temi predefiniti: valori bloccati, selezionabili ma non modificabili singolarmente.
+  static const Map<String, Map<String, Object>> themePresets = {
+    'black_gold': {'name':'Black & Gold','background':0xFF101010,'card':0xFF1C1C1C,'accent':0xFFD6B15E,'text':0xFFFFFFFF,'light':false,'comic':false,'zen':false},
+    'midnight_blue': {'name':'Midnight Blue','background':0xFF071321,'card':0xFF10243A,'accent':0xFF20B8FF,'text':0xFFF4F8FF,'light':false,'comic':false,'zen':false},
+    'emerald': {'name':'Emerald','background':0xFF071A15,'card':0xFF102B22,'accent':0xFF12C98B,'text':0xFFF1FFF8,'light':false,'comic':false,'zen':false},
+    'silver_light': {'name':'Silver Light','background':0xFFF1F4F7,'card':0xFFFFFFFF,'accent':0xFF2878C7,'text':0xFF172333,'light':true,'comic':false,'zen':false},
+    'dark_red': {'name':'Dark Red','background':0xFF160909,'card':0xFF281010,'accent':0xFFFF3434,'text':0xFFFFF5F5,'light':false,'comic':false,'zen':false},
+    'royal_purple': {'name':'Royal Purple','background':0xFF160D20,'card':0xFF28153A,'accent':0xFFD44CFF,'text':0xFFFFF5FF,'light':false,'comic':false,'zen':false},
+    'comic': {'name':'Comic Style','background':0xFFFFD928,'card':0xFFFFFBEB,'accent':0xFFE51D2A,'text':0xFF101010,'light':true,'comic':true,'zen':false},
+    'minimal_zen': {'name':'Minimal Zen','background':0xFFF3EBDD,'card':0xFFFFFCF5,'accent':0xFFB93D32,'text':0xFF27251F,'light':true,'comic':false,'zen':true},
+    'industrial': {'name':'Industrial','background':0xFF20262B,'card':0xFF303940,'accent':0xFFB9C4CC,'text':0xFFF1F4F6,'light':false,'comic':false,'zen':false},
+    'pastel': {'name':'Pastel','background':0xFFFFF0F5,'card':0xFFFFFFFF,'accent':0xFF19B7C9,'text':0xFF293344,'light':true,'comic':false,'zen':false},
+  };
+  String selectedThemeId = 'black_gold';
+  Map<String, Object> get _theme => themePresets[selectedThemeId] ?? themePresets['black_gold']!;
+  String get selectedThemeName => _theme['name'] as String;
+  Color get accent => Color(_theme['accent'] as int);
+  bool get comicStyle => _theme['comic'] as bool;
+  bool get zenStyle => _theme['zen'] as bool;
+
   ValoraAppearance._();
   static final instance = ValoraAppearance._();
   static const Map<String, Color> defaults = {
@@ -80,18 +100,20 @@ class ValoraAppearance extends ChangeNotifier {
   final Map<String, String> imageUrls = {};
   final Map<String, String> imagePaths = {};
   Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
-  Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
-  Color get card => whiteBackground ? Colors.white : cardColor;
-  Color get textPrimary => whiteBackground ? const Color(0xFF171717) : Colors.white;
-  Color get textSecondary => whiteBackground ? const Color(0xFF424242) : Colors.white70;
-  Color get textMuted => whiteBackground ? const Color(0xFF555555) : Colors.white60;
-  Color get textSubtle => whiteBackground ? const Color(0xFF626262) : Colors.white54;
-  Color get textFaint => whiteBackground ? const Color(0xFF666666) : Colors.white38;
-  Color get neutralOverlay => whiteBackground ? Colors.black.withValues(alpha: 0.06) : Colors.white10;
-  Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
+  Color get background => Color(_theme['background'] as int);
+  Color get card => Color(_theme['card'] as int);
+  Color get textPrimary => Color(_theme['text'] as int);
+  Color get textSecondary => (_theme['light'] as bool) ? const Color(0xFF424242) : Colors.white70;
+  Color get textMuted => (_theme['light'] as bool) ? const Color(0xFF555555) : Colors.white60;
+  Color get textSubtle => (_theme['light'] as bool) ? const Color(0xFF626262) : Colors.white54;
+  Color get textFaint => (_theme['light'] as bool) ? const Color(0xFF666666) : Colors.white38;
+  Color get neutralOverlay => (_theme['light'] as bool) ? Colors.black.withValues(alpha: 0.06) : Colors.white10;
+  Color get neutralOverlayStrong => (_theme['light'] as bool) ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
-    whiteBackground = p.getBool('valora_white_background') ?? false; // Mantieni la scelta dell'utente.
+    selectedThemeId = p.getString('valora_selected_theme') ?? 'black_gold';
+    if (!themePresets.containsKey(selectedThemeId)) selectedThemeId = 'black_gold';
+    whiteBackground = _theme['light'] as bool;
     useBlockLayout = p.getBool('valora_block_layout') ?? false;
     imageUrls.clear();
     imagePaths.clear();
@@ -112,6 +134,15 @@ class ValoraAppearance extends ChangeNotifier {
         colors[k]=replacement;
       }
     }
+    notifyListeners();
+  }
+  Future<void> setTheme(String themeId) async {
+    if (!themePresets.containsKey(themeId)) return;
+    selectedThemeId = themeId;
+    whiteBackground = themePresets[themeId]!['light'] as bool;
+    final p = await SharedPreferences.getInstance();
+    await p.setString('valora_selected_theme', themeId);
+    await p.setBool('valora_white_background', whiteBackground);
     notifyListeners();
   }
   Future<void> setLayout(bool blocks) async {
@@ -267,8 +298,8 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
           scaffoldBackgroundColor: ValoraAppearance.instance.background,
           colorScheme: ValoraAppearance.instance.whiteBackground
               ? ColorScheme.light(
-                  primary: goldColor,
-                  secondary: goldColor,
+                  primary: ValoraAppearance.instance.accent,
+                  secondary: ValoraAppearance.instance.accent,
                   surface: ValoraAppearance.instance.card,
                   onSurface: ValoraAppearance.instance.textPrimary,
                   onPrimary: Colors.black,
@@ -276,22 +307,29 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
                   error: Color(0xFFB3261E),
                 )
               : ColorScheme.dark(
-                  primary: goldColor,
-                  secondary: goldColor,
+                  primary: ValoraAppearance.instance.accent,
+                  secondary: ValoraAppearance.instance.accent,
                   surface: ValoraAppearance.instance.card,
                   onSurface: ValoraAppearance.instance.textPrimary,
                   error: Color(0xFFE35D5D),
                 ),
           appBarTheme: AppBarTheme(
             backgroundColor: ValoraAppearance.instance.background,
-            foregroundColor: goldColor,
+            foregroundColor: ValoraAppearance.instance.accent,
             centerTitle: true,
           ),
-          cardTheme: CardThemeData(color: ValoraAppearance.instance.card, elevation: 3),
+          cardTheme: CardThemeData(
+            color: ValoraAppearance.instance.card,
+            elevation: ValoraAppearance.instance.comicStyle ? 0 : 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(ValoraAppearance.instance.comicStyle ? 3 : (ValoraAppearance.instance.zenStyle ? 18 : 12)),
+              side: ValoraAppearance.instance.comicStyle ? const BorderSide(color: Colors.black, width: 2.2) : BorderSide.none,
+            ),
+          ),
           inputDecorationTheme: const InputDecorationTheme(
             border: OutlineInputBorder(),
             focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: goldColor, width: 1.5),
+              borderSide: BorderSide(color: ValoraAppearance.instance.accent, width: 1.5),
             ),
           ),
         ),
@@ -400,6 +438,34 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('Personalizza VALORA')),
     body:ListView(padding:const EdgeInsets.all(16),children:[
+      const Text('TEMA APPLICAZIONE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const SizedBox(height:8),
+      const Text('Scegli uno dei dieci temi predefiniti. Palette e stile sono bloccati; la scelta si applica all’interfaccia e viene salvata su questo dispositivo.'),
+      const SizedBox(height:8),
+      ...ValoraAppearance.themePresets.entries.map((entry) {
+        final theme = entry.value;
+        final selected = a.selectedThemeId == entry.key;
+        final accent = Color(theme['accent'] as int);
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical:4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(entry.key == 'comic' ? 3 : (entry.key == 'minimal_zen' ? 18 : 12)),
+            side: BorderSide(color: selected ? accent : accent.withValues(alpha:0.35), width: selected ? 2.2 : 1),
+          ),
+          child: ListTile(
+            leading: Container(width:34,height:34,decoration:BoxDecoration(
+              color:Color(theme['background'] as int),
+              borderRadius:BorderRadius.circular(entry.key == 'comic' ? 2 : 8),
+              border:Border.all(color:accent,width:entry.key == 'comic' ? 2 : 1),
+            ),child:Icon(entry.key == 'comic' ? Icons.auto_awesome : (entry.key == 'minimal_zen' ? Icons.spa_outlined : Icons.palette_outlined),color:accent,size:20)),
+            title:Text(theme['name'] as String,style:TextStyle(fontWeight:FontWeight.bold,color:a.textPrimary)),
+            subtitle:Text(entry.key == 'comic' ? 'Contorni marcati e pannelli pop-art' : (entry.key == 'minimal_zen' ? 'Forme essenziali e atmosfera naturale' : 'Tema coordinato predefinito'),style:TextStyle(color:a.textSecondary)),
+            trailing:selected ? Icon(Icons.check_circle,color:accent) : const Icon(Icons.radio_button_unchecked),
+            onTap:()=>a.setTheme(entry.key),
+          ),
+        );
+      }),
+      const SizedBox(height:20),
       const Text('CONFIGURAZIONE HOME',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:8),
       SegmentedButton<bool>(
