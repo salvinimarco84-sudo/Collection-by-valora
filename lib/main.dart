@@ -51,9 +51,9 @@ class ValoraAppearance extends ChangeNotifier {
   static const Map<String, Map<String, Object>> themePresets = {
     'black_gold': {'name':'Black & Gold','background':0xFF101010,'card':0xFF1C1C1C,'accent':0xFFD6B15E,'text':0xFFFFFFFF,'light':false,'comic':false,'zen':false},
     'midnight_blue': {'name':'Midnight Blue','background':0xFF071321,'card':0xFF10243A,'accent':0xFF20B8FF,'text':0xFFF4F8FF,'light':false,'comic':false,'zen':false},
-    'emerald': {'name':'Emerald','background':0xFF071A15,'card':0xFF102B22,'accent':0xFF12C98B,'text':0xFFF1FFF8,'light':false,'comic':false,'zen':false},
+    'emerald': {'name':'Electric Green','background':0xFF050A07,'card':0xE6101912,'accent':0xFF39FF62,'text':0xFFF1FFF4,'light':false,'comic':false,'zen':false},
     'silver_light': {'name':'Silver Light','background':0xFFF1F4F7,'card':0xFFFFFFFF,'accent':0xFF2878C7,'text':0xFF172333,'light':true,'comic':false,'zen':false},
-    'dark_red': {'name':'Dark Red','background':0xFF160909,'card':0xFF281010,'accent':0xFFFF3434,'text':0xFFFFF5F5,'light':false,'comic':false,'zen':false},
+    'dark_red': {'name':'Fire Red','background':0xFF100605,'card':0xE6210B08,'accent':0xFFFF452E,'text':0xFFFFF5F2,'light':false,'comic':false,'zen':false},
     'royal_purple': {'name':'Royal Purple','background':0xFF160D20,'card':0xFF28153A,'accent':0xFFD44CFF,'text':0xFFFFF5FF,'light':false,'comic':false,'zen':false},
     'comic': {'name':'Comic Style','background':0xFFFFD928,'card':0xFFFFFBEB,'accent':0xFFE51D2A,'text':0xFF101010,'light':true,'comic':true,'zen':false},
     'minimal_zen': {'name':'Minimal Zen','background':0xFFF3EBDD,'card':0xFFFFFCF5,'accent':0xFFB93D32,'text':0xFF27251F,'light':true,'comic':false,'zen':true},
