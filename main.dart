@@ -128,8 +128,21 @@ class _ActiveListingsReportScreenState extends State<ActiveListingsReportScreen>
         }
         final envelope = Map<String, dynamic>.from(data);
         if (envelope.containsKey('error')) throw Exception(envelope['error'].toString());
-        final raw = envelope['result'];
-        if (raw is! Map) throw Exception('Il report non ha restituito un riepilogo valido.');
+        // Il runtime può restituire il report direttamente oppure dentro
+        // l'involucro "result"/"data". Accettiamo entrambe le forme e JSON string.
+        dynamic raw = envelope['result'] ?? envelope['data'];
+        if (raw == null && envelope.containsKey('record')) raw = envelope;
+        if (raw is String) {
+          try {
+            raw = jsonDecode(raw);
+          } catch (_) {
+            throw Exception('Il runtime ha restituito un report in formato non valido.');
+          }
+        }
+        if (raw is Map && raw['result'] is Map) raw = raw['result'];
+        if (raw is! Map) {
+          throw Exception('Risposta del report non riconosciuta. Verifica il runtime TEST.');
+        }
         final parsed = Map<String, dynamic>.from(raw);
         parsedReport ??= parsed;
         expectedCount = (parsed['numero_inserzioni_attive'] as num?)?.toInt() ?? 0;
@@ -153,7 +166,7 @@ class _ActiveListingsReportScreenState extends State<ActiveListingsReportScreen>
       if (!mounted) return;
       // Never expose raw runtime/JSON payloads in the user interface.
       setState(() {
-        errorMessage = 'Impossibile caricare il report. Riprova.';
+        errorMessage = 'Report non caricato: ${error.toString().replaceFirst('Exception: ', '')}';
         loading = false;
       });
     }
@@ -245,8 +258,13 @@ class _ActiveListingsReportScreenState extends State<ActiveListingsReportScreen>
                               child: Icon(Icons.sell_outlined, color: Color(0xFF7FD6A5)),
                             ),
                             title: Text(description),
-                            subtitle: Text('Oggetto #$code · Inserzione #$listingCode${date.isEmpty ? '' : '\nDal $date'}'),
-                            isThreeLine: date.isNotEmpty,
+                            subtitle: Text(
+                              'Oggetto #$code · Inserzione #$listingCode'
+                              '${date.isEmpty ? '' : '\nDal $date'}'
+                              '${(row['stato_ciclo_vendita'] ?? '').toString().isEmpty ? '' : '\nStato: ${row['stato_ciclo_vendita']}'}'
+                              '${(row['note'] ?? '').toString().trim().isEmpty ? '' : '\nNote: ${row['note']}'}',
+                            ),
+                            isThreeLine: true,
                             trailing: Text(
                               money(row['prezzo_di_vendita']),
                               style: const TextStyle(color: gold, fontWeight: FontWeight.bold),
