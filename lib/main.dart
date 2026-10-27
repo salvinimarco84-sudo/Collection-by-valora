@@ -7717,7 +7717,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       )),
               ));
             }
-            return _objectCard(item, availableStyle: isAvailableList || _isCollectionThemeReport, onTap: (isAvailableList || _isCollectionThemeReport)
+            return _objectCard(item, availableStyle: isAvailableList || _isCollectionThemeReport || _isActiveListingsReport, onTap: (isAvailableList || _isCollectionThemeReport || _isActiveListingsReport)
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(
                       title: 'Visualizza scheda',
