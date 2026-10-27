@@ -2902,7 +2902,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
                                : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode!)))
+                            builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode == 'WRITE-PR-08' ? 'PR-08' : procedure.apiCode == 'WRITE-PR-07' ? 'PR-07' : procedure.apiCode == 'WRITE-PR-09' ? 'PR-09' : procedure.apiCode == 'WRITE-PR-06' ? 'PR-06' : procedure.apiCode!)))
                       : null,
         ),
       )),
@@ -4118,7 +4118,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     });
   }
 
-  bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03'}.contains(widget.apiCode);
+  bool get _isWrite => const {'PR-01', 'PR-02', 'PR-03', 'PR-06', 'PR-07', 'PR-08', 'PR-09'}.contains(widget.apiCode);
 
   @override
   void initState() {
@@ -7049,7 +7049,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           )),
           const SizedBox(height: 10),
         ],
-        if (!_isWrite && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
+        if ((!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
           _field(_search, 'Cerca'),
         if (_isWrite && code == 'PR-01') ...[
           FilledButton.icon(
