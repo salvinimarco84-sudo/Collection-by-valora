@@ -4079,6 +4079,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final List<Map<String, dynamic>> _pr01PendingObjects = [];
   String? _pr01PendingRequestId;
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
+  List<Map<String, dynamic>> _pr08OpenSales = [];
+  final Map<int, Map<String, dynamic>> _pr08Drafts = {};
+  final List<Map<String, dynamic>> _pr08PendingClosures = [];
+  List<Map<String, dynamic>> _pr08Platforms = [];
+  bool _pr08Loaded = false;
+  bool _pr08Saving = false;
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
   String _lastPr11SearchQuery = '';
@@ -4140,6 +4146,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (widget.apiCode == 'REPORT-SALES-ACTIVE') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _run(_consult);
+      });
+    }
+    if (widget.apiCode == 'PR-08') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _run(_loadPr08OpenSales);
       });
     }
     if (widget.apiCode == 'PR-01') {
@@ -4601,6 +4612,244 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         await _selectPr02Object(selected);
       }
     }
+  }
+
+
+  Future<void> _loadPr08OpenSales() async {
+    final client = Supabase.instance.client.schema('collection');
+    final rows = await client.from('master_oggetti_in_vendita')
+        .select('codice_vendita_aperta,codice_oggetto,descrizione_oggetto,data_inizio_vendita,prezzo_di_vendita,stato_ciclo_vendita')
+        .eq('stato_ciclo_vendita', 'APERTO')
+        .order('data_inizio_vendita', ascending: false)
+        .order('codice_vendita_aperta', ascending: false);
+    final platforms = await client.from('piattaforme')
+        .select('codice_piattaforma,nome_piattaforma')
+        .order('nome_piattaforma');
+    if (!mounted) return;
+    final open = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final platformList = (platforms as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    setState(() {
+      _pr08OpenSales = open;
+      _pr08Platforms = platformList;
+      _pr08Loaded = true;
+      for (final row in open) {
+        final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+        if (id != null) {
+          _pr08Drafts.putIfAbsent(id, () => {
+            'selected': false,
+            'esito': 'VENDITA EFFETTIVA',
+            'importo_vendita': '',
+            'data_vendita': DateTime.now().toIso8601String().substring(0, 10),
+            'codice_piattaforma': null,
+            'canale_esterno': '',
+            'note': '',
+          });
+        }
+      }
+      _output = 'Vendite aperte caricate: ${open.length}. Le modifiche restano in bozza fino al salvataggio finale.';
+    });
+  }
+
+  Future<void> _pr08CollectCurrentSelection() async {
+    final selected = _pr08OpenSales.where((row) {
+      final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+      return id != null && _pr08Drafts[id]?['selected'] == true;
+    }).toList();
+    if (selected.isEmpty) throw Exception('Seleziona almeno una vendita da chiudere.');
+    for (final row in selected) {
+      final id = int.parse(row['codice_vendita_aperta'].toString());
+      final draft = _pr08Drafts[id]!;
+      if (_pr08PendingClosures.any((e) => e['codice_vendita_aperta'] == id)) {
+        throw Exception('La vendita aperta $id è già nella coda di chiusura.');
+      }
+      final outcome = (draft['esito'] ?? '').toString();
+      if (outcome == 'VENDITA EFFETTIVA') {
+        final amount = double.tryParse((draft['importo_vendita'] ?? '').toString().replaceAll(',', '.'));
+        if (amount == null || amount <= 0) throw Exception('Inserisci un importo effettivo maggiore di zero per la vendita $id.');
+        final platform = draft['codice_piattaforma'];
+        final external = (draft['canale_esterno'] ?? '').toString().trim();
+        if ((platform == null || platform.toString().isEmpty) == external.isEmpty) {
+          throw Exception('Per la vendita $id scegli una piattaforma oppure un canale esterno, non entrambi.');
+        }
+        _pr08PendingClosures.add({
+          'codice_vendita_aperta': id,
+          'esito': outcome,
+          'data_vendita': draft['data_vendita'],
+          'importo_vendita': amount.toStringAsFixed(2),
+          if (platform != null && platform.toString().isNotEmpty) 'codice_piattaforma': int.parse(platform.toString()),
+          if (external.isNotEmpty) 'canale_esterno': external,
+          if ((draft['note'] ?? '').toString().trim().isNotEmpty) 'note': draft['note'].toString().trim(),
+        });
+      } else {
+        _pr08PendingClosures.add({
+          'codice_vendita_aperta': id,
+          'esito': 'CHIUSURA SENZA VENDITA',
+          if ((draft['note'] ?? '').toString().trim().isNotEmpty) 'note': draft['note'].toString().trim(),
+        });
+      }
+    }
+    setState(() {
+      for (final row in selected) {
+        final id = int.parse(row['codice_vendita_aperta'].toString());
+        _pr08Drafts[id]!['selected'] = false;
+      }
+      _output = 'Chiusure in bozza: ${_pr08PendingClosures.length}. Nessun dato è ancora stato scritto nel database.';
+    });
+    final another = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('AGGIUNGERE ALTRE CHIUSURE?'),
+        content: Text('Chiusure in attesa: ${_pr08PendingClosures.length}. Vuoi selezionare altre vendite prima del salvataggio?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, SALVA TUTTO')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, AGGIUNGI ALTRE')),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (another == true) {
+      await _loadPr08OpenSales();
+      return;
+    }
+    await _pr08FinalSave();
+  }
+
+  Future<void> _pr08FinalSave() async {
+    if (_pr08PendingClosures.isEmpty) throw Exception('Non ci sono chiusure da salvare.');
+    final preview = _pr08PendingClosures.map((e) {
+      final id = e['codice_vendita_aperta'];
+      final row = _pr08OpenSales.where((r) => r['codice_vendita_aperta'].toString() == id.toString()).firstOrNull;
+      return '${id} · ${row?['descrizione_oggetto'] ?? 'Oggetto'} · ${e['esito']}${e['importo_vendita'] == null ? '' : ' · € ${e['importo_vendita']}'}';
+    }).join('\n');
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('CONFERMA DEFINITIVA'),
+        content: SingleChildScrollView(child: Text('Verranno salvate tutte le chiusure insieme.\n\n$preview\n\nSolo le vendite effettive genereranno entrate in cassa. Confermi?')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SALVA TUTTO')),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    setState(() { _pr08Saving = true; _loading = true; });
+    try {
+      final result = await Supabase.instance.client.schema('collection').rpc(
+        'pr_07_chiudi_vendite_batch',
+        params: {'p_chiusure': _pr08PendingClosures},
+      );
+      if (!mounted) return;
+      final saved = result is List ? result.length : _pr08PendingClosures.length;
+      setState(() {
+        _pr08PendingClosures.clear();
+        _output = 'Salvataggio completato e verificato: $saved chiusure. Le entrate di cassa sono state registrate solo per le vendite effettive.';
+        _lastResult = {'chiusure_salvate': saved};
+      });
+      await _loadPr08OpenSales();
+    } finally {
+      if (mounted) setState(() { _pr08Saving = false; _loading = false; });
+    }
+  }
+
+  Widget _pr08ClosurePanel() {
+    if (!_pr08Loaded) return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+    if (_pr08OpenSales.isEmpty && _pr08PendingClosures.isEmpty) {
+      return const Padding(padding: EdgeInsets.all(12), child: Text('Non ci sono vendite aperte da chiudere.'));
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('VENDITE APERTE · ${_pr08OpenSales.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+      if (_pr08PendingClosures.isNotEmpty)
+        Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('In coda non ancora salvate: ${_pr08PendingClosures.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold))),
+      ..._pr08OpenSales.map((row) {
+        final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+        if (id == null) return const SizedBox.shrink();
+        final draft = _pr08Drafts[id]!;
+        final selected = draft['selected'] == true;
+        final outcome = (draft['esito'] ?? 'VENDITA EFFETTIVA').toString();
+        return Card(key: ValueKey('pr08-sale-$id'), child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: selected,
+              onChanged: _loading ? null : (v) => setState(() => draft['selected'] = v == true),
+              title: Text('#$id · ${row['descrizione_oggetto'] ?? 'Oggetto'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('Oggetto #${row['codice_oggetto']} · Apertura: ${row['data_inizio_vendita'] ?? 'n.d.'} · Prezzo richiesto: € ${row['prezzo_di_vendita'] ?? 'n.d.'}'),
+            ),
+            if (selected) ...[
+              DropdownButtonFormField<String>(
+                value: outcome,
+                decoration: const InputDecoration(labelText: 'Causale di chiusura'),
+                items: const [
+                  DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')),
+                  DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza vendita')),
+                ],
+                onChanged: (v) => setState(() {
+                  draft['esito'] = v;
+                  if (v != 'VENDITA EFFETTIVA') {
+                    draft['importo_vendita'] = '';
+                    draft['codice_piattaforma'] = null;
+                    draft['canale_esterno'] = '';
+                  }
+                }),
+              ),
+              if (outcome == 'VENDITA EFFETTIVA') ...[
+                TextFormField(
+                  initialValue: (draft['importo_vendita'] ?? '').toString(),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Importo effettivo (€) *'),
+                  onChanged: (v) => draft['importo_vendita'] = v,
+                ),
+                TextFormField(
+                  initialValue: (draft['data_vendita'] ?? '').toString(),
+                  decoration: const InputDecoration(labelText: 'Data vendita (AAAA-MM-GG) *'),
+                  onChanged: (v) => draft['data_vendita'] = v,
+                ),
+                DropdownButtonFormField<String>(
+                  value: draft['codice_piattaforma']?.toString(),
+                  decoration: const InputDecoration(labelText: 'Piattaforma effettiva'),
+                  items: _pr08Platforms.map((p) => DropdownMenuItem<String>(
+                    value: p['codice_piattaforma'].toString(),
+                    child: Text((p['nome_piattaforma'] ?? 'Piattaforma').toString()),
+                  )).toList(),
+                  onChanged: (v) => setState(() {
+                    draft['codice_piattaforma'] = v;
+                    if (v != null) draft['canale_esterno'] = '';
+                  }),
+                ),
+                TextFormField(
+                  initialValue: (draft['canale_esterno'] ?? '').toString(),
+                  decoration: const InputDecoration(labelText: 'Oppure canale esterno (se non scegli una piattaforma)'),
+                  onChanged: (v) => draft['canale_esterno'] = v,
+                ),
+              ],
+              TextFormField(
+                initialValue: (draft['note'] ?? '').toString(),
+                decoration: const InputDecoration(labelText: 'Note (facoltative)'),
+                onChanged: (v) => draft['note'] = v,
+              ),
+            ],
+          ]),
+        ));
+      }),
+      const SizedBox(height: 12),
+      FilledButton.icon(
+        onPressed: _loading || _pr08Saving ? null : () => _run(_pr08CollectCurrentSelection),
+        icon: const Icon(Icons.playlist_add_check),
+        label: Text(_pr08Saving ? 'SALVATAGGIO…' : 'AGGIUNGI SELEZIONATE ALLA CHIUSURA'),
+      ),
+      if (_pr08PendingClosures.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _loading || _pr08Saving ? null : () => _run(_pr08FinalSave),
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('CONFERMA DEFINITIVA E SALVA TUTTO'),
+        ),
+      ],
+    ]);
   }
 
   Future<void> _selectHistoryObject(Map<String, dynamic> item) async {
@@ -7390,6 +7639,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               _pr02TechnicalCard(_currentObject!),
           ],
         ],
+        if (_isWrite && code == 'PR-08') ...[
+          _pr08ClosurePanel(),
+        ],
         if (_isWrite && code == 'PR-03') ...[
           _field(_search, 'Cerca oggetto per descrizione o codice'),
           FilledButton.icon(
@@ -7503,6 +7755,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             icon: Icon(Icons.verified_outlined),
             label: Text('CONFERMA DATI'),
           ),
+        ] else if (_isWrite && code == 'PR-08') ...[
+          const SizedBox.shrink(),
         ] else if (_isWrite && code == 'PR-03') ...[
           const SizedBox.shrink(),
         ] else if (_isWrite) ...[
