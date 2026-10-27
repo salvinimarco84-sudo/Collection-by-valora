@@ -4136,6 +4136,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (widget.apiCode == 'OBJECT_MASTER') {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
     }
+    // Report vendite attive: caricamento automatico all'apertura.
+    if (widget.apiCode == 'REPORT-SALES-ACTIVE') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _run(_consult);
+      });
+    }
     if (widget.apiCode == 'PR-01') {
       _quantity.addListener(_recalculateTotal);
       _loadCollectionCategories();
@@ -7480,7 +7486,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           )),
           const SizedBox(height: 10),
         ],
-        if ((!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
+        if (code != 'REPORT-SALES-ACTIVE' && (!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
           _field(_search, 'Cerca'),
         if (_isWrite && code == 'PR-01') ...[
           FilledButton.icon(
@@ -7511,7 +7517,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
             icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
-        ] else if (!isMaster)
+        ] else if (!isMaster && code != 'REPORT-SALES-ACTIVE')
           FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
             icon: Icon(Icons.search),
             label: Text(_loading ? 'RICERCA...' : isAvailableList
@@ -7671,11 +7677,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
                 trailing: amount == null ? null : Text('${amount.toString()} ${item['valuta'] ?? 'EUR'}'),
-                onTap: () => showDialog<void>(context: context, builder: (context) => AlertDialog(
-                  title: const Text('Dettaglio operazione'),
-                  content: SingleChildScrollView(child: SelectableText(_pretty(item))),
-                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
-                )),
+                // I report mostrano direttamente le righe leggibili, senza JSON grezzo.
+                onTap: null,
               ));
             }
             return _objectCard(item, availableStyle: isAvailableList, onTap: isAvailableList
