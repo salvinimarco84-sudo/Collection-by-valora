@@ -7971,11 +7971,17 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
     if (!mounted) return;
 
+    // PR-02 salva e verifica subito l'oggetto confermato, prima di chiedere
+    // se l'utente vuole avviare una nuova modifica. Evita di lasciare la
+    // procedura in uno stato pendente e garantisce la chiusura su risposta NO.
+    await _savePr02PendingChanges(closeOnComplete: false);
+    if (!mounted) return;
+
     final another = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Modifica confermata'),
+        title: Text('Modifica salvata'),
         content: Text('Vuoi modificare un altro oggetto?'),
         actions: [
           TextButton(
