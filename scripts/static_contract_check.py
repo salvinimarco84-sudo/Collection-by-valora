@@ -17,6 +17,7 @@ checks = {
     "object edit action is wired": "MODIFICA OGGETTO" in main and "Future<void> _openObjectForEdit()" in main,
     "put-for-sale action is wired": "METTI IN VENDITA" in main and "Future<void> _putObjectForSale()" in main,
     "new sale screen exists": "class NewSalePage" in main,
+    "new sale can preselect the requested object": "NewSalePage(initialObjectCode: id)" in main and "final int? initialObjectCode;" in main,
     "PR-02 collection category is selected": "_selectedCollectionCategory" in main and "categoria_collezione_selezionata" in main,
     "PR-02 removes technical category from object payload": "oggetto_collezione_categoria" in main and "_savePr02PendingChanges" in main,
     "PR-01 validates collection category": "Seleziona una categoria COLLEZIONE valida." in main,
