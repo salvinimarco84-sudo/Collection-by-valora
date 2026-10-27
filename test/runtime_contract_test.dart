@@ -35,6 +35,12 @@ void main() {
       expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
     });
 
+    test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
+      expect(source, contains("'fonte_assegnazione': 'MANUALE'"));
+      expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
+      expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
+    });
+
     test('Visualizza scheda cerca anche il codice numerico direttamente nel master', () {
       expect(source, contains(".from('master_oggetti')"));
       expect(source, contains(".eq('codice_oggetto', exactCode)"));
