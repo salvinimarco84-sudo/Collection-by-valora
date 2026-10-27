@@ -2619,9 +2619,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }) => Container(
     margin: const EdgeInsets.only(bottom: 10),
     decoration: BoxDecoration(
-      color: const Color(0xFF151515),
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: color.withValues(alpha: 0.85), width: 1.25),
+      color: ValoraAppearance.instance.card,
+      borderRadius: BorderRadius.circular(ValoraAppearance.instance.comicStyle ? 3 : (ValoraAppearance.instance.zenStyle ? 20 : 14)),
+      border: Border.all(color: color.withValues(alpha: 0.85), width: ValoraAppearance.instance.comicStyle ? 2.8 : 1.25),
     ),
     child: Material(
       color: Colors.transparent,
@@ -2649,12 +2649,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15)),
               const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12),
+              Text(subtitle, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12),
                 maxLines: 2, overflow: TextOverflow.ellipsis),
             ])),
             if (trailingText != null) ...[
               const SizedBox(width: 6),
-              Text(trailingText, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+              Text(trailingText, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
             ],
             const SizedBox(width: 5),
             Icon(Icons.chevron_right, color: color, size: 29),
@@ -2669,7 +2669,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       return LayoutBuilder(builder: (context, constraints) {
         final columns = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 600 ? 3 : 2;
         final entries = <Map<String, dynamic>>[
-          {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
+          {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':ValoraAppearance.instance.accent,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
           ...dashboardSections.map((section)=> {
             'title':ValoraI18n.tr(section.menuTitle ?? section.title),
             'subtitle':ValoraI18n.tr(section.description),
@@ -2693,14 +2693,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
             final url=ValoraAppearance.instance.imageUrls[title] ??
               ValoraAppearance.instance.imageUrls[title=='VENDITE E INSERZIONI'?'VENDITE':title];
             return Material(
-              color: const Color(0xFF151515),
-              borderRadius: BorderRadius.circular(15),
+              color: ValoraAppearance.instance.card,
+              borderRadius: BorderRadius.circular(ValoraAppearance.instance.comicStyle ? 3 : (ValoraAppearance.instance.zenStyle ? 20 : 15)),
               child: InkWell(
                 borderRadius: BorderRadius.circular(15),
                 onTap: entry['tap'] as VoidCallback,
                 child: Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(borderRadius:BorderRadius.circular(15),border:Border.all(color:color,width:1.4)),
+                  decoration: BoxDecoration(borderRadius:BorderRadius.circular(ValoraAppearance.instance.comicStyle ? 3 : (ValoraAppearance.instance.zenStyle ? 20 : 15)),border:Border.all(color:color,width:ValoraAppearance.instance.comicStyle ? 2.8 : 1.4)),
                   child: Column(mainAxisAlignment:MainAxisAlignment.center,children:[
                     Expanded(child:ClipRRect(
                       borderRadius:BorderRadius.circular(11),
@@ -2711,7 +2711,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     const SizedBox(height:8),
                     Text(title,textAlign:TextAlign.center,style:TextStyle(color:color,fontWeight:FontWeight.bold,fontSize:12)),
                     const SizedBox(height:4),
-                    if(title=='COLLEZIONE') Text(_catalogLoading?'…':'${_catalogRows.length} record',style:const TextStyle(color:Colors.white70,fontSize:10)),
+                    if(title=='COLLEZIONE') Text(_catalogLoading?'…':'${_catalogRows.length} record',style:TextStyle(color:ValoraAppearance.instance.textSecondary,fontSize:10)),
                     Icon(Icons.chevron_right,color:color,size:23),
                   ]),
                 ),
@@ -2727,15 +2727,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
       Padding(
         padding: const EdgeInsets.fromLTRB(2, 4, 2, 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(ValoraI18n.tr('CENTRO OPERATIVO'), style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
+          Text(ValoraI18n.tr('CENTRO OPERATIVO'), style: TextStyle(color: ValoraAppearance.instance.accent, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
           SizedBox(height: 5),
-          Text(ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'), style: TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
         ]),
       ),
       _menuCard(
         title: ValoraI18n.tr('COLLEZIONE'),
         subtitle: ValoraI18n.tr('Tutti i temi e tutti i record della tua collezione'),
-        color: goldColor,
+        color: ValoraAppearance.instance.accent,
         icon: Icons.inventory_2_outlined,
         trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
         onTap: () { setState(() => showCollection = true); _loadDashboardCatalog(); },
