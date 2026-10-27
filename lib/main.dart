@@ -4092,6 +4092,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   bool get _isActiveListingsReport => const {'REPORT-ACTIVE-LISTINGS', 'REPORT-SALES-ACTIVE'}.contains(widget.apiCode);
   bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES'}.contains(widget.apiCode);
   bool get _isCollectionThemeReport => widget.apiCode == 'REPORT-COLLECTION-THEME';
+  bool get _usesStandardReportPresentation => widget.apiCode.startsWith('REPORT-') || _isActiveListingsReport;
+  bool get _reportCanShowObjectImages => _usesStandardReportPresentation && widget.apiCode != 'REPORT-CASH';
 
   Future<void> _loadActiveReportImages(List<dynamic> records) async {
     final ids = <int>{};
@@ -6051,6 +6053,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final list = records is List ? records : <dynamic>[];
       setState(() {
         _rows = list;
+        _availablePage = 0;
         _currentObject = null;
         _output = list.isEmpty
             ? 'Nessuna vendita attiva trovata.'
@@ -6096,25 +6099,25 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       ].join('\\n');
       setState(() {
         _rows = list;
-        if (widget.apiCode == 'REPORT-PURCHASES') _availablePage = 0;
+        _availablePage = 0;
         // Per questi report mostriamo un riepilogo leggibile, non il JSON grezzo.
         _output = summary;
         _currentObject = null;
       });
-      if (widget.apiCode == 'REPORT-PURCHASES' && list.isNotEmpty) {
+      if (_reportCanShowObjectImages && list.isNotEmpty) {
         await _loadActiveReportImages(list.take(_availablePageSize).toList());
       }
       return;
     }
     final list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
     setState(() {
-      if (widget.apiCode == 'OBJECTS_AVAILABLE' || _isCollectionThemeReport) _availablePage = 0;
+      if (widget.apiCode == 'OBJECTS_AVAILABLE' || _isCollectionThemeReport || _usesStandardReportPresentation) _availablePage = 0;
       _rows = list;
       _output = list.isEmpty ? 'Nessun risultato.' : 'Risultati: ${list.length}.';
       _currentObject = widget.apiCode == 'OBJECT_MASTER' && list.isNotEmpty && list.first is Map
         ? Map<String, dynamic>.from(list.first as Map) : null;
     });
-    if ((widget.apiCode == 'OBJECTS_AVAILABLE' || _isCollectionThemeReport) && list.isNotEmpty) {
+    if ((widget.apiCode == 'OBJECTS_AVAILABLE' || _isCollectionThemeReport || _reportCanShowObjectImages) && list.isNotEmpty) {
       await _loadActiveReportImages(list.take(_availablePageSize).toList());
     }
   }
@@ -6956,7 +6959,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               )),
             ],
           ))),
-          if (_output.isNotEmpty && !_isCollectionThemeReport) Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Text(_output)),
+          if (_output.isNotEmpty && !_usesStandardReportPresentation) Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Text(_output)),
         ],
       ),
     );
@@ -6968,6 +6971,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final code = widget.apiCode;
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
     final availablePageCount = (_rows.length / _availablePageSize).ceil();
+    final useStandardReportPaging = _usesStandardReportPresentation;
     final isHistory = code == 'EXPLORE_RECORDS';
     final isMaster = code == 'OBJECT_MASTER';
 
@@ -7682,7 +7686,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (!isAvailableList)
             Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
               style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
-          ...((isAvailableList || widget.apiCode == 'REPORT-PURCHASES' || _isCollectionThemeReport)
+          ...((isAvailableList || useStandardReportPaging)
               ? _rows.skip(_availablePage * _availablePageSize).take(_availablePageSize)
               : _rows).map((r) {
             if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
@@ -7693,18 +7697,24 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               final description = item['descrizione_oggetto'] ?? item['descrizione'] ?? item['tipologia'] ?? item['tipo_movimento'] ?? 'Operazione';
               final amount = item['importo_vendita'] ?? item['importo_totale_acquisto'] ?? item['importo'] ?? item['prezzo_di_vendita'];
               final imageUrl = (item['url_immagine_catalogo'] ?? item['url_immagine'] ?? '').toString().trim();
+              final objectId = int.tryParse((item['codice_oggetto'] ?? item['id_oggetto'] ?? '').toString())
+                  ?? _reportImageObjectIdsByDescription[(item['descrizione_oggetto'] ?? item['descrizione'] ?? item['nome_oggetto'] ?? item['titolo'] ?? '').toString().trim().toLowerCase()];
               return Card(child: ListTile(
-                leading: widget.apiCode == 'REPORT-PURCHASES' && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))
+                leading: _reportCanShowObjectImages && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))
                     ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(imageUrl, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.receipt_long_outlined, color: sectionColor)))
                     : Icon(Icons.receipt_long_outlined, color: sectionColor),
                 title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
                 trailing: amount == null ? null : Text('${amount.toString()} ${item['valuta'] ?? 'EUR'}'),
-                onTap: () => showDialog<void>(context: context, builder: (context) => AlertDialog(
-                  title: const Text('Dettaglio operazione'),
-                  content: SingleChildScrollView(child: SelectableText(_pretty(item))),
-                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
-                )),
+                onTap: objectId != null && objectId > 0 && widget.apiCode != 'REPORT-CASH'
+                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
+                        title: 'Scheda oggetto', apiCode: 'OBJECT_MASTER', initialObjectCode: objectId,
+                      )))
+                    : () => showDialog<void>(context: context, builder: (context) => AlertDialog(
+                        title: const Text('Dettaglio operazione'),
+                        content: SingleChildScrollView(child: SelectableText(_pretty(item))),
+                        actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
+                      )),
               ));
             }
             return _objectCard(item, availableStyle: isAvailableList || _isCollectionThemeReport, onTap: (isAvailableList || _isCollectionThemeReport)
@@ -7717,7 +7727,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   )).then((_) {})
               : null);
           }),
-          if ((isAvailableList || widget.apiCode == 'REPORT-PURCHASES' || _isCollectionThemeReport) && availablePageCount > 1) ...[
+          if ((isAvailableList || useStandardReportPaging) && availablePageCount > 1) ...[
             const SizedBox(height: 8),
             Card(child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
