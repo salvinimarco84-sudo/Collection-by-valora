@@ -4054,6 +4054,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _output = 'Pronto. Le consultazioni sono in sola lettura.';
   Map<String, dynamic>? _lastResult;
   List<dynamic> _rows = [];
+  final Map<int, String> _activeReportImageUrls = <int, String>{};
   Map<String, dynamic>? _currentObject;
   List<Map<String, dynamic>> _pr02SearchResults = [];
   List<Map<String, dynamic>> _pr12IncompleteRecords = [];
@@ -4087,6 +4088,52 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   DateTime _reportEnd = DateTime.now();
   bool get _isActiveListingsReport => const {'REPORT-ACTIVE-LISTINGS', 'REPORT-SALES-ACTIVE'}.contains(widget.apiCode);
   bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES'}.contains(widget.apiCode);
+
+  Future<void> _loadActiveReportImages(List<dynamic> records) async {
+    final ids = records.whereType<Map>().map((row) => int.tryParse(
+      (row['codice_oggetto'] ?? row['id'] ?? '').toString(),
+    )).whereType<int>().where((id) => id > 0).toSet();
+    await Future.wait(ids.map((id) async {
+      var url = '';
+      try {
+        final metadata = await Supabase.instance.client.schema('collection')
+            .from('master_metadati').select('url_immagine').eq('codice_oggetto', id).maybeSingle();
+        url = (metadata?['url_immagine'] ?? '').toString().trim();
+      } catch (e) {
+        debugPrint('VALORA: immagine catalogo report $id non disponibile: $e');
+      }
+      if (!(url.startsWith('https://') || url.startsWith('http://'))) {
+        try {
+          final session = Supabase.instance.client.auth.currentSession;
+          final response = await Supabase.instance.client.functions.invoke(
+            'collection-object-images-test',
+            headers: session == null ? null : {'Authorization': 'Bearer ${session.accessToken}'},
+            body: {'action': 'get', 'codice_oggetto': id},
+          );
+          if (response.status >= 200 && response.status < 300 && response.data is Map) {
+            final data = Map<String, dynamic>.from(response.data as Map);
+            url = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? data['url_immagine'] ?? '').toString().trim();
+          }
+        } catch (e) {
+          debugPrint('VALORA: immagine storage report $id non disponibile: $e');
+        }
+      }
+      if (url.startsWith('https://') || url.startsWith('http://')) {
+        _activeReportImageUrls[id] = url;
+      }
+    }));
+    if (!mounted || _activeReportImageUrls.isEmpty) return;
+    setState(() {
+      _rows = _rows.map((raw) {
+        if (raw is! Map) return raw;
+        final row = Map<String, dynamic>.from(raw);
+        final id = int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString());
+        final url = id == null ? null : _activeReportImageUrls[id];
+        if (url != null && url.isNotEmpty) row['url_immagine_catalogo'] = url;
+        return row;
+      }).toList();
+    });
+  }
 
   String _reportCodeForApi(String apiCode) => switch (apiCode) {
     'REPORT-CASH' => 'CASH_MOVEMENTS_REPORT',
@@ -5944,6 +5991,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ? 'Nessuna vendita attiva trovata.'
             : 'Vendite attive caricate: ${list.length}. Nessun filtro temporale applicato.';
       });
+      if (list.isNotEmpty) await _loadActiveReportImages(list);
       return;
     }
     if (_isPeriodReport && data is Map) {
@@ -7372,7 +7420,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           )),
           const SizedBox(height: 10),
         ],
-        if ((!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
+        if ((!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport && !_isActiveListingsReport)
           _field(_search, 'Cerca'),
         if (_isWrite && code == 'PR-01') ...[
           FilledButton.icon(
@@ -7403,7 +7451,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
             icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
-        ] else if (!isMaster)
+        ] else if (!isMaster && !_isActiveListingsReport)
           FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
             icon: Icon(Icons.search),
             label: Text(_loading ? 'RICERCA...' : isAvailableList
