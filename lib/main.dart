@@ -736,7 +736,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Nuova vendita', description: 'Registra una nuova vendita nel database VALORA.', apiCode: 'WRITE-PR-06', readOnly: false),
     ProcedureEntry(title: 'Chiudi vendita', description: 'Seleziona una vendita attiva e registra la chiusura.', apiCode: 'WRITE-PR-08', readOnly: false),
     ProcedureEntry(title: 'Annulla vendita', description: 'Annulla una vendita registrata tramite la procedura dedicata.', apiCode: 'WRITE-PR-09', readOnly: false),
-    ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
+    ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-SALES-ACTIVE'),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
   'VALUTAZIONI': [
@@ -4032,6 +4032,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _imageAcquisition = 'CARICAMENTO_FILE';
   String? _existingImageUrl;
   String _imageStatus = 'Nessuna immagine selezionata.';
+  Map<String, dynamic>? _pr19ValuationResult;
   final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
 
   final String _sessionId = _uuid.v4();
@@ -4078,6 +4079,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final List<Map<String, dynamic>> _pr01PendingObjects = [];
   String? _pr01PendingRequestId;
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
+  List<Map<String, dynamic>> _pr08OpenSales = [];
+  final Map<int, Map<String, dynamic>> _pr08Drafts = {};
+  final List<Map<String, dynamic>> _pr08PendingClosures = [];
+  String _pr08SearchQuery = '';
+  String _pr08ActionMode = 'CHIUDI';
+  List<Map<String, dynamic>> _pr08Platforms = [];
+  bool _pr08Loaded = false;
+  bool _pr08Saving = false;
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
   String _lastPr11SearchQuery = '';
@@ -4135,6 +4144,17 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (widget.apiCode == 'OBJECT_MASTER') {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
     }
+    // Report vendite attive: caricamento automatico all'apertura.
+    if (widget.apiCode == 'REPORT-SALES-ACTIVE') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _run(_consult);
+      });
+    }
+    if (widget.apiCode == 'PR-08') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _run(_loadPr08OpenSales);
+      });
+    }
     if (widget.apiCode == 'PR-01') {
       _quantity.addListener(_recalculateTotal);
       _loadCollectionCategories();
@@ -4150,6 +4170,31 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         });
       }
     }
+  }
+
+  String _merchCategoryCodeForCollection(String? collectionCode) {
+    final selected = _collectionCategories.where(
+      (e) => e['codice_categoria']?.toString() == collectionCode,
+    );
+    if (selected.isEmpty) throw Exception('Categoria COLLEZIONE non riconosciuta.');
+    final label = (selected.first['descrizione'] ?? '').toString().trim().toLowerCase();
+    // Il runtime SQL richiede il codice merceologico (categorie_merceologiche),
+    // distinto dal codice della tassonomia COLLEZIONE scelta dall'utente.
+    // La categoria COLLEZIONE originale viene salvata separatamente dopo l'inserimento.
+    const mapping = <String, String>{
+      'lego': 'CAT-001',
+      'saint seiya': 'CAT-009',
+      'modellini auto-moto': 'CAT-020',
+      'fumetti': 'CAT-003',
+      'gundam': 'CAT-004',
+      'transformers': 'CAT-002',
+      'funko pop': 'CAT-007',
+      'model kit': 'CAT-004',
+      'sorpresine kinder': 'CAT-008',
+    };
+    final code = mapping[label];
+    if (code == null) throw Exception('Manca la corrispondenza merceologica per la categoria COLLEZIONE "$label".');
+    return code;
   }
 
   Future<void> _loadCollectionCategories() async {
@@ -4227,10 +4272,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       await action();
     } catch (e) {
       if (mounted) {
-        setState(() => _output = 'ERRORE: $e');
-        if (widget.apiCode == 'OBJECT_MASTER') {
+        final message = 'ERRORE: $e';
+        setState(() => _output = message);
+        // Non nascondere gli errori di PR-01 tornando silenziosamente alla scheda.
+        // Il messaggio persistente e lo SnackBar rendono visibile il punto di arresto.
+        if (widget.apiCode == 'PR-01' || widget.apiCode == 'OBJECT_MASTER') {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ricerca non riuscita: $e'), duration: const Duration(seconds: 5)),
+            SnackBar(
+              content: Text(widget.apiCode == 'PR-01' ? 'PR-01 non completata: $e' : 'Ricerca non riuscita: $e'),
+              duration: const Duration(seconds: 10),
+            ),
           );
         }
       }
@@ -4302,7 +4353,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
-        if (_destination == 'COLLEZIONE') 'codice_categoria_collezione': _selectedCollectionCategory,
+        if (_destination == 'COLLEZIONE') 'codice_categoria': _merchCategoryCodeForCollection(_selectedCollectionCategory),
         if (totalValue != null) 'valore_oggetto': totalValue,
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       }]};
@@ -4411,9 +4462,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final tokens = query.split(RegExp(r'\s+')).where((t) => t.trim().isNotEmpty).toList();
     List<Map<String, dynamic>> results = await searchPhrase(query);
 
-    // Un codice numerico va cercato anche direttamente nella tabella master:
-    // le RPC testuali possono non includere un record se non corrisponde alla
-    // descrizione o se la loro selezione applica filtri di stato.
+    // La ricerca RPC può escludere record in vendita o chiusi. Interroghiamo
+    // anche il master completo per descrizione, senza filtri di stato.
+    // Esempio reale: "lego 4433" deve trovare LEGO 4433 Dirt Bike Transporter
+    // (codice oggetto 1448), anche se il codice prodotto non è il codice record.
+    try {
+      final direct = await Supabase.instance.client
+          .schema('collection')
+          .from('master_oggetti')
+          .select()
+          .ilike('descrizione_oggetto', '%$query%')
+          .limit(100);
+      if (direct is List) {
+        for (final row in direct.whereType<Map>()) {
+          final item = Map<String, dynamic>.from(row);
+          if (!results.any((existing) => codeOf(existing) == codeOf(item))) {
+            results.add(item);
+          }
+        }
+      }
+    } catch (_) {
+      // La ricerca RPC resta disponibile se la lettura diretta non è autorizzata.
+    }
+
+    // Un codice oggetto numerico va cercato anche direttamente nella tabella master.
     final exactCode = int.tryParse(query);
     if (exactCode != null) {
       try {
@@ -4544,6 +4616,307 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
+
+  Future<void> _loadPr08OpenSales() async {
+    // Le tabelle vendite/piattaforme sono protette da RLS backend-only.
+    // Leggiamo tramite RPC SECURITY DEFINER in sola lettura, senza aprire le tabelle.
+    final response = await Supabase.instance.client.schema('collection')
+        .rpc('pr_08_leggi_vendite_aperte');
+    if (response is! Map) {
+      throw Exception('PR-08: risposta non valida durante il caricamento delle vendite aperte.');
+    }
+    final rows = response['vendite'];
+    final platforms = response['piattaforme'];
+    if (rows is! List || platforms is! List) {
+      throw Exception('PR-08: la risposta non contiene gli elenchi di vendite e piattaforme.');
+    }
+    if (!mounted) return;
+    final open = rows.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final platformList = platforms.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    setState(() {
+      _pr08OpenSales = open;
+      _pr08Platforms = platformList;
+      _pr08Loaded = true;
+      for (final row in open) {
+        final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+        if (id != null) {
+          _pr08Drafts.putIfAbsent(id, () => {
+            'selected': false,
+            'esito': 'VENDITA EFFETTIVA',
+            'importo_vendita': '',
+            'data_vendita': DateTime.now().toIso8601String().substring(0, 10),
+            'codice_piattaforma': null,
+            'canale_esterno': '',
+            'note': '',
+          });
+        }
+      }
+      _output = 'Vendite aperte caricate: ${open.length}. Le modifiche restano in bozza fino al salvataggio finale.';
+    });
+  }
+
+  Future<void> _pr08ModifySelectedPrices() async {
+    final selected = _pr08OpenSales.where((row) {
+      final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+      return id != null && _pr08Drafts[id]?['selected'] == true;
+    }).toList();
+    if (selected.isEmpty) throw Exception('Seleziona almeno un’inserzione aperta.');
+    final changes = <Map<String, dynamic>>[];
+    for (final row in selected) {
+      final id = int.parse(row['codice_vendita_aperta'].toString());
+      final draft = _pr08Drafts[id]!;
+      final raw = (draft['importo_vendita'] ?? '').toString().trim();
+      final price = double.tryParse(raw.replaceAll(',', '.'));
+      if (price == null || price <= 0) throw Exception('Inserisci un nuovo prezzo maggiore di zero per l’inserzione $id.');
+      if (price == (double.tryParse((row['prezzo_di_vendita'] ?? '').toString()) ?? -1)) throw Exception('Il prezzo dell’inserzione $id non è cambiato.');
+      changes.add({'id': id, 'price': price, 'note': (draft['note'] ?? '').toString().trim()});
+    }
+    final accepted = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+      title: const Text('CONFERMA MODIFICA PREZZI'),
+      content: Text(changes.map((c) {
+        final row = _pr08OpenSales.firstWhere((r) => r['codice_vendita_aperta'].toString() == c['id'].toString());
+        return '#${c['id']} · ${row['descrizione_oggetto']}\n€ ${row['prezzo_di_vendita']} → € ${(c['price'] as double).toStringAsFixed(2)}';
+      }).join('\n\n') + '\n\nLe inserzioni resteranno aperte. Le variazioni saranno registrate nello storico.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CONFERMA'))],
+    ));
+    if (accepted != true || !mounted) return;
+    setState(() { _pr08Saving = true; _loading = true; });
+    try {
+      for (final change in changes) {
+        await Supabase.instance.client.schema('collection').rpc('pr_08_modifica_prezzo_inserzione', params: {
+          'p_codice_vendita_aperta': change['id'], 'p_nuovo_prezzo': change['price'],
+          'p_note': (change['note'] as String).isEmpty ? null : change['note'],
+        });
+      }
+      if (!mounted) return;
+      setState(() {
+        for (final change in changes) { final id = change['id'] as int; _pr08Drafts[id]?['selected'] = false; _pr08Drafts[id]?['importo_vendita'] = ''; }
+        _output = 'Prezzi aggiornati: ${changes.length}. Le inserzioni sono rimaste aperte e le variazioni sono state registrate nello storico.';
+      });
+      await _loadPr08OpenSales();
+    } finally { if (mounted) setState(() { _pr08Saving = false; _loading = false; }); }
+  }
+  Future<void> _pr08CollectCurrentSelection() async {
+    final selected = _pr08OpenSales.where((row) {
+      final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+      return id != null && _pr08Drafts[id]?['selected'] == true;
+    }).toList();
+    if (selected.isEmpty) throw Exception('Seleziona almeno una vendita da chiudere.');
+    for (final row in selected) {
+      final id = int.parse(row['codice_vendita_aperta'].toString());
+      final draft = _pr08Drafts[id]!;
+      if (_pr08PendingClosures.any((e) => e['codice_vendita_aperta'] == id)) {
+        throw Exception('La vendita aperta $id è già nella coda di chiusura.');
+      }
+      final enteredAmount = (draft['importo_vendita'] ?? '').toString().trim();
+      if (enteredAmount.isEmpty) throw Exception('Inserisci un importo, anche 0, per la chiusura $id.');
+      final amount = double.tryParse(enteredAmount.replaceAll(',', '.'));
+      if (amount == null || amount < 0) throw Exception('Importo non valido per la chiusura $id.');
+      final draftOutcome = (draft['esito'] ?? 'CHIUSURA SENZA VENDITA').toString();
+      final specialCauses = {'PERSO', 'DANNEGGIATO', 'DISTRUTTO', 'ANNULLATA_PER_ERRORE'};
+      final outcome = specialCauses.contains(draftOutcome)
+          ? draftOutcome
+          : (amount > 0 ? 'VENDITA EFFETTIVA' : (draftOutcome == 'VENDITA EFFETTIVA' ? 'CHIUSURA SENZA VENDITA' : draftOutcome));
+      if (specialCauses.contains(outcome)) {
+        if (amount > 0) throw Exception('Per la causa $outcome non inserire un importo di vendita.');
+        _pr08PendingClosures.add({
+          'codice_vendita_aperta': id,
+          'esito': outcome,
+          if ((draft['note'] ?? '').toString().trim().isNotEmpty) 'note': draft['note'].toString().trim(),
+        });
+      } else if (outcome == 'VENDITA EFFETTIVA') {
+        final platform = draft['codice_piattaforma'];
+        final external = (draft['canale_esterno'] ?? '').toString().trim();
+        if ((platform == null || platform.toString().isEmpty) == external.isEmpty) {
+          throw Exception('Per la vendita $id scegli una piattaforma oppure un canale esterno, non entrambi.');
+        }
+        _pr08PendingClosures.add({
+          'codice_vendita_aperta': id,
+          'esito': outcome,
+          'data_vendita': draft['data_vendita'],
+          'importo_vendita': amount.toStringAsFixed(2),
+          if (platform != null && platform.toString().isNotEmpty) 'codice_piattaforma': int.parse(platform.toString()),
+          if (external.isNotEmpty) 'canale_esterno': external,
+          if ((draft['note'] ?? '').toString().trim().isNotEmpty) 'note': draft['note'].toString().trim(),
+        });
+      } else {
+        _pr08PendingClosures.add({
+          'codice_vendita_aperta': id,
+          'esito': 'CHIUSURA SENZA VENDITA',
+          if ((draft['note'] ?? '').toString().trim().isNotEmpty) 'note': draft['note'].toString().trim(),
+        });
+      }
+    }
+    setState(() {
+      for (final row in selected) {
+        final id = int.parse(row['codice_vendita_aperta'].toString());
+        _pr08Drafts[id]!['selected'] = false;
+      }
+      _output = 'Chiusure in bozza: ${_pr08PendingClosures.length}. Nessun dato è ancora stato scritto nel database.';
+    });
+    final another = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('AGGIUNGERE ALTRE CHIUSURE?'),
+        content: Text('Chiusure in attesa: ${_pr08PendingClosures.length}. Vuoi selezionare altre vendite prima del salvataggio?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, SALVA TUTTO')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, AGGIUNGI ALTRE')),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (another == true) {
+      await _loadPr08OpenSales();
+      return;
+    }
+    await _pr08FinalSave();
+  }
+
+  Future<void> _pr08FinalSave() async {
+    if (_pr08PendingClosures.isEmpty) throw Exception('Non ci sono chiusure da salvare.');
+    final preview = _pr08PendingClosures.map((e) {
+      final id = e['codice_vendita_aperta'];
+      final matches = _pr08OpenSales.where((r) => r['codice_vendita_aperta'].toString() == id.toString());
+      final row = matches.isEmpty ? null : matches.first;
+      return '${id} · ${row?['descrizione_oggetto'] ?? 'Oggetto'} · ${e['esito']}${e['importo_vendita'] == null ? '' : ' · € ${e['importo_vendita']}'}';
+    }).join('\n');
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('CONFERMA DEFINITIVA'),
+        content: SingleChildScrollView(child: Text('Verranno salvate tutte le chiusure insieme.\n\n$preview\n\nSolo le vendite effettive genereranno entrate in cassa. Confermi?')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SALVA TUTTO')),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    setState(() { _pr08Saving = true; _loading = true; });
+    try {
+      final special = _pr08PendingClosures.where((e) => {'PERSO', 'DANNEGGIATO', 'DISTRUTTO', 'ANNULLATA_PER_ERRORE'}.contains(e['esito'])).toList();
+      final ordinary = _pr08PendingClosures.where((e) => !{'PERSO', 'DANNEGGIATO', 'DISTRUTTO', 'ANNULLATA_PER_ERRORE'}.contains(e['esito'])).toList();
+      if (special.isNotEmpty && ordinary.isNotEmpty) {
+        throw Exception('Per sicurezza salva separatamente le chiusure con causa speciale e le chiusure ordinarie.');
+      }
+      dynamic result;
+      if (special.isNotEmpty) {
+        if (special.length != 1) throw Exception('Salva una sola chiusura con causa speciale alla volta.');
+        final item = special.single;
+        result = await Supabase.instance.client.schema('collection').rpc(
+          'pr_08_chiudi_senza_vendita_con_causa',
+          params: {
+            'p_codice_vendita_aperta': item['codice_vendita_aperta'],
+            'p_causa': item['esito'],
+            'p_note': item['note'],
+          },
+        );
+      } else {
+        result = await Supabase.instance.client.schema('collection').rpc(
+          'pr_07_chiudi_vendite_batch',
+          params: {'p_chiusure': ordinary},
+        );
+      }
+      if (!mounted) return;
+      final saved = special.isNotEmpty ? 1 : (result is List ? result.length : ordinary.length);
+      setState(() {
+        _pr08PendingClosures.clear();
+        _output = 'Salvataggio completato e verificato: $saved chiusure. Le entrate di cassa sono state registrate solo per le vendite effettive.';
+        _lastResult = {'chiusure_salvate': saved};
+      });
+      await _loadPr08OpenSales();
+    } finally {
+      if (mounted) setState(() { _pr08Saving = false; _loading = false; });
+    }
+  }
+
+  Widget _pr08ClosurePanel() {
+    if (!_pr08Loaded) return const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()));
+    final pendingIds = _pr08PendingClosures.map((e) => e['codice_vendita_aperta'].toString()).toSet();
+    final query = _pr08SearchQuery.trim().toLowerCase();
+    final available = _pr08OpenSales.where((row) {
+      if (pendingIds.contains(row['codice_vendita_aperta'].toString())) return false;
+      if (query.isEmpty) return true;
+      return [row['codice_vendita_aperta'], row['codice_oggetto'], row['descrizione_oggetto']]
+          .any((v) => (v ?? '').toString().toLowerCase().contains(query));
+    }).toList();
+    final selectedCount = available.where((row) {
+      final id = int.tryParse(row['codice_vendita_aperta'].toString());
+      return id != null && _pr08Drafts[id]?['selected'] == true;
+    }).length;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.point_of_sale, color: sectionColor, size: 28), const SizedBox(width: 10), Expanded(child: Text(_pr08ActionMode == 'MODIFICA' ? 'MODIFICA PREZZO INSERZIONE' : 'MODIFICA E CHIUDI VENDITA', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))]),
+        const SizedBox(height: 10),
+        const Text('Seleziona le inserzioni aperte e scegli l’operazione da eseguire.'),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'MODIFICA', label: Text('Modifica prezzo'), icon: Icon(Icons.edit_outlined)),
+            ButtonSegment(value: 'CHIUDI', label: Text('Chiudi vendita'), icon: Icon(Icons.point_of_sale)),
+          ],
+          selected: {_pr08ActionMode},
+          onSelectionChanged: _loading ? null : (value) => setState(() => _pr08ActionMode = value.first),
+        ),
+        const SizedBox(height: 8),
+        Text(_pr08ActionMode == 'MODIFICA' ? 'Modifica soltanto il prezzo richiesto. Nessuna chiusura e nessun movimento di cassa.' : 'Seleziona le inserzioni, scegli il tipo di chiusura e registra l’incasso reale solo se c’è stata una vendita.'),
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          Chip(avatar: const Icon(Icons.pending_actions, size: 18), label: Text('Aperte: ${_pr08OpenSales.length}')),
+          Chip(avatar: const Icon(Icons.checklist, size: 18), label: Text('Selezionate: $selectedCount')),
+          if (_pr08PendingClosures.isNotEmpty) Chip(avatar: const Icon(Icons.save_outlined, size: 18), label: Text('In bozza: ${_pr08PendingClosures.length}')),
+        ]),
+      ]))),
+      if (_pr08OpenSales.isEmpty && _pr08PendingClosures.isEmpty) const Padding(padding: EdgeInsets.all(20), child: Text('Non ci sono vendite aperte da chiudere.'))
+      else ...[
+        TextField(decoration: const InputDecoration(labelText: 'Cerca una vendita', hintText: 'Descrizione o codice vendita/oggetto', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()), onChanged: (v) => setState(() => _pr08SearchQuery = v)),
+        const SizedBox(height: 10),
+        if (available.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('Nessuna vendita corrisponde alla ricerca.')),
+        ...available.map((row) {
+          final id = int.tryParse(row['codice_vendita_aperta']?.toString() ?? '');
+          if (id == null) return const SizedBox.shrink();
+          final draft = _pr08Drafts[id]!;
+          final selected = draft['selected'] == true;
+          final outcome = (draft['esito'] ?? 'VENDITA EFFETTIVA').toString();
+          final amount = (draft['importo_vendita'] ?? '').toString();
+          return Card(key: ValueKey('pr08-sale-$id'), margin: const EdgeInsets.symmetric(vertical: 5), child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            CheckboxListTile(contentPadding: EdgeInsets.zero, value: selected, onChanged: _loading ? null : (v) => setState(() => draft['selected'] = v == true), title: Text('#$id · ${(row['descrizione_oggetto'] ?? 'Oggetto').toString()}', style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Text('Oggetto #${row['codice_oggetto']}  •  Apertura ${row['data_inizio_vendita'] ?? 'n.d.'}\nPrezzo richiesto: € ${row['prezzo_di_vendita'] ?? 'n.d.'}'))),
+            if (selected) ...[
+              const Divider(),
+              if (_pr08ActionMode == 'CHIUDI') DropdownButtonFormField<String>(value: outcome, decoration: const InputDecoration(labelText: 'Tipo di chiusura', border: OutlineInputBorder()), items: const [DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')), DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza incasso')), DropdownMenuItem(value: 'PERSO', child: Text('Oggetto perso')), DropdownMenuItem(value: 'DANNEGGIATO', child: Text('Oggetto danneggiato')), DropdownMenuItem(value: 'DISTRUTTO', child: Text('Oggetto distrutto')), DropdownMenuItem(value: 'ANNULLATA_PER_ERRORE', child: Text('Inserzione creata per errore'))], onChanged: (v) => setState(() { draft['esito'] = v; if (v != 'VENDITA EFFETTIVA') { draft['importo_vendita'] = '0'; draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } else if ((double.tryParse(amount.replaceAll(',', '.')) ?? 0) <= 0) { draft['importo_vendita'] = ''; } })),
+              const SizedBox(height: 10),
+              TextFormField(initialValue: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: _pr08ActionMode == 'MODIFICA' ? 'Nuovo prezzo richiesto (€)' : 'Importo effettivamente incassato (€)', helperText: _pr08ActionMode == 'MODIFICA' ? 'Prezzo attuale: € ${row['prezzo_di_vendita'] ?? 'n.d.'}' : 'Inserisci l’importo reale solo se hai venduto', prefixIcon: const Icon(Icons.euro), border: const OutlineInputBorder()), onChanged: (v) => setState(() { draft['importo_vendita'] = v; final parsed = double.tryParse(v.replaceAll(',', '.')); if (parsed != null && parsed > 0) draft['esito'] = 'VENDITA EFFETTIVA'; if (parsed == 0) { draft['codice_piattaforma'] = null; draft['canale_esterno'] = ''; } })),
+              if (_pr08ActionMode == 'CHIUDI' && outcome == 'VENDITA EFFETTIVA') ...[
+                const SizedBox(height: 10),
+                TextFormField(initialValue: (draft['data_vendita'] ?? '').toString(), decoration: const InputDecoration(labelText: 'Data effettiva della vendita', hintText: 'AAAA-MM-GG', prefixIcon: Icon(Icons.calendar_today), border: OutlineInputBorder()), onChanged: (v) => draft['data_vendita'] = v),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(value: draft['codice_piattaforma']?.toString(), decoration: const InputDecoration(labelText: 'Dove hai venduto?', border: OutlineInputBorder()), items: _pr08Platforms.map((p) => DropdownMenuItem<String>(value: p['codice_piattaforma'].toString(), child: Text((p['nome_piattaforma'] ?? 'Piattaforma').toString()))).toList(), onChanged: (v) => setState(() { draft['codice_piattaforma'] = v; if (v != null) draft['canale_esterno'] = ''; })),
+                const SizedBox(height: 10),
+                TextFormField(initialValue: (draft['canale_esterno'] ?? '').toString(), decoration: const InputDecoration(labelText: 'Canale alternativo (facoltativo)', helperText: 'Usalo solo se non hai scelto una piattaforma', border: OutlineInputBorder()), onChanged: (v) => draft['canale_esterno'] = v),
+              ],
+              const SizedBox(height: 10),
+              TextFormField(initialValue: (draft['note'] ?? '').toString(), decoration: const InputDecoration(labelText: 'Note (facoltative)', border: OutlineInputBorder()), onChanged: (v) => draft['note'] = v),
+            ],
+          ])));
+        }),
+        const SizedBox(height: 12),
+        FilledButton.icon(onPressed: _loading || _pr08Saving || selectedCount == 0 ? null : () => _run(_pr08ActionMode == 'MODIFICA' ? _pr08ModifySelectedPrices : _pr08CollectCurrentSelection), icon: Icon(_pr08ActionMode == 'MODIFICA' ? Icons.save_as_outlined : Icons.playlist_add_check), label: Text(_pr08ActionMode == 'MODIFICA' ? 'CONFERMA MODIFICA PREZZI ($selectedCount)' : 'AGGIUNGI $selectedCount ALLA BOZZA DI CHIUSURA')),
+      ],
+      if (_pr08PendingClosures.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Text('RIEPILOGO PRONTO PER IL SALVATAGGIO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text('${_pr08PendingClosures.length} chiusure in bozza. Nessun dato viene registrato fino alla conferma finale.'),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(onPressed: _loading || _pr08Saving ? null : () => _run(_pr08FinalSave), icon: const Icon(Icons.save_outlined), label: Text(_pr08Saving ? 'SALVATAGGIO…' : 'CONTROLLA E CONFERMA IL SALVATAGGIO')),
+        ]))),
+      ],
+    ]);
+  }
   Future<void> _selectHistoryObject(Map<String, dynamic> item) async {
     final id=int.tryParse(item['codice_oggetto']?.toString()??'');
     if(id==null||id<=0)throw Exception('Il risultato non contiene un codice oggetto valido.');
@@ -5008,6 +5381,92 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
+  Future<void> _searchPr12ForPr01() async {
+    final description = _description.text.trim();
+    if (description.length < 2) throw Exception('Inserisci almeno 2 caratteri nella descrizione prima di avviare PR-12.');
+    setState(() { _loading = true; _metadataResult = 'PR-12 sta cercando metadati e fonti…'; });
+    try {
+      final response = await Supabase.instance.client.functions.invoke('pr-12-web-search-corrected-test', body: {
+        'descrizione': description, 'categoria': 'COLLEZIONABILE',
+        'produttore': _producer.text.trim(), 'codice_prodotto': _family.text.trim(), 'mercato': 'Italia',
+      });
+      final data = response.data;
+      if (data is! Map || data['ok'] == false) throw Exception(data is Map ? (data['error'] ?? 'PR-12 non disponibile').toString() : 'Risposta PR-12 non valida.');
+      final results = data['risultati'] is List
+        ? (data['risultati'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+        : <Map<String, dynamic>>[];
+      if (!mounted) return;
+      setState(() {
+        _metadataSearchExecuted = true;
+        _metadataResult = results.isEmpty ? 'PR-12 completata: nessun candidato verificabile. Puoi continuare manualmente.' : 'PR-12 ha trovato ${results.length} candidati. Seleziona quello corrispondente all’oggetto.';
+      });
+      if (results.isEmpty) return;
+      final selected = await showDialog<Map<String, dynamic>>(
+        context: context, barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('PR-12 · Seleziona il candidato corretto'),
+          content: SizedBox(width: 520, child: SingleChildScrollView(child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: results.take(10).map((candidate) {
+              final title = (candidate['title'] ?? candidate['titolo'] ?? 'Candidato senza titolo').toString();
+              final details = [candidate['produttore'], candidate['anno_uscita'], candidate['codice_prodotto'], candidate['snippet']]
+                .where((v) => v != null && v.toString().trim().isNotEmpty).join(' · ');
+              return Card(child: ListTile(title: Text(title), subtitle: Text(details),
+                trailing: const Icon(Icons.check_circle_outline),
+                onTap: () => Navigator.pop(dialogContext, candidate)));
+            }).toList(),
+          ))),
+          actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('NON SELEZIONARE'))],
+        ),
+      );
+      if (selected == null || !mounted) return;
+      final title = (selected['title'] ?? selected['titolo'] ?? '').toString().trim();
+      final maker = (selected['produttore'] ?? '').toString().trim();
+      final year = (selected['anno_uscita'] ?? '').toString().trim();
+      final productCode = (selected['codice_prodotto'] ?? '').toString().trim();
+      final sourceUrl = (selected['url'] ?? selected['source_url'] ?? '').toString().trim();
+      setState(() {
+        if (title.isNotEmpty) _description.text = title;
+        if (maker.isNotEmpty) _producer.text = maker;
+        if (year.isNotEmpty) _line.text = year;
+        if (productCode.isNotEmpty) _family.text = productCode;
+        if (sourceUrl.isNotEmpty) _metadataSourceUrl = sourceUrl;
+        _metadataResult = 'Candidato selezionato. Verifica i metadati prima della conferma.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => _metadataResult = 'Ricerca PR-12 non riuscita: $e. La bozza resta disponibile.');
+      rethrow;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _runPr19Valuation() async {
+    final description = _description.text.trim();
+    if (description.length < 2) throw Exception('Inserisci la descrizione prima della valutazione PR-19.');
+    setState(() { _loading = true; _output = 'PR-19 · Valutazione del singolo oggetto in corso…'; });
+    try {
+      final response = await Supabase.instance.client.functions.invoke('pr-19-object-valuation-test', body: {
+        'descrizione': description, 'produttore': _producer.text.trim(),
+        'codice_prodotto': _family.text.trim(), 'categoria': 'COLLEZIONABILE', 'mercato': 'Italia',
+      });
+      final data = response.data;
+      if (data is! Map || data['ok'] != true) throw Exception(data is Map ? (data['error'] ?? 'PR-19 non disponibile').toString() : 'Risposta PR-19 non valida.');
+      final valuation = Map<String, dynamic>.from(data);
+      final raw = valuation['valore_stimato'];
+      final estimate = raw is num ? raw.toDouble() : double.tryParse('$raw');
+      if (!mounted) return;
+      setState(() {
+        _pr19ValuationResult = valuation;
+        if (estimate != null && estimate > 0) _marketValue.text = estimate.toStringAsFixed(2);
+        else _marketValue.clear();
+        _output = estimate != null && estimate > 0
+          ? 'PR-19 ha restituito una stima di €${estimate.toStringAsFixed(2)}.'
+          : 'PR-19 non ha trovato prezzi espliciti sufficienti. Nessun valore inventato.';
+      });
+    } finally { if (mounted) setState(() => _loading = false); }
+  }
+
   Widget _imageField() {
     final hasSelected = _selectedImageBytes != null;
     return Card(
@@ -5052,11 +5511,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ? Colors.orangeAccent : ValoraAppearance.instance.textSecondary,
             fontSize: 12)),
           const SizedBox(height: 4),
-          Align(alignment: Alignment.centerRight, child: TextButton.icon(
-            onPressed: _loading ? null : _pickImageFile,
-            icon: const Icon(Icons.photo_library_outlined),
-            label: const Text('Scegli invece una foto dalla galleria'),
-          )),
+          Wrap(spacing: 8, runSpacing: 4, alignment: WrapAlignment.end, children: [
+            TextButton.icon(onPressed: _loading ? null : _pickImageFile, icon: const Icon(Icons.photo_library_outlined), label: const Text('Carica foto')),
+            if (hasSelected) TextButton.icon(onPressed: _loading ? null : _recognizeSelectedPhoto, icon: const Icon(Icons.document_scanner_outlined), label: const Text('Riconosci foto con PR-12')),
+          ]),
         ]),
       ),
     );
@@ -7081,6 +7539,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                 const SizedBox(height: 8),
                 _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
+                 const SizedBox(height: 8),
+                 OutlinedButton.icon(
+                   onPressed: _loading ? null : () => _run(_searchPr12ForPr01),
+                   icon: const Icon(Icons.travel_explore_outlined),
+                   label: const Text('CERCA METADATI CON PR-12'),
+                 ),
+                 if (_metadataSearchExecuted) Padding(
+                   padding: const EdgeInsets.only(bottom: 8),
+                   child: Text(_metadataResult, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+                 ),
                 const SizedBox(height: 10),
                 _imageField(),
               ]),
@@ -7236,6 +7704,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               _pr02TechnicalCard(_currentObject!),
           ],
         ],
+        if (_isWrite && code == 'PR-08') ...[
+          _pr08ClosurePanel(),
+        ],
         if (_isWrite && code == 'PR-03') ...[
           _field(_search, 'Cerca oggetto per descrizione o codice'),
           FilledButton.icon(
@@ -7332,7 +7803,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           )),
           const SizedBox(height: 10),
         ],
-        if ((!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
+        if (code != 'REPORT-SALES-ACTIVE' && code != 'PR-08' && (!_isWrite || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport)
           _field(_search, 'Cerca'),
         if (_isWrite && code == 'PR-01') ...[
           FilledButton.icon(
@@ -7349,6 +7820,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             icon: Icon(Icons.verified_outlined),
             label: Text('CONFERMA DATI'),
           ),
+        ] else if (_isWrite && code == 'PR-08') ...[
+          const SizedBox.shrink(),
         ] else if (_isWrite && code == 'PR-03') ...[
           const SizedBox.shrink(),
         ] else if (_isWrite) ...[
@@ -7363,7 +7836,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           const SizedBox(height: 8),
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
             icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
-        ] else if (!isMaster)
+        ] else if (!isMaster && code != 'REPORT-SALES-ACTIVE')
           FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
             icon: Icon(Icons.search),
             label: Text(_loading ? 'RICERCA...' : isAvailableList
@@ -7523,11 +7996,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
                 trailing: amount == null ? null : Text('${amount.toString()} ${item['valuta'] ?? 'EUR'}'),
-                onTap: () => showDialog<void>(context: context, builder: (context) => AlertDialog(
-                  title: const Text('Dettaglio operazione'),
-                  content: SingleChildScrollView(child: SelectableText(_pretty(item))),
-                  actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
-                )),
+                // I report mostrano direttamente le righe leggibili, senza JSON grezzo.
+                onTap: null,
               ));
             }
             return _objectCard(item, availableStyle: isAvailableList, onTap: isAvailableList
@@ -7752,124 +8222,115 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final yearText = _line.text.trim();
     if (yearText.isNotEmpty) {
       final year = int.tryParse(yearText);
-      if (year == null || year < 1000 || year > DateTime.now().year + 2) {
-        throw Exception('Anno di uscita non valido. Inserisci un anno plausibile oppure lascia il campo vuoto.');
-      }
+      if (year == null || year < 1000 || year > DateTime.now().year + 2) throw Exception('Anno di uscita non valido.');
     }
     final qty = int.tryParse(_quantity.text.trim());
     if (qty == null || qty < 1) throw Exception('La quantità deve essere un numero intero maggiore di zero.');
 
-    final unitPriceLabel = _unitPrice.text.trim().isEmpty
-        ? 'Non indicato'
-        : '${_unitPrice.text.trim()} €';
-    final totalValueLabel = _totalValue.text.trim().isEmpty
-        ? 'Non indicato'
-        : '${_totalValue.text.trim()} €';
-    final marketValueLabel = _marketValue.text.trim().isEmpty
-        ? 'Non indicato'
-        : '${_marketValue.text.trim()} €';
-    final notesLabel = _notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim();
-
+    // PR-19 è un supporto alla valutazione, non deve bloccare PR-01 se il servizio è indisponibile.
+    // I log TEST del 27/10/2026 mostrano risposte HTTP 502 da pr-19-object-valuation-test.
+    _pr19ValuationResult = null;
+    try {
+      await _runPr19Valuation();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _pr19ValuationResult = null;
+        _marketValue.clear();
+        _output = 'PR-19 non disponibile: $e. Puoi proseguire con la conferma manuale; nessuna stima automatica verrà usata.';
+      });
+    }
+    if (!mounted) return;
+    final valuation = _pr19ValuationResult ?? <String, dynamic>{};
+    final estimate = valuation['valore_stimato'];
+    final comparables = valuation['comparabili'] is List
+      ? (valuation['comparabili'] as List).whereType<Map>().take(5).map((e) {
+          final item = Map<String, dynamic>.from(e);
+          return '${item['titolo'] ?? 'Comparabile'} · €${item['prezzo_eur'] ?? '?'} · ${item['tipo_prezzo'] ?? 'prezzo non classificato'}';
+        }).join('\n') : '';
     final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
+      context: context, barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Conferma inserimento oggetto'),
-        content: SingleChildScrollView(
-          child: Text(
-            'Descrizione: ${_description.text.trim()}\\n'
-            'Produttore: ${_producer.text.trim()}\\n'
-            'Linea / serie: ${_line.text.trim()}\\n'
-            'Famiglia / categoria: ${_family.text.trim()}\\n'
-            'Condizione: $_condition\\n'
-            'Completezza: $_completeness\\n'
-            'Destinazione: $_destination\\n'
-            'Quantità: ${_quantity.text.trim()}\\n'
-            'Prezzo unitario: $unitPriceLabel\\n'
-            'Valore totale: $totalValueLabel\\n'
-            'Valore di mercato stimato: $marketValueLabel\\n'
-            'Note: $notesLabel\\n\\n'
-            'Confermi il salvataggio di questo oggetto nel database TEST?',
-          ),
-        ),
+        title: const Text('Conferma oggetto e valore di mercato'),
+        content: SizedBox(width: 560, child: SingleChildScrollView(child: Column(
+          mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Descrizione: ${_description.text.trim()}\nProduttore: ${_producer.text.trim()}\nAnno: ${_line.text.trim()}\nCodice prodotto: ${_family.text.trim()}\nCondizione: $_condition\nCompletezza: $_completeness\nDestinazione: $_destination\nQuantità: ${_quantity.text.trim()}\nPrezzo unitario: ${_unitPrice.text.trim().isEmpty ? 'Non indicato' : '${_unitPrice.text.trim()} €'}\nValore totale: ${_totalValue.text.trim().isEmpty ? 'Non indicato' : '${_totalValue.text.trim()} €'}\nNote: ${_notes.text.trim().isEmpty ? 'Nessuna' : _notes.text.trim()}'),
+            const Divider(height: 24),
+            const Text('PR-19 · VALUTAZIONE DEL SINGOLO OGGETTO', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text('Stato: ${valuation['stato_stima'] ?? 'NON DISPONIBILE'} · Affidabilità: ${valuation['affidabilita'] ?? 'NON VALUTABILE'}'),
+            Text('Comparabili utilizzabili: ${valuation['numero_comparabili'] ?? 0}'),
+            if (comparables.isNotEmpty) ...[const SizedBox(height: 6), Text(comparables, style: const TextStyle(fontSize: 12))],
+            const SizedBox(height: 10),
+            TextField(controller: _marketValue, keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: 'Valore di mercato confermato (€)',
+                helperText: estimate == null ? 'Nessuna stima automatica disponibile. Puoi lasciare vuoto.' : 'Stima PR-19: €${estimate}. Puoi correggerla.',
+                border: const OutlineInputBorder())),
+            if ((valuation['avvertenza'] ?? '').toString().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(valuation['avvertenza'].toString(), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+            ],
+            const SizedBox(height: 8),
+            const Text('Nessun oggetto viene salvato finché non confermi e scegli come proseguire.', style: TextStyle(fontSize: 12)),
+          ],
+        ))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('ANNULLA')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('CONFERMA E SALVA')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('TORNA ALLA SCHEDA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA OGGETTO E VALORE')),
         ],
       ),
     );
     if (confirmed != true) {
-      setState(() => _output = 'Salvataggio annullato. Nessun oggetto salvato.');
+      setState(() => _output = 'Conferma annullata. La scheda resta modificabile e non è stata salvata.');
       return;
     }
-
+    final marketText = _marketValue.text.trim();
+    if (marketText.isNotEmpty) {
+      final market = double.tryParse(marketText.replaceAll(',', '.'));
+      if (market == null || market < 0 || market >= 1000000) throw Exception('Valore di mercato non valido. Correggilo oppure lascia vuoto.');
+      _marketValue.text = market.toStringAsFixed(2);
+    }
     final currentPayload = _payload();
     final rows = currentPayload['oggetti'];
-    if (rows is! List || rows.isEmpty || rows.first is! Map) {
-      throw Exception('Nessun oggetto valido da aggiungere al blocco.');
-    }
+    if (rows is! List || rows.isEmpty || rows.first is! Map) throw Exception('Nessun oggetto valido da aggiungere al blocco.');
     _pr01PendingObjects.add({
       'oggetto': Map<String, dynamic>.from(rows.first as Map),
       'categoria': _selectedCollectionCategory,
+      'valore_mercato': _marketValue.text.trim().isEmpty ? null : double.parse(_marketValue.text.trim().replaceAll(',', '.')),
       'image_bytes': _selectedImageBytes == null ? null : Uint8List.fromList(_selectedImageBytes!),
       'image_name': _selectedImageName,
       'image_acquisition': _imageAcquisition,
+      'valutazione_pr19': _pr19ValuationResult == null ? null : Map<String, dynamic>.from(_pr19ValuationResult!),
     });
     _pr01PendingRequestId ??= _uuid.v4();
-
     if (!mounted) return;
     final addAnother = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
+      context: context, barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Oggetto confermato'),
-        content: Text(
-          'Vuoi inserire un altro oggetto?\n\n'
-          'Se scegli NO, verranno salvati tutti i '
-          '${_pr01PendingObjects.length} oggetti raccolti finora.',
-        ),
+        content: Text('Vuoi inserire un altro oggetto?\n\nOggetti in attesa di salvataggio: ${_pr01PendingObjects.length}. Se scegli NO, verrà salvato il blocco confermato.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('NO, SALVA IL BLOCCO'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('SÌ, INSERISCI UN ALTRO'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('NO, TERMINA E SALVA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, NUOVO OGGETTO')),
         ],
       ),
     );
     if (!mounted) return;
     if (addAnother == true) {
       setState(() {
-        _description.clear();
-        _producer.clear();
-        _line.clear();
-        _family.clear();
-        _notes.clear();
-        _quantity.text = '1';
-        _unitPrice.clear();
-        _totalValue.clear();
-        _value.clear();
-        _marketValue.text = '0.00';
-        _condition = 'USATO';
-        _completeness = 'COMPLETO';
-        _destination = 'COLLEZIONE';
-        _selectedCollectionCategory = null;
-        _existingImageUrl = null;
-        _selectedImageBytes = null;
-        _selectedImageName = null;
-        _imageStatus = 'Nessuna immagine selezionata.';
-        _metadataResult = 'La ricerca dei metadati è disponibile esclusivamente tramite PR-12.';
-        _output = 'Blocco provvisorio: ${_pr01PendingObjects.length} oggetti. Inserisci il prossimo.';
+        _description.clear(); _producer.clear(); _line.clear(); _family.clear(); _notes.clear();
+        _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear(); _value.clear(); _marketValue.clear();
+        _condition = 'USATO'; _completeness = 'COMPLETO'; _destination = 'COLLEZIONE';
+        _selectedCollectionCategory = null; _existingImageUrl = null; _selectedImageBytes = null; _selectedImageName = null;
+        _imageStatus = 'Nessuna immagine selezionata.'; _metadataSearchExecuted = false;
+        _metadataResult = 'La ricerca metadati viene eseguita esplicitamente tramite PR-12.';
+        _pr19ValuationResult = null;
+        _output = 'Bozza PR-01: ${_pr01PendingObjects.length} oggetti confermati. Inserisci il prossimo.';
       });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus); });
       return;
     }
-
     await _savePr01PendingObjects();
     if (mounted) Navigator.of(context).pop();
   }
@@ -7886,14 +8347,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       'altra_operazione': false,
       'conferma_finale': true,
     };
+    if (mounted) setState(() => _output =
+      'PR-01: ${pending.length} oggetti confermati. Verifica e salvataggio nel database TEST in corso…');
     await _acquireLock();
     try {
       final preview = await _ValoraRuntimeApi.procedure(
         'PR-01', 'preview', payload, sessionId: _sessionId);
-      if (preview['errore'] != null) throw Exception(preview['errore'].toString());
+      if (preview['errore'] != null) throw Exception('Preview PR-01: ${preview['errore']}');
       final review = await _ValoraRuntimeApi.procedure(
         'PR-01', 'review', payload, sessionId: _sessionId);
-      if (review['errore'] != null) throw Exception(review['errore'].toString());
+      if (review['errore'] != null) throw Exception('Review PR-01: ${review['errore']}');
+      if (mounted) setState(() => _output =
+        'PR-01: controlli superati. Scrittura degli oggetti nel database TEST…');
       final result = await _ValoraRuntimeApi.procedure(
         'PR-01', 'save', payload, sessionId: _sessionId,
         requestId: _pr01PendingRequestId ??= _uuid.v4());
@@ -7916,6 +8381,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
         if (savedId == null) throw Exception('Codice oggetto mancante nell’elemento ${index + 1}.');
         final category = pending[index]['categoria']?.toString();
+        final marketValue = pending[index]['valore_mercato'];
+        if (marketValue is num) {
+          await Supabase.instance.client.schema('collection')
+            .from('master_oggetti').update({'valore_mercato': marketValue})
+            .eq('codice_oggetto', savedId);
+        }
         if (category != null && category.isNotEmpty) {
           await Supabase.instance.client.schema('collection')
             .from('oggetto_collezione_categoria').upsert({

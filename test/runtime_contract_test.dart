@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final pr19Source = File('supabase/functions/pr-19-object-valuation-test/index.ts').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('la scheda oggetto espone modifica e avvio vendita', () {
@@ -26,13 +27,27 @@ void main() {
       expect(source, contains('oggetto_collezione_categoria'));
     });
 
-    test('PR-01 accoda gli oggetti e salva il blocco solo dopo la scelta finale', () {
+    test('PR-01 usa PR-12, valuta con PR-19 e conferma prima del salvataggio', () {
       expect(source, contains('_pr01PendingObjects.add({'));
       expect(source, contains('await _savePr01PendingObjects();'));
-      expect(source, contains('NO, SALVA IL BLOCCO'));
       expect(source, contains('Future<void> _savePr01PendingObjects() async'));
+      expect(source, contains('_searchPr12ForPr01()'));
+      expect(source, contains('pr-12-web-search-corrected-test'));
+      expect(source, contains('pr-19-object-valuation-test'));
+      expect(source, contains('CONFERMA OGGETTO E VALORE'));
+      expect(source, contains('SÌ, NUOVO OGGETTO'));
+      expect(source, contains('NO, TERMINA E SALVA'));
       expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
-      expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
+    });
+
+    test('PR-01 non inventa stime e mantiene la valutazione separata dal salvataggio', () {
+      expect(pr19Source, contains('scrittura_database: false'));
+      expect(source, contains("'valore_mercato': marketValue"));
+      expect(source, contains("'valore_mercato': _marketValue.text.trim().isEmpty ? null"));
+      expect(source, contains("_merchCategoryCodeForCollection(_selectedCollectionCategory)"));
+      expect(source, isNot(contains("'codice_categoria_collezione': _selectedCollectionCategory")));
+      expect(source, contains('Nessun valore inventato'));
+      expect(source, contains('_pr19ValuationResult'));
     });
 
     test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
@@ -68,7 +83,7 @@ void main() {
     });
 
     test('la consultazione inserzioni attive ha un codice dedicato', () {
-      expect(source, contains('REPORT-ACTIVE-LISTINGS'));
+      expect(source, contains("apiCode: 'REPORT-SALES-ACTIVE'"));
     });
 
     test('le procedure di base e i controlli di blocco sono presenti', () {
