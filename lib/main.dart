@@ -4310,6 +4310,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (_condition != (_currentObject?['condizione'] ?? _condition)) item['condizione'] = _condition;
       if (_completeness != (_currentObject?['completezza'] ?? _completeness)) item['completezza'] = _completeness;
       if (_destination != (_currentObject?['destinazione'] ?? _destination)) item['destinazione'] = _destination;
+      if (_destination == 'COLLEZIONE') {
+        if (_selectedCollectionCategory == null || !_collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory)) throw Exception('Seleziona una categoria COLLEZIONE valida.');
+        item['categoria_collezione_selezionata'] = _selectedCollectionCategory;
+      } else {
+        item['categoria_collezione_selezionata'] = null;
+      }
       if (_notes.text.trim() != (_currentObject?['note'] ?? '').toString()) item['note'] = _notes.text.trim().isEmpty ? null : _notes.text.trim();
       if (_quantity.text.trim() != (_currentObject?['quantita'] ?? '1').toString()) {
         final q = int.tryParse(_quantity.text.trim());
@@ -5285,10 +5291,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       for (final k in keys) { if (m[k] != null) return m[k].toString(); }
       return fallback;
     }
+    String? assignedCollectionCategory;
+    try {
+      final assignment = await Supabase.instance.client.schema('collection')
+          .from('oggetto_collezione_categoria').select('codice_categoria')
+          .eq('codice_oggetto', id).maybeSingle();
+      assignedCollectionCategory = assignment?['codice_categoria']?.toString();
+    } catch (error) { debugPrint('VALORA: categoria COLLEZIONE non letta per $id: $error'); }
     setState(() {
       _pr11CategoryFieldDefinitions = categoryDefinitions;
       _pr11CategoryValues = categoryValues;
       _pr11CategoryCode = categoryCode;
+      _selectedCollectionCategory = assignedCollectionCategory;
       _currentObject = m;
       _loadedObjectId = id;
       _description.text = txt(['descrizione_oggetto', 'descrizione']);
@@ -6938,6 +6952,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (_currentObject != null) ...[
             const SizedBox(height: 12),
             _pr02MetadataCard(_currentObject!),
+            if (_destination == 'COLLEZIONE') Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: _collectionCategoryField(),
+            ),
             const SizedBox(height: 12),
             Card(
               child: Padding(
@@ -7756,16 +7774,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         .map((e) => Map<String, dynamic>.from(e))
         .toList(growable: false);
     for (final item in pending) {
+      final categoryCode = item['categoria_collezione_selezionata']?.toString();
+      final objectPayload = Map<String, dynamic>.from(item)..remove('categoria_collezione_selezionata');
+      final objectHasChanges = objectPayload.keys.any((key) => key != 'codice_oggetto');
       final payload = <String, dynamic>{
-        'oggetti': [Map<String, dynamic>.from(item)],
+        'oggetti': [objectPayload],
         'dati_confermati': true,
         'altra_operazione': false,
         'conferma_finale': true,
       };
       final pendingImage = _pr02PendingImages[item['codice_oggetto'].toString()];
-      if (item.length > 1) await _acquireLock();
+      if (objectHasChanges) await _acquireLock();
       try {
-        if (item.length > 1) {
+        if (objectHasChanges) {
         final preview = await _ValoraRuntimeApi.procedure(
           'PR-02', 'preview', payload, sessionId: _sessionId);
         if (preview['errore'] != null) {
@@ -7783,6 +7804,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         } else {
           throw Exception('Salvataggio eseguito ma rilascio del blocco non confermato.');
         }
+        }
+        final objectIdForCategory = int.tryParse(item['codice_oggetto'].toString());
+        if (objectIdForCategory != null) {
+          if (categoryCode != null && categoryCode.isNotEmpty) {
+            await Supabase.instance.client.schema('collection').from('oggetto_collezione_categoria').upsert({
+              'codice_oggetto': objectIdForCategory, 'codice_categoria': categoryCode,
+              'fonte_assegnazione': 'UTENTE_PR02', 'stato_verifica': 'VERIFICATO',
+              'aggiornato_il': DateTime.now().toIso8601String(),
+            }, onConflict: 'codice_oggetto');
+          } else {
+            await Supabase.instance.client.schema('collection').from('oggetto_collezione_categoria')
+              .delete().eq('codice_oggetto', objectIdForCategory);
+          }
         }
         if (pendingImage != null) {
           final signedUrl = await _uploadAndRegisterImage(
