@@ -39,3 +39,4 @@ flutter:
   uses-material-design: true
   assets:
     - valora_logo.png
+    - assets/valora_logo.png
