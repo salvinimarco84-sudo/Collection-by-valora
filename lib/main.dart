@@ -4153,6 +4153,31 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
+  String _merchCategoryCodeForCollection(String? collectionCode) {
+    final selected = _collectionCategories.where(
+      (e) => e['codice_categoria']?.toString() == collectionCode,
+    );
+    if (selected.isEmpty) throw Exception('Categoria COLLEZIONE non riconosciuta.');
+    final label = (selected.first['descrizione'] ?? '').toString().trim().toLowerCase();
+    // Il runtime SQL richiede il codice merceologico (categorie_merceologiche),
+    // distinto dal codice della tassonomia COLLEZIONE scelta dall'utente.
+    // La categoria COLLEZIONE originale viene salvata separatamente dopo l'inserimento.
+    const mapping = <String, String>{
+      'lego': 'CAT-001',
+      'saint seiya': 'CAT-009',
+      'modellini auto-moto': 'CAT-020',
+      'fumetti': 'CAT-003',
+      'gundam': 'CAT-004',
+      'transformers': 'CAT-002',
+      'funko pop': 'CAT-007',
+      'model kit': 'CAT-004',
+      'sorpresine kinder': 'CAT-008',
+    };
+    final code = mapping[label];
+    if (code == null) throw Exception('Manca la corrispondenza merceologica per la categoria COLLEZIONE "$label".');
+    return code;
+  }
+
   Future<void> _loadCollectionCategories() async {
     _categoriesLoading = true;
     try {
@@ -4303,10 +4328,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
-        if (_destination == 'COLLEZIONE') 'codice_categoria_collezione': _selectedCollectionCategory,
+        if (_destination == 'COLLEZIONE') 'codice_categoria': _merchCategoryCodeForCollection(_selectedCollectionCategory),
         if (totalValue != null) 'valore_oggetto': totalValue,
-        if (_marketValue.text.trim().isNotEmpty && (double.tryParse(_marketValue.text.trim().replaceAll(',', '.')) ?? 0) > 0)
-          'valore_mercato': double.parse(_marketValue.text.trim().replaceAll(',', '.')),
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       }]};
     }
@@ -7914,6 +7937,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _pr01PendingObjects.add({
       'oggetto': Map<String, dynamic>.from(rows.first as Map),
       'categoria': _selectedCollectionCategory,
+      'valore_mercato': _marketValue.text.trim().isEmpty ? null : double.parse(_marketValue.text.trim().replaceAll(',', '.')),
       'image_bytes': _selectedImageBytes == null ? null : Uint8List.fromList(_selectedImageBytes!),
       'image_name': _selectedImageName,
       'image_acquisition': _imageAcquisition,
@@ -7993,6 +8017,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
         if (savedId == null) throw Exception('Codice oggetto mancante nell’elemento ${index + 1}.');
         final category = pending[index]['categoria']?.toString();
+        final marketValue = pending[index]['valore_mercato'];
+        if (marketValue is num) {
+          await Supabase.instance.client.schema('collection')
+            .from('master_oggetti').update({'valore_mercato': marketValue})
+            .eq('codice_oggetto', savedId);
+        }
         if (category != null && category.isNotEmpty) {
           await Supabase.instance.client.schema('collection')
             .from('oggetto_collezione_categoria').upsert({
