@@ -151,8 +151,9 @@ class _ActiveListingsReportScreenState extends State<ActiveListingsReportScreen>
       });
     } catch (error) {
       if (!mounted) return;
+      // Never expose raw runtime/JSON payloads in the user interface.
       setState(() {
-        errorMessage = error.toString().replaceFirst('Exception: ', '');
+        errorMessage = 'Impossibile caricare il report. Riprova.';
         loading = false;
       });
     }
