@@ -8037,57 +8037,37 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       throw Exception('Seleziona prima un oggetto dalla ricerca.');
     }
 
-    // Prepara e valida i dati, ma non scrive ancora nel database.
+    // Conferma locale, senza dialoghi né chiamate intermedie che ricostruiscono
+    // il flusso della schermata. Preview, review e save avvengono solo alla
+    // scelta esplicita di salvare il blocco.
     final item = _pr02ConfirmationPayload();
-    await _preview();
-    await _confirmData();
-
-    if (!mounted) return;
-    final accepted = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('Conferma modifiche oggetto'),
-        content: SingleChildScrollView(
-          child: SelectableText(_pr02ConfirmationText(item)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('ANNULLA'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('CONFERMA DATI'),
-          ),
-        ],
-      ),
-    );
-    if (accepted != true || !mounted) {
-      if (_lockHeld) await _releaseLock();
-      if (mounted) setState(() { _dataConfirmed = false; _finalReady = false; });
-      return;
+    final objectCode = item['codice_oggetto']?.toString();
+    if (objectCode == null || objectCode.isEmpty) {
+      throw Exception('Codice oggetto mancante: impossibile accodare la modifica.');
     }
 
-    _pr02PendingChanges.removeWhere((e) =>
-      e['codice_oggetto']?.toString() == item['codice_oggetto']?.toString());
+    _pr02PendingChanges.removeWhere(
+      (e) => e['codice_oggetto']?.toString() == objectCode,
+    );
     _pr02PendingChanges.add(Map<String, dynamic>.from(item));
+
     if (_selectedImageBytes != null && _selectedImageName != null) {
-      _pr02PendingImages[item['codice_oggetto'].toString()] = {
-        'bytes': Uint8List.fromList(_selectedImageBytes!), 'name': _selectedImageName!, 'acquisition': _imageAcquisition,
+      _pr02PendingImages[objectCode] = {
+        'bytes': Uint8List.fromList(_selectedImageBytes!),
+        'name': _selectedImageName!,
+        'acquisition': _imageAcquisition,
       };
     }
 
     if (_lockHeld) await _releaseLock();
-
     if (!mounted) return;
 
-    if (!mounted) return;
     setState(() {
+      _dataConfirmed = true;
+      _finalReady = false;
       _pr02AwaitingNextChoice = true;
-      _output = 'Oggetto ${item['codice_oggetto']} aggiunto al blocco provvisorio. Scegli se continuare o salvare.';
+      _output = 'Oggetto $objectCode aggiunto al blocco provvisorio. Nessuna scrittura è stata eseguita. Scegli se modificare un altro oggetto oppure salvare il blocco.';
     });
-    return;
   }
 
   Future<void> _continuePr02WithAnotherObject() async {

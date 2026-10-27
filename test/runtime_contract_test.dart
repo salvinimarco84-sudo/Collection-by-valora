@@ -41,14 +41,17 @@ void main() {
       expect(source, contains('codeOf(item) == phrase.trim()'));
     });
 
-    test('PR-02 usa maschera dedicata e scelta successiva inline', () {
-      expect(source, contains('_buildPr02Screen()'));
-      expect(source, contains("PageStorageKey<String>('pr02-replacement-screen')"));
-      expect(source, contains('_pr02AwaitingNextChoice'));
-      expect(source, contains('_continuePr02WithAnotherObject()'));
-      expect(source, contains('_finishPr02PendingChanges()'));
-      expect(source, contains('CONFERMA DATI E AGGIUNGI AL BLOCCO'));
-      expect(source, contains('NO, SALVA IL BLOCCO E TERMINA'));
+    test('PR-02 conferma in linea senza dialoghi o chiamate preview/review intermedie', () {
+      final start = source.indexOf('Future<void> _confirmPr02Changes() async {');
+      final end = source.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
+      expect(start, isNonNegative);
+      expect(end, greaterThan(start));
+      final confirmFlow = source.substring(start, end);
+      expect(confirmFlow, contains('_pr02PendingChanges.add'));
+      expect(confirmFlow, contains('_pr02AwaitingNextChoice = true'));
+      expect(confirmFlow, isNot(contains('showDialog')));
+      expect(confirmFlow, isNot(contains('await _preview()')));
+      expect(confirmFlow, isNot(contains('await _confirmData()')));
     });
 
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
