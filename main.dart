@@ -482,8 +482,8 @@ const sections = <SectionInfo>[
           readOnly: true,
         ),
         Operation(
-          'Report vendite aperte',
-          'Oggetti attualmente in vendita, prezzi richiesti e stato delle inserzioni',
+          'OGGETTI IN VENDITA',
+          'Report delle inserzioni ancora aperte, con oggetti, piattaforme, stato e prezzi richiesti',
           Icons.pending_actions_outlined,
           apiCode: 'REPORT-ACTIVE-LISTINGS',
           readOnly: true,
