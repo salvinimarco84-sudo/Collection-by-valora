@@ -2225,7 +2225,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
   @override
   void initState() {
     super.initState();
+    ValoraAppearance.instance.addListener(_refreshAppearance);
     _loadDashboardCatalog();
+  }
+
+  void _refreshAppearance() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    ValoraAppearance.instance.removeListener(_refreshAppearance);
+    super.dispose();
   }
 
   Future<void> _loadDashboardCatalog() async {
