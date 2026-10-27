@@ -1148,113 +1148,44 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
 
 class CollectibleCategoryRegistryPage extends StatefulWidget {
   const CollectibleCategoryRegistryPage({super.key});
-  @override
-  State<CollectibleCategoryRegistryPage> createState() => _CollectibleCategoryRegistryPageState();
+  @override State<CollectibleCategoryRegistryPage> createState() => _CollectibleCategoryRegistryPageState();
 }
-
 class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryRegistryPage> {
-  bool _loading = true;
-  String? _error;
-  List<Map<String, dynamic>> _rows = [];
-
-  @override
-  void initState() { super.initState(); _load(); }
-
-  Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
-    try {
-      final data = await Supabase.instance.client.schema('collection').from('registro_fonti_categorie').select().order('nome');
-      if (!mounted) return;
-      setState(() {
-        _rows = (data as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() { _loading = false; _error = e.toString(); });
-    }
-  }
-
+  bool _loading = true, _saving = false; String? _error; List<Map<String,dynamic>> _rows = [];
+  static const Map<String,IconData> _icons = {
+    'category_outlined': Icons.category_outlined, 'extension': Icons.extension, 'toys_outlined': Icons.toys_outlined,
+    'smart_toy_outlined': Icons.smart_toy_outlined, 'menu_book_outlined': Icons.menu_book_outlined, 'two_wheeler': Icons.two_wheeler,
+    'watch_outlined': Icons.watch_outlined, 'sports_esports_outlined': Icons.sports_esports_outlined, 'palette_outlined': Icons.palette_outlined,
+    'collections_outlined': Icons.collections_outlined, 'shield_outlined': Icons.shield_outlined, 'directions_car_outlined': Icons.directions_car_outlined,
+  };
+  static const Map<String,String> _colors = {'Rosso':'#C62828','Blu':'#2476C8','Verde':'#008C4A','Viola':'#7137B8','Arancione':'#DD741D','Oro':'#D6B15E','Turchese':'#00897B','Grigio':'#607D8B','Rosa':'#AD1457','Marrone':'#6D4C41'};
+  @override void initState(){super.initState();_load();}
+  Future<void> _load() async { setState(()=>_loading=true); try { final data=await Supabase.instance.client.schema('collection').from('master_categorie_collezione').select('codice_categoria, descrizione, icona, colore_hex, ordine_menu, visibile').order('ordine_menu').order('descrizione'); if(!mounted)return; setState(()=>_rows=(data as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList()); } catch(e){if(mounted)setState(()=>_error=e.toString());} finally {if(mounted)setState(()=>_loading=false);} }
   Future<void> _addCategory() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per aggiungere categorie personali.')));
-      return;
-    }
-    final name = TextEditingController();
-    final fields = TextEditingController(text: 'referenza, modello, anno, edizione, variante');
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('NUOVA CATEGORIA COLLEZIONISTICA'),
-        content: SizedBox(
-          width: 460,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Nome categoria, es. Orologi Swatch')),
-            const SizedBox(height: 10),
-            TextField(controller: fields, maxLines: 3, decoration: const InputDecoration(labelText: 'Campi specialistici separati da virgola')),
-          ]),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('ANNULLA')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('CREA CATEGORIA')),
-        ],
-      ),
-    );
-    if (accepted != true) { name.dispose(); fields.dispose(); return; }
-    final categoryName = name.text.trim();
-    final labels = fields.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toSet().toList();
-    if (categoryName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Inserisci il nome della categoria.')));
-      name.dispose(); fields.dispose(); return;
-    }
-    final schema = labels.map((label) {
-      final key = label.toLowerCase().replaceAll(' ', '_').replaceAll('/', '_');
-      return <String, dynamic>{'key': key, 'label': label, 'type': 'text'};
-    }).toList();
-    try {
-      await Supabase.instance.client.schema('collection').from('registro_fonti_categorie').insert({
-        'nome': categoryName,
-        'schema_campi': schema,
-        'origine_configurazione': 'utente',
-        'proprietario_utente': user.id,
-      });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Categoria aggiunta. Puoi usarla nelle tue fonti.')));
-      await _load();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Creazione categoria non riuscita: ' + e.toString())));
-    }
-    name.dispose();
-    fields.dispose();
+    if(Supabase.instance.client.auth.currentUser==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Accedi per creare una categoria.')));return;}
+    final name=TextEditingController(); String iconKey='category_outlined', colorName='Oro';
+    final accepted=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,sd)=>AlertDialog(
+      title:const Text('CREA CATEGORIA COLLEZIONE'), content:SizedBox(width:460,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:name,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'Descrizione categoria',hintText:'Es. Orologi Swatch')), const SizedBox(height:14),
+        DropdownButtonFormField<String>(value:iconKey,decoration:const InputDecoration(labelText:'Logo della categoria'),items:_icons.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Icon(e.value,size:20),const SizedBox(width:10),Text(e.key.replaceAll('_',' '))]))).toList(),onChanged:(v){if(v!=null)sd(()=>iconKey=v);}),
+        const SizedBox(height:14), DropdownButtonFormField<String>(value:colorName,decoration:const InputDecoration(labelText:'Colore della scheda'),items:_colors.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Container(width:20,height:20,decoration:BoxDecoration(color:Color(int.parse(e.value.substring(1),radix:16)+0xFF000000),borderRadius:BorderRadius.circular(5))),const SizedBox(width:10),Text(e.key)]))).toList(),onChanged:(v){if(v!=null)sd(()=>colorName=v);}),
+        const SizedBox(height:8),const Text('Il codice progressivo univoco viene assegnato automaticamente.',style:TextStyle(fontSize:12)),
+      ]))), actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('CREA CATEGORIA'))])));
+    if(accepted!=true){name.dispose();return;} final description=name.text.trim(); if(description.isEmpty){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Inserisci la descrizione della categoria.')));name.dispose();return;}
+    setState(()=>_saving=true); try {
+      final existing=await Supabase.instance.client.schema('collection').from('master_categorie_collezione').select('codice_categoria').ilike('descrizione',description);
+      if((existing as List).isNotEmpty){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Esiste già una categoria con questa descrizione.')));return;}
+      final codes=_rows.map((r)=>(r['codice_categoria']??'').toString()).where((v)=>RegExp(r'^CAT-\d+$').hasMatch(v)).map((v)=>int.tryParse(v.substring(4))??0).toList();
+      final maxCode=codes.isEmpty?0:codes.reduce((a,b)=>a>b?a:b); final code='CAT-'+(maxCode+1).toString().padLeft(3,'0');
+      final maxOrder=_rows.map((r)=>int.tryParse('${r['ordine_menu']??0}')??0).fold<int>(0,(a,b)=>a>b?a:b);
+      await Supabase.instance.client.schema('collection').from('master_categorie_collezione').insert({'codice_categoria':code,'descrizione':description,'icona':iconKey,'colore_hex':_colors[colorName],'ordine_menu':maxOrder+10,'visibile':true});
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Categoria '+code+' creata.'))); await _load();
+    } catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Creazione categoria non riuscita: '+e.toString())));} finally{name.dispose();if(mounted)setState(()=>_saving=false);}
   }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('CATEGORIE COLLEZIONISTICHE'), actions: [
-      IconButton(onPressed: _load, tooltip: 'Aggiorna', icon: const Icon(Icons.refresh)),
-    ]),
-    floatingActionButton: FloatingActionButton.extended(onPressed: _addCategory, icon: const Icon(Icons.add), label: const Text('NUOVA CATEGORIA')),
-    body: _loading ? const Center(child: CircularProgressIndicator()) :
-      _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: SelectableText(_error!))) :
-      ListView.builder(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
-        itemCount: _rows.length,
-        itemBuilder: (context, i) {
-          final row = _rows[i];
-          final schema = row['schema_campi'] is List ? (row['schema_campi'] as List) : const [];
-          final fields = schema.map((field) => field is Map ? (field['label'] ?? field['key'] ?? '').toString() : '').where((s) => s.isNotEmpty).join(' · ');
-          final own = row['origine_configurazione'] == 'utente' && row['proprietario_utente'] == Supabase.instance.client.auth.currentUser?.id;
-          return Card(child: ListTile(
-            leading: Icon(Icons.category_outlined, color: ValoraAppearance.instance.colorFor('RICERCHE')),
-            title: Text((row['nome'] ?? 'Categoria').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(fields.isEmpty ? 'Nessun campo specialistico configurato' : fields),
-            trailing: Icon(own ? Icons.person_outline : Icons.lock_outline),
-          ));
-        },
-      ),
-  );
+  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('CATEGORIE COLLEZIONE'),actions:[IconButton(onPressed:_load,tooltip:'Aggiorna',icon:const Icon(Icons.refresh))]),
+    floatingActionButton:FloatingActionButton.extended(onPressed:_saving?null:_addCategory,icon:_saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.add),label:Text(_saving?'SALVATAGGIO...':'CREA CATEGORIA')),
+    body:_loading?const Center(child:CircularProgressIndicator()):_error!=null?Center(child:Padding(padding:const EdgeInsets.all(20),child:SelectableText(_error!))):ListView.builder(padding:const EdgeInsets.fromLTRB(12,12,12,90),itemCount:_rows.length,itemBuilder:(context,i){final row=_rows[i];final hex=(row['colore_hex']??'#D6B15E').toString();final parsed=Color((int.tryParse(hex.replaceFirst('#',''),radix:16)??0xD6B15E)+0xFF000000);final ik=(row['icona']??'category_outlined').toString();return Card(child:ListTile(leading:CircleAvatar(backgroundColor:parsed.withValues(alpha:0.18),child:Icon(_icons[ik]??Icons.category_outlined,color:parsed)),title:Text((row['descrizione']??'Categoria').toString(),style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text((row['codice_categoria']??'').toString()+' · '+((row['visibile']==true)?'Visibile nel menu':'Nascosta dal menu')),trailing:Container(width:24,height:24,decoration:BoxDecoration(color:parsed,borderRadius:BorderRadius.circular(6)))) ;}));
 }
-
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
   @override
