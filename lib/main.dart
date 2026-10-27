@@ -4616,18 +4616,21 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
 
   Future<void> _loadPr08OpenSales() async {
-    final client = Supabase.instance.client.schema('collection');
-    final rows = await client.from('master_oggetti_in_vendita')
-        .select('codice_vendita_aperta,codice_oggetto,descrizione_oggetto,data_inizio_vendita,prezzo_di_vendita,stato_ciclo_vendita')
-        .eq('stato_ciclo_vendita', 'APERTO')
-        .order('data_inizio_vendita', ascending: false)
-        .order('codice_vendita_aperta', ascending: false);
-    final platforms = await client.from('piattaforme')
-        .select('codice_piattaforma,nome_piattaforma')
-        .order('nome_piattaforma');
+    // Le tabelle vendite/piattaforme sono protette da RLS backend-only.
+    // Leggiamo tramite RPC SECURITY DEFINER in sola lettura, senza aprire le tabelle.
+    final response = await Supabase.instance.client.schema('collection')
+        .rpc('pr_08_leggi_vendite_aperte');
+    if (response is! Map) {
+      throw Exception('PR-08: risposta non valida durante il caricamento delle vendite aperte.');
+    }
+    final rows = response['vendite'];
+    final platforms = response['piattaforme'];
+    if (rows is! List || platforms is! List) {
+      throw Exception('PR-08: la risposta non contiene gli elenchi di vendite e piattaforme.');
+    }
     if (!mounted) return;
-    final open = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-    final platformList = (platforms as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final open = rows.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final platformList = platforms.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
     setState(() {
       _pr08OpenSales = open;
       _pr08Platforms = platformList;
