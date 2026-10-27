@@ -4045,6 +4045,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _condition = 'USATO';
   String _completeness = 'COMPLETO';
   String _destination = 'COLLEZIONE';
+  List<Map<String, dynamic>> _collectionCategories = [];
+  String? _selectedCollectionCategory;
+  bool _categoriesLoading = false;
   String _closeReason = 'SMARRITO';
   String _output = 'Pronto. Le consultazioni sono in sola lettura.';
   Map<String, dynamic>? _lastResult;
@@ -4128,6 +4131,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     if (widget.apiCode == 'PR-01') {
       _quantity.addListener(_recalculateTotal);
+      _loadCollectionCategories();
       _unitPrice.addListener(_recalculateTotal);
     }
     if (widget.initialObjectCode != null) {
@@ -4141,6 +4145,25 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }
     }
   }
+
+  Future<void> _loadCollectionCategories() async {
+    _categoriesLoading = true;
+    try {
+      final rows = await Supabase.instance.client.schema('collection').from('master_categorie_collezione')
+          .select('codice_categoria, descrizione, ordine_menu, visibile').eq('visibile', true)
+          .order('ordine_menu').order('descrizione');
+      if (!mounted) return;
+      setState(() => _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
+    } catch (e) { if (mounted) setState(() => _output = 'Errore caricamento categorie COLLEZIONE: $e'); }
+    finally { _categoriesLoading = false; }
+  }
+
+  Widget _collectionCategoryField() => Padding(padding: const EdgeInsets.only(bottom: 12), child: DropdownButtonFormField<String>(
+    value: _collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory) ? _selectedCollectionCategory : null,
+    decoration: InputDecoration(labelText: 'Categoria COLLEZIONE *', helperText: _categoriesLoading ? 'Caricamento categorie…' : 'Seleziona la categoria principale.'),
+    items: _collectionCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria'].toString(), child: Text((e['descrizione'] ?? e['codice_categoria']).toString()))).toList(),
+    onChanged: _categoriesLoading ? null : (v) => setState(() => _selectedCollectionCategory = v),
+  ));
 
   void _onPr11SearchFocusChanged() {
     if (widget.apiCode != 'OBJECT_MASTER' || _pr11SearchFocusNode.hasFocus || _loading) return;
@@ -4247,6 +4270,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final id = int.tryParse(_code.text.trim());
     if (widget.apiCode == 'PR-01') {
       if (_description.text.trim().isEmpty) throw Exception('La descrizione è obbligatoria.');
+      if (_destination == 'COLLEZIONE' && (_selectedCollectionCategory == null || !_collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory))) throw Exception('Seleziona una categoria COLLEZIONE valida.');
       final q = int.tryParse(_quantity.text.trim());
       if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
       final unitPriceText = _unitPrice.text.trim();
@@ -4271,6 +4295,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
         'condizione': _condition, 'completezza': _completeness,
         'destinazione': _destination, 'quantita': q,
+        if (_destination == 'COLLEZIONE') 'codice_categoria_collezione': _selectedCollectionCategory,
         if (totalValue != null) 'valore_oggetto': totalValue,
         'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
       }]};
@@ -6830,7 +6855,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 const SizedBox(height: 8),
                 _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
                 _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
-                _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
+                _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() { _destination = v!; if (_destination != 'COLLEZIONE') _selectedCollectionCategory = null; })),
+                if (_destination == 'COLLEZIONE') _collectionCategoryField(),
                 _field(_quantity, 'Quantità', type: TextInputType.number),
                 _field(_unitPrice, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
                 Padding(
@@ -7801,6 +7827,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final savedRow = savedRows is List && savedRows.isNotEmpty && savedRows.first is Map
         ? Map<String, dynamic>.from(savedRows.first as Map) : <String, dynamic>{};
       final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
+      if (savedId != null && _destination == 'COLLEZIONE' && _selectedCollectionCategory != null) {
+        await Supabase.instance.client.schema('collection').from('oggetto_collezione_categoria').upsert({
+          'codice_oggetto': savedId, 'codice_categoria': _selectedCollectionCategory,
+          'fonte_assegnazione': 'UTENTE_PR01', 'stato_verifica': 'VERIFICATO',
+          'aggiornato_il': DateTime.now().toIso8601String(),
+        }, onConflict: 'codice_oggetto');
+      }
       if (_selectedImageBytes != null && _selectedImageName != null && savedId != null) {
         try {
           final signedUrl = await _uploadAndRegisterImage(
@@ -7819,6 +7852,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       }
       _description.clear(); _producer.clear(); _line.clear(); _family.clear();
       _notes.clear(); _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear();
+      _selectedCollectionCategory = null;
     }
   }
 }
@@ -7837,6 +7871,7 @@ class _PurchaseItemDraft {
   String? metadataSourceUrl;
   String photoStatus = 'Nessuna foto selezionata.';
   String destination = 'COLLEZIONE';
+  String? collectionCategoryCode;
   String condition = 'USATO';
   String completeness = 'COMPLETO';
   double? get amount {
@@ -7847,6 +7882,7 @@ class _PurchaseItemDraft {
   Map<String, dynamic> json() => {
     'descrizione': description.text.trim(), 'valore_acquisto': amount,
     'destinazione': destination, 'condizione': condition,
+    if (destination == 'COLLEZIONE' && collectionCategoryCode != null) 'codice_categoria_collezione': collectionCategoryCode,
     'completezza': completeness, 'quantita': 1,
     if (metadataProducer != null) 'produttore': metadataProducer,
     if (metadataCode != null) 'codice_prodotto': metadataCode,
@@ -7872,10 +7908,27 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   final _count = TextEditingController(text: '2');
   DateTime _date = DateTime.now();
   final List<_PurchaseItemDraft> _items = [_PurchaseItemDraft()];
+  List<Map<String, dynamic>> _collectionCategories = [];
+  bool _categoriesLoading = false;
   final String _session = _uuid.v4();
   bool _busy = false, _locked = false, _dataConfirmed = false;
   Map<String, dynamic>? _preview;
   String _status = 'Bozza locale: nessun acquisto registrato.';
+
+  @override
+  void initState() { super.initState(); _loadCollectionCategories(); }
+
+  Future<void> _loadCollectionCategories() async {
+    _categoriesLoading = true;
+    try {
+      final rows = await Supabase.instance.client.schema('collection').from('master_categorie_collezione')
+          .select('codice_categoria, descrizione, ordine_menu, visibile').eq('visibile', true)
+          .order('ordine_menu').order('descrizione');
+      if (!mounted) return;
+      setState(() => _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
+    } catch (e) { if (mounted) setState(() => _status = 'Errore caricamento categorie: $e'); }
+    finally { _categoriesLoading = false; }
+  }
 
   @override
   void dispose() { _count.dispose(); for (final i in _items) { i.dispose(); } super.dispose(); }
@@ -8011,6 +8064,9 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     for (var i = 0; i < _items.length; i++) {
       if (_items[i].description.text.trim().isEmpty) {
         _notice('Inserisci la descrizione dell’oggetto ' + (i + 1).toString() + '.'); return false;
+      }
+      if (_items[i].destination == 'COLLEZIONE' && (_items[i].collectionCategoryCode == null || !_collectionCategories.any((e) => e['codice_categoria'] == _items[i].collectionCategoryCode))) {
+        _notice('Seleziona la categoria COLLEZIONE per l’oggetto ' + (i + 1).toString() + '.'); return false;
       }
       final p = _items[i].amount;
       if (p == null || p < 0) {
@@ -8163,7 +8219,14 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(value: item.destination, decoration: const InputDecoration(labelText: 'Destinazione'),
           items: const [DropdownMenuItem(value: 'COLLEZIONE', child: Text('COLLEZIONE')), DropdownMenuItem(value: 'RIVENDITA', child: Text('RIVENDITA'))],
-          onChanged: _busy ? null : (v) => setState(() { item.destination = v ?? item.destination; _invalidate(); })),
+          onChanged: _busy ? null : (v) => setState(() { item.destination = v ?? item.destination; if (item.destination != 'COLLEZIONE') item.collectionCategoryCode = null; _invalidate(); })),
+        if (item.destination == 'COLLEZIONE') ...[
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(value: _collectionCategories.any((e) => e['codice_categoria'] == item.collectionCategoryCode) ? item.collectionCategoryCode : null,
+            decoration: InputDecoration(labelText: 'Categoria COLLEZIONE *', helperText: _categoriesLoading ? 'Caricamento categorie…' : 'Categoria principale dell’oggetto'),
+            items: _collectionCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria'].toString(), child: Text((e['descrizione'] ?? e['codice_categoria']).toString()))).toList(),
+            onChanged: _busy ? null : (v) => setState(() { item.collectionCategoryCode = v; _invalidate(); })),
+        ],
         const SizedBox(height: 8),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(value: item.condition, decoration: const InputDecoration(labelText: 'Condizione'),
