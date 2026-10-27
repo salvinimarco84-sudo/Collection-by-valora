@@ -25,7 +25,12 @@ void main() {
       expect(source, contains('oggetto_collezione_categoria'));
     });
 
-    test('PR-01 valida la categoria per gli oggetti destinati alla collezione', () {
+    test('PR-01 accoda gli oggetti e salva il blocco solo dopo la scelta finale', () {
+      expect(source, contains('_pr01PendingObjects.add({'));
+      expect(source, contains('await _savePr01PendingObjects();'));
+      expect(source, contains('NO, SALVA IL BLOCCO'));
+      expect(source, contains('Future<void> _savePr01PendingObjects() async'));
+      expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
       expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
     });
 

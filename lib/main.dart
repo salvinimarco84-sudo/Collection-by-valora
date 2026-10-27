@@ -4073,6 +4073,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String? _pr11CategoryCode;
   bool _pr02SearchCompleted = false;
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
+  final List<Map<String, dynamic>> _pr01PendingObjects = [];
+  String? _pr01PendingRequestId;
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
@@ -7665,20 +7667,40 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       return;
     }
 
-    await _preview();
-    await _confirmData();
-    await _save();
+    final currentPayload = _payload();
+    final rows = currentPayload['oggetti'];
+    if (rows is! List || rows.isEmpty || rows.first is! Map) {
+      throw Exception('Nessun oggetto valido da aggiungere al blocco.');
+    }
+    _pr01PendingObjects.add({
+      'oggetto': Map<String, dynamic>.from(rows.first as Map),
+      'categoria': _selectedCollectionCategory,
+      'image_bytes': _selectedImageBytes == null ? null : Uint8List.fromList(_selectedImageBytes!),
+      'image_name': _selectedImageName,
+      'image_acquisition': _imageAcquisition,
+    });
+    _pr01PendingRequestId ??= _uuid.v4();
 
     if (!mounted) return;
     final addAnother = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Oggetto salvato'),
-        content: Text('Vuoi inserire un altro oggetto?'),
+        title: const Text('Oggetto confermato'),
+        content: Text(
+          'Vuoi inserire un altro oggetto?\n\n'
+          'Se scegli NO, verranno salvati tutti i '
+          '\${_pr01PendingObjects.length} oggetti raccolti finora.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text('NO, TORNA AL MENU')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text('SÌ, NUOVO OGGETTO')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('NO, SALVA IL BLOCCO'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('SÌ, INSERISCI UN ALTRO'),
+          ),
         ],
       ),
     );
@@ -7698,21 +7720,103 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         _condition = 'USATO';
         _completeness = 'COMPLETO';
         _destination = 'COLLEZIONE';
+        _selectedCollectionCategory = null;
         _existingImageUrl = null;
         _selectedImageBytes = null;
         _selectedImageName = null;
         _imageStatus = 'Nessuna immagine selezionata.';
         _metadataResult = 'La ricerca dei metadati è disponibile esclusivamente tramite PR-12.';
-        _output = 'Pronto per il prossimo oggetto.';
+        _output = 'Blocco provvisorio: \${_pr01PendingObjects.length} oggetti. Inserisci il prossimo.';
       });
-      // Aspetta che il dialogo sia chiuso e il modulo sia ridisegnato prima di
-      // riportare il cursore sul primo campo utile del nuovo oggetto.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        FocusScope.of(context).requestFocus(_descriptionFocus);
+        if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
       });
-    } else {
-      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+
+    await _savePr01PendingObjects();
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _savePr01PendingObjects() async {
+    if (_pr01PendingObjects.isEmpty) {
+      throw Exception('Il blocco PR-01 è vuoto: nessun oggetto da salvare.');
+    }
+    final pending = List<Map<String, dynamic>>.from(_pr01PendingObjects);
+    final payload = <String, dynamic>{
+      'oggetti': pending.map((entry) =>
+        Map<String, dynamic>.from(entry['oggetto'] as Map)).toList(),
+      'dati_confermati': true,
+      'altra_operazione': false,
+      'conferma_finale': true,
+    };
+    await _acquireLock();
+    try {
+      final preview = await _ValoraRuntimeApi.procedure(
+        'PR-01', 'preview', payload, sessionId: _sessionId);
+      if (preview['errore'] != null) throw Exception(preview['errore'].toString());
+      final review = await _ValoraRuntimeApi.procedure(
+        'PR-01', 'review', payload, sessionId: _sessionId);
+      if (review['errore'] != null) throw Exception(review['errore'].toString());
+      final result = await _ValoraRuntimeApi.procedure(
+        'PR-01', 'save', payload, sessionId: _sessionId,
+        requestId: _pr01PendingRequestId ??= _uuid.v4());
+      if (result['scrittura_eseguita'] != true) {
+        throw Exception('Il runtime non ha confermato il salvataggio del blocco PR-01.');
+      }
+      if (result['blocco_rilasciato_automaticamente'] == true) {
+        setState(() => _lockHeld = false);
+      } else {
+        throw Exception('Blocco salvato, ma il rilascio del blocco non è stato confermato.');
+      }
+      final savedRows = result['risultati'];
+      if (savedRows is! List || savedRows.length != pending.length) {
+        throw Exception('Il runtime non ha restituito tutti i codici oggetto del blocco.');
+      }
+      for (var index = 0; index < pending.length; index++) {
+        final savedRow = savedRows[index] is Map
+          ? Map<String, dynamic>.from(savedRows[index] as Map)
+          : <String, dynamic>{};
+        final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
+        if (savedId == null) throw Exception('Codice oggetto mancante nell’elemento \${index + 1}.');
+        final category = pending[index]['categoria']?.toString();
+        if (category != null && category.isNotEmpty) {
+          await Supabase.instance.client.schema('collection')
+            .from('oggetto_collezione_categoria').upsert({
+              'codice_oggetto': savedId,
+              'codice_categoria': category,
+              'fonte_assegnazione': 'UTENTE_PR01',
+              'stato_verifica': 'VERIFICATO',
+              'aggiornato_il': DateTime.now().toIso8601String(),
+            }, onConflict: 'codice_oggetto');
+        }
+        final bytes = pending[index]['image_bytes'];
+        final name = pending[index]['image_name'];
+        if (bytes is Uint8List && name is String && name.isNotEmpty) {
+          await _uploadAndRegisterImage(
+            objectId: savedId,
+            bytes: bytes,
+            fileName: name,
+            acquisition: pending[index]['image_acquisition'] as String? ?? _imageAcquisition,
+            procedure: 'PR-01',
+          );
+        }
+      }
+      _pr01PendingObjects.clear();
+      _pr01PendingRequestId = null;
+      if (mounted) setState(() {
+        _description.clear(); _producer.clear(); _line.clear(); _family.clear();
+        _notes.clear(); _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear();
+        _value.clear(); _marketValue.text = '0.00'; _selectedCollectionCategory = null;
+        _selectedImageBytes = null; _selectedImageName = null;
+        _imageStatus = 'Nessuna immagine selezionata.';
+        _output = 'Blocco PR-01 salvato e verificato: \${pending.length} oggetti.';
+      });
+    } catch (e) {
+      if (_lockHeld) { try { await _releaseLock(); } catch (_) {} }
+      if (mounted) setState(() => _output =
+        'ERRORE nel salvataggio del blocco PR-01. Gli oggetti restano in attesa: $e');
+      rethrow;
     }
   }
 
