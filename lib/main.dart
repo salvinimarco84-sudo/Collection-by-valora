@@ -4085,7 +4085,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _reportPeriodMode = 'month';
   DateTime _reportStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
   DateTime _reportEnd = DateTime.now();
-  bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES', 'REPORT-SALES-ACTIVE'}.contains(widget.apiCode);
+  bool get _isActiveListingsReport => const {'REPORT-ACTIVE-LISTINGS', 'REPORT-SALES-ACTIVE'}.contains(widget.apiCode);
+  bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES'}.contains(widget.apiCode);
+
+  String _reportCodeForApi(String apiCode) => switch (apiCode) {
+    'REPORT-CASH' => 'CASH_MOVEMENTS_REPORT',
+    'REPORT-PURCHASES' => 'PURCHASES_REPORT',
+    'REPORT-SALES' => 'SALES_REPORT',
+    _ => throw Exception('Codice report non riconosciuto: $apiCode'),
+  };
 
   String _dateLabel(DateTime date) => '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
 
@@ -4139,6 +4147,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       _quantity.addListener(_recalculateTotal);
       _loadCollectionCategories();
       _unitPrice.addListener(_recalculateTotal);
+    }
+    if (_isActiveListingsReport) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _run(_consult);
+      });
     }
     if (widget.initialObjectCode != null) {
       _code.text = widget.initialObjectCode.toString();
@@ -5857,19 +5870,27 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     const pageSize = 100;
     final args = _isPeriodReport
       ? <String, dynamic>{'data_da': periodArgs['data_da'], 'data_a': periodArgs['data_a'], 'limite': pageSize, 'offset': 0}
-      : widget.apiCode == 'OBJECT_MASTER'
-        ? {'codice_oggetto': int.tryParse(_code.text.trim())}
-        : {'cerca': _search.text.trim(), 'limite': pageSize, 'offset': 0};
-    final response = await _ValoraRuntimeApi.call('consultation', {
-      'session_id': _sessionId, 'consultation_code': widget.apiCode, 'arguments': args,
-    });
+      : _isActiveListingsReport
+        ? <String, dynamic>{'limite': pageSize, 'offset': 0}
+        : widget.apiCode == 'OBJECT_MASTER'
+          ? {'codice_oggetto': int.tryParse(_code.text.trim())}
+          : {'cerca': _search.text.trim(), 'limite': pageSize, 'offset': 0};
+    final response = (_isPeriodReport || _isActiveListingsReport)
+      ? await _ValoraRuntimeApi.call('report', {
+          'session_id': _sessionId,
+          'report_code': _isActiveListingsReport ? 'ACTIVE_LISTINGS_REPORT' : _reportCodeForApi(widget.apiCode),
+          'arguments': args,
+        })
+      : await _ValoraRuntimeApi.call('consultation', {
+          'session_id': _sessionId, 'consultation_code': widget.apiCode, 'arguments': args,
+        });
     final result = response['result'];
     dynamic data = result is Map ? (result['risultato'] ?? result) : result;
 
     // Carica le pagine successive automaticamente: l'elenco completo rimane
     // scorrevole e anche l'esportazione include tutti i record recuperati.
     if (widget.apiCode != 'OBJECT_MASTER') {
-      final firstList = _isPeriodReport && data is Map
+      final firstList = (_isPeriodReport || _isActiveListingsReport) && data is Map
           ? ((data as Map)['record'] is List ? List<dynamic>.from((data as Map)['record'] as List) : <dynamic>[])
           : (data is List ? List<dynamic>.from(data as List) : <dynamic>[]);
       if (firstList.length == pageSize) {
@@ -5881,14 +5902,20 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         var previousSignature = signature(firstList);
         for (var page = 1; page < 100; page++) {
           final nextArgs = <String, dynamic>{...args, 'limite': pageSize, 'offset': offset};
-          final nextResponse = await _ValoraRuntimeApi.call('consultation', {
-            'session_id': _sessionId,
-            'consultation_code': widget.apiCode,
-            'arguments': nextArgs,
-          });
+          final nextResponse = (_isPeriodReport || _isActiveListingsReport)
+              ? await _ValoraRuntimeApi.call('report', {
+                  'session_id': _sessionId,
+                  'report_code': _isActiveListingsReport ? 'ACTIVE_LISTINGS_REPORT' : _reportCodeForApi(widget.apiCode),
+                  'arguments': nextArgs,
+                })
+              : await _ValoraRuntimeApi.call('consultation', {
+                  'session_id': _sessionId,
+                  'consultation_code': widget.apiCode,
+                  'arguments': nextArgs,
+                });
           final nextResult = nextResponse['result'];
           final nextData = nextResult is Map ? (nextResult['risultato'] ?? nextResult) : nextResult;
-          final nextList = _isPeriodReport && nextData is Map
+          final nextList = (_isPeriodReport || _isActiveListingsReport) && nextData is Map
               ? ((nextData as Map)['record'] is List ? List<dynamic>.from((nextData as Map)['record'] as List) : <dynamic>[])
               : (nextData is List ? List<dynamic>.from(nextData as List) : <dynamic>[]);
           if (nextList.isEmpty) break;
@@ -5899,12 +5926,25 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (nextList.length < pageSize) break;
           offset += pageSize;
         }
-        if (_isPeriodReport && data is Map) {
+        if ((_isPeriodReport || _isActiveListingsReport) && data is Map) {
           data = <String, dynamic>{...Map<String, dynamic>.from(data as Map), 'record': allRows};
         } else {
           data = allRows;
         }
       }
+    }
+    if (_isActiveListingsReport && data is Map) {
+      final report = Map<String, dynamic>.from(data);
+      final records = report['record'];
+      final list = records is List ? records : <dynamic>[];
+      setState(() {
+        _rows = list;
+        _currentObject = null;
+        _output = list.isEmpty
+            ? 'Nessuna vendita attiva trovata.'
+            : 'Vendite attive caricate: ${list.length}. Nessun filtro temporale applicato.';
+      });
+      return;
     }
     if (_isPeriodReport && data is Map) {
       final report = Map<String, dynamic>.from(data);
