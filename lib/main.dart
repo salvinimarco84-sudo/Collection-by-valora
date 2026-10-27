@@ -4666,7 +4666,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (enteredAmount.isEmpty) throw Exception('Inserisci un importo, anche 0, per la chiusura $id.');
       final amount = double.tryParse(enteredAmount.replaceAll(',', '.'));
       if (amount == null || amount < 0) throw Exception('Importo non valido per la chiusura $id.');
-      final outcome = amount > 0 ? 'VENDITA EFFETTIVA' : (draft['esito'] ?? 'CHIUSURA SENZA VENDITA').toString();
+      final draftOutcome = (draft['esito'] ?? 'CHIUSURA SENZA VENDITA').toString();
+      final outcome = amount > 0
+          ? 'VENDITA EFFETTIVA'
+          : (draftOutcome == 'VENDITA EFFETTIVA' ? 'CHIUSURA SENZA VENDITA' : draftOutcome);
       if (outcome == 'VENDITA EFFETTIVA') {
         final platform = draft['codice_piattaforma'];
         final external = (draft['canale_esterno'] ?? '').toString().trim();
