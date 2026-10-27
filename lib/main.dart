@@ -4091,6 +4091,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   DateTime _reportEnd = DateTime.now();
   bool get _isActiveListingsReport => const {'REPORT-ACTIVE-LISTINGS', 'REPORT-SALES-ACTIVE'}.contains(widget.apiCode);
   bool get _isPeriodReport => const {'REPORT-CASH', 'REPORT-PURCHASES', 'REPORT-SALES'}.contains(widget.apiCode);
+  bool get _isCollectionThemeReport => widget.apiCode == 'REPORT-COLLECTION-THEME';
 
   Future<void> _loadActiveReportImages(List<dynamic> records) async {
     final ids = <int>{};
@@ -6107,13 +6108,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     final list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
     setState(() {
-      if (widget.apiCode == 'OBJECTS_AVAILABLE') _availablePage = 0;
+      if (widget.apiCode == 'OBJECTS_AVAILABLE' || _isCollectionThemeReport) _availablePage = 0;
       _rows = list;
       _output = list.isEmpty ? 'Nessun risultato.' : 'Risultati: ${list.length}.';
       _currentObject = widget.apiCode == 'OBJECT_MASTER' && list.isNotEmpty && list.first is Map
         ? Map<String, dynamic>.from(list.first as Map) : null;
     });
-    if (widget.apiCode == 'OBJECTS_AVAILABLE' && list.isNotEmpty) {
+    if ((widget.apiCode == 'OBJECTS_AVAILABLE' || _isCollectionThemeReport) && list.isNotEmpty) {
       await _loadActiveReportImages(list.take(_availablePageSize).toList());
     }
   }
@@ -6955,7 +6956,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               )),
             ],
           ))),
-          if (_output.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Text(_output)),
+          if (_output.isNotEmpty && !_isCollectionThemeReport) Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Text(_output)),
         ],
       ),
     );
@@ -7681,7 +7682,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (!isAvailableList)
             Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
               style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
-          ...((isAvailableList || widget.apiCode == 'REPORT-PURCHASES')
+          ...((isAvailableList || widget.apiCode == 'REPORT-PURCHASES' || _isCollectionThemeReport)
               ? _rows.skip(_availablePage * _availablePageSize).take(_availablePageSize)
               : _rows).map((r) {
             if (r is! Map) return Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(r.toString())));
@@ -7706,7 +7707,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 )),
               ));
             }
-            return _objectCard(item, availableStyle: isAvailableList, onTap: isAvailableList
+            return _objectCard(item, availableStyle: isAvailableList || _isCollectionThemeReport, onTap: (isAvailableList || _isCollectionThemeReport)
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(
                       title: 'Visualizza scheda',
@@ -7716,7 +7717,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                   )).then((_) {})
               : null);
           }),
-          if ((isAvailableList || widget.apiCode == 'REPORT-PURCHASES') && availablePageCount > 1) ...[
+          if ((isAvailableList || widget.apiCode == 'REPORT-PURCHASES' || _isCollectionThemeReport) && availablePageCount > 1) ...[
             const SizedBox(height: 8),
             Card(child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
