@@ -7878,8 +7878,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final qty = int.tryParse(_quantity.text.trim());
     if (qty == null || qty < 1) throw Exception('La quantità deve essere un numero intero maggiore di zero.');
 
-    // La valutazione viene richiesta prima della conferma. Nessun valore è simulato.
-    await _runPr19Valuation();
+    // PR-19 è un supporto alla valutazione, non deve bloccare PR-01 se il servizio è indisponibile.
+    // I log TEST del 27/10/2026 mostrano risposte HTTP 502 da pr-19-object-valuation-test.
+    _pr19ValuationResult = null;
+    try {
+      await _runPr19Valuation();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _pr19ValuationResult = null;
+        _marketValue.clear();
+        _output = 'PR-19 non disponibile: $e. Puoi proseguire con la conferma manuale; nessuna stima automatica verrà usata.';
+      });
+    }
     if (!mounted) return;
     final valuation = _pr19ValuationResult ?? <String, dynamic>{};
     final estimate = valuation['valore_stimato'];
