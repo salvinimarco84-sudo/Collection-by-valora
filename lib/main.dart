@@ -1225,9 +1225,48 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Categoria '+code+' creata.'))); await _load();
     } catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Creazione categoria non riuscita: '+e.toString())));} finally{name.dispose();if(mounted)setState(()=>_saving=false);}
   }
-  @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('CATEGORIE COLLEZIONE'),actions:[IconButton(onPressed:_load,tooltip:'Aggiorna',icon:const Icon(Icons.refresh))]),
-    floatingActionButton:FloatingActionButton.extended(onPressed:_saving?null:_addCategory,icon:_saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.add),label:Text(_saving?'SALVATAGGIO...':'CREA CATEGORIA')),
-    body:_loading?const Center(child:CircularProgressIndicator()):_error!=null?Center(child:Padding(padding:const EdgeInsets.all(20),child:SelectableText(_error!))):ListView.builder(padding:const EdgeInsets.fromLTRB(12,12,12,90),itemCount:_rows.length,itemBuilder:(context,i){final row=_rows[i];final hex=(row['colore_hex']??'#D6B15E').toString();final parsed=Color((int.tryParse(hex.replaceFirst('#',''),radix:16)??0xD6B15E)+0xFF000000);final ik=(row['icona']??'category_outlined').toString();return Card(child:ListTile(leading:CircleAvatar(backgroundColor:parsed.withValues(alpha:0.18),child:Icon(_icons[ik]??Icons.category_outlined,color:parsed)),title:Text((row['descrizione']??'Categoria').toString(),style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text((row['codice_categoria']??'').toString()+' · '+((row['visibile']==true)?'Visibile nel menu':'Nascosta dal menu')),trailing:Row(mainAxisSize:MainAxisSize.min,children:[Container(width:24,height:24,decoration:BoxDecoration(color:parsed,borderRadius:BorderRadius.circular(6))),IconButton(tooltip:'Modifica categoria',onPressed:_saving?null:()=>_editCategory(row),icon:const Icon(Icons.edit_outlined))])) ;}));
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('CATEGORIE COLLEZIONE'), actions: [
+        IconButton(onPressed: _load, tooltip: 'Aggiorna', icon: const Icon(Icons.refresh)),
+      ]),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _saving ? null : _addCategory,
+        icon: _saving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.add),
+        label: Text(_saving ? 'SALVATAGGIO...' : 'CREA CATEGORIA'),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Padding(padding: const EdgeInsets.all(20), child: SelectableText(_error!)))
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 90),
+                  itemCount: _rows.length,
+                  itemBuilder: (context, i) {
+                    final row = _rows[i];
+                    final hex = (row['colore_hex'] ?? '#D6B15E').toString();
+                    final rgb = int.tryParse(hex.replaceFirst('#', ''), radix: 16) ?? 0xD6B15E;
+                    final parsed = Color(rgb + 0xFF000000);
+                    final iconKey = (row['icona'] ?? 'category_outlined').toString();
+                    return Card(
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: parsed.withValues(alpha: 0.18),
+                          child: Icon(_icons[iconKey] ?? Icons.category_outlined, color: parsed),
+                        ),
+                        title: Text((row['descrizione'] ?? 'Categoria').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text('${row['codice_categoria']} · ${row['visibile'] == true ? 'Visibile nel menu' : 'Nascosta dal menu'}'),
+                        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Container(width: 24, height: 24, decoration: BoxDecoration(color: parsed, borderRadius: BorderRadius.circular(6))),
+                          IconButton(tooltip: 'Modifica categoria', onPressed: _saving ? null : () => _editCategory(row), icon: const Icon(Icons.edit_outlined)),
+                        ]),
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
 }
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
