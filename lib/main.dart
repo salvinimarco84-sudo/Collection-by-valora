@@ -761,6 +761,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Catalogo API', description: 'Consulta il catalogo delle API runtime.', apiCode: 'RUNTIME-CATALOG'),
     ProcedureEntry(title: 'Pulizia file', description: 'Operazione non disponibile nell’app runtime.', enabled: false),
     ProcedureEntry(title: 'CREA CATEGORIA COLLEZIONE', description: 'Crea una nuova categoria per organizzare gli oggetti della tua collezione.', apiCode: 'CREATE-COLLECTION-CATEGORY', readOnly: false),
+    ProcedureEntry(title: 'MODIFICA CATEGORIA COLLEZIONE', description: 'Modifica descrizione, logo, colore e visibilità delle categorie esistenti.', apiCode: 'EDIT-COLLECTION-CATEGORY', readOnly: false),
   ],
 };
 
@@ -1169,6 +1170,40 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
   };
   @override void initState(){super.initState();_load();}
   Future<void> _load() async { setState(()=>_loading=true); try { final data=await Supabase.instance.client.schema('collection').from('master_categorie_collezione').select('codice_categoria, descrizione, icona, colore_hex, ordine_menu, visibile').order('ordine_menu').order('descrizione'); if(!mounted)return; setState(()=>_rows=(data as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList()); } catch(e){if(mounted)setState(()=>_error=e.toString());} finally {if(mounted)setState(()=>_loading=false);} }
+
+  Future<void> _editCategory(Map<String,dynamic> row) async {
+    final name=TextEditingController(text:(row['descrizione']??'').toString());
+    String iconKey=_icons.containsKey(row['icona'])?row['icona'].toString():'category_outlined';
+    String colorName=_colors.entries.where((e)=>e.value.toUpperCase()==(row['colore_hex']??'').toString().toUpperCase()).map((e)=>e.key).firstOrNull??'Oro';
+    bool visible=row['visibile']==true;
+    final accepted=await showDialog<bool>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,sd)=>AlertDialog(
+      title:Text('MODIFICA CATEGORIA ${row['codice_categoria']}'),
+      content:SizedBox(width:460,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:name,textCapitalization:TextCapitalization.words,decoration:const InputDecoration(labelText:'Descrizione categoria')),
+        const SizedBox(height:14),
+        DropdownButtonFormField<String>(value:iconKey,decoration:const InputDecoration(labelText:'Logo della categoria'),items:_icons.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Icon(e.value,size:20),const SizedBox(width:10),Text(e.key.replaceAll('_',' '))]))).toList(),onChanged:(v){if(v!=null)sd(()=>iconKey=v);}),
+        const SizedBox(height:14),
+        DropdownButtonFormField<String>(value:colorName,decoration:const InputDecoration(labelText:'Colore della scheda'),items:_colors.entries.map((e)=>DropdownMenuItem(value:e.key,child:Row(children:[Container(width:20,height:20,decoration:BoxDecoration(color:Color(int.parse(e.value.substring(1),radix:16)+0xFF000000),borderRadius:BorderRadius.circular(5))),const SizedBox(width:10),Text(e.key)]))).toList(),onChanged:(v){if(v!=null)sd(()=>colorName=v);}),
+        SwitchListTile(title:const Text('Visibile nel menu principale'),value:visible,onChanged:(v)=>sd(()=>visible=v),contentPadding:EdgeInsets.zero),
+        const SizedBox(height:8),Text('Il codice ${row['codice_categoria']} resta invariato.',style:const TextStyle(fontSize:12)),
+      ]))),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('ANNULLA')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('SALVA MODIFICHE'))])));
+    if(accepted!=true){name.dispose();return;}
+    final description=name.text.trim();
+    if(description.isEmpty){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Inserisci la descrizione della categoria.')));name.dispose();return;}
+    setState(()=>_saving=true);
+    try{
+      final duplicate=await Supabase.instance.client.schema('collection').from('master_categorie_collezione').select('codice_categoria').ilike('descrizione',description);
+      if((duplicate as List).any((e)=>(e as Map)['codice_categoria']!=row['codice_categoria'])){
+        if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Esiste già una categoria con questa descrizione.')));return;
+      }
+      await Supabase.instance.client.schema('collection').from('master_categorie_collezione').update({'descrizione':description,'icona':iconKey,'colore_hex':_colors[colorName],'visibile':visible}).eq('codice_categoria',row['codice_categoria']);
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Categoria aggiornata.')));
+      await _load();
+    }catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Modifica non riuscita: '+e.toString())));}
+    finally{name.dispose();if(mounted)setState(()=>_saving=false);}
+  }
+
   Future<void> _addCategory() async {
     if(Supabase.instance.client.auth.currentUser==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Accedi per creare una categoria.')));return;}
     final name=TextEditingController(); String iconKey='category_outlined', colorName='Oro';
@@ -1192,7 +1227,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
   }
   @override Widget build(BuildContext context)=>Scaffold(appBar:AppBar(title:const Text('CATEGORIE COLLEZIONE'),actions:[IconButton(onPressed:_load,tooltip:'Aggiorna',icon:const Icon(Icons.refresh))]),
     floatingActionButton:FloatingActionButton.extended(onPressed:_saving?null:_addCategory,icon:_saving?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.add),label:Text(_saving?'SALVATAGGIO...':'CREA CATEGORIA')),
-    body:_loading?const Center(child:CircularProgressIndicator()):_error!=null?Center(child:Padding(padding:const EdgeInsets.all(20),child:SelectableText(_error!))):ListView.builder(padding:const EdgeInsets.fromLTRB(12,12,12,90),itemCount:_rows.length,itemBuilder:(context,i){final row=_rows[i];final hex=(row['colore_hex']??'#D6B15E').toString();final parsed=Color((int.tryParse(hex.replaceFirst('#',''),radix:16)??0xD6B15E)+0xFF000000);final ik=(row['icona']??'category_outlined').toString();return Card(child:ListTile(leading:CircleAvatar(backgroundColor:parsed.withValues(alpha:0.18),child:Icon(_icons[ik]??Icons.category_outlined,color:parsed)),title:Text((row['descrizione']??'Categoria').toString(),style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text((row['codice_categoria']??'').toString()+' · '+((row['visibile']==true)?'Visibile nel menu':'Nascosta dal menu')),trailing:Container(width:24,height:24,decoration:BoxDecoration(color:parsed,borderRadius:BorderRadius.circular(6)))) ;}));
+    body:_loading?const Center(child:CircularProgressIndicator()):_error!=null?Center(child:Padding(padding:const EdgeInsets.all(20),child:SelectableText(_error!))):ListView.builder(padding:const EdgeInsets.fromLTRB(12,12,12,90),itemCount:_rows.length,itemBuilder:(context,i){final row=_rows[i];final hex=(row['colore_hex']??'#D6B15E').toString();final parsed=Color((int.tryParse(hex.replaceFirst('#',''),radix:16)??0xD6B15E)+0xFF000000);final ik=(row['icona']??'category_outlined').toString();return Card(child:ListTile(leading:CircleAvatar(backgroundColor:parsed.withValues(alpha:0.18),child:Icon(_icons[ik]??Icons.category_outlined,color:parsed)),title:Text((row['descrizione']??'Categoria').toString(),style:const TextStyle(fontWeight:FontWeight.bold)),subtitle:Text((row['codice_categoria']??'').toString()+' · '+((row['visibile']==true)?'Visibile nel menu':'Nascosta dal menu')),trailing:Row(mainAxisSize:MainAxisSize.min,children:[Container(width:24,height:24,decoration:BoxDecoration(color:parsed,borderRadius:BorderRadius.circular(6))),IconButton(tooltip:'Modifica categoria',onPressed:_saving?null:()=>_editCategory(row),icon:const Icon(Icons.edit_outlined))])) ;}));
 }
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -2820,7 +2855,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                             builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
                       : procedure.apiCode == 'SOURCE-REGISTRY'
                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
-                  : procedure.apiCode == 'CREATE-COLLECTION-CATEGORY'
+                  : (procedure.apiCode == 'CREATE-COLLECTION-CATEGORY' || procedure.apiCode == 'EDIT-COLLECTION-CATEGORY')
                       ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage()))
                   : procedure.apiCode == 'USER-SALES-PLATFORMS'
                       ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
