@@ -7465,12 +7465,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
             icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
         ] else if (!isMaster && !isAvailableList && !_isActiveListingsReport)
-          FilledButton.icon(onPressed: _loading ? null : () => _run(_consult),
-            icon: Icon(Icons.search),
-            label: Text(_loading ? 'RICERCA...' : isAvailableList
-              ? 'VISUALIZZA ELENCO OGGETTI DISPONIBILI'
-              : isHistory ? 'VISUALIZZA STORICO OGGETTO'
-              : 'ESEGUI CONSULTAZIONE')),
+          FilledButton.icon(
+            onPressed: _loading ? null : () => _run(isHistory ? _searchPr02Objects : _consult),
+            icon: const Icon(Icons.search),
+            label: Text(_loading ? 'RICERCA...' : isHistory ? 'VISUALIZZA STORICO OGGETTO' : 'ESEGUI CONSULTAZIONE'),
+          ),
         if (_currentObject != null && code != 'PR-02' && code != 'PR-03') ...[
           const SizedBox(height: 16),
           if (isMaster) ...[
