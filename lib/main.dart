@@ -7840,9 +7840,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
     if (_lockHeld) await _releaseLock();
 
-    // Salva subito l'oggetto confermato, senza lasciare modifiche in coda
-    // in attesa della scelta di modificare un altro oggetto.
-    await _savePr02PendingChanges(closeOnComplete: false);
     if (!mounted) return;
 
     final another = await showDialog<bool>(
