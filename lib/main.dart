@@ -326,8 +326,8 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
               side: ValoraAppearance.instance.comicStyle ? const BorderSide(color: Colors.black, width: 2.2) : BorderSide.none,
             ),
           ),
-          inputDecorationTheme: const InputDecorationTheme(
-            border: OutlineInputBorder(),
+          inputDecorationTheme: InputDecorationTheme(
+            border: const OutlineInputBorder(),
             focusedBorder: OutlineInputBorder(
               borderSide: BorderSide(color: ValoraAppearance.instance.accent, width: 1.5),
             ),
