@@ -68,7 +68,7 @@ class ValoraThemeBackdropPainter extends CustomPainter {
         center: const Alignment(-0.92, -0.82),
         radius: 1.15,
         colors: [
-          accent.withValues(alpha: themeId == 'emerald' || themeId == 'dark_red' ? 0.19 : 0.12),
+          accent.withValues(alpha: themeId == 'emerald' || themeId == 'dark_red' ? 0.32 : 0.22),
           accent.withValues(alpha: 0.025),
           Colors.transparent,
         ],
@@ -79,13 +79,13 @@ class ValoraThemeBackdropPainter extends CustomPainter {
       ..shader = RadialGradient(
         center: const Alignment(0.94, 0.88),
         radius: 1.0,
-        colors: [accent.withValues(alpha: 0.075), Colors.transparent],
+        colors: [accent.withValues(alpha: 0.14), Colors.transparent],
       ).createShader(bounds);
     canvas.drawRect(bounds, lowerGlow);
 
     final p = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.1
-      ..color = accent.withValues(alpha: 0.12);
-    final fill = Paint()..style = PaintingStyle.fill..color = accent.withValues(alpha: 0.035);
+      ..color = accent.withValues(alpha: 0.24);
+    final fill = Paint()..style = PaintingStyle.fill..color = accent.withValues(alpha: 0.075);
     switch (themeId) {
       case 'emerald': // Circuiti elettronici stilizzati
         for (var row = 0; row < 11; row++) {
@@ -247,12 +247,12 @@ class ValoraThemeBackdropPainter extends CustomPainter {
 class ValoraAppearance extends ChangeNotifier {
   // Temi predefiniti: valori bloccati, selezionabili ma non modificabili singolarmente.
   static const Map<String, Map<String, Object>> themePresets = {
-    'black_gold': {'name':'Black & Gold','background':0xFF101010,'card':0xFF1C1C1C,'accent':0xFFD6B15E,'text':0xFFFFFFFF,'light':false,'comic':false,'zen':false},
-    'midnight_blue': {'name':'Midnight Blue','background':0xFF071321,'card':0xFF10243A,'accent':0xFF20B8FF,'text':0xFFF4F8FF,'light':false,'comic':false,'zen':false},
-    'emerald': {'name':'Electric Green','background':0xFF050A07,'card':0xE6101912,'accent':0xFF39FF62,'text':0xFFF1FFF4,'light':false,'comic':false,'zen':false},
-    'silver_light': {'name':'Silver Light','background':0xFFF1F4F7,'card':0xFFFFFFFF,'accent':0xFF2878C7,'text':0xFF172333,'light':true,'comic':false,'zen':false},
-    'dark_red': {'name':'Fire Red','background':0xFF100605,'card':0xE6210B08,'accent':0xFFFF452E,'text':0xFFFFF5F2,'light':false,'comic':false,'zen':false},
-    'royal_purple': {'name':'Royal Purple','background':0xFF160D20,'card':0xFF28153A,'accent':0xFFD44CFF,'text':0xFFFFF5FF,'light':false,'comic':false,'zen':false},
+    'black_gold': {'name':'Black & Gold','background':0xFF101010,'card':0xB81C1C1C,'accent':0xFFD6B15E,'text':0xFFFFFFFF,'light':false,'comic':false,'zen':false},
+    'midnight_blue': {'name':'Midnight Blue','background':0xFF071321,'card':0xB810243A,'accent':0xFF20B8FF,'text':0xFFF4F8FF,'light':false,'comic':false,'zen':false},
+    'emerald': {'name':'Electric Green','background':0xFF050A07,'card':0x98101912,'accent':0xFF39FF62,'text':0xFFF1FFF4,'light':false,'comic':false,'zen':false},
+    'silver_light': {'name':'Silver Light','background':0xFFF1F4F7,'card':0xBFFFFFFF,'accent':0xFF2878C7,'text':0xFF172333,'light':true,'comic':false,'zen':false},
+    'dark_red': {'name':'Fire Red','background':0xFF100605,'card':0x98210B08,'accent':0xFFFF452E,'text':0xFFFFF5F2,'light':false,'comic':false,'zen':false},
+    'royal_purple': {'name':'Royal Purple','background':0xFF160D20,'card':0xB828153A,'accent':0xFFD44CFF,'text':0xFFFFF5FF,'light':false,'comic':false,'zen':false},
     'comic': {'name':'Comic Style','background':0xFFFFD928,'card':0xFFFFFBEB,'accent':0xFFE51D2A,'text':0xFF101010,'light':true,'comic':true,'zen':false},
     'minimal_zen': {'name':'Minimal Zen','background':0xFFF3EBDD,'card':0xFFFFFCF5,'accent':0xFFB93D32,'text':0xFF27251F,'light':true,'comic':false,'zen':true},
     'industrial': {'name':'Industrial','background':0xFF20262B,'card':0xFF303940,'accent':0xFFB9C4CC,'text':0xFFF1F4F6,'light':false,'comic':false,'zen':false},
@@ -2861,7 +2861,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }) => Container(
     margin: const EdgeInsets.only(bottom: 10),
     decoration: BoxDecoration(
-      color: ValoraAppearance.instance.card,
+      color: ValoraAppearance.instance.card.withValues(alpha: ValoraAppearance.instance.card.opacity * 0.78),
       borderRadius: BorderRadius.circular(ValoraAppearance.instance.comicStyle ? 3 : (ValoraAppearance.instance.zenStyle ? 20 : 14)),
       border: Border.all(color: color.withValues(alpha: 0.85), width: ValoraAppearance.instance.comicStyle ? 2.8 : 1.25),
     ),
