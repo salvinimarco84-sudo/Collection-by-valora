@@ -669,7 +669,17 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
               color:Color(theme['background'] as int),
               borderRadius:BorderRadius.circular(entry.key == 'comic' ? 2 : 8),
               border:Border.all(color:accent,width:entry.key == 'comic' ? 2 : 1),
-            ),child:Icon(entry.key == 'comic' ? Icons.auto_awesome : (entry.key == 'minimal_zen' ? Icons.spa_outlined : Icons.palette_outlined),color:accent,size:20)),
+            ),child:CustomPaint(
+              painter:ValoraThemeBackdropPainter(
+                themeId:entry.key,
+                background:Color(theme['background'] as int),
+                accent:accent,
+              ),
+              child:Center(child:Icon(
+                entry.key == 'comic' ? Icons.auto_awesome : (entry.key == 'minimal_zen' ? Icons.spa_outlined : Icons.palette_outlined),
+                color:accent,size:20,
+              )),
+            )),
             title:Text(theme['name'] as String,style:TextStyle(fontWeight:FontWeight.bold,color:a.textPrimary)),
             subtitle:Text(previewDescription,style:TextStyle(color:(theme['light'] as bool) ? const Color(0xFF424242) : Colors.white70)),
             trailing:selected ? Icon(Icons.check_circle,color:accent) : const Icon(Icons.radio_button_unchecked),
