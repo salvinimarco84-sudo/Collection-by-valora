@@ -579,7 +579,21 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
         final theme = entry.value;
         final selected = a.selectedThemeId == entry.key;
         final accent = Color(theme['accent'] as int);
+        final previewDescription = switch (entry.key) {
+          'black_gold' => 'Marmo nero venato d’oro · elegante e premium',
+          'industrial' => 'Acciaio spazzolato e grafite · robusto e tecnico',
+          'comic' => 'Pop-art e contrasti netti · energico e colorato',
+          'midnight_blue' => 'Blu notte e bagliori elettrici · profondo e tecnologico',
+          'emerald' => 'Circuiti elettronici e verde neon · luminoso e futuristico',
+          'silver_light' => 'Marmo chiaro e venature argento · luminoso e minimale',
+          'dark_red' => 'Roccia vulcanica e magma · intenso e realistico',
+          'royal_purple' => 'Cristalli ametista e luce viola · creativo e raffinato',
+          'minimal_zen' => 'Pietra naturale e toni sabbia · semplice e rilassante',
+          'pastel' => 'Gradienti pastello morbidi · delicato e moderno',
+          _ => 'Tema coordinato predefinito',
+        };
         return Card(
+          color: Color(theme['background'] as int),
           margin: const EdgeInsets.symmetric(vertical:4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(entry.key == 'comic' ? 3 : (entry.key == 'minimal_zen' ? 18 : 12)),
@@ -592,7 +606,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
               border:Border.all(color:accent,width:entry.key == 'comic' ? 2 : 1),
             ),child:Icon(entry.key == 'comic' ? Icons.auto_awesome : (entry.key == 'minimal_zen' ? Icons.spa_outlined : Icons.palette_outlined),color:accent,size:20)),
             title:Text(theme['name'] as String,style:TextStyle(fontWeight:FontWeight.bold,color:a.textPrimary)),
-            subtitle:Text(entry.key == 'comic' ? 'Contorni marcati e pannelli pop-art' : (entry.key == 'minimal_zen' ? 'Forme essenziali e atmosfera naturale' : 'Tema coordinato predefinito'),style:TextStyle(color:a.textSecondary)),
+            subtitle:Text(previewDescription,style:TextStyle(color:(theme['light'] as bool) ? const Color(0xFF424242) : Colors.white70)),
             trailing:selected ? Icon(Icons.check_circle,color:accent) : const Icon(Icons.radio_button_unchecked),
             onTap:()=>a.setTheme(entry.key),
           ),
