@@ -175,6 +175,52 @@ class ValoraThemeBackdropPainter extends CustomPainter {
         break;
     }
 
+    // Forme materiche ampie e irregolari: rompono la griglia geometrica
+    // e creano masse visive più organiche, con luce e ombra sovrapposte.
+    final textureRandom = math.Random(themeId.hashCode ^ 0x51A7);
+    final organicHighlight = Paint()..style = PaintingStyle.fill;
+    final organicShadow = Paint()..style = PaintingStyle.fill;
+    if (themeId == 'dark_red' || themeId == 'black_gold' || themeId == 'royal_purple' ||
+        themeId == 'emerald' || themeId == 'industrial' || themeId == 'silver_light') {
+      for (var i = 0; i < 34; i++) {
+        final center = Offset(
+          textureRandom.nextDouble() * size.width,
+          textureRandom.nextDouble() * size.height,
+        );
+        final radiusX = size.width * (0.035 + textureRandom.nextDouble() * 0.13);
+        final radiusY = size.height * (0.012 + textureRandom.nextDouble() * 0.045);
+        final points = 7 + textureRandom.nextInt(7);
+        final polygon = Path();
+        for (var point = 0; point < points; point++) {
+          final angle = point * math.pi * 2 / points;
+          final irregularity = 0.55 + textureRandom.nextDouble() * 0.8;
+          final position = Offset(
+            center.dx + math.cos(angle) * radiusX * irregularity,
+            center.dy + math.sin(angle) * radiusY * irregularity,
+          );
+          if (point == 0) {
+            polygon.moveTo(position.dx, position.dy);
+          } else {
+            polygon.lineTo(position.dx, position.dy);
+          }
+        }
+        polygon.close();
+        organicShadow.color = Colors.black.withValues(alpha: themeId == 'silver_light' ? 0.045 : 0.11);
+        canvas.drawPath(polygon.shift(const Offset(1.8, 2.2)), organicShadow);
+        organicHighlight.color = accent.withValues(
+          alpha: (themeId == 'dark_red' || themeId == 'emerald') ? 0.075 : 0.055,
+        );
+        canvas.drawPath(polygon, organicHighlight);
+        if (themeId == 'dark_red' || themeId == 'black_gold') {
+          final edge = Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = textureRandom.nextDouble() * 1.3 + 0.35
+            ..color = accent.withValues(alpha: themeId == 'dark_red' ? 0.16 : 0.13);
+          canvas.drawPath(polygon, edge);
+        }
+      }
+    }
+
     // Passaggio materico: grana fine, micrograffi e ombreggiatura per dare
     // profondità alle superfici senza immagini remote o dipendenze dal database.
     // Coordinate deterministiche: la texture resta stabile tra un rebuild e l'altro.
