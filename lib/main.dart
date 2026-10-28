@@ -59,6 +59,29 @@ class ValoraThemeBackdropPainter extends CustomPainter {
       begin: Alignment.topLeft, end: Alignment.bottomRight,
       colors: [background, Color.lerp(background, accent, 0.075)!, background],
     ).createShader(bounds));
+
+    // Profondità cromatica per la schermata principale: bagliori morbidi ai bordi,
+    // mantenendo il centro più quieto per la leggibilità delle schede.
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.92, -0.82),
+        radius: 1.15,
+        colors: [
+          accent.withValues(alpha: themeId == 'emerald' || themeId == 'dark_red' ? 0.19 : 0.12),
+          accent.withValues(alpha: 0.025),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.42, 1.0],
+      ).createShader(bounds);
+    canvas.drawRect(bounds, glowPaint);
+    final lowerGlow = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0.94, 0.88),
+        radius: 1.0,
+        colors: [accent.withValues(alpha: 0.075), Colors.transparent],
+      ).createShader(bounds);
+    canvas.drawRect(bounds, lowerGlow);
+
     final p = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.1
       ..color = accent.withValues(alpha: 0.12);
     final fill = Paint()..style = PaintingStyle.fill..color = accent.withValues(alpha: 0.035);
