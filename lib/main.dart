@@ -46,6 +46,116 @@ const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
 
+class ValoraThemeBackdropPainter extends CustomPainter {
+  final String themeId;
+  final Color background;
+  final Color accent;
+  ValoraThemeBackdropPainter({required this.themeId, required this.background, required this.accent});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bounds = Offset.zero & size;
+    canvas.drawRect(bounds, Paint()..shader = LinearGradient(
+      begin: Alignment.topLeft, end: Alignment.bottomRight,
+      colors: [background, Color.lerp(background, accent, 0.075)!, background],
+    ).createShader(bounds));
+    final p = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.1
+      ..color = accent.withValues(alpha: 0.12);
+    final fill = Paint()..style = PaintingStyle.fill..color = accent.withValues(alpha: 0.035);
+    switch (themeId) {
+      case 'emerald': // Circuiti elettronici stilizzati
+        for (var row = 0; row < 11; row++) {
+          final y = size.height * row / 10;
+          final path = Path()..moveTo(0, y);
+          var x = 0.0;
+          while (x < size.width) {
+            final step = 22.0 + ((row * 13 + x.toInt()) % 41);
+            path.lineTo(x + step * 0.55, y);
+            path.lineTo(x + step * 0.55, y + ((row % 2 == 0) ? 12 : -12));
+            path.lineTo(x + step, y + ((row % 2 == 0) ? 12 : -12));
+            x += step;
+          }
+          canvas.drawPath(path, p);
+          for (var col = 0; col < 7; col++) {
+            canvas.drawCircle(Offset((size.width / 7) * col + row * 5.0, y), 2.2, fill);
+          }
+        }
+        break;
+      case 'dark_red': // Crepe vulcaniche e bagliore magma
+        final crack = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.8
+          ..color = accent.withValues(alpha: 0.15);
+        for (var i = 0; i < 24; i++) {
+          final x = (i * 79.0) % (size.width + 30);
+          final y = (i * 113.0) % (size.height + 20);
+          final path = Path()..moveTo(x, y);
+          for (var n = 0; n < 5; n++) {
+            path.lineTo(x + n * 9 + ((i + n) % 3) * 7, y + n * 13.0);
+          }
+          canvas.drawPath(path, crack);
+        }
+        break;
+      case 'industrial':
+        for (var y = 0.0; y < size.height; y += 8) {
+          canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
+        }
+        break;
+      case 'midnight_blue':
+        for (var i = 0; i < 80; i++) {
+          final x = (i * 67.0) % size.width;
+          final y = (i * 131.0) % size.height;
+          canvas.drawCircle(Offset(x, y), (i % 3 + 1).toDouble(), fill);
+          if (i % 4 == 0) canvas.drawLine(Offset(x, y), Offset(x + 18, y + 10), p);
+        }
+        break;
+      case 'black_gold':
+        final vein = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.4
+          ..color = accent.withValues(alpha: 0.13);
+        for (var i = 0; i < 13; i++) {
+          final path = Path()..moveTo((i * 91.0) % size.width, 0);
+          for (var y = 0.0; y < size.height; y += 38) {
+            path.lineTo(((i * 91.0 + y * 0.37 + (i % 3) * 17) % size.width), y);
+          }
+          canvas.drawPath(path, vein);
+        }
+        break;
+      case 'comic':
+        for (var x = 0.0; x < size.width; x += 12) {
+          for (var y = 0.0; y < size.height; y += 12) {
+            canvas.drawCircle(Offset(x, y), 1.5, p..style = PaintingStyle.fill);
+          }
+        }
+        break;
+      case 'royal_purple':
+        for (var i = 0; i < 22; i++) {
+          final x = (i * 73.0) % size.width;
+          final y = (i * 97.0) % size.height;
+          final path = Path()..moveTo(x, y - 17)..lineTo(x + 9, y)..lineTo(x, y + 17)..lineTo(x - 9, y)..close();
+          canvas.drawPath(path, p);
+        }
+        break;
+      case 'silver_light':
+        for (var i = 0; i < 16; i++) {
+          final path = Path()..moveTo(0, i * 59.0);
+          path.cubicTo(size.width * .25, i * 59.0 + 30, size.width * .65, i * 59.0 - 24, size.width, i * 59.0 + 8);
+          canvas.drawPath(path, p);
+        }
+        break;
+      case 'minimal_zen':
+        for (var i = 0; i < 14; i++) {
+          canvas.drawOval(Rect.fromCenter(center: Offset(size.width * .78, size.height * .15 + i * 17.0), width: size.width * .7 + i * 8, height: 28 + i * 3.0), p);
+        }
+        break;
+      case 'pastel':
+        final soft = Paint()..shader = RadialGradient(colors: [accent.withValues(alpha: .12), Colors.transparent]).createShader(Rect.fromCircle(center: Offset(size.width * .82, size.height * .25), radius: size.width * .9));
+        canvas.drawRect(bounds, soft);
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant ValoraThemeBackdropPainter oldDelegate) => themeId != oldDelegate.themeId || background != oldDelegate.background || accent != oldDelegate.accent;
+}
+
 class ValoraAppearance extends ChangeNotifier {
   // Temi predefiniti: valori bloccati, selezionabili ma non modificabili singolarmente.
   static const Map<String, Map<String, Object>> themePresets = {
@@ -2605,11 +2715,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
             IconButton(tooltip: 'Esci', onPressed: logout, icon: const Icon(Icons.logout)),
           ],
         ),
-        body: SafeArea(child: showCollection
-            ? buildCollection()
-            : selectedSection == null
-                ? buildDashboard()
-                : buildSection(selectedSection!)),
+        body: Stack(children: [
+          Positioned.fill(child: IgnorePointer(child: CustomPaint(
+            painter: ValoraThemeBackdropPainter(
+              themeId: ValoraAppearance.instance.selectedThemeId,
+              background: ValoraAppearance.instance.background,
+              accent: ValoraAppearance.instance.accent,
+            ),
+          ))),
+          SafeArea(child: showCollection
+              ? buildCollection()
+              : selectedSection == null
+                  ? buildDashboard()
+                  : buildSection(selectedSection!)),
+        ]),
         floatingActionButton: FloatingActionButton.extended(
           heroTag: 'valora_global_assistant',
           onPressed: () => Navigator.of(context).push(MaterialPageRoute(
