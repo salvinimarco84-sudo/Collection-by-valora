@@ -1,4 +1,5 @@
 import 'dart:io' show File;
+import 'dart:math' as math;
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -173,6 +174,70 @@ class ValoraThemeBackdropPainter extends CustomPainter {
         canvas.drawRect(bounds, soft);
         break;
     }
+
+    // Passaggio materico: grana fine, micrograffi e ombreggiatura per dare
+    // profondità alle superfici senza immagini remote o dipendenze dal database.
+    // Coordinate deterministiche: la texture resta stabile tra un rebuild e l'altro.
+    final isLight = background.computeLuminance() > 0.45;
+    final grain = Paint()..style = PaintingStyle.fill;
+    for (var i = 0; i < 520; i++) {
+      final x = ((i * 73.0 + (i % 11) * 17.0) % (size.width + 1));
+      final y = ((i * 137.0 + (i % 7) * 19.0) % (size.height + 1));
+      final radius = (i % 5 == 0) ? 1.15 : 0.55;
+      grain.color = (isLight ? Colors.black : Colors.white)
+          .withValues(alpha: (i % 4 == 0) ? 0.035 : 0.018);
+      canvas.drawCircle(Offset(x, y), radius, grain);
+    }
+
+    if (themeId == 'industrial' || themeId == 'silver_light') {
+      final scratch = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round;
+      for (var i = 0; i < 95; i++) {
+        final x = (i * 47.0) % (size.width + 1);
+        final y = (i * 83.0) % (size.height + 1);
+        scratch
+          ..strokeWidth = i % 7 == 0 ? 1.0 : 0.45
+          ..color = (i % 3 == 0 ? Colors.white : Colors.black)
+              .withValues(alpha: isLight ? 0.055 : 0.065);
+        canvas.drawLine(Offset(x, y), Offset(x + 8 + (i % 19), y + ((i % 5) - 2) * 0.45), scratch);
+      }
+    } else if (themeId == 'dark_red') {
+      final ember = Paint()..style = PaintingStyle.fill;
+      for (var i = 0; i < 90; i++) {
+        final x = (i * 97.0) % (size.width + 1);
+        final y = (i * 59.0) % (size.height + 1);
+        ember.color = accent.withValues(alpha: i % 9 == 0 ? 0.13 : 0.035);
+        canvas.drawCircle(Offset(x, y), i % 9 == 0 ? 1.7 : 0.65, ember);
+      }
+    } else if (themeId == 'black_gold') {
+      final mineralVein = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.65
+        ..color = accent.withValues(alpha: 0.10);
+      for (var i = 0; i < 18; i++) {
+        final startX = (i * 89.0) % (size.width + 1);
+        final path = Path()..moveTo(startX, 0);
+        for (var y = 24.0; y < size.height; y += 24) {
+          final bend = math.sin((i + y) * 0.031) * 15.0;
+          path.lineTo((startX + bend + y * 0.12).clamp(0.0, size.width), y);
+        }
+        canvas.drawPath(path, mineralVein);
+      }
+    }
+
+    // Vignettatura morbida: il contenuto e i pulsanti restano al centro della scena.
+    final vignette = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 1.05,
+        colors: [
+          Colors.transparent,
+          (isLight ? Colors.black : Colors.black).withValues(alpha: 0.20),
+        ],
+        stops: const [0.48, 1.0],
+      ).createShader(bounds);
+    canvas.drawRect(bounds, vignette);
   }
 
   @override
