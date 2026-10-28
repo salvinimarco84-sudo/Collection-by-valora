@@ -2889,22 +2889,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ],
         ),
         body: Stack(children: [
-          Positioned.fill(child: IgnorePointer(child: CustomPaint(
-            painter: ValoraThemeBackdropPainter(
-              themeId: ValoraAppearance.instance.selectedThemeId,
-              background: ValoraAppearance.instance.background,
-              accent: ValoraAppearance.instance.accent,
-            ),
-          ))),
+          // Lo sfondo SVG del tema è la superficie visiva principale.
+          // Evita di sovrapporre il vecchio painter geometrico: era la causa
+          // delle linee astratte che coprivano le texture del design approvato.
           Positioned.fill(
             child: IgnorePointer(
-              child: Opacity(
-                opacity: 0.84,
-                child: SvgPicture.asset(
-                  _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                ),
+              child: SvgPicture.asset(
+                _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
               ),
             ),
           ),
