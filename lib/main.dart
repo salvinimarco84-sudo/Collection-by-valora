@@ -14,6 +14,7 @@ import 'package:xml/xml.dart' as xml;
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart' as pw_core;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -46,6 +47,20 @@ String _valoraImageProxyUrl(String rawUrl) {
 const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
+
+String _valoraThemeAsset(String id) => switch (id) {
+  'industrial' => 'assets/themes/industrial.svg',
+  'emerald' => 'assets/themes/emerald.svg',
+  'black_gold' => 'assets/themes/black_gold.svg',
+  'comic' => 'assets/themes/comic.svg',
+  'midnight_blue' => 'assets/themes/midnight_blue.svg',
+  'dark_red' => 'assets/themes/dark_red.svg',
+  'pastel' => 'assets/themes/pastel.svg',
+  'minimal_zen' => 'assets/themes/minimal_zen.svg',
+  'royal_purple' => 'assets/themes/royal_purple.svg',
+  'silver_light' => 'assets/themes/silver_light.svg',
+  _ => 'assets/themes/emerald.svg',
+};
 
 class ValoraThemeBackdropPainter extends CustomPainter {
   final String themeId;
@@ -2881,6 +2896,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
               accent: ValoraAppearance.instance.accent,
             ),
           ))),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.84,
+                child: SvgPicture.asset(
+                  _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                ),
+              ),
+            ),
+          ),
           SafeArea(child: showCollection
               ? buildCollection()
               : selectedSection == null
