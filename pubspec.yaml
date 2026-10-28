@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_svg: ^2.0.10+1
   supabase_flutter: ^2.8.0
   speech_to_text: ^7.0.0
   http: ^1.2.2
@@ -40,3 +41,13 @@ flutter:
   assets:
     - valora_logo.png
     - assets/valora_logo.png
+    - assets/themes/industrial.svg
+    - assets/themes/emerald.svg
+    - assets/themes/black_gold.svg
+    - assets/themes/comic.svg
+    - assets/themes/midnight_blue.svg
+    - assets/themes/dark_red.svg
+    - assets/themes/pastel.svg
+    - assets/themes/minimal_zen.svg
+    - assets/themes/royal_purple.svg
+    - assets/themes/silver_light.svg
