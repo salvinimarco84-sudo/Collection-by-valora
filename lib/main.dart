@@ -4018,11 +4018,15 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
   List<Map<String, dynamic>> _sales = [], _platforms = [];
   final Set<int> _selected = <int>{};
   final Map<int, String> _outcomes = {}, _dates = {}, _amounts = {}, _platformCodes = {};
+  final TextEditingController _groupTotalController = TextEditingController();
+  String _groupDate = '';
+  String? _groupPlatformCode;
   Map<String, dynamic>? _preview, _review;
   String? _error, _success;
 
-  @override void initState() { super.initState(); _loadOpenSales(); }
+  @override void initState() { super.initState(); _groupDate = _today(); _loadOpenSales(); }
   @override void dispose() {
+    _groupTotalController.dispose();
     _pageScroll.dispose();
     if (_lockHeld) { _ValoraRuntimeApi.call('release_lock', {'session_id': _sessionId}).catchError((_) => <String, dynamic>{}); }
     super.dispose();
@@ -4053,8 +4057,41 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
     } finally { if (mounted) setState(() => _loading = false); }
   }
 
+  bool get _isMultipleSale => _selected.length >= 2 && _selected.every((id) => _outcomes[id] == 'VENDITA EFFETTIVA');
+
+  double get _selectedAskingTotal => _sales
+      .where((row) => _selected.contains(int.tryParse('${row['codice_vendita_aperta']}')))
+      .fold<double>(0, (sum, row) => sum + (double.tryParse('${row['prezzo_di_vendita'] ?? 0}'.replaceAll(',', '.')) ?? 0));
+
+  String? get _groupPlatformName {
+    for (final platform in _platforms) {
+      if ('${platform['codice_piattaforma']}' == _groupPlatformCode) return '${platform['nome_piattaforma']}';
+    }
+    return null;
+  }
+
   Map<String, dynamic> _salePayload() {
     if (_selected.isEmpty) throw Exception('Seleziona almeno una vendita aperta.');
+    if (_isMultipleSale) {
+      final date = _groupDate.trim();
+      final total = double.tryParse(_groupTotalController.text.trim().replaceAll(',', '.'));
+      final platformCode = int.tryParse(_groupPlatformCode ?? '');
+      if (date.isEmpty || DateTime.tryParse(date) == null) throw Exception('Inserisci una data valida per la transazione multipla.');
+      if (total == null || total <= 0) throw Exception('Inserisci un importo complessivo maggiore di zero.');
+      if (platformCode == null) throw Exception('Seleziona la piattaforma effettiva della transazione.');
+      final selectedRows = _sales.where((row) => _selected.contains(int.tryParse('${row['codice_vendita_aperta']}'))).toList();
+      if (selectedRows.any((row) => row['codice_lotto'] != null)) throw Exception('Una o più inserzioni appartengono già a un lotto: chiudile con la procedura dedicata.');
+      return {
+        'modalita_vendita_multipla': true,
+        'data_vendita': date,
+        'importo_totale_effettivo': double.parse(total.toStringAsFixed(2)),
+        'codice_piattaforma': platformCode,
+        'operazioni': selectedRows.map((row) => {
+          'codice_vendita_aperta': int.parse('${row['codice_vendita_aperta']}'),
+          'esito': 'VENDITA EFFETTIVA',
+        }).toList(),
+      };
+    }
     final operations = <Map<String, dynamic>>[];
     for (final row in _sales) {
       final id = int.tryParse('${row['codice_vendita_aperta']}');
@@ -4142,8 +4179,11 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
     if (result['blocco_rilasciato_automaticamente'] == true) { _lockHeld = false; } else { await _releaseLock(); }
     if (!mounted) return;
     setState(() {
-      _success = 'Chiusura salvata e verificata: ${result['numero_operazioni'] ?? _selected.length} vendite.';
+      _success = _isMultipleSale
+          ? 'Transazione multipla salvata e verificata: ${_selected.length} oggetti, ${_money(result['importo_totale_effettivo'] ?? _groupTotalController.text)}. Riferimento: ${result['codice_transazione'] ?? 'registrato'}.'
+          : 'Chiusura salvata e verificata: ${result['numero_operazioni'] ?? _selected.length} vendite.';
       _selected.clear(); _outcomes.clear(); _dates.clear(); _amounts.clear(); _platformCodes.clear();
+      _groupTotalController.clear(); _groupDate = _today(); _groupPlatformCode = null;
       _preview = null; _review = null;
     });
     await _loadOpenSales();
@@ -4163,6 +4203,13 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
     final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(2000), lastDate: DateTime(2100),
       helpText: 'Data effettiva della vendita', cancelText: 'ANNULLA', confirmText: 'CONFERMA');
     if (picked != null && mounted) setState(() { _dates[id] = _dateString(picked); _preview = null; _review = null; });
+  }
+
+  Future<void> _pickGroupDate() async {
+    final initial = DateTime.tryParse(_groupDate) ?? DateTime.now();
+    final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(2000), lastDate: DateTime(2100),
+      helpText: 'Data della transazione multipla', cancelText: 'ANNULLA', confirmText: 'CONFERMA');
+    if (picked != null && mounted) setState(() { _groupDate = _dateString(picked); _preview = null; _review = null; });
   }
 
   String _money(dynamic value, [dynamic currency]) => '${(double.tryParse('${value ?? 0}') ?? 0).toStringAsFixed(2)} ${currency ?? 'EUR'}';
@@ -4210,9 +4257,17 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
                     DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')),
                     DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza vendita')),
                   ],
-                  onChanged: _loading ? null : (v) => setState(() { _outcomes[id] = v ?? ''; _preview = null; _review = null; }),
+                  onChanged: _loading ? null : (v) => setState(() {
+                    final wasMultipleSale = _isMultipleSale;
+                    _outcomes[id] = v ?? '';
+                    if (!wasMultipleSale && _isMultipleSale) {
+                      _groupDate = _today();
+                      _groupTotalController.text = _selectedAskingTotal.toStringAsFixed(2);
+                    }
+                    _preview = null; _review = null;
+                  }),
                 ),
-                if (_outcomes[id] == 'VENDITA EFFETTIVA') ...[
+                if (_outcomes[id] == 'VENDITA EFFETTIVA' && !_isMultipleSale) ...[
                   const SizedBox(height: 8),
                   TextFormField(
                     key: ValueKey('date-$id-${_dates[id]}'), initialValue: _dates[id] ?? _today(), readOnly: true,
@@ -4231,6 +4286,9 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
                     items: _platforms.map((p) => DropdownMenuItem<String>(value: '${p['codice_piattaforma']}', child: Text('${p['nome_piattaforma']}'))).toList(),
                     onChanged: _loading ? null : (v) => setState(() { _platformCodes[id] = v ?? ''; _preview = null; _review = null; }),
                   ),
+                ] else if (_outcomes[id] == 'VENDITA EFFETTIVA' && _isMultipleSale) ...[
+                  const SizedBox(height: 8),
+                  const Text('Ricavo attribuito automaticamente in proporzione al prezzo di questa inserzione.'),
                 ],
               ]),
             ),
@@ -4277,6 +4335,35 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
           if (_success != null) Card(color: Colors.green.withValues(alpha: 0.12), child: Padding(padding: const EdgeInsets.all(12), child: Text(_success!, style: const TextStyle(color: Colors.greenAccent)))),
           if (_sales.isEmpty && !_loading) const Card(child: Padding(padding: EdgeInsets.all(18), child: Text('Non ci sono vendite attualmente aperte.'))),
           ..._sales.map(_saleCard),
+          if (_isMultipleSale) Card(child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('VENDITA MULTIPLA · UN UNICO INCASSO', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text('Prezzo complessivo delle inserzioni: ${_money(_selectedAskingTotal)}'),
+              const SizedBox(height: 8),
+              TextFormField(
+                key: const ValueKey('pr08-group-total'), controller: _groupTotalController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Importo totale effettivamente incassato *', suffixText: 'EUR'),
+                onChanged: (_) => setState(() { _preview = null; _review = null; }),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                key: ValueKey('pr08-group-date-$_groupDate'), initialValue: _groupDate, readOnly: true,
+                decoration: InputDecoration(labelText: 'Data della vendita *', suffixIcon: IconButton(icon: const Icon(Icons.calendar_today), onPressed: _loading ? null : _pickGroupDate)),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _groupPlatformCode,
+                decoration: const InputDecoration(labelText: 'Piattaforma effettiva *'),
+                items: _platforms.map((p) => DropdownMenuItem<String>(value: '${p['codice_piattaforma']}', child: Text('${p['nome_piattaforma']}'))).toList(),
+                onChanged: _loading ? null : (v) => setState(() { _groupPlatformCode = v; _preview = null; _review = null; }),
+              ),
+              const SizedBox(height: 6),
+              Text('VALORA ripartirà automaticamente l’incasso tra gli oggetti in proporzione ai prezzi delle rispettive inserzioni. La somma delle quote coinciderà esattamente con l’importo inserito.', style: TextStyle(color: appearance.textSecondary)),
+            ]),
+          )),
           if (_selected.isNotEmpty) ...[
             const SizedBox(height: 8),
             FilledButton.icon(onPressed: _loading ? null : () => _run(_previewSelected), icon: const Icon(Icons.fact_check_outlined),
@@ -4294,16 +4381,24 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
                 final row = _sales.firstWhere((r) => int.tryParse('${r['codice_vendita_aperta']}') == id);
                 final outcome = _outcomes[id] ?? 'Esito non indicato';
                 final details = outcome == 'VENDITA EFFETTIVA'
-                    ? ' · ${_money(_amounts[id], 'EUR')} · ${_dates[id] ?? _today()}'
+                    ? (_isMultipleSale ? ' · quota proporzionale' : ' · ${_money(_amounts[id], 'EUR')} · ${_dates[id] ?? _today()}')
                     : '';
                 final matchingPlatforms = _platforms.where((p) => '${p['codice_piattaforma']}' == (_platformCodes[id] ?? ''))
                     .map((p) => '${p['nome_piattaforma']}').toList();
-                final platform = matchingPlatforms.isEmpty ? null : matchingPlatforms.first;
+                final platform = _isMultipleSale ? _groupPlatformName : (matchingPlatforms.isEmpty ? null : matchingPlatforms.first);
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text('Vendita #$id · Oggetto #${row['codice_oggetto']} · $outcome$details${platform == null ? '' : ' · $platform'}'),
                 );
               }),
+              if (_isMultipleSale) ...[
+                const Divider(),
+                Text('Incasso unico: ${_money(_groupTotalController.text)} · Data: $_groupDate · Piattaforma: ${_groupPlatformName ?? 'da selezionare'}'),
+                if (_preview?['allocazioni'] is List) ...(_preview!['allocazioni'] as List).whereType<Map>().map((a) => Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('${a['descrizione_oggetto']}: ${_money(a['importo_allocato'])} (inserzione ${_money(a['prezzo_inserzione'])})'),
+                )),
+              ],
               const SizedBox(height: 10),
               FilledButton(onPressed: _loading ? null : () => _run(_confirmSelectedData),
                 child: const Text('CONFERMO I DATI')),
@@ -4318,8 +4413,17 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
                 Expanded(child: Text('DATI CONFERMATI', style: TextStyle(fontWeight: FontWeight.bold))),
               ]),
               const SizedBox(height: 8),
-              Text('Hai confermato ${_selected.length} chiusure. Nessuna vendita è stata ancora modificata. Premi il pulsante qui sotto per eseguire il salvataggio definitivo.',
+              Text(_isMultipleSale
+                  ? 'Hai confermato una sola transazione da ${_money(_groupTotalController.text)} per ${_selected.length} oggetti. Nessuna vendita è stata ancora modificata. Premi il pulsante qui sotto per salvare definitivamente.'
+                  : 'Hai confermato ${_selected.length} chiusure. Nessuna vendita è stata ancora modificata. Premi il pulsante qui sotto per eseguire il salvataggio definitivo.',
                 style: TextStyle(color: appearance.textSecondary)),
+              if (_isMultipleSale && _review?['riepilogo'] is List) ...[
+                const SizedBox(height: 8),
+                ...(_review!['riepilogo'] as List).whereType<Map>().map((a) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text('${a['descrizione_oggetto']}: ${_money(a['importo_allocato'])}'),
+                )),
+              ],
               const SizedBox(height: 12),
               FilledButton.icon(onPressed: _loading ? null : () => _run(_saveSelected), icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA')),
               TextButton(onPressed: _loading ? null : () => _run(() async { await _releaseLock(); if (mounted) setState(() { _preview = null; _review = null; }); }), child: const Text('ANNULLA E LASCIA APERTE LE VENDITE')),
