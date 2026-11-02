@@ -663,7 +663,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
     final color=a.colorFor(section);
     final url=a.imageUrls[section];
     return Card(
-      color:const Color(0xFF171717),
+      color:const Color(0xFF171717).withValues(alpha:0.72),
       child:Padding(
         padding:const EdgeInsets.all(12),
         child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -695,8 +695,32 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
     );
   }
   @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('Personalizza VALORA')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
+    backgroundColor: Colors.transparent,
+    appBar:AppBar(
+      title:const Text('Personalizza VALORA'),
+      backgroundColor: Colors.black.withValues(alpha:0.48),
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+    ),
+    body: Stack(
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  _valoraThemeAsset(a.selectedThemeId),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
+                ),
+                ColoredBox(color: Colors.black.withValues(alpha:0.32)),
+              ],
+            ),
+          ),
+        ),
+        ListView(padding:const EdgeInsets.all(16),children:[
       const Text('TEMA APPLICAZIONE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:8),
       const Text('Scegli uno dei dieci temi predefiniti. Palette e stile sono bloccati; la scelta si applica all’interfaccia e viene salvata su questo dispositivo.'),
@@ -779,7 +803,10 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
         await a.setLayout(false);
         if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Ripristinata la configurazione iniziale: Schede, sfondo nero.')));
       },icon:const Icon(Icons.restart_alt),label:const Text('RIPRISTINA CONFIGURAZIONE INIZIALE')),
-    ]));
+    ]),
+      ],
+    ),
+  );
 }
 
 class StartupLoadingPage extends StatelessWidget {
