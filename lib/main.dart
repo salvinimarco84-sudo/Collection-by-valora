@@ -3768,15 +3768,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     final sectionColor = ValoraAppearance.instance.colorFor(section.title);
-    return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-      Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: 52),
-      const SizedBox(height: 12),
-      Text(section.title, textAlign: TextAlign.center, style: TextStyle(
-        color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
-      const SizedBox(height: 6),
-      Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
-        style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-      const SizedBox(height: 20),
+    return ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 20), children: [
+      // Il titolo è già integrato nell'immagine della sezione: lasciare spazio
+      // alla grafica prima di mostrare le procedure, senza duplicare l'intestazione.
+      SizedBox(height: MediaQuery.sizeOf(context).height * 0.31),
       ...procedures.map((procedure) => Card(
         color: Colors.black.withValues(alpha: 0.62),
         surfaceTintColor: Colors.transparent,
@@ -3787,6 +3782,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         margin: const EdgeInsets.only(bottom: 10),
         child: ListTile(
+          dense: true,
+          visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+          minVerticalPadding: 3,
           enabled: procedure.enabled,
           leading: CircleAvatar(
             backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.18) : ValoraAppearance.instance.neutralOverlay,
@@ -3798,7 +3797,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
             color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
           subtitle: Text(ValoraI18n.tr(procedure.description)),
-          isThreeLine: true,
+          isThreeLine: false,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
             color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
           onTap: !procedure.enabled
