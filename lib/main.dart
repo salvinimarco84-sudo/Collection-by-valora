@@ -6915,9 +6915,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final salePrice = _valueFor(item, ['prezzo_di_vendita'], 'Non indicato');
     final currency = _valueFor(item, ['valuta'], 'EUR');
     final platforms = _valueFor(item, ['piattaforme_report', 'piattaforme'], 'Non indicata');
-    final formattedSalePrice = salePrice == 'Non indicato'
-        ? salePrice
-        : '${salePrice.replaceAll('.', ',')} ${currency == 'EUR' ? '€' : currency}';
+    final completeness = _valueFor(item, ['completezza'], 'Non indicata');
+    final objectValue = _valueFor(item, ['valore_oggetto'], 'Non indicato');
+    final objectValueCurrency = _valueFor(item, ['valuta_valore'], 'EUR');
+    String formatMoney(String amount, String currencyCode) {
+      if (amount == 'Non indicato') return amount;
+      final normalized = amount.replaceAll('.', ',');
+      return '${normalized} ${currencyCode == 'EUR' ? '€' : currencyCode}';
+    }
+    final formattedSalePrice = formatMoney(salePrice, currency);
+    final formattedObjectValue = formatMoney(objectValue, objectValueCurrency);
     final imageSize = availableStyle ? 104.0 : 88.0;
     Widget infoChip(IconData icon, String label) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -6981,10 +6988,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 const SizedBox(height: 7),
                 Wrap(spacing: 6, runSpacing: 6, children: [
                   infoChip(Icons.storefront_outlined, platforms),
+                  if (destination != 'Non indicata') infoChip(Icons.inventory_2_outlined, destination),
                   if (condition != 'Non indicata') infoChip(Icons.verified_outlined, condition),
+                  if (completeness != 'Non indicata') infoChip(Icons.checklist_outlined, completeness),
                 ]),
                 const SizedBox(height: 7),
-                Text('Data inizio: ${_valueFor(item, ['data_inizio_vendita'], 'Non indicata')}',
+                Row(children: [
+                  Icon(Icons.circle, size: 8, color: sectionColor),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text('Stato oggetto: $state',
+                    style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
+                ]),
+                const SizedBox(height: 5),
+                Text('Valore oggetto: $formattedObjectValue',
+                  style: TextStyle(color: sectionColor, fontWeight: FontWeight.w700, fontSize: 13)),
+                const SizedBox(height: 5),
+                Text('Data inizio vendita: ${_valueFor(item, ['data_inizio_vendita'], 'Non indicata')}',
                   style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
               ] else if (availableStyle) ...[
                 Wrap(spacing: 6, runSpacing: 6, children: [
