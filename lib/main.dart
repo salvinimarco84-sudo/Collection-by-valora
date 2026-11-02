@@ -8220,7 +8220,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ]),
           ),
         ],
-        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory && code != 'REPORT-CASH' && code != 'REPORT-PURCHASES' && code != 'REPORT-SALES' && code != 'REPORT-SALES-ACTIVE') ...[
+        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory && !_isActiveListingsReport && code != 'REPORT-CASH' && code != 'REPORT-PURCHASES' && code != 'REPORT-SALES' && code != 'REPORT-SALES-ACTIVE') ...[
           const SizedBox(height: 16),
           Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
