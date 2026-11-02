@@ -3411,6 +3411,21 @@ class _HomeDashboardState extends State<HomeDashboard> {
     if (mounted) setState(() { selectedSection = null; showCollection = false; });
   }
 
+  String _menuBackgroundAsset() {
+    if (showCollection) return 'assets/menu_sections/01_collezione_personale.png';
+    final section = selectedSection?.title;
+    final asset = switch (section) {
+      'CATALOGO' => 'assets/menu_sections/catalogo_collezionista_blue.jpg',
+      'ACQUISTI' => 'assets/menu_sections/menu_acquisti_rosso_senza_loghi.png',
+      'VENDITE' => 'assets/menu_sections/menu_vendite_verde_senza_loghi.png',
+      'VALUTAZIONI' => 'assets/menu_sections/menu_valutazioni_viola.png',
+      'REPORT' => 'assets/menu_sections/menu_report_arancione.png',
+      'RICERCHE' => 'assets/menu_sections/menu_ricerche_viola.png',
+      _ => null,
+    };
+    return asset ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
@@ -3434,7 +3449,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
-            Image.asset(_valoraThemeAsset(ValoraAppearance.instance.selectedThemeId), fit: BoxFit.cover, alignment: Alignment.center,
+            Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover, alignment: Alignment.center,
               errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
             ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
           ]))),
