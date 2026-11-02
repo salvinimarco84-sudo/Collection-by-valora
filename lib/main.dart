@@ -4044,7 +4044,7 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
         _sales = rows is List ? rows.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
         _platforms = platforms is List ? platforms.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
         _selected.removeWhere((id) => !_sales.any((r) => int.tryParse('${r['codice_vendita_aperta']}') == id));
-        _preview = null; _review = null; _success = null;
+        _preview = null; _review = null;
       });
     } catch (e) {
       if (mounted) setState(() => _error = 'Impossibile caricare le vendite aperte: $e');
@@ -4206,7 +4206,7 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
                     key: ValueKey('amount-$id-${_amounts[id]}'), initialValue: _amounts[id] ?? '${row['prezzo_di_vendita'] ?? ''}',
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(labelText: 'Importo effettivo *', suffixText: 'EUR'),
-                    onChanged: (v) { _amounts[id] = v; _preview = null; _review = null; },
+                    onChanged: (v) => setState(() { _amounts[id] = v; _preview = null; _review = null; }),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
@@ -4269,7 +4269,7 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('RIEPILOGO PRELIMINARE', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              SelectableText(const JsonEncoder.withIndent('  ').convert(_preview)),
+              SelectableText(JsonEncoder.withIndent('  ').convert(_preview)),
               const SizedBox(height: 10),
               FilledButton(onPressed: _loading ? null : () => _run(_confirmSelectedData), child: const Text('CONFERMO I DATI')),
             ]),
@@ -4281,10 +4281,10 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
               const SizedBox(height: 6),
               Text('Hai confermato i dati di ${_selected.length} vendite. Solo il pulsante finale effettuerà la scrittura.'),
               const SizedBox(height: 10),
-              SelectableText(const JsonEncoder.withIndent('  ').convert(_review)),
+              SelectableText(JsonEncoder.withIndent('  ').convert(_review)),
               const SizedBox(height: 10),
               FilledButton.icon(onPressed: _loading ? null : () => _run(_saveSelected), icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA')),
-              TextButton(onPressed: _loading ? null : () => _run(_releaseLock), child: const Text('ANNULLA E LASCIA APERTE LE VENDITE')),
+              TextButton(onPressed: _loading ? null : () => _run(() async { await _releaseLock(); if (mounted) setState(() { _preview = null; _review = null; }); }), child: const Text('ANNULLA E LASCIA APERTE LE VENDITE')),
             ]),
           )),
           if (_loading) const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator())),
