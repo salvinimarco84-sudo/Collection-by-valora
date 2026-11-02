@@ -2505,8 +2505,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       final id = _id(p['codice_oggetto']);
       final amount = _num(p['valore_acquisto_oggetto']);
       if (id == null || amount == null) continue;
-      final quantity = (_num(p['quantita']) ?? 1).clamp(1, 100000).toDouble();
-      acquisitionByObject[id.toString()] = (acquisitionByObject[id.toString()] ?? 0) + amount * quantity;
+      // The purchase detail amount is already the total for this object row.
+      acquisitionByObject[id.toString()] = (acquisitionByObject[id.toString()] ?? 0) + amount;
     }
 
     double collectionMarket = 0;
