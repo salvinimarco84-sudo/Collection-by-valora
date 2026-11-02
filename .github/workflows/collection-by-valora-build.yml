@@ -1,4 +1,4 @@
-# Validate dashboard artwork placement on TEST after section-menu correction.
+# Validate compact section menus and artwork-title spacing on TEST.
 name: COLLECTION by VALORA Build
 
 on:
