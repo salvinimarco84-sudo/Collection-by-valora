@@ -3444,13 +3444,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
-            Image.asset(
-              selectedSection == null
-                  ? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)
-                  : (_valoraDashboardImageAsset(selectedSection!.title) ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)),
-              fit: BoxFit.cover, alignment: Alignment.center,
-              errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
-            ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
+            if (selectedSection == null)
+              Image.asset(
+                _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
+                fit: BoxFit.cover, alignment: Alignment.center,
+                errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor))
+            else
+              ClipRect(child: Transform.scale(
+                scale: 1.32,
+                child: Image.asset(
+                  _valoraDashboardImageAsset(selectedSection!.title) ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
+                  fit: BoxFit.cover, alignment: Alignment.center,
+                  errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
+              )),
+            ColoredBox(color: Colors.black.withValues(alpha: 0.18)),
           ]))),
           SafeArea(child: showCollection ? buildCollection() : selectedSection == null ? buildDashboard() : buildSection(selectedSection!)),
         ]),
@@ -3771,7 +3778,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     return ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 20), children: [
       // Il titolo è già integrato nell'immagine della sezione: lasciare spazio
       // alla grafica prima di mostrare le procedure, senza duplicare l'intestazione.
-      SizedBox(height: MediaQuery.sizeOf(context).height * 0.31),
+      SizedBox(height: MediaQuery.sizeOf(context).height * 0.40),
       ...procedures.map((procedure) => Card(
         color: Colors.black.withValues(alpha: 0.62),
         surfaceTintColor: Colors.transparent,
