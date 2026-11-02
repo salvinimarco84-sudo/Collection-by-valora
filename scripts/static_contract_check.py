@@ -23,6 +23,7 @@ checks = {
     "PR-01 validates collection category": "Seleziona una categoria COLLEZIONE valida." in main,
     "PR-12 catalog scan exists": "_loadIncompleteMetadataCatalog" in main,
     "PR-12 batch engine exists": "_runPr12AiBatch" in main and "LOTTO DA 10" in main,
+    "PR-08 multiple sale keeps separate mode and offers one proportional transaction": all(token in main for token in ("_canGroupSale", "_useSingleTransaction", "SwitchListTile(", "_isMultipleSale", "modalita_vendita_multipla", "importo_totale_effettivo", "importo_allocato", "VENDITA MULTIPLA · UN UNICO INCASSO")),
     "active listings report code exists": "REPORT-ACTIVE-LISTINGS" in main,
     "runtime lock methods exist": "Future<void> _acquireLock()" in main and "Future<void> _releaseLock()" in main,
     "write response checks persistence confirmation": "result['scrittura_eseguita'] != true" in main,

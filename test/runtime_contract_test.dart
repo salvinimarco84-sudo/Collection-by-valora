@@ -67,6 +67,18 @@ void main() {
       expect(source, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
     });
 
+    test('PR-08 supporta un incasso unico con ripartizione proporzionale', () {
+      expect(source, contains('bool get _canGroupSale'));
+      expect(source, contains('bool _useSingleTransaction = false;'));
+      expect(source, contains('SwitchListTile('));
+      expect(source, contains('bool get _isMultipleSale'));
+      expect(source, contains("'modalita_vendita_multipla': true"));
+      expect(source, contains("'importo_totale_effettivo': double.parse(total.toStringAsFixed(2))"));
+      expect(source, contains('VENDITA MULTIPLA · UN UNICO INCASSO'));
+      expect(source, contains("a['importo_allocato']"));
+      expect(source, contains("'codice_transazione'"));
+    });
+
     test('la consultazione inserzioni attive ha un codice dedicato', () {
       expect(source, contains('REPORT-ACTIVE-LISTINGS'));
     });
