@@ -4035,7 +4035,7 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
   Future<void> _loadOpenSales() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final response = await _ValoraRuntimeApi.call('open_sales_list', {});
+      final response = await _ValoraRuntimeApi.call('open_sales_list', {'session_id': _sessionId});
       final result = response['result'];
       if (result is! Map) throw Exception('Risposta elenco vendite aperte non valida.');
       final rows = result['vendite'], platforms = result['piattaforme'];
