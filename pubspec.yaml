@@ -42,6 +42,16 @@ flutter:
     - valora_logo.png
     - assets/valora_logo.png
     - assets/themes/industrial.svg
+    - assets/themes/silver_light.jpg
+    - assets/themes/royal_purple.jpg
+    - assets/themes/minimal_zen.jpg
+    - assets/themes/pastel.jpg
+    - assets/themes/fire_red.jpg
+    - assets/themes/midnight_blue.jpg
+    - assets/themes/comic_style.jpg
+    - assets/themes/black_gold.jpg
+    - assets/themes/electric_green.jpg
+    - assets/themes/industrial.jpg
     - assets/themes/emerald.svg
     - assets/themes/black_gold.svg
     - assets/themes/comic.svg
