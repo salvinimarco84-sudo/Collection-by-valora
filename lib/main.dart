@@ -2051,6 +2051,9 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     int collectionUnits = 0;
     int collectionUnvalued = 0;
     int collectionCostCoverage = 0;
+    double collectionComparableMarket = 0;
+    double collectionComparableCost = 0;
+    int collectionComparableCount = 0;
     for (final o in collection) {
       final id = _id(o['codice_oggetto']);
       final quantity = (_num(o['quantita']) ?? 1).clamp(1, 100000).toInt();
@@ -2065,6 +2068,11 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       if (cost != null) {
         collectionHistoricalCost += cost;
         collectionCostCoverage++;
+        if (market != null) {
+          collectionComparableMarket += market * quantity;
+          collectionComparableCost += cost;
+          collectionComparableCount++;
+        }
       }
     }
 
@@ -2108,6 +2116,16 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     ).toList();
     final grossSales = completedSales.where((s) => _isEuro(s['valuta']))
         .fold<double>(0, (sum, s) => sum + (_num(s['importo_vendita']) ?? 0));
+    double soldHistoricalCost = 0;
+    int soldCostCoverage = 0;
+    for (final sale in completedSales) {
+      final id = _id(sale['codice_oggetto']);
+      final cost = id == null ? null : acquisitionByObject[id.toString()];
+      if (cost != null) {
+        soldHistoricalCost += cost;
+        soldCostCoverage++;
+      }
+    }
 
     double cashIn = 0;
     double cashOut = 0;
@@ -2119,6 +2137,13 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       if (type == 'USCITA') cashOut += amount;
     }
     final cashNet = cashIn - cashOut;
+    final linkedSaleExpenses = _cash.where((movement) =>
+      (movement['tipologia'] ?? '').toString().toUpperCase() == 'USCITA' &&
+      movement['codice_vendita'] != null && _isEuro(movement['valuta'])
+    ).fold<double>(0, (sum, movement) => sum + (_num(movement['importo']) ?? 0));
+    final netRealizedProfit = completedSales.isNotEmpty && soldCostCoverage == completedSales.length
+        ? grossSales - soldHistoricalCost - linkedSaleExpenses
+        : null;
     final documentedTotal = collectionMarket + resaleKnownCost;
     final missingResaleCosts = (resale.length - resaleCostCoverage).clamp(0, 100000);
     final costCoverageComplete = missingResaleCosts == 0;
@@ -2252,7 +2277,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                           ],
                         ),
                         const SizedBox(height: 11),
-                        _detailLine('Rivalutazione rispetto al costo noto', collectionCostCoverage == 0 ? 'Non calcolabile' : _eur(collectionMarket - collectionHistoricalCost), valueColor: collectionCostCoverage == 0 ? Colors.white54 : collectionMarket >= collectionHistoricalCost ? const Color(0xFF73C58B) : const Color(0xFFE47A72), hint: 'Confronto indicativo: il costo storico è disponibile solo per gli oggetti tracciati'),
+                        _detailLine('Rivalutazione su oggetti confrontabili', collectionComparableCount == 0 ? 'Non calcolabile' : _eur(collectionComparableMarket - collectionComparableCost), valueColor: collectionComparableCount == 0 ? Colors.white54 : collectionComparableMarket >= collectionComparableCost ? const Color(0xFF73C58B) : const Color(0xFFE47A72), hint: 'Solo oggetti con costo storico e valore di mercato entrambi registrati: $collectionComparableCount'),
                       ])),
 
                       _sectionHeading('PATRIMONIO COMMERCIALE', 'Gli oggetti destinati alla vendita restano qui finché non sono venduti', Icons.storefront_outlined),
@@ -2274,6 +2299,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                         const SizedBox(height: 10),
                         _detailLine('Oggetti presenti in inserzioni aperte', '${activeListingObjects.length}', valueColor: const Color(0xFF86B6D9)),
                         _detailLine('Costi di acquisto non ancora documentati', '$missingResaleCosts', valueColor: missingResaleCosts == 0 ? const Color(0xFF73C58B) : const Color(0xFFE7B56D)),
+                        _detailLine('Utile netto realizzato', netRealizedProfit == null ? 'Non calcolabile' : _eur(netRealizedProfit), valueColor: netRealizedProfit == null ? const Color(0xFFE7B56D) : netRealizedProfit >= 0 ? const Color(0xFF73C58B) : const Color(0xFFE47A72), hint: 'Costi documentati per $soldCostCoverage di ${completedSales.length} vendite; incluse le sole spese collegate alla vendita'),
                         const Padding(
                           padding: EdgeInsets.only(top: 5),
                           child: Text('La vendita conclusa esclude l’oggetto dal patrimonio commerciale. Il suo storico e l’incasso restano registrati.', style: TextStyle(color: Colors.white54, fontSize: 10, height: 1.35)),
