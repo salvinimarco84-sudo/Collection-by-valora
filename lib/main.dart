@@ -4296,8 +4296,9 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
                 final details = outcome == 'VENDITA EFFETTIVA'
                     ? ' · ${_money(_amounts[id], 'EUR')} · ${_dates[id] ?? _today()}'
                     : '';
-                final platform = _platforms.where((p) => '${p['codice_piattaforma']}' == (_platformCodes[id] ?? ''))
-                    .map((p) => '${p['nome_piattaforma']}').firstOrNull;
+                final matchingPlatforms = _platforms.where((p) => '${p['codice_piattaforma']}' == (_platformCodes[id] ?? ''))
+                    .map((p) => '${p['nome_piattaforma']}').toList();
+                final platform = matchingPlatforms.isEmpty ? null : matchingPlatforms.first;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text('Vendita #$id · Oggetto #${row['codice_oggetto']} · $outcome$details${platform == null ? '' : ' · $platform'}'),
