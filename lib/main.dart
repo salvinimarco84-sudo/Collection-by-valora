@@ -3418,9 +3418,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
       'CATALOGO' => 'assets/menu_sections/catalogo_collezionista_blue.jpg',
       'ACQUISTI' => 'assets/menu_sections/menu_acquisti_rosso_senza_loghi.png',
       'VENDITE' => 'assets/menu_sections/menu_vendite_verde_senza_loghi.png',
-      'VALUTAZIONI' => 'assets/menu_sections/menu_valutazioni_viola.png',
+      'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       'REPORT' => 'assets/menu_sections/menu_report_arancione.png',
-      'RICERCHE' => 'assets/menu_sections/menu_ricerche_viola.png',
+      'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
       _ => null,
     };
     return asset ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
@@ -3742,15 +3742,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
-    return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-      Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: 52),
-      const SizedBox(height: 12),
+    final isCompactImageSection = section.title == 'RICERCHE' || section.title == 'VALUTAZIONI';
+    return ListView(padding: EdgeInsets.fromLTRB(16, isCompactImageSection ? 10 : 20, 16, 28), children: [
+      Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: isCompactImageSection ? 38 : 52),
+      SizedBox(height: isCompactImageSection ? 6 : 12),
       Text(section.title, textAlign: TextAlign.center, style: TextStyle(
-        color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
-      const SizedBox(height: 6),
+        color: ValoraAppearance.instance.colorFor(section.title), fontSize: isCompactImageSection ? 21 : 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
+      const SizedBox(height: 4),
       Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
         style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-      const SizedBox(height: 20),
+      SizedBox(height: isCompactImageSection ? 14 : 20),
       ...procedures.map((procedure) => Card(
         margin: const EdgeInsets.only(bottom: 10),
         child: ListTile(
