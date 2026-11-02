@@ -4021,6 +4021,7 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
   final TextEditingController _groupTotalController = TextEditingController();
   String _groupDate = '';
   String? _groupPlatformCode;
+  bool _useSingleTransaction = false;
   Map<String, dynamic>? _preview, _review;
   String? _error, _success;
 
@@ -4057,7 +4058,8 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
     } finally { if (mounted) setState(() => _loading = false); }
   }
 
-  bool get _isMultipleSale => _selected.length >= 2 && _selected.every((id) => _outcomes[id] == 'VENDITA EFFETTIVA');
+  bool get _canGroupSale => _selected.length >= 2 && _selected.every((id) => _outcomes[id] == 'VENDITA EFFETTIVA');
+  bool get _isMultipleSale => _canGroupSale && _useSingleTransaction;
 
   double get _selectedAskingTotal => _sales
       .where((row) => _selected.contains(int.tryParse('${row['codice_vendita_aperta']}')))
@@ -4100,8 +4102,8 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
       if (outcome == null || outcome.isEmpty) throw Exception('Seleziona l’esito per la vendita #$id.');
       final item = <String, dynamic>{'codice_vendita_aperta': id, 'esito': outcome};
       if (outcome == 'VENDITA EFFETTIVA') {
-        final date = (_dates[id] ?? '').trim();
-        final amount = double.tryParse((_amounts[id] ?? '').trim().replaceAll(',', '.'));
+        final date = (_dates[id] ?? _today()).trim();
+        final amount = double.tryParse((_amounts[id] ?? '${row['prezzo_di_vendita'] ?? ''}').trim().replaceAll(',', '.'));
         final platformCode = int.tryParse(_platformCodes[id] ?? '');
         if (date.isEmpty || DateTime.tryParse(date) == null) throw Exception('Inserisci una data valida per la vendita #$id.');
         if (amount == null || amount <= 0) throw Exception('Inserisci un importo effettivo maggiore di zero per la vendita #$id.');
@@ -4186,7 +4188,7 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
           ? 'Transazione multipla salvata e verificata: ${_selected.length} oggetti, ${_money(result['importo_totale_effettivo'] ?? _groupTotalController.text)}. Riferimento: ${result['codice_transazione'] ?? 'registrato'}.'
           : 'Chiusura salvata e verificata: ${result['numero_operazioni'] ?? _selected.length} vendite.';
       _selected.clear(); _outcomes.clear(); _dates.clear(); _amounts.clear(); _platformCodes.clear();
-      _groupTotalController.clear(); _groupDate = _today(); _groupPlatformCode = null;
+      _groupTotalController.clear(); _groupDate = _today(); _groupPlatformCode = null; _useSingleTransaction = false;
       _preview = null; _review = null;
     });
     await _loadOpenSales();
@@ -4338,6 +4340,23 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
           if (_success != null) Card(color: Colors.green.withValues(alpha: 0.12), child: Padding(padding: const EdgeInsets.all(12), child: Text(_success!, style: const TextStyle(color: Colors.greenAccent)))),
           if (_sales.isEmpty && !_loading) const Card(child: Padding(padding: EdgeInsets.all(18), child: Text('Non ci sono vendite attualmente aperte.'))),
           ..._sales.map(_saleCard),
+          if (_canGroupSale) Card(child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _useSingleTransaction,
+              onChanged: _loading ? null : (value) => setState(() {
+                _useSingleTransaction = value;
+                if (value) {
+                  _groupDate = _today();
+                  _groupTotalController.text = _selectedAskingTotal.toStringAsFixed(2);
+                }
+                _preview = null; _review = null;
+              }),
+              title: const Text('Unica transazione per gli oggetti selezionati'),
+              subtitle: const Text('Attiva per inserire un solo importo complessivo e ripartirlo automaticamente.'),
+            ),
+          )),
           if (_isMultipleSale) Card(child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
