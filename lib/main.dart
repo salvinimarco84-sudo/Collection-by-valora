@@ -2902,6 +2902,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
                                : procedure.apiCode == 'WRITE-PR-06'
                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
+                               : procedure.apiCode == 'WRITE-PR-08'
+                                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr08CloseSalesPage()))
                                : procedure.apiCode != null
                       ? () => Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode == 'WRITE-PR-08' ? 'PR-08' : procedure.apiCode == 'WRITE-PR-07' ? 'PR-07' : procedure.apiCode == 'WRITE-PR-09' ? 'PR-09' : procedure.apiCode == 'WRITE-PR-06' ? 'PR-06' : procedure.apiCode!)))
@@ -3998,6 +4000,295 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+
+class Pr08CloseSalesPage extends StatefulWidget {
+  const Pr08CloseSalesPage({super.key});
+  @override State<Pr08CloseSalesPage> createState() => _Pr08CloseSalesPageState();
+}
+
+class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
+  final String _sessionId = _uuid.v4();
+  bool _loading = false, _lockHeld = false;
+  List<Map<String, dynamic>> _sales = [], _platforms = [];
+  final Set<int> _selected = <int>{};
+  final Map<int, String> _outcomes = {}, _dates = {}, _amounts = {}, _platformCodes = {};
+  Map<String, dynamic>? _preview, _review;
+  String? _error, _success;
+
+  @override void initState() { super.initState(); _loadOpenSales(); }
+  @override void dispose() {
+    if (_lockHeld) { _ValoraRuntimeApi.call('release_lock', {'session_id': _sessionId}).catchError((_) => <String, dynamic>{}); }
+    super.dispose();
+  }
+
+  String _today() {
+    final n = DateTime.now();
+    return '${n.year.toString().padLeft(4, '0')}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
+  }
+  String _dateString(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _loadOpenSales() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final response = await _ValoraRuntimeApi.call('open_sales_list', {});
+      final result = response['result'];
+      if (result is! Map) throw Exception('Risposta elenco vendite aperte non valida.');
+      final rows = result['vendite'], platforms = result['piattaforme'];
+      if (!mounted) return;
+      setState(() {
+        _sales = rows is List ? rows.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
+        _platforms = platforms is List ? platforms.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : [];
+        _selected.removeWhere((id) => !_sales.any((r) => int.tryParse('${r['codice_vendita_aperta']}') == id));
+        _preview = null; _review = null; _success = null;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Impossibile caricare le vendite aperte: $e');
+    } finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  Map<String, dynamic> _salePayload() {
+    if (_selected.isEmpty) throw Exception('Seleziona almeno una vendita aperta.');
+    final operations = <Map<String, dynamic>>[];
+    for (final row in _sales) {
+      final id = int.tryParse('${row['codice_vendita_aperta']}');
+      if (id == null || !_selected.contains(id)) continue;
+      final outcome = _outcomes[id];
+      if (outcome == null || outcome.isEmpty) throw Exception('Seleziona l’esito per la vendita #$id.');
+      final item = <String, dynamic>{'codice_vendita_aperta': id, 'esito': outcome};
+      if (outcome == 'VENDITA EFFETTIVA') {
+        final date = (_dates[id] ?? '').trim();
+        final amount = double.tryParse((_amounts[id] ?? '').trim().replaceAll(',', '.'));
+        final platformCode = int.tryParse(_platformCodes[id] ?? '');
+        if (date.isEmpty || DateTime.tryParse(date) == null) throw Exception('Inserisci una data valida per la vendita #$id.');
+        if (amount == null || amount <= 0) throw Exception('Inserisci un importo effettivo maggiore di zero per la vendita #$id.');
+        if (platformCode == null) throw Exception('Seleziona la piattaforma effettiva per la vendita #$id.');
+        item['data_vendita'] = date; item['importo_vendita'] = amount; item['codice_piattaforma'] = platformCode;
+      }
+      operations.add(item);
+    }
+    if (operations.isEmpty) throw Exception('Nessuna vendita selezionata valida.');
+    return {'operazioni': operations};
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (_loading) return;
+    setState(() { _loading = true; _error = null; });
+    try { await action(); }
+    catch (e) { if (mounted) setState(() => _error = e.toString()); }
+    finally { if (mounted) setState(() => _loading = false); }
+  }
+
+  Future<void> _previewSelected() async {
+    final payload = _salePayload();
+    if (!_lockHeld) {
+      final lock = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _sessionId});
+      final result = lock['result'];
+      if (result is! Map || result['acquisito'] != true) throw Exception(result is Map ? (result['messaggio'] ?? 'Archivio bloccato da un’altra operazione.') : 'Blocco esclusivo non acquisito.');
+      _lockHeld = true;
+    }
+    try {
+      final result = await _ValoraRuntimeApi.procedure('PR-08', 'preview', payload, sessionId: _sessionId);
+      if (mounted) setState(() { _preview = result; _review = null; });
+    } catch (_) { await _releaseLock(); rethrow; }
+  }
+
+  Future<void> _confirmSelectedData() async {
+    final payload = _salePayload()
+      ..['dati_confermati'] = true ..['altra_operazione'] = false ..['conferma_finale'] = false;
+    final result = await _ValoraRuntimeApi.procedure('PR-08', 'review', payload, sessionId: _sessionId);
+    if (mounted) setState(() => _review = result);
+  }
+
+  Future<void> _saveSelected() async {
+    if (_review == null) throw Exception('Conferma prima il riepilogo delle chiusure.');
+    final accepted = await showDialog<bool>(
+      context: context, barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Conferma definitiva delle chiusure'),
+        content: Text('Stai per chiudere ${_selected.length} vendite. Quelle non selezionate resteranno APERTE. Vuoi procedere?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA E SALVA')),
+        ],
+      ),
+    );
+    if (accepted != true) return;
+    final payload = _salePayload()
+      ..['dati_confermati'] = true ..['altra_operazione'] = false ..['conferma_finale'] = true;
+    final result = await _ValoraRuntimeApi.procedure('PR-08', 'save', payload, sessionId: _sessionId, requestId: _uuid.v4());
+    if (result['scrittura_eseguita'] != true) throw Exception('Il runtime non ha confermato la scrittura.');
+    if (result['blocco_rilasciato_automaticamente'] == true) { _lockHeld = false; } else { await _releaseLock(); }
+    if (!mounted) return;
+    setState(() {
+      _success = 'Chiusura salvata e verificata: ${result['numero_operazioni'] ?? _selected.length} vendite.';
+      _selected.clear(); _outcomes.clear(); _dates.clear(); _amounts.clear(); _platformCodes.clear();
+      _preview = null; _review = null;
+    });
+    await _loadOpenSales();
+  }
+
+  Future<void> _releaseLock() async {
+    if (!_lockHeld) return;
+    try {
+      final response = await _ValoraRuntimeApi.call('release_lock', {'session_id': _sessionId});
+      final result = response['result'];
+      if (result is Map && result['rilasciato'] == true) _lockHeld = false;
+    } catch (_) {}
+  }
+
+  Future<void> _pickDate(int id) async {
+    final initial = DateTime.tryParse(_dates[id] ?? '') ?? DateTime.now();
+    final picked = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(2000), lastDate: DateTime(2100),
+      helpText: 'Data effettiva della vendita', cancelText: 'ANNULLA', confirmText: 'CONFERMA');
+    if (picked != null && mounted) setState(() { _dates[id] = _dateString(picked); _preview = null; _review = null; });
+  }
+
+  String _money(dynamic value, [dynamic currency]) => '${(double.tryParse('${value ?? 0}') ?? 0).toStringAsFixed(2)} ${currency ?? 'EUR'}';
+
+  Widget _saleCard(Map<String, dynamic> row) {
+    final id = int.tryParse('${row['codice_vendita_aperta']}');
+    if (id == null) return const SizedBox.shrink();
+    final selected = _selected.contains(id);
+    final linked = row['piattaforme_associate'] is List
+      ? (row['piattaforme_associate'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()
+      : <Map<String, dynamic>>[];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          CheckboxListTile(
+            value: selected, controlAffinity: ListTileControlAffinity.leading, contentPadding: EdgeInsets.zero,
+            title: Text('Vendita aperta #$id', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Oggetto #${row['codice_oggetto'] ?? 'n/d'} · ${row['descrizione_oggetto'] ?? 'Senza descrizione'}'),
+            onChanged: _loading ? null : (value) => setState(() {
+              if (value == true) { _selected.add(id); _dates.putIfAbsent(id, _today); _amounts.putIfAbsent(id, () => '${row['prezzo_di_vendita'] ?? ''}'); }
+              else { _selected.remove(id); _outcomes.remove(id); }
+              _preview = null; _review = null;
+            }),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 42, bottom: 4),
+            child: Wrap(spacing: 12, runSpacing: 4, children: [
+              Text('In vendita dal ${row['data_inizio_vendita'] ?? 'n/d'}'),
+              Text('Prezzo richiesto: ${_money(row['prezzo_di_vendita'], row['valuta'])}'),
+              if (linked.isNotEmpty) Text('Piattaforme: ${linked.map((e) => e['nome_piattaforma']).join(', ')}'),
+              if (row['codice_lotto'] != null) const Text('Parte di un lotto'),
+            ]),
+          ),
+          if (selected) ...[
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.only(left: 42, right: 4),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                DropdownButtonFormField<String>(
+                  value: _outcomes[id],
+                  decoration: const InputDecoration(labelText: 'Esito della chiusura *'),
+                  items: const [
+                    DropdownMenuItem(value: 'VENDITA EFFETTIVA', child: Text('Vendita effettiva')),
+                    DropdownMenuItem(value: 'CHIUSURA SENZA VENDITA', child: Text('Chiusura senza vendita')),
+                  ],
+                  onChanged: _loading ? null : (v) => setState(() { _outcomes[id] = v ?? ''; _preview = null; _review = null; }),
+                ),
+                if (_outcomes[id] == 'VENDITA EFFETTIVA') ...[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    key: ValueKey('date-$id-${_dates[id]}'), initialValue: _dates[id] ?? _today(), readOnly: true,
+                    decoration: InputDecoration(labelText: 'Data vendita *', suffixIcon: IconButton(icon: const Icon(Icons.calendar_today), onPressed: _loading ? null : () => _pickDate(id))),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    key: ValueKey('amount-$id-${_amounts[id]}'), initialValue: _amounts[id] ?? '${row['prezzo_di_vendita'] ?? ''}',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Importo effettivo *', suffixText: 'EUR'),
+                    onChanged: (v) { _amounts[id] = v; _preview = null; _review = null; },
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _platformCodes[id], decoration: const InputDecoration(labelText: 'Piattaforma effettiva *'),
+                    items: _platforms.map((p) => DropdownMenuItem<String>(value: '${p['codice_piattaforma']}', child: Text('${p['nome_piattaforma']}'))).toList(),
+                    onChanged: _loading ? null : (v) => setState(() { _platformCodes[id] = v ?? ''; _preview = null; _review = null; }),
+                  ),
+                ],
+              ]),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appearance = ValoraAppearance.instance;
+    return Scaffold(
+      appBar: AppBar(title: const Text('PR-08 · CHIUDI VENDITA'), actions: [
+        IconButton(tooltip: 'Aggiorna elenco', onPressed: _loading ? null : _loadOpenSales, icon: const Icon(Icons.refresh)),
+      ]),
+      body: _loading && _sales.isEmpty ? const Center(child: CircularProgressIndicator()) : ListView(
+        padding: const EdgeInsets.all(14),
+        children: [
+          Card(child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('VENDITE APERTE', style: TextStyle(color: appearance.colorFor('VENDITE'), fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text('${_sales.length} vendite aperte caricate dal database TEST. Seleziona una o più righe: le altre resteranno aperte.', style: TextStyle(color: appearance.textSecondary)),
+              const SizedBox(height: 10),
+              Row(children: [
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: _loading || _sales.isEmpty ? null : () => setState(() {
+                    _selected.addAll(_sales.map((r) => int.tryParse('${r['codice_vendita_aperta']}')).whereType<int>());
+                    for (final r in _sales) { final id = int.tryParse('${r['codice_vendita_aperta']}'); if (id != null) { _dates.putIfAbsent(id, _today); _amounts.putIfAbsent(id, () => '${r['prezzo_di_vendita'] ?? ''}'); } }
+                    _preview = null; _review = null;
+                  }),
+                  icon: const Icon(Icons.select_all), label: const Text('SELEZIONA TUTTE'),
+                )),
+                const SizedBox(width: 8),
+                Expanded(child: OutlinedButton(onPressed: _loading ? null : () => setState(() { _selected.clear(); _preview = null; _review = null; }), child: const Text('DESELEZIONA TUTTE'))),
+              ]),
+              Text('Selezionate: ${_selected.length} / ${_sales.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ]),
+          )),
+          if (_error != null) Card(color: Colors.red.withValues(alpha: 0.12), child: Padding(padding: const EdgeInsets.all(12), child: Text(_error!, style: const TextStyle(color: Colors.redAccent)))),
+          if (_success != null) Card(color: Colors.green.withValues(alpha: 0.12), child: Padding(padding: const EdgeInsets.all(12), child: Text(_success!, style: const TextStyle(color: Colors.greenAccent)))),
+          if (_sales.isEmpty && !_loading) const Card(child: Padding(padding: EdgeInsets.all(18), child: Text('Non ci sono vendite attualmente aperte.'))),
+          ..._sales.map(_saleCard),
+          if (_selected.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            FilledButton.icon(onPressed: _loading ? null : () => _run(_previewSelected), icon: const Icon(Icons.fact_check_outlined),
+              label: Text(_loading ? 'CONTROLLO IN CORSO…' : 'CONTROLLA ${_selected.length} CHIUSURE')),
+          ],
+          if (_preview != null) Card(child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('RIEPILOGO PRELIMINARE', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              SelectableText(const JsonEncoder.withIndent('  ').convert(_preview)),
+              const SizedBox(height: 10),
+              FilledButton(onPressed: _loading ? null : () => _run(_confirmSelectedData), child: const Text('CONFERMO I DATI')),
+            ]),
+          )),
+          if (_review != null) Card(child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('CONFERMA DEFINITIVA', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text('Hai confermato i dati di ${_selected.length} vendite. Solo il pulsante finale effettuerà la scrittura.'),
+              const SizedBox(height: 10),
+              SelectableText(const JsonEncoder.withIndent('  ').convert(_review)),
+              const SizedBox(height: 10),
+              FilledButton.icon(onPressed: _loading ? null : () => _run(_saveSelected), icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA')),
+              TextButton(onPressed: _loading ? null : () => _run(_releaseLock), child: const Text('ANNULLA E LASCIA APERTE LE VENDITE')),
+            ]),
+          )),
+          if (_loading) const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator())),
+        ],
       ),
     );
   }
