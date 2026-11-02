@@ -49,17 +49,17 @@ const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
 
 String _valoraThemeAsset(String id) => switch (id) {
-  'industrial' => 'assets/themes/industrial.svg',
-  'emerald' => 'assets/themes/emerald.svg',
-  'black_gold' => 'assets/themes/black_gold.svg',
-  'comic' => 'assets/themes/comic.svg',
-  'midnight_blue' => 'assets/themes/midnight_blue.svg',
-  'dark_red' => 'assets/themes/dark_red.svg',
-  'pastel' => 'assets/themes/pastel.svg',
-  'minimal_zen' => 'assets/themes/minimal_zen.svg',
-  'royal_purple' => 'assets/themes/royal_purple.svg',
-  'silver_light' => 'assets/themes/silver_light.svg',
-  _ => 'assets/themes/emerald.svg',
+  'industrial' => 'assets/themes/industrial.jpg',
+  'emerald' => 'assets/themes/electric_green.jpg',
+  'black_gold' => 'assets/themes/black_gold.jpg',
+  'comic' => 'assets/themes/comic_style.jpg',
+  'midnight_blue' => 'assets/themes/midnight_blue.jpg',
+  'dark_red' => 'assets/themes/fire_red.jpg',
+  'pastel' => 'assets/themes/pastel.jpg',
+  'minimal_zen' => 'assets/themes/minimal_zen.jpg',
+  'royal_purple' => 'assets/themes/royal_purple.jpg',
+  'silver_light' => 'assets/themes/silver_light.jpg',
+  _ => 'assets/themes/electric_green.jpg',
 };
 
 class ValoraThemeBackdropPainter extends CustomPainter {
@@ -719,7 +719,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
           _ => 'Tema coordinato predefinito',
         };
         return Card(
-          color: Color(theme['background'] as int),
+          color: Color(theme['background'] as int).withValues(alpha: 0.78),
           margin: const EdgeInsets.symmetric(vertical:4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(entry.key == 'comic' ? 3 : (entry.key == 'minimal_zen' ? 18 : 12)),
@@ -2889,15 +2889,22 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ],
         ),
         body: Stack(children: [
-          // Lo sfondo SVG del tema è la superficie visiva principale.
-          // Evita di sovrapporre il vecchio painter geometrico: era la causa
-          // delle linee astratte che coprivano le texture del design approvato.
+          // Fotografia originale a tutto schermo per il tema selezionato.
+          // Un velo scuro leggero mantiene leggibili testi e controlli senza
+          // nascondere le texture reali dello sfondo.
           Positioned.fill(
             child: IgnorePointer(
-              child: SvgPicture.asset(
-                _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
+                  ),
+                  ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
+                ],
               ),
             ),
           ),
