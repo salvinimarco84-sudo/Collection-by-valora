@@ -68,6 +68,9 @@ void main() {
     });
 
     test('PR-08 supporta un incasso unico con ripartizione proporzionale', () {
+      expect(source, contains('bool get _canGroupSale'));
+      expect(source, contains('bool _useSingleTransaction = false;'));
+      expect(source, contains('SwitchListTile('));
       expect(source, contains('bool get _isMultipleSale'));
       expect(source, contains("'modalita_vendita_multipla': true"));
       expect(source, contains("'importo_totale_effettivo': double.parse(total.toStringAsFixed(2))"));
