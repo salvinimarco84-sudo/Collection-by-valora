@@ -6956,7 +6956,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     for (final entry in knownSites.entries) {
       if (lower.contains(entry.key) || lower.contains(entry.value.toLowerCase())) return entry.value;
     }
-    final match = RegExp(r'(https?://)?(www\\.)?([a-z0-9-]+\\.[a-z]{2,})', caseSensitive: false).firstMatch(raw);
+    final match = RegExp(r'(https?://)?(www\.)?([a-z0-9-]+\.[a-z]{2,})', caseSensitive: false).firstMatch(raw);
     if (match == null) return raw;
     final host = match.group(3)!.toLowerCase();
     if (knownSites.containsKey(host)) return knownSites[host]!;
