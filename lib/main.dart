@@ -6981,7 +6981,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 const SizedBox(height: 7),
                 Wrap(spacing: 6, runSpacing: 6, children: [
                   infoChip(Icons.storefront_outlined, platforms),
-                  infoChip(Icons.verified_outlined, condition),
+                  if (condition != 'Non indicata') infoChip(Icons.verified_outlined, condition),
                 ]),
                 const SizedBox(height: 7),
                 Text('Data inizio: ${_valueFor(item, ['data_inizio_vendita'], 'Non indicata')}',
