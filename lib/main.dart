@@ -7030,7 +7030,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     List<MapEntry<String, dynamic>> group(Set<String> keys) =>
       entries.where((e) => keys.contains(e.key)).toList();
     final identity = group(identityKeys);
-    final condition = group(conditionKeys).where((e) => !technicalKeys.contains(e.key)).toList();
+    final condition = group(conditionKeys).where((e) => !technicalKeys.contains(e.key) && !(e.key == 'note' && (e.value == null || e.value.toString().trim().isEmpty))).toList();
     final values = group(valueKeys);
     final technical = entries.where((e) => technicalKeys.contains(e.key)).toList();
     final assigned = <String>{
@@ -7081,12 +7081,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       'modalita_altern', 'attributi_specifici', 'url_fonte', 'url_immagine',
       'stato_verifica', 'prezzo_lancio',
     ];
-    String labelFor(String key) => key
-        .replaceAll('_', ' ')
-        .split(' ')
-        .where((part) => part.isNotEmpty)
-        .map((part) => part[0].toUpperCase() + part.substring(1))
-        .join(' ');
+    String labelFor(String key) {
+      if (key == 'url_fonte' || key == 'fonte_dati_prodotto') return 'Fonte dati prodotto';
+      return key
+          .replaceAll('_', ' ')
+          .split(' ')
+          .where((part) => part.isNotEmpty)
+          .map((part) => part[0].toUpperCase() + part.substring(1))
+          .join(' ');
+    }
     final values = <String, dynamic>{};
     for (final key in baseKeys) {
       if (object.containsKey(key) && object[key] != null) values[key] = object[key];
@@ -7157,9 +7160,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final applicability = definition?['applicabilita']?.toString();
       final shown = value == null || value.toString().trim().isEmpty
           ? 'Da completare'
-          : value is Map || value is List
-              ? const JsonEncoder.withIndent('  ').convert(value)
-              : value.toString();
+          : (key == 'url_fonte' || key == 'fonte_dati_prodotto')
+              ? _sourceSiteName(value)
+              : value is Map || value is List
+                  ? const JsonEncoder.withIndent('  ').convert(value)
+                  : value.toString();
       return Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Card(
