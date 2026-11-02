@@ -1806,6 +1806,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   double? _latestTotal;
   double? _previousTotal;
   DateTime? _refreshedAt;
+  bool _snapshotBusy = false;
 
   @override
   void initState() {
@@ -1928,6 +1929,64 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         _error = 'Impossibile aggiornare il riepilogo patrimoniale: $e';
         _loading = false;
       });
+    }
+  }
+
+
+  Future<void> _capturePatrimonySnapshot() async {
+    if (_snapshotBusy) return;
+    setState(() => _snapshotBusy = true);
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'collection-patrimony-snapshot',
+        body: <String, dynamic>{},
+      );
+      if (response.status < 200 || response.status >= 300) {
+        throw Exception('Servizio snapshot non disponibile: ${response.status}');
+      }
+      final result = Map<String, dynamic>.from(response.data as Map);
+      if (result['ok'] != true) {
+        throw Exception((result['error'] ?? 'Calcolo non riuscito').toString());
+      }
+      if (!mounted) return;
+      setState(() => _snapshotBusy = false);
+      final hasPrevious = result['precedente'] != null;
+      final total = _num(result['variazione_totale']);
+      final quantity = _num(result['variazione_quantita']);
+      final revaluation = _num(result['variazione_rivalutazioni']);
+      final residual = _num(result['variazione_non_attribuita']);
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Confronto della collezione'),
+          content: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              Text('Valore attuale: ${_eur(_num(result['valore_mercato']) ?? 0)}'),
+              const SizedBox(height: 10),
+              if (!hasPrevious) const Text('Prima fotografia salvata. Il prossimo calcolo permetterà il confronto.'),
+              if (hasPrevious) ...[
+                Text('Variazione totale: ${_eur(total ?? 0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('Effetto quantità / oggetti: ${_eur(quantity ?? 0)}'),
+                Text('Effetto rivalutazione: ${_eur(revaluation ?? 0)}'),
+                Text('Non attribuito / dati mancanti: ${_eur(residual ?? 0)}'),
+                const SizedBox(height: 8),
+                const Text('Il residuo segnala differenze non spiegabili con certezza dai dati disponibili.'),
+              ],
+              const SizedBox(height: 8),
+              Text('Record: ${result['record'] ?? 0} · Unità: ${result['unita'] ?? 0}'),
+              Text('Oggetti senza stima: ${result['oggetti_senza_stima'] ?? 0}'),
+            ]),
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Chiudi'))],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _snapshotBusy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Snapshot non riuscito: $e')),
+      );
     }
   }
 
@@ -2349,6 +2408,16 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                               Text('${_latest!['oggetti_valutati'] ?? 0} oggetti valutati nella rilevazione', style: const TextStyle(color: Colors.white54, fontSize: 10)),
                             ])),
 
+                      const SizedBox(height: 9),
+                      _panel(child: Row(children: [
+                        const Expanded(child: Text('Salva una fotografia della componente collezione per confrontarla con la prossima rilevazione.', style: TextStyle(color: Colors.white54, fontSize: 10, height: 1.35))),
+                        const SizedBox(width: 8),
+                        OutlinedButton.icon(
+                          onPressed: _snapshotBusy ? null : _capturePatrimonySnapshot,
+                          icon: _snapshotBusy ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.camera_alt_outlined, size: 15),
+                          label: Text(_snapshotBusy ? 'CALCOLO…' : 'REGISTRA', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800)),
+                        ),
+                      ])),
                       const SizedBox(height: 19),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
