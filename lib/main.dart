@@ -4160,11 +4160,14 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
 
   Future<void> _saveSelected() async {
     if (_review == null) throw Exception('Conferma prima il riepilogo delle chiusure.');
+    final transactionNotice = _isMultipleSale
+        ? ' Incasso unico: ${_money(_groupTotalController.text)}, ripartito automaticamente tra gli oggetti.'
+        : '';
     final accepted = await showDialog<bool>(
       context: context, barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Conferma definitiva delle chiusure'),
-        content: Text('Stai per chiudere ${_selected.length} vendite. Quelle non selezionate resteranno APERTE. Vuoi procedere?'),
+        content: Text('Stai per chiudere ${_selected.length} vendite.$transactionNotice Quelle non selezionate resteranno APERTE. Vuoi procedere?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('CONFERMA E SALVA')),
