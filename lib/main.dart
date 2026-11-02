@@ -2052,6 +2052,43 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     );
   }
 
+
+  Widget _sectionImageHeader(String asset, String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 23, bottom: 11),
+      child: Container(
+        height: 116,
+        width: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(color: const Color(0xFFD6B15E).withValues(alpha: 0.72), width: 1.1),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 14, offset: const Offset(0, 5))],
+        ),
+        child: Stack(fit: StackFit.expand, children: [
+          Image.asset(asset, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: const Color(0xFF17130D))),
+          DecoratedBox(decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Colors.black.withValues(alpha: 0.10), Colors.transparent, Colors.black.withValues(alpha: 0.08)],
+            ),
+          )),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              color: Colors.black.withValues(alpha: 0.42),
+              child: Text(subtitle, textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600, shadows: [Shadow(color: Colors.black, blurRadius: 5)])),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
   Widget _sectionHeading(String title, String subtitle, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(top: 23, bottom: 11),
@@ -2343,7 +2380,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                           ),
                         ),
 
-                      _sectionHeading('COLLEZIONE PERSONALE', 'Il valore di ciò che possiedi e conservi', Icons.diamond_outlined),
+                      _sectionImageHeader('assets/patrimony_sections/01_collezione_personale.png', 'COLLEZIONE PERSONALE', 'Il valore di ciò che possiedi e conservi'),
                       _panel(child: Column(children: [
                         GridView.count(
                           crossAxisCount: 2,
@@ -2363,7 +2400,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                         _detailLine('Rivalutazione su oggetti confrontabili', collectionComparableCount == 0 ? 'Non calcolabile' : _eur(collectionComparableMarket - collectionComparableCost), valueColor: collectionComparableCount == 0 ? Colors.white54 : collectionComparableMarket >= collectionComparableCost ? const Color(0xFF73C58B) : const Color(0xFFE47A72), hint: 'Solo oggetti con costo storico e valore di mercato entrambi registrati: $collectionComparableCount'),
                       ])),
 
-                      _sectionHeading('PATRIMONIO COMMERCIALE', 'Gli oggetti destinati alla vendita restano qui finché non sono venduti', Icons.storefront_outlined),
+                      _sectionImageHeader('assets/patrimony_sections/02_patrimonio_commerciale.png', 'PATRIMONIO COMMERCIALE', 'Gli oggetti destinati alla vendita restano qui finché non sono venduti'),
                       _panel(child: Column(children: [
                         GridView.count(
                           crossAxisCount: 2,
@@ -2389,7 +2426,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                         ),
                       ])),
 
-                      _sectionHeading('LIQUIDITÀ E MOVIMENTI', 'Entrate e uscite registrate nella cassa', Icons.account_balance_wallet_outlined),
+                      _sectionImageHeader('assets/patrimony_sections/03_liquidita_movimenti.png', 'LIQUIDITÀ E MOVIMENTI', 'Entrate e uscite registrate nella cassa'),
                       _panel(child: Column(children: [
                         Row(children: [
                           Expanded(child: _metricCard(label: 'Entrate registrate', value: _eur(cashIn), icon: Icons.south_west, accent: const Color(0xFF73C58B))),
@@ -2412,7 +2449,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                         const Text('Questo saldo è calcolato sui movimenti presenti in cassa. Non viene presentato come liquidità effettiva se manca un saldo iniziale o parte dei movimenti.', style: TextStyle(color: Colors.white54, fontSize: 10, height: 1.35)),
                       ])),
 
-                      _sectionHeading('ANDAMENTO DEL PATRIMONIO', 'L’ultima rilevazione disponibile dal motore VALORA', Icons.show_chart),
+                      _sectionImageHeader('assets/patrimony_sections/04_andamento_patrimoniale.png', 'ANDAMENTO PATRIMONIALE', 'Evoluzione del valore della tua collezione e delle attività commerciali'),
                       _panel(child: _latest == null
                           ? const Row(children: [
                               Icon(Icons.timeline, color: Color(0xFFE5C77A), size: 24),
