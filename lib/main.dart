@@ -2226,7 +2226,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         _readAll('acquisti_oggetti', 'codice_oggetto,valore_acquisto_oggetto,quantita,incluso_nella_quadratura,valuta'),
         _readAll('master_oggetti_in_vendita', 'codice_vendita_aperta,codice_oggetto,prezzo_di_vendita,valuta,stato_ciclo_vendita,codice_lotto'),
         _readAll('lotti_vendita', 'codice_lotto,prezzo_totale_inserzione,valuta,stato_lotto'),
-        _readAll('master_vendite', 'codice_vendita,codice_oggetto,data_vendita,importo_vendita,valuta,stato_vendita,codice_lotto'),
+        _readAll('master_vendite', 'codice_vendita,codice_oggetto,data_vendita,importo_vendita,valuta,stato_vendita,causa_vendita,codice_lotto'),
         _readAll('cassa', 'data,tipo_movimento,importo,tipologia,valuta,codice_vendita,codice_acquisto'),
       ]);
 
@@ -2575,7 +2575,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     }
 
     final completedSales = _sales.where((s) =>
-      (s['stato_vendita'] ?? '').toString().toUpperCase() == 'CONCLUSA'
+      (s['stato_vendita'] ?? '').toString().toUpperCase() == 'CONCLUSA' &&
+      (s['causa_vendita'] ?? 'VENDITA').toString().toUpperCase() == 'VENDITA'
     ).toList();
     final grossSales = completedSales.where((s) => _isEuro(s['valuta']))
         .fold<double>(0, (sum, s) => sum + (_num(s['importo_vendita']) ?? 0));
@@ -2687,7 +2688,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                                 ),
                               ]),
                               const Spacer(),
-                              const Text('IL TUO PATRIMONIO', style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w700)),
+                              const Text('PATRIMONIO DOCUMENTATO', style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w700)), 
                               const SizedBox(height: 5),
                               FittedBox(
                                 fit: BoxFit.scaleDown,
@@ -2695,7 +2696,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                                 child: Text(_eur(documentedTotal), style: const TextStyle(color: Color(0xFFF3D990), fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -1.1)),
                               ),
                               const SizedBox(height: 5),
-                              Text('Collezione a valore di mercato + stock commerciale a costo documentato', style: TextStyle(color: Colors.white.withValues(alpha: 0.78), fontSize: 10)),
+                              Text('Valore di mercato della collezione + costo storico noto dello stock commerciale', style: TextStyle(color: Colors.white.withValues(alpha: 0.78), fontSize: 10)), 
                               const SizedBox(height: 11),
                               Row(children: [
                                 const Icon(Icons.inventory_2_outlined, color: Color(0xFFE5C77A), size: 15),
@@ -2709,7 +2710,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                           ),
                         ]),
                       ),
-                      if (!costCoverageComplete)
+                      if (!costCoverageComplete || collectionUnvalued > 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 10),
                           child: Container(
@@ -2718,7 +2719,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                             child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Icon(Icons.info_outline, color: Color(0xFFE7B56D), size: 17),
                               SizedBox(width: 8),
-                              Expanded(child: Text('Il totale mostra i valori effettivamente documentati. Per alcuni oggetti destinati alla vendita manca ancora il costo di acquisto registrato: non viene inventato né stimato.', style: TextStyle(color: Color(0xFFE8D5B4), fontSize: 10, height: 1.35))),
+                              Expanded(child: Text('Il totale include solo i valori documentati. Mancano ${collectionUnvalued} stime di mercato nella collezione e ${missingResaleCosts} costi di acquisto nello stock commerciale: nessun valore viene inventato.', style: TextStyle(color: Color(0xFFE8D5B4), fontSize: 10, height: 1.35))),
                             ]),
                           ),
                         ),
@@ -2792,7 +2793,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                         const Text('Questo saldo è calcolato sui movimenti presenti in cassa. Non viene presentato come liquidità effettiva se manca un saldo iniziale o parte dei movimenti.', style: TextStyle(color: Colors.white54, fontSize: 10, height: 1.35)),
                       ])),
 
-                      _sectionImageHeader('assets/patrimony_sections/04_andamento_patrimoniale.png', 'ANDAMENTO PATRIMONIALE', 'Evoluzione del valore della tua collezione e delle attività commerciali'),
+                      _sectionImageHeader('assets/patrimony_sections/04_andamento_patrimoniale.png', 'ANDAMENTO PATRIMONIALE', 'Storico delle valutazioni di mercato della collezione personale; stock e liquidità restano separati'),
                       _panel(child: _latest == null
                           ? const Row(children: [
                               Icon(Icons.timeline, color: Color(0xFFE5C77A), size: 24),
