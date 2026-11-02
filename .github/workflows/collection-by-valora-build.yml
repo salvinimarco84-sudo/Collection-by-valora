@@ -1,4 +1,4 @@
-# Re-trigger validation after enabling PR builds.
+# Validate dashboard artwork placement on TEST after section-menu correction.
 name: COLLECTION by VALORA Build
 
 on:
