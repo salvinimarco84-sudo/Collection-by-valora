@@ -1,4 +1,4 @@
-# Validate edge-to-edge section artwork on TEST.
+# Validate centered smaller section headings on TEST.
 name: COLLECTION by VALORA Build
 
 on:
