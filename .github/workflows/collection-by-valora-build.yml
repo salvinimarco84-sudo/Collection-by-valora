@@ -1,4 +1,4 @@
-# Validate compact section menus and artwork-title spacing on TEST.
+# Validate edge-to-edge section artwork on TEST.
 name: COLLECTION by VALORA Build
 
 on:
