@@ -3451,10 +3451,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor))
             else
               ClipRect(child: Transform.scale(
-                scale: 1.32,
+                scale: 1.10,
                 child: Image.asset(
                   _valoraDashboardImageAsset(selectedSection!.title) ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
-                  fit: BoxFit.cover, alignment: Alignment.center,
+                  fit: BoxFit.cover, alignment: const Alignment(0, -0.08),
                   errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
               )),
             ColoredBox(color: Colors.black.withValues(alpha: 0.18)),
