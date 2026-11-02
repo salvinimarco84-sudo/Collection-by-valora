@@ -1082,6 +1082,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Annulla vendita', description: 'Annulla una vendita registrata tramite la procedura dedicata.', apiCode: 'WRITE-PR-09', readOnly: false),
     ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
+    ProcedureEntry(title: 'Le mie piattaforme di vendita', description: 'Aggiungi solo le piattaforme che utilizzi e attiva o disattiva ciascuna destinazione per le inserzioni VALORA.', apiCode: 'USER-SALES-PLATFORMS', readOnly: false),
   ],
   'VALUTAZIONI': [
     ProcedureEntry(title: 'VALORA', description: 'Valutazione completa di un singolo oggetto, preparazione delle inserzioni e report.', apiCode: 'LAUNCH-VALORA'),
@@ -1099,7 +1100,6 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Ricerca oggetti', description: 'Cerca gli oggetti nel catalogo.', apiCode: 'READ-EXPLORE-RECORDS'),
     ProcedureEntry(title: 'PR-12 · Ricerca metadati in lotti', description: 'Analizza fino a 10 oggetti incompleti per lotto, mostra fonti e risultati senza modificare il database.', apiCode: 'PR-12-BATCH', readOnly: true),
     ProcedureEntry(title: 'REGISTRO FONTI · Gestisci cataloghi e siti', description: 'Consulta le fonti iniziali e aggiungi fonti specialistiche della tua nicchia collezionistica.', apiCode: 'SOURCE-REGISTRY', readOnly: false),
-    ProcedureEntry(title: 'Le mie piattaforme di vendita', description: 'Aggiungi solo le piattaforme che utilizzi e attiva o disattiva ciascuna destinazione per le inserzioni VALORA.', apiCode: 'USER-SALES-PLATFORMS', readOnly: false),
   ],
   'CONTROLLO': [
     ProcedureEntry(title: 'Stato runtime', description: 'Verifica lo stato del servizio runtime.', apiCode: 'RUNTIME-HEALTH'),
