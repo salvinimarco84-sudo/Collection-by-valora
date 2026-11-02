@@ -3444,7 +3444,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
-            Image.asset(_valoraThemeAsset(ValoraAppearance.instance.selectedThemeId), fit: BoxFit.cover, alignment: Alignment.center,
+            Image.asset(
+              selectedSection == null
+                  ? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)
+                  : (_valoraDashboardImageAsset(selectedSection!.title) ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)),
+              fit: BoxFit.cover, alignment: Alignment.center,
               errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
             ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
           ]))),
@@ -3526,7 +3530,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
             'subtitle':ValoraI18n.tr(section.description),
             'color':ValoraAppearance.instance.colorFor(section.title),
             'icon':section.icon,
-            'asset':_valoraDashboardImageAsset(section.title),
             'tap':() => setState(()=>selectedSection=section),
           }),
         ];
@@ -3542,26 +3545,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
             final title=entry['title'] as String;
             final color=entry['color'] as Color;
             final icon=entry['icon'] as IconData;
-            final asset=entry['asset'] as String?;
-            if (asset != null) {
-              return Material(
-                color: const Color(0xFF101010),
-                borderRadius: BorderRadius.circular(15),
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(15),
-                  onTap: entry['tap'] as VoidCallback,
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: color, width: 1.4),
-                      image: DecorationImage(image: AssetImage(asset), fit: BoxFit.cover),
-                    ),
-                    child: const SizedBox.expand(),
-                  ),
-                ),
-              );
-            }
             final url=ValoraAppearance.instance.imageUrls[title] ??
               ValoraAppearance.instance.imageUrls[title=='VENDITE E INSERZIONI'?'VENDITE':title];
             return Material(
@@ -3613,14 +3596,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
         onTap: () { setState(() => showCollection = true); _loadDashboardCatalog(); },
       ),
       ...dashboardSections.map((section) {
-        final asset = _valoraDashboardImageAsset(section.title);
-        if (asset != null) {
-          return _dashboardImageCard(
-            asset: asset,
-            color: ValoraAppearance.instance.colorFor(section.title),
-            onTap: () => setState(() => selectedSection = section),
-          );
-        }
         return _menuCard(
           title: ValoraI18n.tr(section.menuTitle ?? section.title),
           subtitle: ValoraI18n.tr(section.description),
@@ -3792,6 +3767,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
+    final sectionColor = ValoraAppearance.instance.colorFor(section.title);
     return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
       Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: 52),
       const SizedBox(height: 12),
@@ -3802,6 +3778,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
         style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
       const SizedBox(height: 20),
       ...procedures.map((procedure) => Card(
+        color: Colors.black.withValues(alpha: 0.62),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: sectionColor.withValues(alpha: 0.42), width: 1),
+        ),
         margin: const EdgeInsets.only(bottom: 10),
         child: ListTile(
           enabled: procedure.enabled,
