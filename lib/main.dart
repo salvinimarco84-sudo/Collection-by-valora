@@ -2893,7 +2893,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
+          backgroundColor: ValoraAppearance.instance.background.withValues(alpha: 0.82),
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
           leading: selectedSection == null && !showCollection ? null : IconButton(
             tooltip: 'Torna alla dashboard',
             onPressed: () => setState(() { selectedSection = null; showCollection = false; }),
@@ -2955,8 +2959,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }) => Container(
     margin: const EdgeInsets.only(bottom: 10),
     decoration: BoxDecoration(
-      color: const Color(0xFF151515),
-      borderRadius: BorderRadius.circular(14),
+      color: ValoraAppearance.instance.card.withValues(alpha: 0.78),
+      borderRadius: BorderRadius.circular(ValoraAppearance.instance.comicStyle ? 3 : (ValoraAppearance.instance.zenStyle ? 20 : 14)),
       border: Border.all(color: color.withValues(alpha: 0.85), width: 1.25),
     ),
     child: Material(
@@ -3029,8 +3033,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
             final url=ValoraAppearance.instance.imageUrls[title] ??
               ValoraAppearance.instance.imageUrls[title=='VENDITE E INSERZIONI'?'VENDITE':title];
             return Material(
-              color: const Color(0xFF151515),
-              borderRadius: BorderRadius.circular(15),
+              color: ValoraAppearance.instance.card.withValues(alpha: 0.82),
+              borderRadius: BorderRadius.circular(ValoraAppearance.instance.comicStyle ? 3 : (ValoraAppearance.instance.zenStyle ? 20 : 15)),
               child: InkWell(
                 borderRadius: BorderRadius.circular(15),
                 onTap: entry['tap'] as VoidCallback,
