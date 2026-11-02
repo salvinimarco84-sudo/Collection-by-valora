@@ -1869,6 +1869,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     if (_loading == false && mounted) setState(() => _loading = true);
     if (mounted) setState(() => _error = null);
     try {
+      final client = Supabase.instance.client;
       final results = await Future.wait<List<Map<String, dynamic>>>([
         _readAll('master_oggetti', 'codice_oggetto,descrizione_oggetto,destinazione,stato,quantita,valore_oggetto,valore_mercato,archiviato_test'),
         _readAll('acquisti_oggetti', 'codice_oggetto,valore_acquisto_oggetto,quantita,incluso_nella_quadratura,valuta'),
