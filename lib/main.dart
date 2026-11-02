@@ -1816,6 +1816,18 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
   List<Map<String, dynamic>> _maps(dynamic value) =>
       (value as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
+  Future<List<Map<String, dynamic>>> _readAll(String table, String columns) async {
+    final all = <Map<String, dynamic>>[];
+    for (var offset = 0; offset < 100000; offset += 1000) {
+      final page = await Supabase.instance.client.schema('collection')
+          .from(table).select(columns).range(offset, offset + 999);
+      final rows = _maps(page);
+      all.addAll(rows);
+      if (rows.length < 1000) break;
+    }
+    return all;
+  }
+
   double? _num(dynamic value) {
     if (value == null) return null;
     if (value is num) return value.toDouble();
@@ -1856,34 +1868,21 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     if (_loading == false && mounted) setState(() => _loading = true);
     if (mounted) setState(() => _error = null);
     try {
-      final client = Supabase.instance.client;
-      final results = await Future.wait<dynamic>([
-        client.schema('collection').from('master_oggetti').select(
-          'codice_oggetto,descrizione_oggetto,destinazione,stato,quantita,valore_oggetto,valore_mercato,archiviato_test',
-        ),
-        client.schema('collection').from('acquisti_oggetti').select(
-          'codice_oggetto,valore_acquisto_oggetto,quantita,incluso_nella_quadratura,valuta',
-        ),
-        client.schema('collection').from('master_oggetti_in_vendita').select(
-          'codice_vendita_aperta,codice_oggetto,prezzo_di_vendita,valuta,stato_ciclo_vendita,codice_lotto',
-        ),
-        client.schema('collection').from('lotti_vendita').select(
-          'codice_lotto,prezzo_totale_inserzione,valuta,stato_lotto',
-        ),
-        client.schema('collection').from('master_vendite').select(
-          'codice_vendita,codice_oggetto,data_vendita,importo_vendita,valuta,stato_vendita,codice_lotto',
-        ),
-        client.schema('collection').from('cassa').select(
-          'data,tipo_movimento,importo,tipologia,valuta,codice_vendita,codice_acquisto',
-        ),
+      final results = await Future.wait<List<Map<String, dynamic>>>([
+        _readAll('master_oggetti', 'codice_oggetto,descrizione_oggetto,destinazione,stato,quantita,valore_oggetto,valore_mercato,archiviato_test'),
+        _readAll('acquisti_oggetti', 'codice_oggetto,valore_acquisto_oggetto,quantita,incluso_nella_quadratura,valuta'),
+        _readAll('master_oggetti_in_vendita', 'codice_vendita_aperta,codice_oggetto,prezzo_di_vendita,valuta,stato_ciclo_vendita,codice_lotto'),
+        _readAll('lotti_vendita', 'codice_lotto,prezzo_totale_inserzione,valuta,stato_lotto'),
+        _readAll('master_vendite', 'codice_vendita,codice_oggetto,data_vendita,importo_vendita,valuta,stato_vendita,codice_lotto'),
+        _readAll('cassa', 'data,tipo_movimento,importo,tipologia,valuta,codice_vendita,codice_acquisto'),
       ]);
 
-      final objects = _maps(results[0]);
-      final purchases = _maps(results[1]);
-      final listings = _maps(results[2]);
-      final lots = _maps(results[3]);
-      final sales = _maps(results[4]);
-      final cash = _maps(results[5]);
+      final objects = results[0];
+      final purchases = results[1];
+      final listings = results[2];
+      final lots = results[3];
+      final sales = results[4];
+      final cash = results[5];
 
       Map<String, dynamic>? latest;
       double? latestTotal;
