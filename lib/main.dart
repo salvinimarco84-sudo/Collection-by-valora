@@ -6965,6 +6965,42 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     );
   }
 
+  Widget _collectionThemePager(int pageCount) {
+    final start = _availablePage * _availablePageSize + 1;
+    final end = ((_availablePage + 1) * _availablePageSize) > _rows.length
+        ? _rows.length
+        : ((_availablePage + 1) * _availablePageSize);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(children: [
+          IconButton(
+            tooltip: 'Blocco precedente',
+            onPressed: _loading || _availablePage == 0
+                ? null
+                : () => _changeAvailablePage(_availablePage - 1),
+            icon: const Icon(Icons.arrow_back_ios_new),
+          ),
+          Expanded(child: Text(
+            'Record $start–$end di ${_rows.length} · Blocco ${_availablePage + 1}/$pageCount',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: ValoraAppearance.instance.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
+          )),
+          IconButton(
+            tooltip: 'Blocco successivo',
+            onPressed: _loading || _availablePage + 1 >= pageCount
+                ? null
+                : () => _changeAvailablePage(_availablePage + 1),
+            icon: const Icon(Icons.arrow_forward_ios),
+          ),
+        ]),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.apiCode == 'PR-02') return _buildPr02Screen();
@@ -7686,6 +7722,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (!isAvailableList)
             Text(isHistory ? 'CRONOLOGIA EVENTI (${_rows.length})' : 'RISULTATI (${_rows.length})',
               style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 18)),
+          if (_isCollectionThemeReport && availablePageCount > 1) ...[
+            const SizedBox(height: 8),
+            _collectionThemePager(availablePageCount),
+            const SizedBox(height: 8),
+          ],
           ...((isAvailableList || useStandardReportPaging)
               ? _rows.skip(_availablePage * _availablePageSize).take(_availablePageSize)
               : _rows).map((r) {
@@ -7729,26 +7770,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           }),
           if ((isAvailableList || useStandardReportPaging) && availablePageCount > 1) ...[
             const SizedBox(height: 8),
-            Card(child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(children: [
-                IconButton(
-                  tooltip: 'Gruppo precedente',
-                  onPressed: _loading || _availablePage == 0 ? null : () => _changeAvailablePage(_availablePage - 1),
-                  icon: const Icon(Icons.arrow_back_ios_new),
-                ),
-                Expanded(child: Text(
-                  '${_availablePage * _availablePageSize + 1}–${((_availablePage + 1) * _availablePageSize) > _rows.length ? _rows.length : ((_availablePage + 1) * _availablePageSize)} di ${_rows.length} · Gruppo ${_availablePage + 1}/$availablePageCount',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontWeight: FontWeight.w600),
-                )),
-                IconButton(
-                  tooltip: 'Gruppo successivo',
-                  onPressed: _loading || _availablePage + 1 >= availablePageCount ? null : () => _changeAvailablePage(_availablePage + 1),
-                  icon: const Icon(Icons.arrow_forward_ios),
-                ),
-              ]),
-            )),
+            _isCollectionThemeReport
+                ? _collectionThemePager(availablePageCount)
+                : Card(child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Row(children: [
+                      IconButton(
+                        tooltip: 'Gruppo precedente',
+                        onPressed: _loading || _availablePage == 0 ? null : () => _changeAvailablePage(_availablePage - 1),
+                        icon: const Icon(Icons.arrow_back_ios_new),
+                      ),
+                      Expanded(child: Text(
+                        '${_availablePage * _availablePageSize + 1}–${((_availablePage + 1) * _availablePageSize) > _rows.length ? _rows.length : ((_availablePage + 1) * _availablePageSize)} di ${_rows.length} · Gruppo ${_availablePage + 1}/$availablePageCount',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontWeight: FontWeight.w600),
+                      )),
+                      IconButton(
+                        tooltip: 'Gruppo successivo',
+                        onPressed: _loading || _availablePage + 1 >= availablePageCount ? null : () => _changeAvailablePage(_availablePage + 1),
+                        icon: const Icon(Icons.arrow_forward_ios),
+                      ),
+                    ]),
+                  )),
           ],
           if (widget.apiCode == 'REPORT-CASH') ...[
             const SizedBox(height: 18),
@@ -7929,7 +7972,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             ]),
           ),
         ],
-        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory && code != 'REPORT-CASH' && code != 'REPORT-PURCHASES' && code != 'REPORT-SALES' && code != 'REPORT-SALES-ACTIVE') ...[
+        if (code != 'PR-01' && code != 'PR-02' && code != 'PR-03' && !isMaster && !isAvailableList && !isHistory && !_isCollectionThemeReport && code != 'REPORT-CASH' && code != 'REPORT-PURCHASES' && code != 'REPORT-SALES' && code != 'REPORT-SALES-ACTIVE') ...[
           const SizedBox(height: 16),
           Text('ESITO RUNTIME', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
