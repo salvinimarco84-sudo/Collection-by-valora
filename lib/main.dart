@@ -6586,9 +6586,30 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   String _sourceSiteName(dynamic value) {
     final raw = (value ?? '').toString().trim();
     if (raw.isEmpty) return 'Non indicato';
-    final match = RegExp(r'https?://[^\\s;|]+', caseSensitive: false).firstMatch(raw);
+    const knownSites = <String, String>{
+      'brickeconomy.com': 'BrickEconomy',
+      'bricklink.com': 'BrickLink',
+      'rebrickable.com': 'Rebrickable',
+      'mybricks.net': 'MyBricks',
+      'brickset.com': 'Brickset',
+      'myth-hunter.com': 'Myth Hunter',
+    };
+    final lower = raw.toLowerCase();
+    for (final entry in knownSites.entries) {
+      if (lower.contains(entry.key) || lower.contains(entry.value.toLowerCase())) {
+        return entry.value;
+      }
+    }
+    final match = RegExp(r'(https?://)?(www\.)?([a-z0-9-]+\.[a-z]{2,})', caseSensitive: false).firstMatch(raw);
     if (match == null) return raw;
-    final cleanedUrl = match.group(0)!.replaceAll(RegExp(r'[.,)]+
+    final host = match.group(3)!.toLowerCase();
+    if (knownSites.containsKey(host)) return knownSites[host]!;
+    final parts = host.split('.');
+    final brand = parts.length > 1 ? parts[parts.length - 2] : parts.first;
+    if (brand.isEmpty) return host;
+    return brand[0].toUpperCase() + brand.substring(1);
+  }
+
   Widget _masterDetails(Map<String, dynamic> object) {
     const imageKeys = {
       'url_immagine', 'immagine_url', 'foto_url', 'image_url',
