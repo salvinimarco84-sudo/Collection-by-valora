@@ -2074,16 +2074,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
               colors: [Colors.black.withValues(alpha: 0.10), Colors.transparent, Colors.black.withValues(alpha: 0.08)],
             ),
           )),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              color: Colors.black.withValues(alpha: 0.42),
-              child: Text(subtitle, textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600, shadows: [Shadow(color: Colors.black, blurRadius: 5)])),
-            ),
-          ),
+          // Titolo e sottotitolo sono già incorporati nell'immagine-banner.
+          // Evita di sovrapporli una seconda volta.
         ]),
       ),
     );
