@@ -46,6 +46,16 @@ const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
 
+String? _valoraDashboardImageAsset(String title) => switch (title.toUpperCase()) {
+  'VENDITE' || 'VENDITE E INSERZIONI' => 'assets/menu_sections/01_VENDITE.jpg',
+  'ACQUISTI' => 'assets/menu_sections/02_ACQUISTI.jpg',
+  'RICERCHE' => 'assets/menu_sections/03_RICERCHE.jpg',
+  'VALUTAZIONI' => 'assets/menu_sections/04_VALUTAZIONI.jpg',
+  'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg',
+  'REPORT' => 'assets/menu_sections/06_REPORT.jpg',
+  _ => null,
+};
+
 String _valoraThemeAsset(String id) => switch (id) {
   'industrial' => 'assets/themes/industrial.jpg',
   'emerald' => 'assets/themes/electric_green.jpg',
@@ -3515,6 +3525,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             'subtitle':ValoraI18n.tr(section.description),
             'color':ValoraAppearance.instance.colorFor(section.title),
             'icon':section.icon,
+            'asset':_valoraDashboardImageAsset(section.title),
             'tap':() => setState(()=>selectedSection=section),
           }),
         ];
@@ -3523,13 +3534,33 @@ class _HomeDashboardState extends State<HomeDashboard> {
           itemCount: entries.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns, crossAxisSpacing: 10, mainAxisSpacing: 10,
-            childAspectRatio: constraints.maxWidth < 600 ? 0.98 : 1.18,
+            childAspectRatio: constraints.maxWidth < 600 ? 0.68 : 0.82,
           ),
           itemBuilder: (context,index) {
             final entry=entries[index];
             final title=entry['title'] as String;
             final color=entry['color'] as Color;
             final icon=entry['icon'] as IconData;
+            final asset=entry['asset'] as String?;
+            if (asset != null) {
+              return Material(
+                color: const Color(0xFF101010),
+                borderRadius: BorderRadius.circular(15),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
+                  onTap: entry['tap'] as VoidCallback,
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: color, width: 1.4),
+                      image: DecorationImage(image: AssetImage(asset), fit: BoxFit.cover),
+                    ),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              );
+            }
             final url=ValoraAppearance.instance.imageUrls[title] ??
               ValoraAppearance.instance.imageUrls[title=='VENDITE E INSERZIONI'?'VENDITE':title];
             return Material(
@@ -3580,13 +3611,23 @@ class _HomeDashboardState extends State<HomeDashboard> {
         trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
         onTap: () { setState(() => showCollection = true); _loadDashboardCatalog(); },
       ),
-      ...dashboardSections.map((section) => _menuCard(
-        title: ValoraI18n.tr(section.menuTitle ?? section.title),
-        subtitle: ValoraI18n.tr(section.description),
-        color: ValoraAppearance.instance.colorFor(section.title),
-        icon: section.icon,
-        onTap: () => setState(() => selectedSection = section),
-      )),
+      ...dashboardSections.map((section) {
+        final asset = _valoraDashboardImageAsset(section.title);
+        if (asset != null) {
+          return _dashboardImageCard(
+            asset: asset,
+            color: ValoraAppearance.instance.colorFor(section.title),
+            onTap: () => setState(() => selectedSection = section),
+          );
+        }
+        return _menuCard(
+          title: ValoraI18n.tr(section.menuTitle ?? section.title),
+          subtitle: ValoraI18n.tr(section.description),
+          color: ValoraAppearance.instance.colorFor(section.title),
+          icon: section.icon,
+          onTap: () => setState(() => selectedSection = section),
+        );
+      }),
       if (_catalogError != null)
         Padding(
           padding: const EdgeInsets.only(top: 8),
@@ -3597,6 +3638,30 @@ class _HomeDashboardState extends State<HomeDashboard> {
     ],
   );
   }
+
+  Widget _dashboardImageCard({required String asset, required Color color, required VoidCallback onTap}) =>
+      Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: AspectRatio(
+          aspectRatio: 2 / 3,
+          child: Material(
+            color: const Color(0xFF101010),
+            borderRadius: BorderRadius.circular(16),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onTap,
+              child: Ink(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: color, width: 1.4),
+                  image: DecorationImage(image: AssetImage(asset), fit: BoxFit.cover),
+                ),
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+        ),
+      );
 
   Widget _collectionCategoryMasterPanel(String code, String name, String subtitle, Color color, IconData icon, int count, {String? logoUrl}) {
     final categoryKey = name.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
