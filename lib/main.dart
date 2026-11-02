@@ -6341,7 +6341,43 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (_isActiveListingsReport && data is Map) {
       final report = Map<String, dynamic>.from(data);
       final records = report['record'];
-      final list = records is List ? records : <dynamic>[];
+      final rawList = records is List ? records : <dynamic>[];
+
+      // Integra le righe del report con le piattaforme associate a ogni
+      // codice vendita. L'endpoint è autenticato e in sola lettura.
+      final platformBySale = <String, String>{};
+      try {
+        final salesResponse = await _ValoraRuntimeApi.call(
+          'open_sales_list',
+          {'session_id': _sessionId},
+        );
+        final salesResult = salesResponse['result'];
+        final sales = salesResult is Map ? salesResult['vendite'] : null;
+        if (sales is List) {
+          for (final sale in sales.whereType<Map>()) {
+            final saleCode = (sale['codice_vendita_aperta'] ?? '').toString();
+            final links = sale['piattaforme_associate'];
+            final names = links is List
+                ? links.whereType<Map>()
+                    .map((link) => (link['nome_piattaforma'] ?? '').toString().trim())
+                    .where((name) => name.isNotEmpty)
+                    .toList()
+                : <String>[];
+            platformBySale[saleCode] = names.isEmpty ? 'Non indicata' : names.join(' · ');
+          }
+        }
+      } catch (_) {
+        // Il report resta consultabile anche se il recupero piattaforme fallisce.
+      }
+
+      final list = rawList.map((raw) {
+        if (raw is! Map) return raw;
+        final item = Map<String, dynamic>.from(raw);
+        final saleCode = (item['codice_vendita_aperta'] ?? '').toString();
+        item['piattaforme_report'] = platformBySale[saleCode] ?? 'Non indicata';
+        return item;
+      }).toList();
+
       setState(() {
         _rows = list;
         _availablePage = 0;
@@ -6836,6 +6872,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Widget _objectCard(
     Map<String, dynamic> item, {
     VoidCallback? onTap, bool availableStyle = false, bool showImagePlaceholder = true,
+    bool activeListing = false,
   }) {
     final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
     final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
@@ -6874,6 +6911,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final condition = _valueFor(item, ['condizione'], 'Non indicata');
     final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
     final value = _valueFor(item, ['valore_oggetto', 'valore', 'valore_stimato'], 'Non indicato');
+    final saleCode = _valueFor(item, ['codice_vendita_aperta'], 'N/D');
+    final salePrice = _valueFor(item, ['prezzo_di_vendita'], 'Non indicato');
+    final currency = _valueFor(item, ['valuta'], 'EUR');
+    final platforms = _valueFor(item, ['piattaforme_report', 'piattaforme'], 'Non indicata');
+    final formattedSalePrice = salePrice == 'Non indicato'
+        ? salePrice
+        : '${salePrice.replaceAll('.', ',')} ${currency == 'EUR' ? '€' : currency}';
     final imageSize = availableStyle ? 104.0 : 88.0;
     Widget infoChip(IconData icon, String label) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -6921,13 +6965,28 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 )),
                 if (onTap != null) Icon(Icons.chevron_right, color: sectionColor, size: 20),
               ]),
+              if (activeListing) ...[
+                const SizedBox(height: 2),
+                Text('VENDITA N. $saleCode', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11, fontWeight: FontWeight.w600)),
+              ],
               const SizedBox(height: 5),
               Text(desc, style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: availableStyle ? 16 : 16,
               )),
               const SizedBox(height: 9),
-              if (availableStyle) ...[
+              if (activeListing) ...[
+                Text('PREZZO DI VENDITA: $formattedSalePrice',
+                  style: TextStyle(color: sectionColor, fontWeight: FontWeight.w800, fontSize: 14)),
+                const SizedBox(height: 7),
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  infoChip(Icons.storefront_outlined, platforms),
+                  infoChip(Icons.verified_outlined, condition),
+                ]),
+                const SizedBox(height: 7),
+                Text('Data inizio: ${_valueFor(item, ['data_inizio_vendita'], 'Non indicata')}',
+                  style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+              ] else if (availableStyle) ...[
                 Wrap(spacing: 6, runSpacing: 6, children: [
                   infoChip(Icons.inventory_2_outlined, destination),
                   infoChip(Icons.verified_outlined, condition),
@@ -8008,7 +8067,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       )),
               ));
             }
-            return _objectCard(item, availableStyle: isAvailableList || _isCollectionThemeReport || _isActiveListingsReport, onTap: (isAvailableList || _isCollectionThemeReport || _isActiveListingsReport)
+            return _objectCard(item, availableStyle: isAvailableList || _isCollectionThemeReport || _isActiveListingsReport, activeListing: _isActiveListingsReport, onTap: (isAvailableList || _isCollectionThemeReport || _isActiveListingsReport)
               ? () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ObjectRuntimePage(
                       title: 'Visualizza scheda',
