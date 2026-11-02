@@ -4058,7 +4058,10 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
     } finally { if (mounted) setState(() => _loading = false); }
   }
 
-  bool get _canGroupSale => _selected.length >= 2 && _selected.every((id) => _outcomes[id] == 'VENDITA EFFETTIVA');
+  bool get _canGroupSale => _selected.length >= 2 &&
+      _selected.every((id) => _outcomes[id] == 'VENDITA EFFETTIVA') &&
+      _sales.where((row) => _selected.contains(int.tryParse('${row['codice_vendita_aperta']}')))
+          .every((row) => row['codice_lotto'] == null);
   bool get _isMultipleSale => _canGroupSale && _useSingleTransaction;
 
   double get _selectedAskingTotal => _sales
