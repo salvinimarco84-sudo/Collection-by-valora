@@ -2716,8 +2716,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                           child: Container(
                             padding: const EdgeInsets.all(11),
                             decoration: BoxDecoration(color: const Color(0xFF5B421E).withValues(alpha: 0.35), borderRadius: BorderRadius.circular(13), border: Border.all(color: const Color(0xFFE7B56D).withValues(alpha: 0.35))),
-                            child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Icon(Icons.info_outline, color: Color(0xFFE7B56D), size: 17),
+                            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              const Icon(Icons.info_outline, color: Color(0xFFE7B56D), size: 17),
                               SizedBox(width: 8),
                               Expanded(child: Text('Il totale include solo i valori documentati. Mancano ${collectionUnvalued} stime di mercato nella collezione e ${missingResaleCosts} costi di acquisto nello stock commerciale: nessun valore viene inventato.', style: TextStyle(color: Color(0xFFE8D5B4), fontSize: 10, height: 1.35))),
                             ]),
