@@ -1999,6 +1999,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     String? detail,
   }) {
     return Container(
+      constraints: const BoxConstraints(minHeight: 112),
       decoration: BoxDecoration(
         color: const Color(0xFF1B1A18).withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(17),
@@ -2007,24 +2008,47 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
           BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 12, offset: const Offset(0, 5)),
         ],
       ),
-      padding: const EdgeInsets.all(14),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Icon(icon, color: accent, size: 19),
-          const SizedBox(width: 7),
-          Expanded(child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis)),
-        ]),
-        const SizedBox(height: 11),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(value, style: TextStyle(color: accent, fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
-        ),
-        if (detail != null) ...[
-          const SizedBox(height: 5),
-          Text(detail, style: const TextStyle(color: Colors.white54, fontSize: 10), maxLines: 2, overflow: TextOverflow.ellipsis),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(icon, color: accent, size: 18),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Text(value, textAlign: TextAlign.center, style: TextStyle(color: accent, fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: -0.4)),
+          ),
+          if (detail != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              detail,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white54, fontSize: 10, height: 1.2),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 
@@ -2327,7 +2351,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                           physics: const NeverScrollableScrollPhysics(),
                           mainAxisSpacing: 9,
                           crossAxisSpacing: 9,
-                          childAspectRatio: 1.75,
+                          childAspectRatio: 1.48,
                           children: [
                             _metricCard(label: 'Valore di mercato', value: _eur(collectionMarket), icon: Icons.auto_graph, accent: const Color(0xFFE5C77A), detail: 'Valore corrente registrato'),
                             _metricCard(label: 'Costo storico noto', value: _eur(collectionHistoricalCost), icon: Icons.receipt_long_outlined, accent: const Color(0xFFB9C8D7), detail: '$collectionCostCoverage oggetti con acquisto tracciato'),
@@ -2347,7 +2371,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                           physics: const NeverScrollableScrollPhysics(),
                           mainAxisSpacing: 9,
                           crossAxisSpacing: 9,
-                          childAspectRatio: 1.75,
+                          childAspectRatio: 1.48,
                           children: [
                             _metricCard(label: 'Stock a costo noto', value: _eur(resaleKnownCost), icon: Icons.inventory, accent: const Color(0xFFE5C77A), detail: '$resaleCostCoverage di ${resale.length} oggetti con costo'),
                             _metricCard(label: 'Inserzioni attive', value: _eur(activeListingValue), icon: Icons.sell_outlined, accent: const Color(0xFF86B6D9), detail: '${individualListings + openLots.length} inserzioni / lotti aperti'),
