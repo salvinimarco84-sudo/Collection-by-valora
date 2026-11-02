@@ -4013,6 +4013,7 @@ class Pr08CloseSalesPage extends StatefulWidget {
 
 class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
   final String _sessionId = _uuid.v4();
+  final ScrollController _pageScroll = ScrollController();
   bool _loading = false, _lockHeld = false;
   List<Map<String, dynamic>> _sales = [], _platforms = [];
   final Set<int> _selected = <int>{};
@@ -4022,6 +4023,7 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
 
   @override void initState() { super.initState(); _loadOpenSales(); }
   @override void dispose() {
+    _pageScroll.dispose();
     if (_lockHeld) { _ValoraRuntimeApi.call('release_lock', {'session_id': _sessionId}).catchError((_) => <String, dynamic>{}); }
     super.dispose();
   }
@@ -4101,7 +4103,22 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
     final payload = _salePayload()
       ..['dati_confermati'] = true ..['altra_operazione'] = false ..['conferma_finale'] = false;
     final result = await _ValoraRuntimeApi.procedure('PR-08', 'review', payload, sessionId: _sessionId);
-    if (mounted) setState(() => _review = result);
+    if (result['stato'] != 'IN_ATTESA_CONFERMA_FINALE') {
+      throw Exception('La procedura non è arrivata alla conferma finale. Stato ricevuto: ${result['stato'] ?? 'non disponibile'}');
+    }
+    if (!mounted) return;
+    setState(() => _review = result);
+    // Porta subito in vista il passaggio successivo: la conferma non deve
+    // sembrare inattiva perché il pulsante finale è più in basso nella lista.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _pageScroll.hasClients) {
+        _pageScroll.animateTo(
+          _pageScroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   Future<void> _saveSelected() async {
@@ -4231,6 +4248,7 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
         IconButton(tooltip: 'Aggiorna elenco', onPressed: _loading ? null : _loadOpenSales, icon: const Icon(Icons.refresh)),
       ]),
       body: _loading && _sales.isEmpty ? const Center(child: CircularProgressIndicator()) : ListView(
+        controller: _pageScroll,
         padding: const EdgeInsets.all(14),
         children: [
           Card(child: Padding(
@@ -4264,25 +4282,44 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
             FilledButton.icon(onPressed: _loading ? null : () => _run(_previewSelected), icon: const Icon(Icons.fact_check_outlined),
               label: Text(_loading ? 'CONTROLLO IN CORSO…' : 'CONTROLLA ${_selected.length} CHIUSURE')),
           ],
-          if (_preview != null) Card(child: Padding(
+          if (_preview != null && _review == null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('RIEPILOGO PRELIMINARE', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('RIEPILOGO DELLE CHIUSURE', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              SelectableText(JsonEncoder.withIndent('  ').convert(_preview)),
+              Text('${_selected.length} vendite selezionate. Controlla esito, importo e piattaforma prima di proseguire.',
+                style: TextStyle(color: appearance.textSecondary)),
+              const SizedBox(height: 8),
+              ..._selected.map((id) {
+                final row = _sales.firstWhere((r) => int.tryParse('${r['codice_vendita_aperta']}') == id);
+                final outcome = _outcomes[id] ?? 'Esito non indicato';
+                final details = outcome == 'VENDITA EFFETTIVA'
+                    ? ' · ${_money(_amounts[id], 'EUR')} · ${_dates[id] ?? _today()}'
+                    : '';
+                final platform = _platforms.where((p) => '${p['codice_piattaforma']}' == (_platformCodes[id] ?? ''))
+                    .map((p) => '${p['nome_piattaforma']}').firstOrNull;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text('Vendita #$id · Oggetto #${row['codice_oggetto']} · $outcome$details${platform == null ? '' : ' · $platform'}'),
+                );
+              }),
               const SizedBox(height: 10),
-              FilledButton(onPressed: _loading ? null : () => _run(_confirmSelectedData), child: const Text('CONFERMO I DATI')),
+              FilledButton(onPressed: _loading ? null : () => _run(_confirmSelectedData),
+                child: const Text('CONFERMO I DATI')),
             ]),
           )),
           if (_review != null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('CONFERMA DEFINITIVA', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text('Hai confermato i dati di ${_selected.length} vendite. Solo il pulsante finale effettuerà la scrittura.'),
-              const SizedBox(height: 10),
-              SelectableText(JsonEncoder.withIndent('  ').convert(_review)),
-              const SizedBox(height: 10),
+              const Row(children: [
+                Icon(Icons.verified_outlined, color: Colors.green),
+                SizedBox(width: 8),
+                Expanded(child: Text('DATI CONFERMATI', style: TextStyle(fontWeight: FontWeight.bold))),
+              ]),
+              const SizedBox(height: 8),
+              Text('Hai confermato ${_selected.length} chiusure. Nessuna vendita è stata ancora modificata. Premi il pulsante qui sotto per eseguire il salvataggio definitivo.',
+                style: TextStyle(color: appearance.textSecondary)),
+              const SizedBox(height: 12),
               FilledButton.icon(onPressed: _loading ? null : () => _run(_saveSelected), icon: const Icon(Icons.save_outlined), label: const Text('CONFERMA DEFINITIVA E SALVA')),
               TextButton(onPressed: _loading ? null : () => _run(() async { await _releaseLock(); if (mounted) setState(() { _preview = null; _review = null; }); }), child: const Text('ANNULLA E LASCIA APERTE LE VENDITE')),
             ]),
