@@ -3482,21 +3482,21 @@ class _HomeDashboardState extends State<HomeDashboard> {
             // Le immagini delle sezioni riempiono l'intera area disponibile.
             // Lo zoom leggero elimina le fasce vuote incorporate nei banner,
             // mantenendo il soggetto centrato anche sui display verticali.
-            ClipRect(
-              child: Transform.scale(
-                scale: 1.0,
+            // Le banner originali contengono già titoli e testi incorporati:
+            // le sfumiamo per usarle come atmosfera di sfondo, evitando doppioni
+            // e mantenendo leggibili le schede operative in primo piano.
+            ImageFiltered(
+              imageFilter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: Image.asset(
+                _menuBackgroundAsset(),
+                width: double.infinity,
+                height: double.infinity,
+                fit: BoxFit.cover,
                 alignment: Alignment.center,
-                child: Image.asset(
-                  _menuBackgroundAsset(),
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
-                ),
+                errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
               ),
             ),
-            ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
+            ColoredBox(color: Colors.black.withValues(alpha: 0.48)),
           ]))),
           SafeArea(child: showCollection ? buildCollection() : selectedSection == null ? buildDashboard() : buildSection(selectedSection!)),
         ]),
@@ -3787,29 +3787,32 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
-    return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-      Text(section.title, textAlign: TextAlign.center, style: TextStyle(
-        color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
-      const SizedBox(height: 6),
-      Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
-        style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-      const SizedBox(height: 20),
+    return ListView(padding: const EdgeInsets.fromLTRB(14, 10, 14, 18), children: [
+      const SizedBox(height: 4),
       ...procedures.map((procedure) => Card(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: 6),
         child: ListTile(
+          dense: true,
+          visualDensity: const VisualDensity(horizontal: -1, vertical: -2),
+          minVerticalPadding: 6,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           enabled: procedure.enabled,
           leading: CircleAvatar(
+            radius: 19,
             backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.18) : ValoraAppearance.instance.neutralOverlay,
             child: Icon(procedure.enabled
                 ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
                 : Icons.lock_outline,
+              size: 21,
               color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.textFaint),
           ),
-          title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
+          title: Text(ValoraI18n.tr(procedure.title), maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
             color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
-          subtitle: Text(ValoraI18n.tr(procedure.description)),
-          isThreeLine: true,
-          trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
+          subtitle: Text(ValoraI18n.tr(procedure.description), maxLines: 2, overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12)),
+          isThreeLine: false,
+          trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline, size: 20,
             color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
           onTap: !procedure.enabled
               ? null
