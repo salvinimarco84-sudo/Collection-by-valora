@@ -6,6 +6,16 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('RICERCHE e VALUTAZIONI mantengono colori coerenti su dashboard e menu', () {
+      expect(source, contains("'VALUTAZIONI': Color(0xFFFFD54F)"));
+      expect(source, contains("'RICERCHE': Color(0xFF35C7E8)"));
+      expect(source, contains("color: Color(0xFFFFD54F)"));
+      expect(source, contains("color: Color(0xFF35C7E8)"));
+      expect(source, isNot(contains("colors['RICERCHE'] = defaults['RICERCHE']!")));
+      expect(source, contains('scale: 1.04'));
+      expect(source, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)'));
+    });
+
     test('i sei menu usano gli asset originali dedicati e tutti i file esistono', () {
       const assets = <String>[
         'assets/menu_sections/01_VENDITE.jpg',
