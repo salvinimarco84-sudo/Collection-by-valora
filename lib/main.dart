@@ -3415,12 +3415,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
     if (showCollection) return 'assets/menu_sections/01_collezione_personale.png';
     final section = selectedSection?.title;
     final asset = switch (section) {
-      'CATALOGO' => 'assets/menu_sections/catalogo_collezionista_blue.jpg',
-      'ACQUISTI' => 'assets/menu_sections/menu_acquisti_rosso_senza_loghi.png',
-      'VENDITE' => 'assets/menu_sections/menu_vendite_verde_senza_loghi.png',
-      'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
-      'REPORT' => 'assets/menu_sections/menu_report_arancione.png',
-      'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
+      'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg',
+      'ACQUISTI' => 'assets/menu_sections/02_ACQUISTI.jpg',
+      'VENDITE' => 'assets/menu_sections/01_VENDITE.jpg',
+      'VALUTAZIONI' => 'assets/menu_sections/04_VALUTAZIONI.jpg',
+      'REPORT' => 'assets/menu_sections/06_REPORT.jpg',
+      'RICERCHE' => 'assets/menu_sections/03_RICERCHE.jpg',
       _ => null,
     };
     return asset ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
