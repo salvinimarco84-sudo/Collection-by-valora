@@ -3455,13 +3455,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
-            ClipRect(child: Transform.scale(
-              scale: 1.20,
-              alignment: const Alignment(0, 0.18),
-              child: Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
-            )),
+            // Preserve the approved artwork; remove the previous zoom/crop.
+            Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
+              alignment: Alignment.center,
+              errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
             ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
           ]))),
           SafeArea(child: showCollection ? buildCollection() : selectedSection == null ? buildDashboard() : buildSection(selectedSection!)),
@@ -3753,40 +3750,35 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
-    final isCompactImageSection = section.title == 'RICERCHE' || section.title == 'VALUTAZIONI';
-    return ListView(padding: EdgeInsets.fromLTRB(16, 8, 16, 24), children: [
-      const SizedBox(height: 2),
-      Text(section.title, textAlign: TextAlign.center, style: TextStyle(
-        color: ValoraAppearance.instance.colorFor(section.title), fontSize: isCompactImageSection ? 21 : 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
-      const SizedBox(height: 4),
-      Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
-        style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-      SizedBox(height: isCompactImageSection ? 14 : 20),
+    final sectionTint = ValoraAppearance.instance.colorFor(section.title);
+    return ListView(padding: const EdgeInsets.fromLTRB(16, 10, 16, 24), children: [
+      // The approved artwork already contains the section title and graphic.
+      const SizedBox(height: 8),
       ...procedures.map((procedure) {
-        final sectionTint = ValoraAppearance.instance.colorFor(section.title);
         return Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        color: procedure.enabled ? Color.alphaBlend(sectionTint.withValues(alpha: isCompactImageSection ? 0.16 : 0.08), const Color(0xD9101010)) : const Color(0x99101010),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: procedure.enabled ? sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48) : Colors.white24, width: 1.1)),
+        margin: const EdgeInsets.only(bottom: 6),
+        elevation: 0,
+        color: procedure.enabled
+            ? Color.alphaBlend(sectionTint.withValues(alpha: 0.07), const Color(0x66070707))
+            : const Color(0x55070707),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(13),
+          side: BorderSide(color: procedure.enabled ? sectionTint.withValues(alpha: 0.52) : Colors.white24, width: 1),
+        ),
         child: ListTile(
           enabled: procedure.enabled,
           dense: true,
-          visualDensity: const VisualDensity(vertical: -1),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-          leading: CircleAvatar(
-            radius: 22,
-            backgroundColor: procedure.enabled ? sectionTint.withValues(alpha: 0.28) : ValoraAppearance.instance.neutralOverlay,
-            child: Icon(procedure.enabled
-                ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
-                : Icons.lock_outline,
-              color: procedure.enabled ? sectionTint : ValoraAppearance.instance.textFaint),
-          ),
-          title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
+          visualDensity: const VisualDensity(horizontal: 0, vertical: -3),
+          minVerticalPadding: 0,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 0),
+          title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600,
             color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
-          subtitle: Text(ValoraI18n.tr(procedure.description)),
+          subtitle: Text(ValoraI18n.tr(procedure.description), maxLines: 2, overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 12.5, color: procedure.enabled ? Colors.white70 : ValoraAppearance.instance.textFaint)),
           isThreeLine: false,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
-            color: procedure.enabled ? sectionTint : ValoraAppearance.instance.neutralOverlayStrong),
+            size: 23, color: procedure.enabled ? sectionTint : ValoraAppearance.instance.neutralOverlayStrong),
           onTap: !procedure.enabled
               ? null
               : procedure.title == 'Ricerca oggetti'
@@ -3820,7 +3812,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
       );
       }),
-      const SizedBox(height: 12),
+      const SizedBox(height: 8),
       OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
         icon: const Icon(Icons.dashboard_outlined), label: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
     ]);
