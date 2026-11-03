@@ -18,26 +18,49 @@ void main() {
       expect(source, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)'));
     });
 
-    test('i sei menu usano gli asset originali dedicati e tutti i file esistono', () {
+    test('i sei menu usano esclusivamente i sei asset approvati', () {
       const assets = <String>[
         'assets/menu_sections/01_VENDITE.jpg',
         'assets/menu_sections/02_ACQUISTI.jpg',
-        'assets/menu_sections/03_RICERCHE.jpg',
-        'assets/menu_sections/04_VALUTAZIONI.jpg',
         'assets/menu_sections/05_CATALOGO.jpg',
         'assets/menu_sections/06_REPORT.jpg',
+        'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
+        'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       ];
       for (final asset in assets) {
         expect(File(asset).existsSync(), isTrue, reason: 'Asset mancante: $asset');
+        expect(source, contains(asset));
       }
       expect(source, contains("'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg'"));
       expect(source, contains("'ACQUISTI' => 'assets/menu_sections/02_ACQUISTI.jpg'"));
-      expect(source, contains("'VENDITE' => 'assets/menu_sections/01_VENDITE.jpg'"));
+      expect(source, contains("'VENDITE' || 'VENDITE E INSERZIONI' => 'assets/menu_sections/01_VENDITE.jpg'"));
       expect(source, contains("'REPORT' => 'assets/menu_sections/06_REPORT.jpg'"));
       expect(source, contains("'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg'"));
       expect(source, contains("'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
-      expect(source, isNot(contains("'RICERCHE' => 'assets/menu_sections/menu_ricerche_viola.png'")));
-      expect(source, isNot(contains("'VALUTAZIONI' => 'assets/menu_sections/menu_valutazioni_viola.png'")));
+      expect(source, isNot(contains('assets/menu_sections/01_collezione_personale.png')));
+      expect(source, isNot(contains('assets/menu_sections/03_RICERCHE.jpg')));
+      expect(source, isNot(contains('assets/menu_sections/04_VALUTAZIONI.jpg')));
+    });
+
+    test('la dashboard principale usa lo sfondo dinamico dei dieci temi', () {
+      expect(source, contains('if (selectedSection == null && !showCollection)'));
+      expect(source, contains('_valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)'));
+      const themeAssets = <String>[
+        'assets/themes/industrial.jpg',
+        'assets/themes/electric_green.jpg',
+        'assets/themes/black_gold.jpg',
+        'assets/themes/comic_style.jpg',
+        'assets/themes/midnight_blue.jpg',
+        'assets/themes/fire_red.jpg',
+        'assets/themes/pastel.jpg',
+        'assets/themes/minimal_zen.jpg',
+        'assets/themes/royal_purple.jpg',
+        'assets/themes/silver_light.jpg',
+      ];
+      for (final asset in themeAssets) {
+        expect(File(asset).existsSync(), isTrue, reason: 'Sfondo tema mancante: $asset');
+        expect(source, contains(asset));
+      }
     });
 
     test('la scheda oggetto espone modifica e avvio vendita', () {
