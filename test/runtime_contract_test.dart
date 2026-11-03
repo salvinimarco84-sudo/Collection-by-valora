@@ -17,8 +17,11 @@ void main() {
       ];
       for (final asset in assets) {
         expect(File(asset).existsSync(), isTrue, reason: 'Asset mancante: $asset');
-        expect(source, contains(asset), reason: 'Asset non collegato: $asset');
       }
+      expect(source, contains("'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg'"));
+      expect(source, contains("'ACQUISTI' => 'assets/menu_sections/02_ACQUISTI.jpg'"));
+      expect(source, contains("'VENDITE' => 'assets/menu_sections/01_VENDITE.jpg'"));
+      expect(source, contains("'REPORT' => 'assets/menu_sections/06_REPORT.jpg'"));
       expect(source, contains("'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg'"));
       expect(source, contains("'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
       expect(source, isNot(contains("'RICERCHE' => 'assets/menu_sections/menu_ricerche_viola.png'")));
