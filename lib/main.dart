@@ -3853,13 +3853,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
             child: Icon(procedure.enabled
                 ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
                 : Icons.lock_outline,
-              color: procedure.enabled ? sectionTint : ValoraAppearance.instance.textFaint),
+              color: Colors.white),
           ),
           title: Text(ValoraI18n.tr(procedure.title), style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
           subtitle: Text(ValoraI18n.tr(procedure.description), style: const TextStyle(color: Colors.white70)),
           isThreeLine: false,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
-            color: procedure.enabled ? sectionTint : ValoraAppearance.instance.neutralOverlayStrong),
+            color: Colors.white),
           onTap: !procedure.enabled
               ? null
               : procedure.title == 'Ricerca oggetti'
