@@ -3824,17 +3824,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     final sectionTint = ValoraAppearance.instance.colorFor(section.title);
-    final backgroundUrl = ValoraAppearance.instance.imageUrls[section.title];
+    // Lo sfondo della sezione è già disegnato dal livello principale tramite
+    // _menuBackgroundAsset(). Qui si applica solo un velo leggero, senza coprirlo.
     return Stack(fit: StackFit.expand, children: [
-      const ColoredBox(color: Color(0xFF101010)),
-      if (backgroundUrl != null && backgroundUrl.trim().isNotEmpty)
-        Center(child: Image.network(
-          _valoraImageProxyUrl(backgroundUrl),
-          width: double.infinity, height: double.infinity,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const SizedBox.expand(),
-        )),
-      ColoredBox(color: Colors.black.withValues(alpha: 0.30)),
+      ColoredBox(color: Colors.black.withValues(alpha: 0.16)),
       SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(12, 12, 12, 20), children: [
       ...procedures.map((procedure) {
         return Card(
