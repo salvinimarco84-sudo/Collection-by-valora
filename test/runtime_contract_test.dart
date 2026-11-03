@@ -12,7 +12,7 @@ void main() {
       expect(source, contains("color: Color(0xFFFFD54F)"));
       expect(source, contains("color: Color(0xFF35C7E8)"));
       expect(source, contains("for (final k in const ['RICERCHE', 'VALUTAZIONI'])"));
-      expect(source, contains('Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover'));
+      expect(source, contains('Image.asset(\n              _menuBackgroundAsset(),\n              fit: BoxFit.cover,'));
       expect(source, isNot(contains('scale: 1.20')));
       expect(source, contains('surfaceTintColor: Colors.transparent'));
       expect(source, contains('Color(0x66070707)'));
