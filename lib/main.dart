@@ -3414,18 +3414,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   String _menuBackgroundAsset() {
-    if (showCollection) return 'assets/menu_sections/01_collezione_personale.png';
+    // Use only the six approved internal-menu backgrounds.
+    if (showCollection) return 'assets/menu_sections/05_CATALOGO.jpg';
     final section = selectedSection?.title;
-    final asset = switch (section) {
+    return switch (section) {
       'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg',
       'ACQUISTI' => 'assets/menu_sections/02_ACQUISTI.jpg',
       'VENDITE' => 'assets/menu_sections/01_VENDITE.jpg',
       'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       'REPORT' => 'assets/menu_sections/06_REPORT.jpg',
       'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
-      _ => null,
+      _ => 'assets/menu_sections/05_CATALOGO.jpg',
     };
-    return asset ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
   }
 
   @override
