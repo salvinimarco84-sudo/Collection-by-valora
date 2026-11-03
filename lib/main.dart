@@ -332,9 +332,9 @@ class ValoraAppearance extends ChangeNotifier {
     'CATALOGO': Color(0xFF3978C5),
     'ACQUISTI': Color(0xFFC74444),
     'VENDITE': Color(0xFF39875B),
-    'VALUTAZIONI': Color(0xFF8556C7),
+    'VALUTAZIONI': Color(0xFFFFD54F),
     'REPORT': Color(0xFFE17D35),
-    'RICERCHE': Color(0xFFD6A83F),
+    'RICERCHE': Color(0xFF35C7E8),
     'CONTROLLO': Color(0xFF777777),
     'COLLEZIONE': Color(0xFFD6B45C),
     'LEGO': Color(0xFFE31B23),
@@ -383,9 +383,6 @@ class ValoraAppearance extends ChangeNotifier {
       if (path != null && path.isNotEmpty) imagePaths[k] = path;
     }
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
-    // RICERCHE eredita stabilmente il colore oro, anche sui dispositivi con preferenze precedenti.
-    colors['RICERCHE'] = defaults['RICERCHE']!;
-    await p.setInt('valora_color_RICERCHE', defaults['RICERCHE']!.value);
     final used=<int>{};
     for(final k in defaults.keys) {
       if(!used.add(colors[k]!.value)) {
@@ -1039,9 +1036,9 @@ const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'CATALOGO', description: 'Consulta e gestisci gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
   DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti e allocazioni', icon: Icons.shopping_cart_outlined, color: Color(0xFFC74444)),
   DashboardSection(title: 'VENDITE', menuTitle: 'VENDITE E INSERZIONI', description: 'Vendite e inserzioni', icon: Icons.sell_outlined, color: Color(0xFF39875B)),
-  DashboardSection(title: 'VALUTAZIONI', description: 'VALORA e valore collezione', icon: Icons.query_stats, color: Color(0xFF8556C7)),
+  DashboardSection(title: 'VALUTAZIONI', description: 'VALORA e valore collezione', icon: Icons.query_stats, color: Color(0xFFFFD54F)),
   DashboardSection(title: 'REPORT', description: 'Riepiloghi e risultati', icon: Icons.analytics_outlined, color: Color(0xFFE17D35)),
-  DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFFD6A83F)),
+  DashboardSection(title: 'RICERCHE', description: 'Ricerca oggetti e fonti', icon: Icons.search, color: Color(0xFF35C7E8)),
   DashboardSection(title: 'CONTROLLO', description: 'Stato e verifiche del sistema', icon: Icons.admin_panel_settings_outlined, color: Color(0xFF777777)),
 ];
 
@@ -1477,7 +1474,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
                   Text('Priorità ${s['priorita'] ?? 50} · ${s['tipo_fonte'] ?? 'specialistica'} · ${s['stato_verifica'] ?? 'da_verificare'} · ${s['origine_configurazione'] ?? 'utente'}', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 11)),
                   if ((s['note'] ?? '').toString().isNotEmpty) Text(s['note'].toString()),
                 ]),
-                isThreeLine: true,
+                isThreeLine: false,
                 trailing: own ? PopupMenuButton<String>(onSelected: (v) { if (v == 'edit') _editSource(s); if (v == 'toggle') _toggleActive(s); }, itemBuilder: (_) => [
                   const PopupMenuItem(value: 'edit', child: Text('Modifica')),
                   PopupMenuItem(value: 'toggle', child: Text(active ? 'Disattiva' : 'Riattiva')),
@@ -3450,10 +3447,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
             ClipRect(child: Transform.scale(
-              scale: 1.16,
+              scale: 1.04,
               alignment: const Alignment(0, 0.18),
               child: Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
-                alignment: const Alignment(0, 0.18),
+                alignment: Alignment.center,
                 errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
             )),
             ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
@@ -3491,7 +3488,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(children: [
             Container(
               width: 48, height: 48,
@@ -3748,9 +3745,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     final isCompactImageSection = section.title == 'RICERCHE' || section.title == 'VALUTAZIONI';
-    return ListView(padding: EdgeInsets.fromLTRB(16, isCompactImageSection ? 10 : 20, 16, 28), children: [
-      Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: isCompactImageSection ? 38 : 52),
-      SizedBox(height: isCompactImageSection ? 6 : 12),
+    return ListView(padding: EdgeInsets.fromLTRB(16, 8, 16, 24), children: [
+      const SizedBox(height: 2),
       Text(section.title, textAlign: TextAlign.center, style: TextStyle(
         color: ValoraAppearance.instance.colorFor(section.title), fontSize: isCompactImageSection ? 21 : 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
       const SizedBox(height: 4),
@@ -3758,7 +3754,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
       SizedBox(height: isCompactImageSection ? 14 : 20),
       ...procedures.map((procedure) => Card(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
           enabled: procedure.enabled,
           leading: CircleAvatar(
