@@ -3449,9 +3449,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
       'CATALOGO' => 'assets/menu_sections/catalogo_collezionista_blue.jpg',
       'ACQUISTI' => 'assets/menu_sections/menu_acquisti_rosso_senza_loghi.png',
       'VENDITE' => 'assets/menu_sections/menu_vendite_verde_senza_loghi.png',
-      'VALUTAZIONI' => 'assets/menu_sections/menu_valutazioni_viola.png',
+      'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       'REPORT' => 'assets/menu_sections/menu_report_arancione.png',
-      'RICERCHE' => 'assets/menu_sections/menu_ricerche_viola.png',
+      'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
       _ => null,
     };
     return asset ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
