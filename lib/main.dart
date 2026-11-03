@@ -2514,6 +2514,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     int collectionUnits = 0;
     int collectionUnvalued = 0;
     int collectionCostCoverage = 0;
+    int collectionCarryingValueCoverage = 0;
     double collectionComparableMarket = 0;
     double collectionComparableCost = 0;
     int collectionComparableCount = 0;
@@ -2528,6 +2529,10 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         collectionMarket += market * quantity;
       }
       final cost = id == null ? null : acquisitionByObject[id.toString()];
+      final declaredValue = _num(o['valore_oggetto']);
+      if ((declaredValue != null && declaredValue > 0) || (cost != null && cost > 0)) {
+        collectionCarryingValueCoverage++;
+      }
       if (cost != null) {
         collectionHistoricalCost += cost;
         collectionCostCoverage++;
@@ -2614,8 +2619,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     final collectionValued = (collection.length - collectionUnvalued).clamp(0, 100000);
     final collectionValuationCoverage = collection.isEmpty ? 0.0 : collectionValued / collection.length;
     final activeAssetCount = collection.length + resale.length;
-    final knownAcquisitionObjects = collectionCostCoverage + resaleCostCoverage;
-    final acquisitionCoverage = activeAssetCount == 0 ? 0.0 : knownAcquisitionObjects / activeAssetCount;
+    final knownCarryingValueObjects = collectionCarryingValueCoverage + resaleCostCoverage;
+    final acquisitionCoverage = activeAssetCount == 0 ? 0.0 : knownCarryingValueObjects / activeAssetCount;
 
     final delta = _latestTotal != null && _previousTotal != null ? _latestTotal! - _previousTotal! : null;
     final trendColor = delta == null ? const Color(0xFFB9A77A) : delta >= 0 ? const Color(0xFF73C58B) : const Color(0xFFE47A72);
@@ -2751,7 +2756,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                         Row(children: [
                           const Icon(Icons.receipt_long_outlined, color: Color(0xFFE5C77A), size: 18),
                           const SizedBox(width: 8),
-                          const Expanded(child: Text('Copertura dei costi di acquisto', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700))),
+                          const Expanded(child: Text('Copertura del valore di carico', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700))),
                           Text('${(acquisitionCoverage * 100).toStringAsFixed(1).replaceAll('.', ',')}%', style: const TextStyle(color: Color(0xFFE7B56D), fontSize: 15, fontWeight: FontWeight.w900)),
                         ]),
                         const SizedBox(height: 7),
@@ -2761,7 +2766,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                           valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE7B56D)),
                         )),
                         const SizedBox(height: 5),
-                        Text('$knownAcquisitionObjects di $activeAssetCount oggetti attivi con costo storico documentato. Il dato non comprende gli oggetti già venduti.',
+                        Text('$knownCarryingValueObjects di $activeAssetCount oggetti attivi con valore di carico o costo storico registrato. Per la collezione comprende anche il valore figurativo degli oggetti caricati manualmente; non equivale agli acquisti realmente effettuati.',
                           style: const TextStyle(color: Colors.white54, fontSize: 10)),
                       ])),
                       
