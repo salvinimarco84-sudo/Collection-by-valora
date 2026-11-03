@@ -12,7 +12,7 @@ void main() {
       expect(source, contains("color: Color(0xFFFFD54F)"));
       expect(source, contains("color: Color(0xFF35C7E8)"));
       expect(source, contains("for (final k in const ['RICERCHE', 'VALUTAZIONI'])"));
-      expect(source, contains('scale: 1.20'));
+      expect(source, contains('alignment: Alignment.center'));\n      expect(source, isNot(contains('scale: 1.20')));\n      expect(source, isNot(contains('Alignment(0, 0.18)')));
       final sectionStart = source.indexOf('  Widget buildSection(DashboardSection section) {');
       final sectionEnd = source.indexOf('  void showProcedureInfo(ProcedureEntry procedure) {', sectionStart);
       expect(sectionStart, isNonNegative);
