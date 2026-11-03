@@ -12,9 +12,16 @@ void main() {
       expect(source, contains("color: Color(0xFFFFD54F)"));
       expect(source, contains("color: Color(0xFF35C7E8)"));
       expect(source, contains("for (final k in const ['RICERCHE', 'VALUTAZIONI'])"));
-      expect(source, contains('sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48)'));
       expect(source, contains('scale: 1.20'));
-      expect(source, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)'));
+      final sectionStart = source.indexOf('  Widget buildSection(DashboardSection section) {');
+      final sectionEnd = source.indexOf('  void showProcedureInfo(ProcedureEntry procedure) {', sectionStart);
+      expect(sectionStart, isNonNegative);
+      expect(sectionEnd, greaterThan(sectionStart));
+      final sectionLayout = source.substring(sectionStart, sectionEnd);
+      expect(sectionLayout, isNot(contains('isCompactImageSection')));
+      expect(sectionLayout, isNot(contains('CircleAvatar(')));
+      expect(sectionLayout, isNot(contains('Text(section.title')));
+      expect(sectionLayout, contains('procedure.description'));
     });
 
     test('i sei menu usano esclusivamente i sei asset approvati', () {
