@@ -1583,6 +1583,53 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
     } catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Creazione categoria non riuscita: '+e.toString())));} finally{name.dispose();if(mounted)setState(()=>_saving=false);}
   }
 
+
+  Future<void> _researchCategoryStandards(Map<String,dynamic> row) async {
+    final code=(row['codice_categoria']??'').toString();
+    final label=(row['descrizione']??'').toString().trim();
+    if(code.isEmpty||label.isEmpty)return;
+    setState(()=>_saving=true);
+    try {
+      final db=Supabase.instance.client.schema('collection');
+      await db.from('profili_revisione_categoria').update({'stato_profilo':'RICERCA_IN_CORSO','aggiornato_il':DateTime.now().toUtc().toIso8601String()}).eq('codice_categoria',code);
+      final response=await Supabase.instance.client.functions.invoke('pr-12-web-search-test',body:{
+        'descrizione':'${label} collectible condition grading guide completeness packaging assembly standards specialist catalog',
+        'categoria':code,
+        'tema':label,
+        'mercato':'Italia ed Europa',
+      });
+      final payload=response.data;
+      final raw=payload is Map ? payload['risultati'] : null;
+      final results=raw is List ? raw.whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList() : <Map<String,dynamic>>[];
+      var saved=0;
+      for(final item in results.take(12)){
+        final url=(item['url']??'').toString().trim();
+        if(!url.startsWith('https://'))continue;
+        final title=(item['title']??'Fonte specialistica').toString().trim();
+        final snippet=(item['snippet']??'').toString().trim();
+        final domain=Uri.tryParse(url)?.host;
+        await db.from('fonti_standard_categoria').upsert({
+          'codice_categoria':code,'titolo':title,'url':url,'dominio':domain,
+          'tipo_fonte':'RICERCA_WEB_PR12','affidabilita':'DA_VERIFICARE',
+          'descrizione_utilizzo':snippet.isEmpty?'Candidato individuato da PR-12. Verificare pertinenza e autorevolezza.':snippet,
+          'consultata_il':DateTime.now().toUtc().toIso8601String(),'attiva':true,
+        },onConflict:'codice_categoria,url');
+        saved++;
+      }
+      await db.from('profili_revisione_categoria').update({
+        'stato_profilo':saved>0?'BOZZA':'ERRORE',
+        'note_qualita':'Ricerca PR-12 eseguita il ${DateTime.now().toIso8601String()}. Candidati salvati: $saved. Le fonti sono DA_VERIFICARE e nessuna mappatura viene approvata automaticamente.',
+        'aggiornato_il':DateTime.now().toUtc().toIso8601String(),
+      }).eq('codice_categoria',code);
+      if(!mounted)return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(saved>0?'Ricerca completata: $saved fonti candidate salvate per $label.':'Ricerca eseguita, nessuna fonte pertinente salvata.')));
+      await _showStandards(row);
+    } catch(e) {
+      try { await Supabase.instance.client.schema('collection').from('profili_revisione_categoria').update({'stato_profilo':'ERRORE','note_qualita':'Errore ricerca automatica: $e','aggiornato_il':DateTime.now().toUtc().toIso8601String()}).eq('codice_categoria',code); } catch (_) {}
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Ricerca standard non riuscita: $e')));
+    } finally { if(mounted)setState(()=>_saving=false); }
+  }
+
   Future<void> _showStandards(Map<String,dynamic> row) async {
     try {
       final code=(row['codice_categoria']??'').toString();
@@ -1654,6 +1701,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
                         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                           Container(width: 24, height: 24, decoration: BoxDecoration(color: parsed, borderRadius: BorderRadius.circular(6))),
                           IconButton(tooltip: 'Standard e stati VALORA', onPressed: _saving ? null : () => _showStandards(row), icon: const Icon(Icons.fact_check_outlined)),
+                          IconButton(tooltip: 'Cerca standard specialistici sul web', onPressed: _saving ? null : () => _researchCategoryStandards(row), icon: const Icon(Icons.travel_explore_outlined)),
                           IconButton(tooltip: 'Modifica categoria', onPressed: _saving ? null : () => _editCategory(row), icon: const Icon(Icons.edit_outlined)),
                         ]),
                       ),
