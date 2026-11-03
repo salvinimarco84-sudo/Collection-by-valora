@@ -3480,34 +3480,28 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
-            // Le immagini delle sezioni riempiono l'intera area disponibile.
-            // Lo zoom leggero elimina le fasce vuote incorporate nei banner,
-            // mantenendo il soggetto centrato anche sui display verticali.
-            // Le banner originali contengono già titoli e testi incorporati:
-            // le sfumiamo per usarle come atmosfera di sfondo, evitando doppioni
-            // e mantenendo leggibili le schede operative in primo piano.
-            ImageFiltered(
-              imageFilter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Image.asset(
-                _menuBackgroundAsset(),
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
-              ),
+            // Mantiene visibile l'intera grafica originale senza ritagli o zoom.
+            // L'immagine resta centrata e proporzionata su ogni formato di display.
+            ColoredBox(color: backgroundColor),
+            Image.asset(
+              _menuBackgroundAsset(),
+              width: double.infinity,
+              height: double.infinity,
+              fit: BoxFit.contain,
+              alignment: Alignment.center,
+              errorBuilder: (_, __, ___) => const SizedBox.expand(),
             ),
-            ColoredBox(color: Colors.black.withValues(alpha: 0.48)),
+            ColoredBox(color: Colors.black.withValues(alpha: 0.18)),
           ]))),
           SafeArea(child: showCollection ? buildCollection() : selectedSection == null ? buildDashboard() : buildSection(selectedSection!)),
         ]),
-        floatingActionButton: FloatingActionButton.extended(
+        floatingActionButton: FloatingActionButton.small(
           heroTag: 'valora_global_assistant',
+          tooltip: ValoraI18n.tr('ASSISTENTE'),
           onPressed: () => Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => ValoraAssistantPage(screenContext: selectedSection?.title ?? 'Dashboard'),
           )),
-          icon: const Icon(Icons.mic_none),
-          label: Text(ValoraI18n.tr('ASSISTENTE')),
+          child: const Icon(Icons.mic_none, size: 21),
         ),
       );
 
@@ -3791,6 +3785,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
     return ListView(padding: const EdgeInsets.fromLTRB(14, 10, 14, 18), children: [
       const SizedBox(height: 4),
       ...procedures.map((procedure) => Card(
+        color: Colors.black.withValues(alpha: 0.34),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         margin: const EdgeInsets.only(bottom: 6),
         child: ListTile(
           dense: true,
