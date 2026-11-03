@@ -18,9 +18,11 @@ void main() {
       expect(sectionStart, isNonNegative);
       expect(sectionEnd, greaterThan(sectionStart));
       final sectionLayout = source.substring(sectionStart, sectionEnd);
-      expect(sectionLayout, isNot(contains('isCompactImageSection')));
-      expect(sectionLayout, isNot(contains('CircleAvatar(')));
-      expect(sectionLayout, isNot(contains('Text(section.title')));
+      expect(sectionLayout, contains('isCompactImageSection'));
+      expect(sectionLayout, contains('CircleAvatar('));
+      expect(sectionLayout, contains('Text(section.title'));
+      expect(sectionLayout, contains('sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48)'));
+      expect(sectionLayout, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5)'));
       expect(sectionLayout, contains('procedure.description'));
     });
 
