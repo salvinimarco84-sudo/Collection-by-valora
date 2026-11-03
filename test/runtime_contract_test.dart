@@ -41,6 +41,19 @@ void main() {
       expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
     });
 
+    test('Visualizza scheda risolve l’immagine usando url_fonte e non il nome file', () {
+      expect(source, contains("select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')"));
+      expect(source, contains("row['url_fonte']"));
+      expect(source, contains("body: {'action':'get','codice_oggetto':objectId}"));
+    });
+
+    test('Visualizza scheda mostra il prezzo di acquisto associato all’oggetto', () {
+      expect(source, contains(".from('acquisti_oggetti')"));
+      expect(source, contains("'valore_acquisto_oggetto'"));
+      expect(source, contains("m['prezzo_acquisto'] = purchase['valore_acquisto_oggetto']"));
+      expect(source, contains("hasPurchasePrice ? 'Prezzo di acquisto' : 'Valore registrato'"));
+    });
+
     test('Visualizza scheda cerca anche il codice numerico direttamente nel master', () {
       expect(source, contains(".from('master_oggetti')"));
       expect(source, contains(".eq('codice_oggetto', exactCode)"));
