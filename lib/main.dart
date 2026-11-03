@@ -3704,24 +3704,34 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 fit: BoxFit.cover, alignment: Alignment.center,
                 errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor))
             else
-              ClipRect(child: Transform.scale(
-                scale: 1.10,
-                child: Image.asset(
-                  _valoraDashboardImageAsset(selectedSection!.title) ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
-                  fit: BoxFit.cover, alignment: const Alignment(0, -0.08),
-                  errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
-              )),
+              Image.asset(
+                _valoraDashboardImageAsset(selectedSection!.title) ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
             ColoredBox(color: Colors.black.withValues(alpha: 0.18)),
           ]))),
           SafeArea(child: showCollection ? buildCollection() : selectedSection == null ? buildDashboard() : buildSection(selectedSection!)),
         ]),
-        floatingActionButton: FloatingActionButton.extended(
-          heroTag: 'valora_global_assistant',
-          onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => ValoraAssistantPage(screenContext: selectedSection?.title ?? 'Dashboard'),
-          )),
-          icon: const Icon(Icons.mic_none),
-          label: Text(ValoraI18n.tr('ASSISTENTE')),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(right: 2, bottom: 2),
+          child: SizedBox(
+            height: 42,
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => ValoraAssistantPage(screenContext: selectedSection?.title ?? 'Dashboard'),
+              )),
+              icon: const Icon(Icons.mic_none, size: 18),
+              label: Text(ValoraI18n.tr('ASSISTENTE'),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                minimumSize: const Size(0, 42),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: const StadiumBorder(),
+              ),
+            ),
+          ),
         ),
       );
 
@@ -4029,37 +4039,41 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     final sectionColor = ValoraAppearance.instance.colorFor(section.title);
-    return ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 20), children: [
-      // Il titolo è già integrato nell'immagine della sezione: lasciare spazio
-      // alla grafica prima di mostrare le procedure, senza duplicare l'intestazione.
-      SizedBox(height: MediaQuery.sizeOf(context).height * 0.40),
+    return ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 76), children: [
+      // Il titolo è già integrato nell'immagine della sezione: mantenere
+      // l'immagine centrata e leggibile prima dell'elenco delle procedure.
+      SizedBox(height: MediaQuery.sizeOf(context).height * 0.36),
       ...procedures.map((procedure) => Card(
-        color: Colors.black.withValues(alpha: 0.62),
+        color: Colors.black.withValues(alpha: 0.34),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: sectionColor.withValues(alpha: 0.42), width: 1),
+          side: BorderSide(color: sectionColor.withValues(alpha: 0.72), width: 1),
         ),
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
           dense: true,
-          visualDensity: const VisualDensity(horizontal: 0, vertical: -2),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-          minVerticalPadding: 3,
+          visualDensity: const VisualDensity(horizontal: 0, vertical: -3),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          minVerticalPadding: 0,
           enabled: procedure.enabled,
           leading: CircleAvatar(
-            backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.18) : ValoraAppearance.instance.neutralOverlay,
+            radius: 18,
+            backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.16) : ValoraAppearance.instance.neutralOverlay,
             child: Icon(procedure.enabled
                 ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
                 : Icons.lock_outline,
+              size: 21,
               color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.textFaint),
           ),
-          title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
-            color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
-          subtitle: Text(ValoraI18n.tr(procedure.description)),
+          title: Text(ValoraI18n.tr(procedure.title), style: const TextStyle(
+            fontWeight: FontWeight.w600, color: Colors.white, fontSize: 15)),
+          subtitle: Text(ValoraI18n.tr(procedure.description),
+            style: const TextStyle(color: Colors.white, fontSize: 12.5, height: 1.22)),
           isThreeLine: false,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
+            size: 21,
             color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
           onTap: !procedure.enabled
               ? null
