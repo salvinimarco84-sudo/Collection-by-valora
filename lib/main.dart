@@ -1582,6 +1582,43 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
       if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Categoria '+code+' creata.'))); await _load();
     } catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Creazione categoria non riuscita: '+e.toString())));} finally{name.dispose();if(mounted)setState(()=>_saving=false);}
   }
+
+  Future<void> _showStandards(Map<String,dynamic> row) async {
+    try {
+      final code=(row['codice_categoria']??'').toString();
+      final client=Supabase.instance.client.schema('collection');
+      final profile=await client.from('profili_revisione_categoria').select().eq('codice_categoria',code).maybeSingle();
+      final sources=await client.from('fonti_standard_categoria').select('titolo,url,affidabilita,descrizione_utilizzo').eq('codice_categoria',code).eq('attiva',true);
+      final mappings=await client.from('mappatura_stati_categoria').select('stato_originale,stato_valora,attributo_valora,livello_corrispondenza,approvato').eq('codice_categoria',code);
+      if(!mounted)return;
+      if(profile==null){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Profilo standard non ancora creato.')));return;}
+      final fields=(profile['campi_revisione'] is List ? profile['campi_revisione'] as List : const []).map((e)=>e.toString()).toList();
+      final states=(profile['stati_specialistici'] is List ? profile['stati_specialistici'] as List : const []).map((e)=>e.toString()).toList();
+      await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(
+        title:Text('STANDARD · ${row['descrizione']}'),
+        content:SizedBox(width:520,child:SingleChildScrollView(child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisSize:MainAxisSize.min,children:[
+          Text('Famiglia: ${profile['famiglia_profilo']}'),
+          Text('Stato: ${profile['stato_profilo']} · Versione ${profile['versione']}'),
+          const SizedBox(height:12),const Text('CAMPI DI REVISIONE',style:TextStyle(fontWeight:FontWeight.bold)),
+          ...fields.map((v)=>Padding(padding:const EdgeInsets.only(top:3),child:Text('• ${v.replaceAll('_',' ')}'))),
+          const SizedBox(height:12),const Text('STATI SPECIALISTICI RILEVATI',style:TextStyle(fontWeight:FontWeight.bold)),
+          ...states.map((v)=>Padding(padding:const EdgeInsets.only(top:3),child:Text('• $v'))),
+          const SizedBox(height:12),const Text('MAPPATURA VERSO VALORA',style:TextStyle(fontWeight:FontWeight.bold)),
+          ...((mappings as List).map((m)=>Padding(padding:const EdgeInsets.only(top:5),child:Text('${m['stato_originale']} → ${m['stato_valora']} · ${m['attributo_valora']} · ${m['livello_corrispondenza']} ${m['approvato']==true?'✓ approvato':'· da approvare'}')))),
+          const SizedBox(height:12),const Text('FONTI CONSULTATE / CANDIDATE',style:TextStyle(fontWeight:FontWeight.bold)),
+          ...((sources as List).map((src)=>Padding(padding:const EdgeInsets.only(top:7),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text('${src['titolo']} · ${src['affidabilita']}',style:const TextStyle(fontWeight:FontWeight.w600)),
+            SelectableText('${src['url']}',style:const TextStyle(fontSize:11)),
+            if((src['descrizione_utilizzo']??'').toString().isNotEmpty) Text(src['descrizione_utilizzo'].toString(),style:const TextStyle(fontSize:12)),
+          ])))),
+          if((profile['note_qualita']??'').toString().isNotEmpty) ...[const SizedBox(height:12),Text(profile['note_qualita'].toString(),style:const TextStyle(fontSize:12,fontStyle:FontStyle.italic))],
+          const SizedBox(height:8),const Text('Le mappature sono proposte iniziali: non modificano automaticamente la condizione o il valore degli oggetti.',style:TextStyle(fontSize:12,fontWeight:FontWeight.w600)),
+        ]))),
+        actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('CHIUDI'))],
+      ));
+    } catch(e) { if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Lettura profilo non riuscita: $e'))); }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1616,6 +1653,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
                         subtitle: Text('${row['codice_categoria']} · ${row['visibile'] == true ? 'Visibile nel menu' : 'Nascosta dal menu'}'),
                         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                           Container(width: 24, height: 24, decoration: BoxDecoration(color: parsed, borderRadius: BorderRadius.circular(6))),
+                          IconButton(tooltip: 'Standard e stati VALORA', onPressed: _saving ? null : () => _showStandards(row), icon: const Icon(Icons.fact_check_outlined)),
                           IconButton(tooltip: 'Modifica categoria', onPressed: _saving ? null : () => _editCategory(row), icon: const Icon(Icons.edit_outlined)),
                         ]),
                       ),
