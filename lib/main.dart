@@ -3414,13 +3414,17 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   String _menuBackgroundAsset() {
-    // Use only the six approved internal-menu backgrounds.
+    // The main dashboard always follows the selected one of the 10 themes.
+    if (selectedSection == null && !showCollection) {
+      return _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
+    }
+    // Collection/catalog and the six internal menus use only approved assets.
     if (showCollection) return 'assets/menu_sections/05_CATALOGO.jpg';
     final section = selectedSection?.title;
     return switch (section) {
       'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg',
       'ACQUISTI' => 'assets/menu_sections/02_ACQUISTI.jpg',
-      'VENDITE' => 'assets/menu_sections/01_VENDITE.jpg',
+      'VENDITE' || 'VENDITE E INSERZIONI' => 'assets/menu_sections/01_VENDITE.jpg',
       'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       'REPORT' => 'assets/menu_sections/06_REPORT.jpg',
       'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
