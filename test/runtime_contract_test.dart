@@ -6,6 +6,25 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('i sei menu usano gli asset originali dedicati e tutti i file esistono', () {
+      const assets = <String>[
+        'assets/menu_sections/01_VENDITE.jpg',
+        'assets/menu_sections/02_ACQUISTI.jpg',
+        'assets/menu_sections/03_RICERCHE.jpg',
+        'assets/menu_sections/04_VALUTAZIONI.jpg',
+        'assets/menu_sections/05_CATALOGO.jpg',
+        'assets/menu_sections/06_REPORT.jpg',
+      ];
+      for (final asset in assets) {
+        expect(File(asset).existsSync(), isTrue, reason: 'Asset mancante: $asset');
+        expect(source, contains(asset), reason: 'Asset non collegato: $asset');
+      }
+      expect(source, contains("'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg'"));
+      expect(source, contains("'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
+      expect(source, isNot(contains("'RICERCHE' => 'assets/menu_sections/menu_ricerche_viola.png'")));
+      expect(source, isNot(contains("'VALUTAZIONI' => 'assets/menu_sections/menu_valutazioni_viola.png'")));
+    });
+
     test('la scheda oggetto espone modifica e avvio vendita', () {
       expect(source, contains("label: const Text('MODIFICA OGGETTO'"));
       expect(source, contains("label: const Text('METTI IN VENDITA'"));
