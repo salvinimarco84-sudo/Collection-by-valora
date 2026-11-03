@@ -3525,13 +3525,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
-            ClipRect(child: Transform.scale(
-              scale: 1.20,
-              alignment: const Alignment(0, 0.18),
-              child: Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
-            )),
+            Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
+              alignment: Alignment.center,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
             ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
           ]))),
           SafeArea(child: showCollection ? buildCollection() : selectedSection == null ? buildDashboard() : buildSection(selectedSection!)),
