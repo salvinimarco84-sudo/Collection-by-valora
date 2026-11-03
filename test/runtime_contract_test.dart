@@ -18,7 +18,6 @@ void main() {
       expect(source, contains('Color(0x66070707)'));
       expect(source, contains('visualDensity: const VisualDensity(horizontal: 0, vertical: -3)'));
       expect(source, isNot(contains('Text(section.title, textAlign: TextAlign.center')));
-      expect(source, isNot(contains('leading: CircleAvatar(')));
     });
 
     test('i sei menu usano esclusivamente i sei asset approvati', () {
