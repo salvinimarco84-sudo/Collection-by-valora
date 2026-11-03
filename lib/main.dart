@@ -1630,6 +1630,91 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
     } finally { if(mounted)setState(()=>_saving=false); }
   }
 
+
+  Future<void> _researchAllCategoryStandards() async {
+    if (_saving || _rows.isEmpty) return;
+    final categories = _rows.where((r) => (r['codice_categoria'] ?? '').toString().isNotEmpty && (r['descrizione'] ?? '').toString().trim().isNotEmpty).toList();
+    if (categories.isEmpty) return;
+    setState(() => _saving = true);
+    final db = Supabase.instance.client.schema('collection');
+    var totalSaved = 0, completed = 0, failed = 0;
+    try {
+      for (var start = 0; start < categories.length; start += 10) {
+        final batch = categories.skip(start).take(10).toList();
+        final now = DateTime.now().toUtc().toIso8601String();
+        for (final row in batch) {
+          await db.from('profili_revisione_categoria').update({'stato_profilo':'RICERCA_IN_CORSO','aggiornato_il':now}).eq('codice_categoria', row['codice_categoria']);
+        }
+        final payloadItems = batch.map((row) {
+          final code = (row['codice_categoria'] ?? '').toString();
+          final label = (row['descrizione'] ?? '').toString().trim();
+          final n = label.toLowerCase();
+          var canonical = 'COLLEZIONABILE';
+          if (n.contains('lego')) canonical = 'LEGO';
+          else if (n.contains('saint seiya') || n.contains('myth cloth')) canonical = 'MYTH_CLOTH';
+          else if (n.contains('modellini') || n.contains('auto-moto') || n.contains('diecast')) canonical = 'DIECAST';
+          else if (n.contains('fumett') || n.contains('comic')) canonical = 'FUMETTI';
+          else if (n.contains('gundam') || n.contains('transformer') || n.contains('g.i. joe') || n.contains('gi joe')) canonical = 'ACTION_FIGURE';
+          else if (n.contains('funko')) canonical = 'FUNKO_POP';
+          else if (n.contains('model kit') || n.contains('modelkit')) canonical = 'MODEL_KIT';
+          else if (n.contains('kinder') || n.contains('sorpresine')) canonical = 'GIOCATTOLO';
+          return {'id':code,'descrizione':label + ' collectible condition grading guide completeness packaging assembly specialist catalog','categoria':canonical,'tema':label,'mercato':'Italia ed Europa'};
+        }).toList();
+        final response = await Supabase.instance.client.functions.invoke('pr-12-web-search-test', body: {'oggetti':payloadItems});
+        final data = response.data;
+        final rawItems = data is Map ? data['risultati_oggetti'] : null;
+        if (rawItems is! List) throw Exception('Risposta PR-12 batch non valida: risultati_oggetti assente.');
+        final byId = <String,Map<String,dynamic>>{};
+        for (final item in rawItems.whereType<Map>()) {
+          final m = Map<String,dynamic>.from(item);
+          final id = (m['id'] ?? '').toString();
+          if (id.isNotEmpty) byId[id] = m;
+        }
+        for (final row in batch) {
+          final code = (row['codice_categoria'] ?? '').toString();
+          try {
+            final item = byId[code];
+            if (item == null || item['ok'] != true) {
+              failed++;
+              await db.from('profili_revisione_categoria').update({'stato_profilo':'ERRORE','note_qualita':'Ricerca PR-12 batch non completata. Nessuna mappatura approvata.','aggiornato_il':DateTime.now().toUtc().toIso8601String()}).eq('codice_categoria',code);
+              continue;
+            }
+            final nested = item['risultato'];
+            final rawResults = nested is Map ? nested['risultati'] : null;
+            final results = rawResults is List ? rawResults.whereType<Map>().map((x)=>Map<String,dynamic>.from(x)).toList() : <Map<String,dynamic>>[];
+            var saved = 0;
+            for (final source in results.take(12)) {
+              final url = (source['url'] ?? '').toString().trim();
+              if (!url.startsWith('https://')) continue;
+              await db.from('fonti_standard_categoria').upsert({
+                'codice_categoria':code,'titolo':(source['title'] ?? 'Fonte candidata PR-12').toString().trim(),
+                'url':url,'dominio':Uri.tryParse(url)?.host,'tipo_fonte':'RICERCA_WEB_PR12',
+                'affidabilita':'DA_VERIFICARE','descrizione_utilizzo':(source['snippet'] ?? 'Fonte candidata PR-12 da verificare.').toString(),
+                'consultata_il':DateTime.now().toUtc().toIso8601String(),'attiva':true
+              },onConflict:'codice_categoria,url');
+              saved++;
+            }
+            totalSaved += saved; completed++;
+            await db.from('profili_revisione_categoria').update({
+              'stato_profilo':saved > 0 ? 'BOZZA' : 'DA_APPROVARE',
+              'note_qualita':'Ricerca PR-12 batch completata. Fonti candidate salvate: ' + saved.toString() + '. Tutte DA_VERIFICARE; nessuna mappatura approvata automaticamente.',
+              'aggiornato_il':DateTime.now().toUtc().toIso8601String()
+            }).eq('codice_categoria',code);
+          } catch (e) {
+            failed++;
+            await db.from('profili_revisione_categoria').update({'stato_profilo':'ERRORE','note_qualita':'Errore salvataggio PR-12: ' + e.toString(),'aggiornato_il':DateTime.now().toUtc().toIso8601String()}).eq('codice_categoria',code);
+          }
+        }
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Ricerca categorie terminata: ' + completed.toString() + ' completate, ' + failed.toString() + ' errori, ' + totalSaved.toString() + ' fonti candidate.'),duration:const Duration(seconds:6)));
+        await _load();
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Ricerca batch PR-12 interrotta: ' + e.toString()),duration:const Duration(seconds:6)));
+    } finally { if (mounted) setState(() => _saving = false); }
+  }
+
   Future<void> _showStandards(Map<String,dynamic> row) async {
     try {
       final code=(row['codice_categoria']??'').toString();
@@ -1670,6 +1755,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('CATEGORIE COLLEZIONE'), actions: [
+        IconButton(onPressed: _saving ? null : _researchAllCategoryStandards, tooltip: 'Ricerca PR-12 per tutte le categorie', icon: const Icon(Icons.travel_explore)),
         IconButton(onPressed: _load, tooltip: 'Aggiorna', icon: const Icon(Icons.refresh)),
       ]),
       floatingActionButton: FloatingActionButton.extended(
