@@ -3823,37 +3823,40 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
-    final isCompactImageSection = section.title == 'RICERCHE' || section.title == 'VALUTAZIONI';
-    return ListView(padding: EdgeInsets.fromLTRB(16, 8, 16, 24), children: [
-      const SizedBox(height: 2),
-      Text(section.title, textAlign: TextAlign.center, style: TextStyle(
-        color: ValoraAppearance.instance.colorFor(section.title), fontSize: isCompactImageSection ? 21 : 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
-      const SizedBox(height: 4),
-      Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
-        style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-      SizedBox(height: isCompactImageSection ? 14 : 20),
+    final sectionTint = ValoraAppearance.instance.colorFor(section.title);
+    final backgroundUrl = ValoraAppearance.instance.imageUrls[section.title];
+    return Stack(fit: StackFit.expand, children: [
+      const ColoredBox(color: Color(0xFF101010)),
+      if (backgroundUrl != null && backgroundUrl.trim().isNotEmpty)
+        Center(child: Image.network(
+          _valoraImageProxyUrl(backgroundUrl),
+          width: double.infinity, height: double.infinity,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const SizedBox.expand(),
+        )),
+      ColoredBox(color: Colors.black.withValues(alpha: 0.30)),
+      SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(12, 12, 12, 20), children: [
       ...procedures.map((procedure) {
-        final sectionTint = ValoraAppearance.instance.colorFor(section.title);
         return Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        color: procedure.enabled ? Color.alphaBlend(sectionTint.withValues(alpha: isCompactImageSection ? 0.16 : 0.08), const Color(0xD9101010)) : const Color(0x99101010),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: procedure.enabled ? sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48) : Colors.white24, width: 1.1)),
+        margin: const EdgeInsets.only(bottom: 7),
+        elevation: 0,
+        color: procedure.enabled ? sectionTint.withValues(alpha: 0.17) : Colors.black.withValues(alpha: 0.42),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13), side: BorderSide(color: procedure.enabled ? sectionTint.withValues(alpha: 0.88) : Colors.white38, width: 1.1)),
         child: ListTile(
           enabled: procedure.enabled,
           dense: true,
           visualDensity: const VisualDensity(vertical: -1),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           leading: CircleAvatar(
-            radius: 22,
-            backgroundColor: procedure.enabled ? sectionTint.withValues(alpha: 0.28) : ValoraAppearance.instance.neutralOverlay,
+            radius: 19,
+            backgroundColor: sectionTint.withValues(alpha: 0.24),
             child: Icon(procedure.enabled
                 ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
                 : Icons.lock_outline,
               color: procedure.enabled ? sectionTint : ValoraAppearance.instance.textFaint),
           ),
-          title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
-            color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
-          subtitle: Text(ValoraI18n.tr(procedure.description)),
+          title: Text(ValoraI18n.tr(procedure.title), style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+          subtitle: Text(ValoraI18n.tr(procedure.description), style: const TextStyle(color: Colors.white70)),
           isThreeLine: false,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
             color: procedure.enabled ? sectionTint : ValoraAppearance.instance.neutralOverlayStrong),
@@ -3891,8 +3894,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
       );
       }),
       const SizedBox(height: 12),
-      OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
-        icon: const Icon(Icons.dashboard_outlined), label: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
+      OutlinedButton.icon(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: BorderSide(color: sectionTint, width: 1.1),
+          backgroundColor: Colors.black.withValues(alpha: 0.22),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        ),
+        onPressed: () => setState(() => selectedSection = null),
+        icon: const Icon(Icons.dashboard_outlined),
+        label: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD')),
+      ),
+    ])),
     ]);
   }
 
