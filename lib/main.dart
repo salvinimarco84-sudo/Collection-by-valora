@@ -2602,6 +2602,11 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     final documentedTotal = collectionMarket + resaleKnownCost;
     final missingResaleCosts = (resale.length - resaleCostCoverage).clamp(0, 100000);
     final costCoverageComplete = missingResaleCosts == 0;
+    final collectionValued = (collection.length - collectionUnvalued).clamp(0, 100000);
+    final collectionValuationCoverage = collection.isEmpty ? 0.0 : collectionValued / collection.length;
+    final activeAssetCount = collection.length + resale.length;
+    final knownAcquisitionObjects = collectionCostCoverage + resaleCostCoverage;
+    final acquisitionCoverage = activeAssetCount == 0 ? 0.0 : knownAcquisitionObjects / activeAssetCount;
     final delta = _latestTotal != null && _previousTotal != null ? _latestTotal! - _previousTotal! : null;
     final trendColor = delta == null ? const Color(0xFFB9A77A) : delta >= 0 ? const Color(0xFF73C58B) : const Color(0xFFE47A72);
     final backgroundUrl = ValoraAppearance.instance.imageUrls['COLLEZIONE'];
@@ -2714,6 +2719,71 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                             ]),
                           ),
                         ),
+
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 12),
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFD6B45F), width: 1.2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFD6B45F).withValues(alpha: 0.12),
+                                blurRadius: 14,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(17),
+                            child: AspectRatio(
+                              aspectRatio: 1600 / 700,
+                              child: Image.asset(
+                                'assets/patrimony_sections/banner_riepilogo_patrimoniale.jpg',
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      _sectionHeading('AFFIDABILITÀ DEI DATI', 'Quanto sono completi i valori e i costi registrati', Icons.fact_check_outlined),
+                      _panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          const Icon(Icons.fact_check_outlined, color: Color(0xFFE5C77A), size: 18),
+                          const SizedBox(width: 8),
+                          const Expanded(child: Text('Copertura delle valutazioni', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700))),
+                          Text('${(collectionValuationCoverage * 100).toStringAsFixed(1).replaceAll('.', ',')}%', style: const TextStyle(color: Color(0xFF73C58B), fontSize: 15, fontWeight: FontWeight.w900)),
+                        ]),
+                        const SizedBox(height: 7),
+                        ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(
+                          value: collectionValuationCoverage.clamp(0.0, 1.0),
+                          minHeight: 8, backgroundColor: Colors.white10,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF73C58B)),
+                        )),
+                        const SizedBox(height: 5),
+                        Text('$collectionValued di ${collection.length} oggetti della collezione con valore di mercato; $collectionUnvalued ancora da valutare.',
+                          style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                        const Divider(color: Colors.white12, height: 22),
+                        Row(children: [
+                          const Icon(Icons.receipt_long_outlined, color: Color(0xFFE5C77A), size: 18),
+                          const SizedBox(width: 8),
+                          const Expanded(child: Text('Copertura dei costi di acquisto', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700))),
+                          Text('${(acquisitionCoverage * 100).toStringAsFixed(1).replaceAll('.', ',')}%', style: const TextStyle(color: Color(0xFFE7B56D), fontSize: 15, fontWeight: FontWeight.w900)),
+                        ]),
+                        const SizedBox(height: 7),
+                        ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(
+                          value: acquisitionCoverage.clamp(0.0, 1.0),
+                          minHeight: 8, backgroundColor: Colors.white10,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE7B56D)),
+                        )),
+                        const SizedBox(height: 5),
+                        Text('$knownAcquisitionObjects di $activeAssetCount oggetti attivi con costo storico documentato. Il dato non comprende gli oggetti già venduti.',
+                          style: const TextStyle(color: Colors.white54, fontSize: 10)),
+                      ])),
 
                       _sectionImageHeader('assets/patrimony_sections/01_collezione_personale.png', 'COLLEZIONE PERSONALE', 'Il valore di ciò che possiedi e conservi'),
                       _panel(child: Column(children: [
