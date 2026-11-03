@@ -18,11 +18,15 @@ void main() {
       expect(sectionStart, isNonNegative);
       expect(sectionEnd, greaterThan(sectionStart));
       final sectionLayout = source.substring(sectionStart, sectionEnd);
-      expect(sectionLayout, contains('isCompactImageSection'));
+      // Il titolo e la descrizione della sezione sono già incorporati negli asset:
+      // non devono essere duplicati sopra lo sfondo. Le icone restano sulle singole procedure.
+      expect(sectionLayout, contains('Image.network('));
+      expect(sectionLayout, contains('fit: BoxFit.contain'));
+      expect(sectionLayout, isNot(contains('Text(section.title')));
+      expect(sectionLayout, isNot(contains('ValoraI18n.tr(section.description)')));
       expect(sectionLayout, contains('CircleAvatar('));
-      expect(sectionLayout, contains('Text(section.title'));
-      expect(sectionLayout, contains('sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48)'));
-      expect(sectionLayout, contains('contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5)'));
+      expect(sectionLayout, contains('sectionTint.withValues(alpha: 0.17)'));
+      expect(sectionLayout, contains('contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2)'));
       expect(sectionLayout, contains('procedure.description'));
     });
 
