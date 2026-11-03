@@ -5611,12 +5611,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final rows = await Supabase.instance.client
           .schema('collection')
           .from('immagini_oggetto')
-          .select('riferimento_immagine, tipo_immagine, immagine_principale, stato_verifica')
+          .select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')
           .eq('codice_oggetto', objectId)
           .order('immagine_principale', ascending: false)
           .limit(10);
       for (final row in rows) {
-        final candidate = (row['riferimento_immagine'] ?? '').toString().trim();
+        // riferimento_immagine contiene il nome file, non un URL.
+        // L'URL effettivo è url_fonte; se è storage:// lo risolve l'endpoint firmato.
+        final candidate = (row['url_fonte'] ?? '').toString().trim();
         if (isHttpUrl(candidate)) {
           imageUrl = candidate;
           break;
@@ -5688,6 +5690,27 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     if (data is! Map) throw Exception('Scheda non disponibile per il codice $id.');
     final m = Map<String, dynamic>.from(data);
+
+    // Il prezzo pagato appartiene alla riga di dettaglio dell'acquisto,
+    // non al valore di mercato dell'oggetto. Recuperarlo separatamente
+    // e usarlo solo per la presentazione della scheda.
+    try {
+      final purchase = await Supabase.instance.client
+          .schema('collection')
+          .from('acquisti_oggetti')
+          .select('codice_acquisto, valore_acquisto_oggetto, valuta')
+          .eq('codice_oggetto', id)
+          .order('codice_acquisto', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      if (purchase != null && purchase['valore_acquisto_oggetto'] != null) {
+        m['prezzo_acquisto'] = purchase['valore_acquisto_oggetto'];
+        m['valuta_acquisto'] = purchase['valuta'] ?? 'EUR';
+        m['codice_acquisto'] = purchase['codice_acquisto'];
+      }
+    } catch (error) {
+      debugPrint('VALORA: prezzo di acquisto non disponibile per $id: $error');
+    }
 
     // Carica anche i metadati di catalogo e i campi specifici della categoria.
     // Le letture sono in sola lettura e non modificano i record.
@@ -6855,8 +6878,15 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final destination = _valueFor(item, ['destinazione'], 'Non indicata');
     final condition = _valueFor(item, ['condizione'], 'Non indicata');
     final state = _valueFor(item, ['stato', 'stato_oggetto'], 'Non indicato');
-    final rawValue = item['valore_oggetto'] ?? item['valore'] ?? item['valore_stimato'];
-    final currency = (item['valuta_valore'] ?? 'EUR').toString().toUpperCase();
+    final purchasePrice = item['prezzo_acquisto'];
+    final hasPurchasePrice = purchasePrice != null && purchasePrice.toString().trim().isNotEmpty;
+    final rawValue = hasPurchasePrice
+        ? purchasePrice
+        : (item['valore_oggetto'] ?? item['valore'] ?? item['valore_stimato']);
+    final currency = (hasPurchasePrice
+        ? (item['valuta_acquisto'] ?? 'EUR')
+        : (item['valuta_valore'] ?? 'EUR')).toString().toUpperCase();
+    final valueLabel = hasPurchasePrice ? 'Prezzo di acquisto' : 'Valore registrato';
     final value = rawValue == null || rawValue.toString().trim().isEmpty
         ? 'Non indicato'
         : _formatPr11Currency(rawValue, currency);
@@ -6871,7 +6901,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           _pr11SummaryValue('Destinazione', destination),
           _pr11SummaryValue('Condizione', condition),
           _pr11SummaryValue('Stato', state),
-          _pr11SummaryValue('Valore registrato', value),
+          _pr11SummaryValue(valueLabel, value),
         ]),
       ),
     );
