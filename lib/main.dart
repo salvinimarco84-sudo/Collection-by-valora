@@ -3780,7 +3780,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
             color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
           subtitle: Text(ValoraI18n.tr(procedure.description)),
-          isThreeLine: true,
+          isThreeLine: false,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
             color: procedure.enabled ? sectionTint : ValoraAppearance.instance.neutralOverlayStrong),
           onTap: !procedure.enabled
