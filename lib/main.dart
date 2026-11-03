@@ -383,6 +383,11 @@ class ValoraAppearance extends ChangeNotifier {
       if (path != null && path.isNotEmpty) imagePaths[k] = path;
     }
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
+    // Migrazione palette: sostituisce anche i vecchi colori salvati sul dispositivo.
+    for (final k in const ['RICERCHE', 'VALUTAZIONI']) {
+      colors[k] = defaults[k]!;
+      await p.setInt('valora_color_$k', defaults[k]!.value);
+    }
     final used=<int>{};
     for(final k in defaults.keys) {
       if(!used.add(colors[k]!.value)) {
@@ -3447,7 +3452,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
             ClipRect(child: Transform.scale(
-              scale: 1.04,
+              scale: 1.20,
               alignment: const Alignment(0, 0.18),
               child: Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
                 alignment: Alignment.center,
@@ -3753,23 +3758,31 @@ class _HomeDashboardState extends State<HomeDashboard> {
       Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
         style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
       SizedBox(height: isCompactImageSection ? 14 : 20),
-      ...procedures.map((procedure) => Card(
+      ...procedures.map((procedure) {
+        final sectionTint = ValoraAppearance.instance.colorFor(section.title);
+        return Card(
         margin: const EdgeInsets.only(bottom: 8),
+        color: procedure.enabled ? Color.alphaBlend(sectionTint.withValues(alpha: isCompactImageSection ? 0.16 : 0.08), const Color(0xD9101010)) : const Color(0x99101010),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: procedure.enabled ? sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48) : Colors.white24, width: 1.1)),
         child: ListTile(
           enabled: procedure.enabled,
+          dense: true,
+          visualDensity: const VisualDensity(vertical: -1),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           leading: CircleAvatar(
-            backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.18) : ValoraAppearance.instance.neutralOverlay,
+            radius: 22,
+            backgroundColor: procedure.enabled ? sectionTint.withValues(alpha: 0.28) : ValoraAppearance.instance.neutralOverlay,
             child: Icon(procedure.enabled
                 ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
                 : Icons.lock_outline,
-              color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.textFaint),
+              color: procedure.enabled ? sectionTint : ValoraAppearance.instance.textFaint),
           ),
           title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
             color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
           subtitle: Text(ValoraI18n.tr(procedure.description)),
           isThreeLine: true,
           trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
-            color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
+            color: procedure.enabled ? sectionTint : ValoraAppearance.instance.neutralOverlayStrong),
           onTap: !procedure.enabled
               ? null
               : procedure.title == 'Ricerca oggetti'
@@ -3801,7 +3814,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                             builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode == 'WRITE-PR-08' ? 'PR-08' : procedure.apiCode == 'WRITE-PR-07' ? 'PR-07' : procedure.apiCode == 'WRITE-PR-09' ? 'PR-09' : procedure.apiCode == 'WRITE-PR-06' ? 'PR-06' : procedure.apiCode!)))
                       : null,
         ),
-      )),
+      );
+      }),
       const SizedBox(height: 12),
       OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
         icon: const Icon(Icons.dashboard_outlined), label: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
