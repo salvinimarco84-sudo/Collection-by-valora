@@ -3418,9 +3418,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
       'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg',
       'ACQUISTI' => 'assets/menu_sections/02_ACQUISTI.jpg',
       'VENDITE' => 'assets/menu_sections/01_VENDITE.jpg',
-      'VALUTAZIONI' => 'assets/menu_sections/04_VALUTAZIONI.jpg',
+      'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       'REPORT' => 'assets/menu_sections/06_REPORT.jpg',
-      'RICERCHE' => 'assets/menu_sections/03_RICERCHE.jpg',
+      'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
       _ => null,
     };
     return asset ?? _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
@@ -3449,8 +3449,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
-            Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover, alignment: Alignment.center,
-              errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
+            ClipRect(child: Transform.scale(
+              scale: 1.16,
+              alignment: const Alignment(0, 0.18),
+              child: Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
+                alignment: const Alignment(0, 0.18),
+                errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
+            )),
             ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
           ]))),
           SafeArea(child: showCollection ? buildCollection() : selectedSection == null ? buildDashboard() : buildSection(selectedSection!)),
