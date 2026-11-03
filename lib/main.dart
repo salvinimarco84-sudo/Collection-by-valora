@@ -1093,6 +1093,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   'VALUTAZIONI': [
     ProcedureEntry(title: 'VALORA', description: 'Valutazione completa di un singolo oggetto, preparazione delle inserzioni e report.', apiCode: 'LAUNCH-VALORA'),
     ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Consulta il valore complessivo della collezione e i relativi riepiloghi.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
+    ProcedureEntry(title: 'REVISIONE COLLEZIONE', description: 'Verifica periodicamente condizione, completezza e stato effettivo degli oggetti.', apiCode: 'LAUNCH-COLLECTION-REVIEW'),
     ProcedureEntry(title: 'VALUTA ACQUISTO', description: 'Analisi rapida di un acquisto prima di concluderlo. Motore in preparazione.', enabled: false),
   ],
   'FLUSSI DI CASSA': [
@@ -3906,6 +3907,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
                           : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
                               ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
+                              : procedure.apiCode == 'LAUNCH-COLLECTION-REVIEW'
+                                  ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionConditionReviewPage()))
                               : procedure.apiCode == 'WRITE-PR-04'
                           ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
                           : procedure.apiCode == 'WRITE-PR-05'
@@ -3937,6 +3940,71 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 }
 
+class CollectionConditionReviewPage extends StatefulWidget {
+  const CollectionConditionReviewPage({super.key});
+  @override State<CollectionConditionReviewPage> createState() => _CollectionConditionReviewPageState();
+}
+
+class _CollectionConditionReviewPageState extends State<CollectionConditionReviewPage> {
+  bool _loading = true, _saving = false;
+  String? _error;
+  List<Map<String, dynamic>> _items = [];
+  final Map<int, String> _conditions = {}, _completeness = {}, _packaging = {}, _assembly = {};
+  final Map<int, TextEditingController> _notes = {};
+  static const int _batchSize = 10;
+  static const List<String> _conditionOptions = ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO ASSEMBLATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'];
+  static const List<String> _completenessOptions = ['SIGILLATO','COMPLETO','INCOMPLETO'];
+  @override void initState() { super.initState(); _load(); }
+  @override void dispose() { for (final c in _notes.values) { c.dispose(); } super.dispose(); }
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final response = await Supabase.instance.client.schema('collection').rpc('coda_revisione_collezione', params: {'p_limite': _batchSize});
+      final rows = (response as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      for (final row in rows) { final id = int.tryParse('${row['codice_oggetto']}'); if (id == null) continue; _conditions[id] = (row['condizione'] ?? 'OTTIMO').toString(); _completeness[id] = (row['completezza'] ?? 'COMPLETO').toString(); _notes.putIfAbsent(id, () => TextEditingController()); }
+      if (!mounted) return; setState(() { _items = rows; _loading = false; });
+    } catch (e) { if (!mounted) return; setState(() { _error = e.toString(); _loading = false; }); }
+  }
+  Future<void> _confirm(Map<String, dynamic> row) async {
+    final id = int.tryParse('${row['codice_oggetto']}'); if (id == null || _saving) return;
+    setState(() => _saving = true);
+    try {
+      final result = await Supabase.instance.client.schema('collection').rpc('conferma_revisione_condizione', params: {
+        'p_codice_oggetto': id, 'p_condizione': _conditions[id] ?? 'OTTIMO', 'p_completezza': _completeness[id] ?? 'COMPLETO',
+        'p_confezione': _packaging[id], 'p_montaggio': _assembly[id], 'p_note': _notes[id]?.text.trim().isEmpty == true ? null : _notes[id]?.text.trim(),
+      });
+      if (!mounted) return; final changed = result is Map && result['stato_modificato'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(changed ? 'Stato aggiornato e registrato nello storico.' : 'Stato confermato. Prossima revisione tra 30 giorni.')));
+      await _load();
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Impossibile confermare la revisione: $e'))); }
+    finally { if (mounted) setState(() => _saving = false); }
+  }
+  Widget _dropdown(String label, String value, List<String> options, ValueChanged<String?> onChanged) => DropdownButtonFormField<String>(
+    value: options.contains(value) ? value : options.first, decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), isDense: true),
+    items: options.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: _saving ? null : onChanged);
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('REVISIONE COLLEZIONE'), actions: [IconButton(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh))]),
+    body: _loading ? const Center(child: CircularProgressIndicator()) : _error != null ? Center(child: Padding(padding: const EdgeInsets.all(20), child: Column(mainAxisSize: MainAxisSize.min, children: [const Icon(Icons.error_outline, color: Colors.redAccent, size: 36), const SizedBox(height: 8), Text(_error!, textAlign: TextAlign.center), const SizedBox(height: 12), ElevatedButton(onPressed: _load, child: const Text('RIPROVA'))])))
+    : _items.isEmpty ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.verified_outlined, size: 56, color: Colors.green), SizedBox(height: 12), Text('COLLEZIONE AGGIORNATA', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), SizedBox(height: 8), Text('Al momento non ci sono oggetti in scadenza. VALORA proporrà progressivamente piccoli gruppi da verificare. La scadenza non comporta alcuna svalutazione automatica.', textAlign: TextAlign.center)])))
+    : ListView(padding: const EdgeInsets.all(12), children: [
+      Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('REVISIONE PERIODICA', style: TextStyle(fontWeight: FontWeight.bold)), const SizedBox(height: 6), Text('${_items.length} oggetti in questo gruppo', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)), const Text('Gruppi da 10 oggetti. Ogni conferma rinnova il controllo a 30 giorni.')]))),
+      for (final row in _items) Builder(builder: (context) {
+        final id = int.tryParse('${row['codice_oggetto']}') ?? -1;
+        return Card(margin: const EdgeInsets.only(bottom: 12), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('${row['descrizione_oggetto'] ?? 'Oggetto'}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text('Codice #$id • Condizione: ${row['condizione'] ?? 'Non indicata'} • Completezza: ${row['completezza'] ?? 'Non indicata'}', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          const SizedBox(height: 12),
+          _dropdown('Condizione effettiva', _conditions[id] ?? 'OTTIMO', _conditionOptions, (v) => setState(() => _conditions[id] = v ?? 'OTTIMO')),
+          const SizedBox(height: 10), _dropdown('Completezza', _completeness[id] ?? 'COMPLETO', _completenessOptions, (v) => setState(() => _completeness[id] = v ?? 'COMPLETO')),
+          const SizedBox(height: 10), _dropdown('Confezione / scatola', _packaging[id] ?? 'Non verificata', ['Non verificata','Sigillata','Aperta presente','Assente','Danneggiata'], (v) => setState(() => _packaging[id] = v ?? 'Non verificata')),
+          const SizedBox(height: 10), _dropdown('Montaggio', _assembly[id] ?? 'Non verificato', ['Non verificato','Non montato','Montato','Parzialmente montato','Non applicabile'], (v) => setState(() => _assembly[id] = v ?? 'Non verificato')),
+          const SizedBox(height: 10), TextField(controller: _notes[id], decoration: const InputDecoration(labelText: 'Note (facoltative)', border: OutlineInputBorder(), isDense: true)),
+          const SizedBox(height: 10), SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _saving ? null : () => _confirm(row), icon: const Icon(Icons.check_circle_outline), label: const Text('CONFERMA STATO'))),
+        ])));
+      }),
+      const SizedBox(height: 8), const Text('La revisione non modifica il costo storico di acquisto. La scadenza non modifica da sola il valore di mercato.', style: TextStyle(fontSize: 12)),
+    ]));
+}
 const _uuid = Uuid();
 
 class _ValoraRuntimeApi {
