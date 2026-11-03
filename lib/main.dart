@@ -3785,6 +3785,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
     return ListView(padding: const EdgeInsets.fromLTRB(14, 10, 14, 18), children: [
       const SizedBox(height: 4),
       ...procedures.map((procedure) => Card(
+        color: Colors.black.withValues(alpha: 0.34),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         margin: const EdgeInsets.only(bottom: 6),
         child: ListTile(
           dense: true,
