@@ -43,7 +43,7 @@ void main() {
 
     test('Visualizza scheda risolve l’immagine usando url_fonte e non il nome file', () {
       expect(source, contains("select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')"));
-      expect(source, contains("row['url_fonte']"));
+      expect(source, contains("row['riferimento_immagine']"));
       expect(source, contains("body: {'action':'get','codice_oggetto':objectId}"));
     });
 
