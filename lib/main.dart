@@ -2638,6 +2638,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
           ...dashboardSections.map((section)=> {
             'title':ValoraI18n.tr(section.menuTitle ?? section.title),
+            'sectionKey':section.title,
             'subtitle':ValoraI18n.tr(section.description),
             'color':ValoraAppearance.instance.colorFor(section.title),
             'icon':section.icon,
@@ -2654,6 +2655,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           itemBuilder: (context,index) {
             final entry=entries[index];
             final title=entry['title'] as String;
+            final sectionKey=(entry['sectionKey'] ?? title).toString();
             final color=entry['color'] as Color;
             final icon=entry['icon'] as IconData;
             final url=ValoraAppearance.instance.imageUrls[title] ??
@@ -2671,7 +2673,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     Expanded(child:ClipRRect(
                       borderRadius:BorderRadius.circular(11),
                       child:url!=null && url.isNotEmpty
-                        ? Image.network(_valoraImageProxyUrl(url),fit:BoxFit.contain,width:double.infinity,errorBuilder:(_,__,___)=>Icon(icon,color:color,size:42))
+                        ? Image.network(_valoraImageProxyUrl(url),fit:(sectionKey == 'RICERCHE' || sectionKey == 'VALUTAZIONI') ? BoxFit.cover : BoxFit.contain,width:double.infinity,errorBuilder:(_,__,___)=>Icon(icon,color:color,size:42))
                         : Icon(icon,color:color,size:42),
                     )),
                     const SizedBox(height:8),
