@@ -5616,9 +5616,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           .order('immagine_principale', ascending: false)
           .limit(10);
       for (final row in rows) {
-        // riferimento_immagine contiene il nome file, non un URL.
-        // L'URL effettivo è url_fonte; se è storage:// lo risolve l'endpoint firmato.
-        final candidate = (row['url_fonte'] ?? '').toString().trim();
+        // riferimento_immagine contiene l'URL diretto dell'immagine;
+        // url_fonte identifica invece la pagina sorgente del prodotto.
+        final candidate = (row['riferimento_immagine'] ?? '').toString().trim();
         if (isHttpUrl(candidate)) {
           imageUrl = candidate;
           break;
