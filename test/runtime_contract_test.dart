@@ -12,12 +12,9 @@ void main() {
       expect(source, contains("color: Color(0xFFFFD54F)"));
       expect(source, contains("color: Color(0xFF35C7E8)"));
       expect(source, contains("for (final k in const ['RICERCHE', 'VALUTAZIONI'])"));
-      expect(source, contains('Image.asset(\n              _menuBackgroundAsset(),\n              fit: BoxFit.cover,'));
-      expect(source, isNot(contains('scale: 1.20')));
-      expect(source, contains('surfaceTintColor: Colors.transparent'));
-      expect(source, contains('Color(0x66070707)'));
-      expect(source, contains('visualDensity: const VisualDensity(horizontal: 0, vertical: -3)'));
-      expect(source, isNot(contains('Text(section.title, textAlign: TextAlign.center')));
+      expect(source, contains('sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48)'));
+      expect(source, contains('scale: 1.20'));
+      expect(source, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)'));
     });
 
     test('i sei menu usano esclusivamente i sei asset approvati', () {
@@ -63,6 +60,17 @@ void main() {
         expect(File(asset).existsSync(), isTrue, reason: 'Sfondo tema mancante: $asset');
         expect(source, contains(asset));
       }
+    });
+
+    test('la scheda patrimoniale conserva banner, copertura valutazioni e costi', () {
+      expect(source, contains('assets/patrimony_sections/banner_riepilogo_patrimoniale.jpg'));
+      expect(File('assets/patrimony_sections/banner_riepilogo_patrimoniale.jpg').existsSync(), isTrue);
+      expect(source, contains('Copertura delle valutazioni'));
+      expect(source, contains('collectionValuationCoverage'));
+      expect(source, contains('Copertura dei costi di acquisto'));
+      expect(source, contains('acquisitionCoverage'));
+      expect(source, contains('collectionCostCoverage + resaleCostCoverage'));
+      expect(source, contains('collectionMarket + resaleKnownCost'));
     });
 
     test('la scheda oggetto espone modifica e avvio vendita', () {
