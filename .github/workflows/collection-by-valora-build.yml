@@ -85,6 +85,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Run regression tests
+        run: flutter test
+
       - name: Analyze application source
         run: flutter analyze lib/main.dart --no-fatal-infos --no-fatal-warnings
 
@@ -140,6 +143,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Run regression tests
+        run: flutter test
 
       - name: Analyze application source
         run: flutter analyze lib/main.dart --no-fatal-infos --no-fatal-warnings
