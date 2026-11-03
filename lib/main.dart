@@ -2186,6 +2186,39 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     return double.tryParse(value.toString().replaceAll(',', '.'));
   }
 
+  // Coefficienti iniziali di conservazione: applicati alla stima di mercato
+  // senza modificare valore storico di acquisto o valore dichiarato dell'oggetto.
+  double _conditionValueFactor(dynamic rawCondition) {
+    switch ((rawCondition ?? '').toString().trim().toUpperCase()) {
+      case 'NUOVO': return 1.00;
+      case 'COME NUOVO': return 0.95;
+      case 'OTTIMO': return 0.85;
+      case 'BUONO': return 0.75;
+      case 'DISCRETO': return 0.60;
+      case 'USATO': return 0.65;
+      case 'USATO ASSEMBLATO': return 0.70;
+      case 'USATO CON SEGNI': return 0.45;
+      case 'DA RESTAURARE': return 0.25;
+      case 'DANNEGGIATO': return 0.15;
+      default: return 1.00;
+    }
+  }
+
+  double _completenessValueFactor(dynamic rawCompleteness) {
+    switch ((rawCompleteness ?? '').toString().trim().toUpperCase()) {
+      case 'SIGILLATO':
+      case 'COMPLETO': return 1.00;
+      case 'INCOMPLETO': return 0.55;
+      default: return 1.00;
+    }
+  }
+
+  double _conditionAdjustedMarketValue(Map<String, dynamic> object, double marketValue) {
+    return marketValue *
+        _conditionValueFactor(object['condizione']) *
+        _completenessValueFactor(object['completezza']);
+  }
+
   int? _id(dynamic value) {
     if (value is num) return value.toInt();
     return int.tryParse((value ?? '').toString());
@@ -2222,7 +2255,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
     try {
       final client = Supabase.instance.client;
       final results = await Future.wait<List<Map<String, dynamic>>>([
-        _readAll('master_oggetti', 'codice_oggetto,descrizione_oggetto,destinazione,stato,quantita,valore_oggetto,valore_mercato,archiviato_test'),
+        _readAll('master_oggetti', 'codice_oggetto,descrizione_oggetto,destinazione,stato,condizione,completezza,quantita,valore_oggetto,valore_mercato,archiviato_test'),
         _readAll('acquisti_oggetti', 'codice_oggetto,valore_acquisto_oggetto,quantita,incluso_nella_quadratura,valuta'),
         _readAll('master_oggetti_in_vendita', 'codice_vendita_aperta,codice_oggetto,prezzo_di_vendita,valuta,stato_ciclo_vendita,codice_lotto'),
         _readAll('lotti_vendita', 'codice_lotto,prezzo_totale_inserzione,valuta,stato_lotto'),
@@ -2526,7 +2559,8 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
       if (market == null) {
         collectionUnvalued++;
       } else {
-        collectionMarket += market * quantity;
+        final adjustedMarket = _conditionAdjustedMarketValue(o, market);
+        collectionMarket += adjustedMarket * quantity;
       }
       final cost = id == null ? null : acquisitionByObject[id.toString()];
       final declaredValue = _num(o['valore_oggetto']);
@@ -2537,7 +2571,7 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
         collectionHistoricalCost += cost;
         collectionCostCoverage++;
         if (market != null) {
-          collectionComparableMarket += market * quantity;
+          collectionComparableMarket += _conditionAdjustedMarketValue(o, market) * quantity;
           collectionComparableCost += cost;
           collectionComparableCount++;
         }
