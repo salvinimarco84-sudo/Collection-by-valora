@@ -2713,6 +2713,36 @@ class _CollectionValuePageState extends State<CollectionValuePage> {
                           ),
                         ),
 
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12, bottom: 12),
+                        child: Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFD6B45F), width: 1.2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFD6B45F).withValues(alpha: 0.12),
+                                blurRadius: 14,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(17),
+                            child: AspectRatio(
+                              aspectRatio: 1600 / 700,
+                              child: Image.asset(
+                                'assets/patrimony_sections/banner_riepilogo_patrimoniale.jpg',
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
                       _sectionImageHeader('assets/patrimony_sections/01_collezione_personale.png', 'COLLEZIONE PERSONALE', 'Il valore di ciò che possiedi e conservi'),
                       _panel(child: Column(children: [
                         GridView.count(
