@@ -12,10 +12,13 @@ void main() {
       expect(source, contains("color: Color(0xFFFFD54F)"));
       expect(source, contains("color: Color(0xFF35C7E8)"));
       expect(source, contains("for (final k in const ['RICERCHE', 'VALUTAZIONI'])"));
-      expect(source, contains('sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48)'));
-      expect(source, contains('scale: 1.20'));
-      
-      expect(source, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)'));
+      expect(source, contains('Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover'));
+      expect(source, isNot(contains('scale: 1.20')));
+      expect(source, contains('surfaceTintColor: Colors.transparent'));
+      expect(source, contains('Color(0x66070707)'));
+      expect(source, contains('visualDensity: const VisualDensity(horizontal: 0, vertical: -3)'));
+      expect(source, isNot(contains('Text(section.title, textAlign: TextAlign.center')));
+      expect(source, isNot(contains('leading: CircleAvatar(')));
     });
 
     test('i sei menu usano esclusivamente i sei asset approvati', () {
