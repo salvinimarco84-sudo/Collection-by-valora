@@ -11,8 +11,10 @@ void main() {
       expect(source, contains("'RICERCHE': Color(0xFF35C7E8)"));
       expect(source, contains("color: Color(0xFFFFD54F)"));
       expect(source, contains("color: Color(0xFF35C7E8)"));
-      expect(source, isNot(contains("colors['RICERCHE'] = defaults['RICERCHE']!")));
-      expect(source, contains('scale: 1.04'));
+      expect(source, contains("for (final k in const ['RICERCHE', 'VALUTAZIONI'])"));
+      expect(source, contains('sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48)'));
+      expect(source, contains('scale: 1.20'));
+      
       expect(source, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)'));
     });
 
