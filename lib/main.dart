@@ -3484,7 +3484,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             // mantenendo il soggetto centrato anche sui display verticali.
             ClipRect(
               child: Transform.scale(
-                scale: 1.18,
+                scale: 1.0,
                 alignment: Alignment.center,
                 child: Image.asset(
                   _menuBackgroundAsset(),
@@ -3788,8 +3788,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-      Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: 52),
-      const SizedBox(height: 12),
       Text(section.title, textAlign: TextAlign.center, style: TextStyle(
         color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
       const SizedBox(height: 6),
