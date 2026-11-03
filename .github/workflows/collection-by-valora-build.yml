@@ -10,10 +10,12 @@ on:
       - feature/pr12-engine-test-current
       - repair/pr12-preserve-full-app
       - feature/pr04-nuovo-acquisto-mask
+      - feature/dashboard-patrimoniale-unica
   pull_request:
     branches:
       - main
       - repair/pr12-preserve-full-app
+      - feature/dashboard-patrimoniale-unica
 
 permissions:
   contents: write
