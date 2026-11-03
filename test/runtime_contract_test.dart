@@ -20,8 +20,9 @@ void main() {
       final sectionLayout = source.substring(sectionStart, sectionEnd);
       // Il titolo e la descrizione della sezione sono già incorporati negli asset:
       // non devono essere duplicati sopra lo sfondo. Le icone restano sulle singole procedure.
-      expect(sectionLayout, contains('Image.network('));
-      expect(sectionLayout, contains('fit: BoxFit.contain'));
+      expect(sectionLayout, contains('Colors.black.withValues(alpha: 0.16)'));
+      expect(sectionLayout, isNot(contains('ColoredBox(color: Color(0xFF101010))')));
+      expect(sectionLayout, isNot(contains('Image.network(')));
       expect(sectionLayout, isNot(contains('Text(section.title')));
       expect(sectionLayout, isNot(contains('ValoraI18n.tr(section.description)')));
       expect(sectionLayout, contains('CircleAvatar('));
