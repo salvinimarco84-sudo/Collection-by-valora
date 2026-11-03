@@ -22,7 +22,7 @@ void main() {
       expect(sectionLayout, contains('CircleAvatar('));
       expect(sectionLayout, contains('Text(section.title'));
       expect(sectionLayout, contains('sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48)'));
-      expect(sectionLayout, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5)'));
+      expect(sectionLayout, contains('contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5)'));
       expect(sectionLayout, contains('procedure.description'));
     });
 
