@@ -3489,7 +3489,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       return _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
     }
     // Collection/catalog and the six internal menus use only approved assets.
-    if (showCollection) return 'assets/menu_sections/05_CATALOGO.jpg';
+    if (showCollection) return 'assets/themes/black_gold.jpg';
     final section = selectedSection?.title;
     return switch (section) {
       'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg',
@@ -3528,7 +3528,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ClipRect(child: Transform.scale(
               scale: showCollection ? 1.0 : 1.20,
               alignment: showCollection ? Alignment.center : const Alignment(0, 0.18),
-              child: Image.asset(showCollection ? 'assets/themes/black_gold.jpg' : _menuBackgroundAsset(), fit: BoxFit.cover,
+              child: Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
                 alignment: Alignment.center,
                 errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
             )),
