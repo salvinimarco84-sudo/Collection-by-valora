@@ -3419,7 +3419,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       return _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId);
     }
     // Collection/catalog and the six internal menus use only approved assets.
-    if (showCollection) return 'assets/menu_sections/05_CATALOGO.jpg';
+    if (showCollection) return 'assets/themes/black_gold.jpg';
     final section = selectedSection?.title;
     return switch (section) {
       'CATALOGO' => 'assets/menu_sections/05_CATALOGO.jpg',
