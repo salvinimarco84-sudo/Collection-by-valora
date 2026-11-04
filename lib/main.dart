@@ -691,6 +691,54 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
   @override Widget build(BuildContext context)=>Scaffold(
     appBar:AppBar(title:const Text('Personalizza VALORA')),
     body:ListView(padding:const EdgeInsets.all(16),children:[
+      const Text('TEMA APPLICAZIONE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const SizedBox(height:8),
+      const Text('Scegli uno dei dieci temi predefiniti. Palette e stile sono coordinati; la scelta si applica all’interfaccia e viene salvata su questo dispositivo.'),
+      const SizedBox(height:8),
+      ...ValoraAppearance.themePresets.entries.map((entry) {
+        final theme = entry.value;
+        final selected = a.selectedThemeId == entry.key;
+        final accent = Color(theme['accent'] as int);
+        final previewDescription = switch (entry.key) {
+          'black_gold' => 'Marmo nero venato d’oro · elegante e premium',
+          'industrial' => 'Acciaio spazzolato e grafite · robusto e tecnico',
+          'comic' => 'Pop-art e contrasti netti · energico e colorato',
+          'midnight_blue' => 'Blu notte e bagliori elettrici · profondo e tecnologico',
+          'emerald' => 'Circuiti elettronici e verde neon · luminoso e futuristico',
+          'silver_light' => 'Marmo chiaro e venature argento · luminoso e minimale',
+          'dark_red' => 'Roccia vulcanica e magma · intenso e realistico',
+          'royal_purple' => 'Cristalli ametista e luce viola · creativo e raffinato',
+          'minimal_zen' => 'Pietra naturale e toni sabbia · semplice e rilassante',
+          'pastel' => 'Gradienti pastello morbidi · delicato e moderno',
+          _ => 'Tema coordinato predefinito',
+        };
+        return Card(
+          color: Color(theme['background'] as int).withValues(alpha: 0.78),
+          margin: const EdgeInsets.symmetric(vertical:4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(entry.key == 'comic' ? 3 : (entry.key == 'minimal_zen' ? 18 : 12)),
+            side: BorderSide(color: selected ? accent : accent.withValues(alpha:0.35), width: selected ? 2.2 : 1),
+          ),
+          child: ListTile(
+            leading: Container(width:34,height:34,decoration:BoxDecoration(
+              color:Color(theme['background'] as int),
+              borderRadius:BorderRadius.circular(entry.key == 'comic' ? 2 : 8),
+              border:Border.all(color:accent,width:entry.key == 'comic' ? 2 : 1),
+            ),child:CustomPaint(
+              painter:ValoraThemeBackdropPainter(themeId:entry.key,background:Color(theme['background'] as int),accent:accent),
+              child:Center(child:Icon(
+                entry.key == 'comic' ? Icons.auto_awesome : (entry.key == 'minimal_zen' ? Icons.spa_outlined : Icons.palette_outlined),
+                color:accent,size:20,
+              )),
+            )),
+            title:Text(theme['name'] as String,style:TextStyle(fontWeight:FontWeight.bold,color:a.textPrimary)),
+            subtitle:Text(previewDescription,style:TextStyle(color:(theme['light'] as bool) ? const Color(0xFF424242) : Colors.white70)),
+            trailing:selected ? Icon(Icons.check_circle,color:accent) : const Icon(Icons.radio_button_unchecked),
+            onTap:()=>a.setTheme(entry.key),
+          ),
+        );
+      }),
+      const SizedBox(height:20),
       const Text('CONFIGURAZIONE HOME',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:8),
       SegmentedButton<bool>(
@@ -704,17 +752,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       const SizedBox(height:8),
       const Text('La modalità iniziale è Schede con sfondo nero. Cambiare modalità modifica solo la presentazione, non le procedure o i dati.'),
       const SizedBox(height:20),
-      const Text('SFONDO',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
-      const SizedBox(height:8),
-      SegmentedButton<bool>(
-        segments: const [
-          ButtonSegment<bool>(value:false, icon:Icon(Icons.dark_mode_outlined), label:Text('Nero')),
-          ButtonSegment<bool>(value:true, icon:Icon(Icons.light_mode_outlined), label:Text('Bianco')),
-        ],
-        selected: <bool>{a.whiteBackground},
-        onSelectionChanged:(values)=>a.setBackground(values.first),
-        showSelectedIcon:true,
-      ),
+      const Text('Lo sfondo e la palette seguono il tema selezionato qui sopra.',style:TextStyle(color:goldColor)),
       const SizedBox(height:12),
       const Text('COLORI DELLE SEZIONI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:4),
