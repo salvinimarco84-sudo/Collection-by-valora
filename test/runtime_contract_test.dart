@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  final source = File('lib/main.dart').readAsStringSync();
+  final source = File('lib/main.dart').readAsStringSync().replaceAll('\r\n', '\n');
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('RICERCHE e VALUTAZIONI mantengono colori coerenti su dashboard e menu', () {
@@ -26,7 +26,7 @@ void main() {
         'assets/menu_sections/02_ACQUISTI.jpg',
         'assets/menu_sections/05_CATALOGO.jpg',
         'assets/menu_sections/06_REPORT.jpg',
-        'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
+        'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png',
         'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       ];
       for (final asset in assets) {
@@ -37,7 +37,7 @@ void main() {
       expect(source, contains("'ACQUISTI' => 'assets/menu_sections/02_ACQUISTI.jpg'"));
       expect(source, contains("'VENDITE' || 'VENDITE E INSERZIONI' => 'assets/menu_sections/01_VENDITE.jpg'"));
       expect(source, contains("'REPORT' => 'assets/menu_sections/06_REPORT.jpg'"));
-      expect(source, contains("'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg'"));
+      expect(source, contains("'RICERCHE' => 'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png'"));
       expect(source, contains("'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
       expect(source, isNot(contains('assets/menu_sections/01_collezione_personale.png')));
       expect(source, isNot(contains('assets/menu_sections/03_RICERCHE.jpg')));
