@@ -40,3 +40,6 @@ flutter:
   assets:
     - valora_logo.png
     - assets/valora_logo.png
+    - assets/themes/
+    - assets/menu_sections/
+    - assets/patrimony_sections/

@@ -6,6 +6,16 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('le cartelle degli sfondi e dei temi restano incluse nel bundle', () {
+      final manifest = File('pubspec.yaml').readAsStringSync();
+      expect(manifest, contains('assets/patrimony_sections/'));
+      expect(manifest, contains('assets/menu_sections/'));
+      expect(manifest, contains('assets/themes/'));
+      expect(Directory('assets/patrimony_sections').existsSync(), isTrue);
+      expect(Directory('assets/menu_sections').existsSync(), isTrue);
+      expect(Directory('assets/themes').existsSync(), isTrue);
+    });
+
     test('PR-04 consente di inserire e salvare le note del singolo oggetto', () {
       final draftStart = source.indexOf('class _PurchaseItemDraft');
       final draftEnd = source.indexOf('/// PR-04:', draftStart);
