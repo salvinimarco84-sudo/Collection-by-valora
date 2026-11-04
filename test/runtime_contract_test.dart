@@ -44,7 +44,8 @@ void main() {
     });
 
     test('PR-02 carica le categorie COLLEZIONE e salva la nuova assegnazione', () {
-      final initStart = source.indexOf('void initState()');
+      final stateStart = source.indexOf('class _ObjectRuntimePageState');
+      final initStart = source.indexOf('void initState()', stateStart);
       final initEnd = source.indexOf('Future<void> _loadCollectionCategories()', initStart);
       expect(initStart, isNonNegative);
       expect(initEnd, greaterThan(initStart));
@@ -53,7 +54,7 @@ void main() {
       expect(init, contains('_loadCollectionCategories()'));
 
       final saveStart = source.indexOf('Future<void> _savePr02PendingChanges(');
-      final saveEnd = source.indexOf('Future<void> _confirmAndSaveNewObject()', saveStart);
+      final saveEnd = source.indexOf('\n  Future<void> _save()', saveStart);
       expect(saveStart, isNonNegative);
       expect(saveEnd, greaterThan(saveStart));
       final save = source.substring(saveStart, saveEnd);
@@ -68,7 +69,7 @@ void main() {
       expect(initStart, isNonNegative);
       expect(initEnd, greaterThan(initStart));
       final init = source.substring(initStart, initEnd);
-      expect(init, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'OBJECT_MASTER'"));
+      expect(init, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER'"));
       expect(init, contains('_loadCollectionCategories();'));
     });
 
