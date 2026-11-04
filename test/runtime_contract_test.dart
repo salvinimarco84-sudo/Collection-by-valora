@@ -64,7 +64,8 @@ void main() {
     });
 
     test('OBJECT_MASTER carica le categorie per mostrare quella già assegnata', () {
-      final initStart = source.indexOf('void initState()');
+      final stateStart = source.indexOf('class _ObjectRuntimePageState');
+      final initStart = source.indexOf('void initState()', stateStart);
       final initEnd = source.indexOf('Future<void> _loadCollectionCategories()', initStart);
       expect(initStart, isNonNegative);
       expect(initEnd, greaterThan(initStart));
