@@ -3526,13 +3526,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
         body: Stack(children: [
           Positioned.fill(child: IgnorePointer(child: Stack(fit: StackFit.expand, children: [
             ClipRect(child: Transform.scale(
-              scale: 1.20,
-              alignment: const Alignment(0, 0.18),
-              child: Image.asset(_menuBackgroundAsset(), fit: BoxFit.cover,
+              scale: showCollection ? 1.0 : 1.20,
+              alignment: showCollection ? Alignment.center : const Alignment(0, 0.18),
+              child: Image.asset(showCollection ? 'assets/themes/black_gold.jpg' : _menuBackgroundAsset(), fit: BoxFit.cover,
                 alignment: Alignment.center,
                 errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor)),
             )),
-            ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
+            ColoredBox(color: Colors.black.withValues(alpha: showCollection ? 0.40 : 0.24)),
           ]))),
           SafeArea(child: showCollection ? buildCollection() : selectedSection == null ? buildDashboard() : buildSection(selectedSection!)),
         ]),
@@ -3712,7 +3712,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.20), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.75))),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(color.withValues(alpha: 0.28), const Color(0xED101010)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.96), width: 1.5),
+      ),
       child: Column(children: [
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
