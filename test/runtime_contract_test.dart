@@ -6,6 +6,26 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('PR-04 consente di inserire e salvare le note del singolo oggetto', () {
+      final draftStart = source.indexOf('class _PurchaseItemDraft');
+      final draftEnd = source.indexOf('/// PR-04:', draftStart);
+      expect(draftStart, isNonNegative);
+      expect(draftEnd, greaterThan(draftStart));
+      final draft = source.substring(draftStart, draftEnd);
+      expect(draft, contains('final notes = TextEditingController();'));
+      expect(draft, contains("'note': notes.text.trim()"));
+      expect(draft, contains('notes.dispose()'));
+
+      final purchaseStart = source.indexOf('class NewPurchasePage');
+      final purchaseEnd = source.indexOf('class EditPurchasePage', purchaseStart);
+      expect(purchaseStart, isNonNegative);
+      expect(purchaseEnd, greaterThan(purchaseStart));
+      final purchase = source.substring(purchaseStart, purchaseEnd);
+      expect(purchase, contains('TextField(controller: item.notes'));
+      expect(purchase, contains("labelText: 'Note dell’oggetto (facoltative)'"));
+      expect(purchase, contains("_items[i].notes.text.trim()"));
+    });
+
     test('la scheda oggetto espone modifica e avvio vendita', () {
       expect(source, contains("label: const Text('MODIFICA OGGETTO'"));
       expect(source, contains("label: const Text('METTI IN VENDITA'"));

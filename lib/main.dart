@@ -8886,6 +8886,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 class _PurchaseItemDraft {
   final description = TextEditingController();
   final price = TextEditingController();
+  final notes = TextEditingController();
   Uint8List? photoBytes;
   String? photoName;
   String? photoUrl;
@@ -8905,6 +8906,7 @@ class _PurchaseItemDraft {
   }
   Map<String, dynamic> json() => {
     'descrizione': description.text.trim(), 'valore_acquisto': amount,
+    if (notes.text.trim().isNotEmpty) 'note': notes.text.trim(),
     'destinazione': destination, 'condizione': condition,
     if (destination == 'COLLEZIONE' && collectionCategoryCode != null) 'codice_categoria_collezione': collectionCategoryCode,
     'completezza': completeness, 'quantita': 1,
@@ -8916,7 +8918,7 @@ class _PurchaseItemDraft {
       'stato_verifica_dati': 'DA_VERIFICARE',
     if (photoUrl != null) 'url_immagine_catalogo': photoUrl,
   };
-  void dispose() { description.dispose(); price.dispose(); }
+  void dispose() { description.dispose(); price.dispose(); notes.dispose(); }
 }
 
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
@@ -9712,6 +9714,11 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
             items: const [DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')), DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')), DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI'))],
             onChanged: _busy ? null : (v) => setState(() { item.completeness = v ?? item.completeness; _invalidate(); }))),
         ]),
+        const SizedBox(height: 8),
+        TextField(controller: item.notes, minLines: 2, maxLines: 4,
+          decoration: const InputDecoration(labelText: 'Note dell’oggetto (facoltative)', alignLabelWithHint: true,
+            helperText: 'Le note saranno salvate nella scheda del singolo oggetto.'),
+          onChanged: (_) => setState(_invalidate)),
       ])));
   }
 
@@ -9768,6 +9775,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text((i + 1).toString() + '. ' + _items[i].description.text.trim(), style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+          if (_items[i].notes.text.trim().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3), child: Text('Note: ' + _items[i].notes.text.trim(), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
           Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
         ])),
         const Divider(height: 22), _line('TOTALE TRANSAZIONE', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
@@ -9785,6 +9793,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text((i + 1).toString() + '. ' + _items[i].description.text.trim(), style: const TextStyle(fontWeight: FontWeight.bold)),
           Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
+          if (_items[i].notes.text.trim().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3), child: Text('Note: ' + _items[i].notes.text.trim(), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
           Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
         ])),
         const Divider(height: 22), _line('TOTALE ACQUISTO', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
