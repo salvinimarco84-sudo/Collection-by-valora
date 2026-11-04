@@ -26,6 +26,24 @@ void main() {
       expect(purchase, contains("_items[i].notes.text.trim()"));
     });
 
+    test('OBJECT_MASTER carica le categorie per mostrare quella già assegnata', () {
+      final initStart = source.indexOf('void initState()');
+      final initEnd = source.indexOf('Future<void> _loadCollectionCategories()', initStart);
+      expect(initStart, isNonNegative);
+      expect(initEnd, greaterThan(initStart));
+      final init = source.substring(initStart, initEnd);
+      expect(init, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'OBJECT_MASTER'"));
+      expect(init, contains('_loadCollectionCategories();'));
+    });
+
+    test('PR-04 persiste la categoria selezionata sull’oggetto acquistato', () {
+      final migration = File('supabase/migrations/20261104100000_pr04_persist_collection_category.sql').readAsStringSync();
+      expect(migration, contains('codice_categoria_collezione'));
+      expect(migration, contains('INSERT INTO collection.oggetto_collezione_categoria'));
+      expect(migration, contains('ON CONFLICT (codice_oggetto) DO UPDATE'));
+      expect(migration, contains('categoria COLLEZIONE mancante o non valida'));
+    });
+
     test('la scheda oggetto espone modifica e avvio vendita', () {
       expect(source, contains("label: const Text('MODIFICA OGGETTO'"));
       expect(source, contains("label: const Text('METTI IN VENDITA'"));

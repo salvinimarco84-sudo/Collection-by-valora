@@ -4559,9 +4559,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (widget.apiCode == 'OBJECT_MASTER') {
       _pr11SearchFocusNode.addListener(_onPr11SearchFocusChanged);
     }
+    if (widget.apiCode == 'PR-01' || widget.apiCode == 'OBJECT_MASTER') {
+      // PR-01 needs the category list for insertion; OBJECT_MASTER needs it
+      // when opening an existing object so its saved category is visible/editable.
+      _loadCollectionCategories();
+    }
     if (widget.apiCode == 'PR-01') {
       _quantity.addListener(_recalculateTotal);
-      _loadCollectionCategories();
       _unitPrice.addListener(_recalculateTotal);
     }
     if (_isActiveListingsReport || widget.apiCode == 'OBJECTS_AVAILABLE') {
