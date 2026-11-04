@@ -26,6 +26,13 @@ void main() {
       expect(purchase, contains("_items[i].notes.text.trim()"));
     });
 
+    test('Report acquisti mostra il dettaglio leggibile degli oggetti', () {
+      expect(source, contains('Future<void> _showPurchaseReportDetail(Map<String, dynamic> item)'));
+      expect(source, contains("from('acquisti_oggetti')"));
+      expect(source, contains("from('master_oggetti')"));
+      expect(source, contains("'OGGETTI ACQUISTATI'"));
+    });
+
     test('OBJECT_MASTER carica le categorie per mostrare quella già assegnata', () {
       final initStart = source.indexOf('void initState()');
       final initEnd = source.indexOf('Future<void> _loadCollectionCategories()', initStart);

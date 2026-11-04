@@ -4504,6 +4504,78 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     });
   }
 
+  Future<void> _showPurchaseReportDetail(Map<String, dynamic> item) async {
+    final purchaseId = int.tryParse((item['codice_acquisto'] ?? '').toString());
+    if (purchaseId == null || purchaseId <= 0) return;
+    try {
+      final db = Supabase.instance.client.schema('collection');
+      final header = await db.from('master_acquisti')
+          .select('codice_acquisto,data_acquisto,importo_totale_acquisto,valuta,descrizione')
+          .eq('codice_acquisto', purchaseId).maybeSingle();
+      final details = await db.from('acquisti_oggetti')
+          .select('codice_oggetto,descrizione_oggetto,quantita,valore_acquisto_oggetto,valuta')
+          .eq('codice_acquisto', purchaseId).order('codice_oggetto');
+      final rows = (details as List).whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row)).toList();
+      final ids = rows.map((row) => int.tryParse((row['codice_oggetto'] ?? '').toString()))
+          .whereType<int>().where((id) => id > 0).toSet().toList();
+      final names = <int, String>{};
+      if (ids.isNotEmpty) {
+        final catalog = await db.from('master_oggetti')
+            .select('codice_oggetto,descrizione_oggetto').inFilter('codice_oggetto', ids);
+        for (final raw in catalog as List) {
+          if (raw is! Map) continue;
+          final row = Map<String, dynamic>.from(raw);
+          final id = int.tryParse((row['codice_oggetto'] ?? '').toString());
+          final name = (row['descrizione_oggetto'] ?? '').toString().trim();
+          if (id != null && name.isNotEmpty) names[id] = name;
+        }
+      }
+      String money(dynamic value, [String currency = 'EUR']) {
+        final amount = double.tryParse((value ?? '').toString()) ?? 0;
+        return '${amount.toStringAsFixed(2).replaceAll('.', ',')} $currency';
+      }
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text('Acquisto #$purchaseId'),
+          content: SizedBox(width: double.maxFinite, child: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              if (header != null) ...[
+                Text('Data: ${header['data_acquisto'] ?? item['data_acquisto'] ?? 'Non indicata'}'),
+                const SizedBox(height: 4),
+                Text('Totale: ${money(header['importo_totale_acquisto'] ?? item['importo_totale_acquisto'], (header['valuta'] ?? item['valuta'] ?? 'EUR').toString().trim())}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                if ((header['descrizione'] ?? '').toString().trim().isNotEmpty) Text(header['descrizione'].toString()),
+              ],
+              const Divider(height: 24),
+              const Text('OGGETTI ACQUISTATI', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              if (rows.isEmpty) const Text('Nessun dettaglio oggetto registrato.'),
+              ...rows.map((row) {
+                final id = int.tryParse((row['codice_oggetto'] ?? '').toString());
+                final name = (id == null ? null : names[id]) ?? row['descrizione_oggetto']?.toString() ?? 'Oggetto non descritto';
+                final qty = int.tryParse((row['quantita'] ?? 1).toString()) ?? 1;
+                return Padding(padding: const EdgeInsets.only(bottom: 12), child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('Codice oggetto: ${id ?? 'Non assegnato'} · Quantità: $qty'),
+                    Text('Importo: ${money(row['valore_acquisto_oggetto'], (row['valuta'] ?? 'EUR').toString().trim())}'),
+                  ],
+                ));
+              }),
+            ]),
+          )),
+          actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Dettaglio acquisto #$purchaseId non disponibile: $error')));
+    }
+  }
+
   String _reportCodeForApi(String apiCode) => switch (apiCode) {
     'REPORT-CASH' => 'CASH_MOVEMENTS_REPORT',
     'REPORT-PURCHASES' => 'PURCHASES_REPORT',
@@ -8137,7 +8209,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             if (isHistory) return _historyCard(item);
             if (_isPeriodReport) {
               final dateValue = item['data_vendita'] ?? item['data_acquisto'] ?? item['data'] ?? item['data_inizio_vendita'] ?? 'Data non indicata';
-              final description = item['descrizione_oggetto'] ?? item['descrizione'] ?? item['tipologia'] ?? item['tipo_movimento'] ?? 'Operazione';
+              final description = item['descrizione_oggetto'] ?? item['descrizione'] ?? item['tipologia'] ?? item['tipo_movimento'] ?? (widget.apiCode == 'REPORT-PURCHASES' ? 'Acquisto #${item['codice_acquisto'] ?? ''}' : 'Operazione');
               final amount = item['importo_vendita'] ?? item['importo_totale_acquisto'] ?? item['importo'] ?? item['prezzo_di_vendita'];
               final imageUrl = (item['url_immagine_catalogo'] ?? item['url_immagine'] ?? '').toString().trim();
               final objectId = int.tryParse((item['codice_oggetto'] ?? item['id_oggetto'] ?? '').toString())
@@ -8148,8 +8220,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     : Icon(Icons.receipt_long_outlined, color: sectionColor),
                 title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
                 subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
-                trailing: amount == null ? null : Text('${amount.toString()} ${item['valuta'] ?? 'EUR'}'),
-                onTap: objectId != null && objectId > 0 && widget.apiCode != 'REPORT-CASH'
+                trailing: amount == null ? null : Text('${(double.tryParse(amount.toString()) ?? 0).toStringAsFixed(2).replaceAll('.', ',')} ${item['valuta'] ?? 'EUR'}'),
+                onTap: widget.apiCode == 'REPORT-PURCHASES'
+                    ? () => _showPurchaseReportDetail(item)
+                    : objectId != null && objectId > 0 && widget.apiCode != 'REPORT-CASH'
                     ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
                         title: 'Scheda oggetto', apiCode: 'OBJECT_MASTER', initialObjectCode: objectId,
                       )))
