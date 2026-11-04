@@ -43,13 +43,34 @@ void main() {
       expect(source, contains("'OGGETTI ACQUISTATI'"));
     });
 
-    test('OBJECT_MASTER carica le categorie per mostrare quella già assegnata', () {
-      final initStart = source.indexOf('void initState()');
+    test('PR-02 carica le categorie COLLEZIONE e salva la nuova assegnazione', () {
+      final stateStart = source.indexOf('class _ObjectRuntimePageState');
+      final initStart = source.indexOf('void initState()', stateStart);
       final initEnd = source.indexOf('Future<void> _loadCollectionCategories()', initStart);
       expect(initStart, isNonNegative);
       expect(initEnd, greaterThan(initStart));
       final init = source.substring(initStart, initEnd);
-      expect(init, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'OBJECT_MASTER'"));
+      expect(init, contains("widget.apiCode == 'PR-02'"));
+      expect(init, contains('_loadCollectionCategories()'));
+
+      final saveStart = source.indexOf('Future<void> _savePr02PendingChanges(');
+      final saveEnd = source.indexOf('\n  Future<void> _save()', saveStart);
+      expect(saveStart, isNonNegative);
+      expect(saveEnd, greaterThan(saveStart));
+      final save = source.substring(saveStart, saveEnd);
+      expect(save, contains("from('oggetto_collezione_categoria').upsert"));
+      expect(save, contains("'codice_categoria': categoryCode"));
+      expect(save, contains("'fonte_assegnazione': 'MANUALE'"));
+    });
+
+    test('OBJECT_MASTER carica le categorie per mostrare quella già assegnata', () {
+      final stateStart = source.indexOf('class _ObjectRuntimePageState');
+      final initStart = source.indexOf('void initState()', stateStart);
+      final initEnd = source.indexOf('Future<void> _loadCollectionCategories()', initStart);
+      expect(initStart, isNonNegative);
+      expect(initEnd, greaterThan(initStart));
+      final init = source.substring(initStart, initEnd);
+      expect(init, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER'"));
       expect(init, contains('_loadCollectionCategories();'));
     });
 
