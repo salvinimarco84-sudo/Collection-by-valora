@@ -73,3 +73,30 @@ Requisito UI da implementare nella schermata/form di registrazione identificata 
 ## Stato
 
 Questo documento fissa l'architettura desiderata e la numerazione delle procedure; non dichiara i motori completi. L'endpoint TEST `collection-market-value-test` è attualmente un preflight in sola lettura; non è ancora un motore di valutazione di mercato operativo. La numerazione PR-18/19/20 deve essere allineata nei cataloghi runtime e nelle voci UI prima di attivare le procedure.
+
+## Regola obbligatoria: descrizione normalizzata dopo conferma PR-12
+
+Quando un utente avvia una ricerca metadati PR-12 su un proprio oggetto e conferma esplicitamente il risultato identificato, VALORA deve aggiornare la **descrizione principale** dell'oggetto usando la descrizione normalizzata restituita dai metadati confermati.
+
+Requisiti:
+
+1. La descrizione inserita originariamente dall'utente deve essere conservata integralmente in un campo separato, senza sovrascriverla o perderla.
+2. La descrizione ottenuta da PR-12 diventa la descrizione principale/normalizzata solo dopo la conferma esplicita dell'utente. Un risultato proposto, incerto, non confermato o senza descrizione valida non modifica il record.
+3. L'aggiornamento della descrizione principale e la registrazione dei metadati confermati devono avvenire in modo coerente e tracciabile. Se il salvataggio non riesce, non deve rimanere un aggiornamento parziale.
+4. Una nuova ricerca confermata può aggiornare la descrizione normalizzata, ma non deve mai modificare la descrizione originale.
+5. L'aggiornamento riguarda esclusivamente l'oggetto appartenente all'utente che ha richiesto e confermato la ricerca. Nessun dato personale viene reso visibile ad altri utenti.
+6. La descrizione normalizzata deve essere utilizzata come testo principale nelle schede oggetto e come riferimento per le ricerche interne, mantenendo disponibile la descrizione originale per consultazione e recupero.
+7. Conservare provenienza e tracciabilità: identificativo della ricerca PR-12, data di conferma e riferimento ai metadati/fonte che hanno prodotto la descrizione, secondo il modello dati definitivo.
+
+### Campi logici richiesti
+
+- **descrizione_originale**: testo inserito dall'utente alla creazione o modifica manuale iniziale; preservato.
+- **descrizione_normalizzata**: testo prodotto dai metadati PR-12 e confermato dall'utente.
+- **descrizione_principale**: valore mostrato e usato per la ricerca; coincide con la descrizione normalizzata dopo la conferma, altrimenti mantiene la descrizione originale.
+
+I nomi sono definizioni logiche: la mappatura sui nomi effettivi delle colonne deve essere verificata sullo schema TEST prima di qualsiasi migrazione.
+
+### Regola di sicurezza per l'implementazione
+
+Questa specifica non autorizza una modifica diretta dello schema o dei dati. Prima dell'attivazione occorre verificare il percorso PR-12 di conferma/salvataggio, la tabella effettiva dell'oggetto e le relative dipendenze. L'implementazione va eseguita esclusivamente su TEST, con migrazione compatibile e test che dimostrino: conferma aggiorna la descrizione principale; mancata conferma non cambia nulla; descrizione originale resta intatta; l'utente non può aggiornare oggetti di altri utenti. Nessuna modifica alla produzione.
+
