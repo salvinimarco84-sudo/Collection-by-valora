@@ -3427,7 +3427,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       'VENDITE' || 'VENDITE E INSERZIONI' => 'assets/menu_sections/01_VENDITE.jpg',
       'VALUTAZIONI' => 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       'REPORT' => 'assets/menu_sections/06_REPORT.jpg',
-      'RICERCHE' => 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
+      'RICERCHE' => 'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png',
       _ => 'assets/menu_sections/05_CATALOGO.jpg',
     };
   }
