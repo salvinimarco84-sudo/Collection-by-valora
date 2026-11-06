@@ -5918,13 +5918,69 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       });
       return;
     }
-    final list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
+    var list = data is List ? data : data == null ? <dynamic>[] : <dynamic>[data];
+    if (widget.apiCode == 'OBJECTS_AVAILABLE') {
+      list = await _attachAvailableObjectImages(list);
+    }
     setState(() {
       _rows = list;
       _output = list.isEmpty ? 'Nessun risultato.' : 'Risultati: ${list.length}.';
       _currentObject = widget.apiCode == 'OBJECT_MASTER' && list.isNotEmpty && list.first is Map
         ? Map<String, dynamic>.from(list.first as Map) : null;
     });
+  }
+
+  Future<List<dynamic>> _attachAvailableObjectImages(List<dynamic> rows) async {
+    // Recupera in un'unica lettura le immagini già registrate, senza modificare
+    // né il catalogo né lo stato di verifica delle immagini.
+    final objectIds = rows
+        .whereType<Map>()
+        .map((row) => int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString()))
+        .whereType<int>()
+        .where((id) => id > 0)
+        .toSet()
+        .toList();
+    if (objectIds.isEmpty) return rows;
+
+    try {
+      final imageRows = await Supabase.instance.client
+          .schema('collection')
+          .from('immagini_oggetto')
+          .select('codice_oggetto, riferimento_immagine, immagine_principale')
+          .inFilter('codice_oggetto', objectIds)
+          .order('immagine_principale', ascending: false);
+
+      final imageByObject = <int, String>{};
+      for (final raw in imageRows) {
+        if (raw is! Map) continue;
+        final image = Map<String, dynamic>.from(raw);
+        final id = int.tryParse((image['codice_oggetto'] ?? '').toString());
+        final url = (image['riferimento_immagine'] ?? '').toString().trim();
+        if (id == null || url.isEmpty ||
+            !(url.startsWith('https://') || url.startsWith('http://'))) {
+          continue;
+        }
+        // L'ordinamento mette prima l'immagine principale. Non sovrascrivere
+        // la prima immagine valida già selezionata per lo stesso oggetto.
+        imageByObject.putIfAbsent(id, () => url);
+      }
+
+      return rows.map((raw) {
+        if (raw is! Map) return raw;
+        final item = Map<String, dynamic>.from(raw);
+        final id = int.tryParse((item['codice_oggetto'] ?? item['id'] ?? '').toString());
+        final imageUrl = id == null ? null : imageByObject[id];
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          item['url_immagine'] = imageUrl;
+        }
+        return item;
+      }).toList();
+    } catch (error) {
+      // Le immagini sono accessorie: un errore di lettura non deve impedire
+      // la visualizzazione dell'elenco degli oggetti disponibili.
+      debugPrint('VALORA: immagini elenco oggetti disponibili non caricate: $error');
+      return rows;
+    }
   }
 
   String _pretty(dynamic data) {
