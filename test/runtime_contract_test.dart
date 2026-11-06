@@ -18,6 +18,7 @@ void main() {
   final dashboardHomeFooterSource = File('lib/dashboard/dashboard_home_footer.dart').readAsStringSync();
   final dashboardCollectionErrorBannerSource = File('lib/dashboard/dashboard_collection_error_banner.dart').readAsStringSync();
   final dashboardCollectionEmptyNoticeSource = File('lib/dashboard/dashboard_collection_empty_notice.dart').readAsStringSync();
+  final dashboardCategoryBrandMarkSource = File('lib/dashboard/dashboard_category_brand_mark.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -49,6 +50,19 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('il marchio grafico categoria conserva i loghi e lo stile delle collezioni', () {
+      expect(dashboardCategoryBrandMarkSource, contains('class DashboardCategoryBrandMark extends StatelessWidget'));
+      expect(dashboardCategoryBrandMarkSource, contains("base == 'LEGO'"));
+      expect(dashboardCategoryBrandMarkSource, contains("base == 'TRANSFORMERS'"));
+      expect(dashboardCategoryBrandMarkSource, contains("base == 'GUNDAM'"));
+      expect(dashboardCategoryBrandMarkSource, contains("base == 'FUMETTI'"));
+      expect(dashboardCategoryBrandMarkSource, contains("base == 'SAINT SEIYA'"));
+      expect(dashboardCategoryBrandMarkSource, contains("base == 'MOTO DIE-CAST'"));
+      expect(dashboardCategoryBrandMarkSource, contains('fallbackIcon'));
+      expect(source, contains("import 'dashboard/dashboard_category_brand_mark.dart';"));
+      expect(source, contains('DashboardCategoryBrandMark(category: category, color: color, fallbackIcon: icon)'));
     });
 
     test('l’avviso categorie vuote conserva padding e stile del testo', () {
