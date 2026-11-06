@@ -171,8 +171,8 @@ void main() {
       expect(dashboardBackgroundSource, contains('Image.asset('));
       expect(dashboardBackgroundSource, contains('backgroundAsset'));
       expect(dashboardBackgroundSource, contains('errorBuilder'));
-      expect(dashboardHeaderSource, contains('Text(title'));
-      expect(dashboardHeaderSource, contains('Text(description'));
+      expect(dashboardHeaderSource, contains('        title,'));
+      expect(dashboardHeaderSource, contains('        description,'));
       expect(dashboardHeaderSource, contains('fontSize: 24'));
       expect(procedureCardSource, contains('Colors.black.withValues(alpha: 0.20)'));
       expect(source, contains('Colors.black.withValues(alpha: 0.22)'));
