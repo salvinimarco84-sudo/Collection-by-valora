@@ -24,6 +24,7 @@ import 'dashboard/dashboard_collection_header.dart';
 import 'dashboard/dashboard_home_header.dart';
 import 'dashboard/dashboard_home_footer.dart';
 import 'dashboard/dashboard_collection_error_banner.dart';
+import 'dashboard/dashboard_collection_empty_notice.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -3208,7 +3209,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         DashboardCollectionErrorBanner(message: 'Catalogo non disponibile: $_catalogError'),
       if (!_catalogLoading) ...[
         if (_collectionCategories.isEmpty)
-          const Padding(padding: EdgeInsets.all(12), child: Text('Nessuna categoria configurata nel master.', style: TextStyle(color: Colors.white70))),
+          const DashboardCollectionEmptyNotice(),
         ...(() {
           // Prima le categorie con più oggetti disponibili; a parità mantiene
           // l'ordine configurato nel master delle categorie.

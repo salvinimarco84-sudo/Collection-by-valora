@@ -17,6 +17,7 @@ void main() {
   final dashboardHomeHeaderSource = File('lib/dashboard/dashboard_home_header.dart').readAsStringSync();
   final dashboardHomeFooterSource = File('lib/dashboard/dashboard_home_footer.dart').readAsStringSync();
   final dashboardCollectionErrorBannerSource = File('lib/dashboard/dashboard_collection_error_banner.dart').readAsStringSync();
+  final dashboardCollectionEmptyNoticeSource = File('lib/dashboard/dashboard_collection_empty_notice.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -48,6 +49,15 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('l’avviso categorie vuote conserva padding e stile del testo', () {
+      expect(dashboardCollectionEmptyNoticeSource, contains('class DashboardCollectionEmptyNotice extends StatelessWidget'));
+      expect(dashboardCollectionEmptyNoticeSource, contains('EdgeInsets.all(12)'));
+      expect(dashboardCollectionEmptyNoticeSource, contains('Nessuna categoria configurata nel master.'));
+      expect(dashboardCollectionEmptyNoticeSource, contains('Colors.white70'));
+      expect(source, contains("import 'dashboard/dashboard_collection_empty_notice.dart';"));
+      expect(source, contains('const DashboardCollectionEmptyNotice()'));
     });
 
     test('il banner errore catalogo mantiene sfondo, margini e testo leggibile', () {
