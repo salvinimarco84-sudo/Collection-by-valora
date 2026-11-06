@@ -92,8 +92,10 @@ void main() {
       expect(dashboardCategoryPanelHeaderSource, contains('recordCount'));
       expect(dashboardCategoryPanelHeaderSource, contains("Text('VEDI TUTTI'"));
       expect(dashboardCategoryPanelHeaderSource, contains('onViewAll'));
-      expect(source, contains("import 'dashboard/dashboard_category_panel_header.dart';"));
-      expect(source, contains('DashboardCategoryPanelHeader('));
+      expect(dashboardCategoryPanelSource, contains("import 'dashboard_category_panel_header.dart';"));
+      expect(dashboardCategoryPanelSource, contains('DashboardCategoryPanelHeader('));
+      expect(source, contains("import 'dashboard/dashboard_category_panel.dart';"));
+      expect(source, contains('return DashboardCategoryPanel('));
       expect(source, contains('onViewAll: () => Navigator.of(context).push'));
     });
 
