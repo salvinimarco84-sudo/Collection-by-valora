@@ -21,6 +21,7 @@ void main() {
   final dashboardCategoryBrandMarkSource = File('lib/dashboard/dashboard_category_brand_mark.dart').readAsStringSync();
   final dashboardCategoryObjectPreviewSource = File('lib/dashboard/dashboard_category_object_preview.dart').readAsStringSync();
   final dashboardCategoryPanelHeaderSource = File('lib/dashboard/dashboard_category_panel_header.dart').readAsStringSync();
+  final dashboardCategoryPanelSource = File('lib/dashboard/dashboard_category_panel.dart').readAsStringSync();
   final dashboardCategoryNoRecordsNoticeSource = File('lib/dashboard/dashboard_category_no_records_notice.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
@@ -53,6 +54,18 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('il pannello categoria conserva contenitore, intestazione e contenuto', () {
+      expect(dashboardCategoryPanelSource, contains('class DashboardCategoryPanel extends StatelessWidget'));
+      expect(dashboardCategoryPanelSource, contains('color.withValues(alpha: 0.22)'));
+      expect(dashboardCategoryPanelSource, contains('BorderRadius.circular(16)'));
+      expect(dashboardCategoryPanelSource, contains('EdgeInsets.fromLTRB(10, 10, 10, 8)'));
+      expect(dashboardCategoryPanelSource, contains('DashboardCategoryPanelHeader('));
+      expect(dashboardCategoryPanelSource, contains('child,'));
+      expect(source, contains("import 'dashboard/dashboard_category_panel.dart';"));
+      expect(source, contains('return DashboardCategoryPanel('));
+      expect(source, contains('recordCount: rows.length'));
     });
 
     test('l’avviso categoria senza record mantiene testo e stile', () {
