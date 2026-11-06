@@ -92,6 +92,18 @@ void main() {
       expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
     });
 
+    test('PR-01 salva il blocco senza confondere categoria COLLEZIONE e merceologica', () {
+      final migration = File('supabase/migrations/20261106050000_pr01_fix_collection_category_block_save.sql').readAsStringSync();
+      expect(migration, contains('CREATE OR REPLACE FUNCTION collection.pr_01_nuovo_oggetto_runtime'));
+      expect(migration, contains('v_clean := v_item - \'codice_categoria\''));
+      expect(migration, contains('SALVATO_E_VERIFICATO'));
+      expect(migration, contains('rilettura post-salvataggio'));
+      expect(migration, isNot(contains('categorie_merceologiche')));
+      expect(migration, isNot(contains('oggetto_categoria')));
+      expect(source, contains("from('oggetto_collezione_categoria')"));
+      expect(source, contains("pending[index]['categoria']"));
+    });
+
     test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
       expect(source, contains("'fonte_assegnazione': 'MANUALE'"));
       expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
