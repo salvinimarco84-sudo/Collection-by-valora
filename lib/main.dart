@@ -21,6 +21,7 @@ import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_section_overlay.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
+import 'dashboard/dashboard_home_header.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -3130,13 +3131,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
     return ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
     children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(2, 4, 2, 14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(ValoraI18n.tr('CENTRO OPERATIVO'), style: TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold, letterSpacing: 1.3)),
-          SizedBox(height: 5),
-          Text(ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'), style: TextStyle(color: Colors.white70, fontSize: 13)),
-        ]),
+      DashboardHomeHeader(
+        title: ValoraI18n.tr('CENTRO OPERATIVO'),
+        subtitle: ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'),
       ),
       _menuCard(
         title: ValoraI18n.tr('COLLEZIONE'),

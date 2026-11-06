@@ -14,6 +14,7 @@ void main() {
   final dashboardOverlaySource = File('lib/dashboard/dashboard_section_overlay.dart').readAsStringSync();
   final dashboardCollectionCategoryCardSource = File('lib/dashboard/dashboard_collection_category_card.dart').readAsStringSync();
   final dashboardCollectionHeaderSource = File('lib/dashboard/dashboard_collection_header.dart').readAsStringSync();
+  final dashboardHomeHeaderSource = File('lib/dashboard/dashboard_home_header.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -45,6 +46,16 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('l’intestazione dashboard mantiene titolo e descrizione nella vista lista', () {
+      expect(dashboardHomeHeaderSource, contains('class DashboardHomeHeader extends StatelessWidget'));
+      expect(dashboardHomeHeaderSource, contains('letterSpacing: 1.3'));
+      expect(dashboardHomeHeaderSource, contains('Colors.white70'));
+      expect(source, contains("import 'dashboard/dashboard_home_header.dart';"));
+      expect(source, contains('DashboardHomeHeader('));
+      expect(source, contains("title: ValoraI18n.tr('CENTRO OPERATIVO')"));
+      expect(source, contains("subtitle: ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.')"));
     });
 
     test('l’intestazione della collezione mantiene titolo, descrizione e conteggio', () {
