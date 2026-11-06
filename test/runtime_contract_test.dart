@@ -39,7 +39,7 @@ void main() {
       expect(purchaseEnd, greaterThan(purchaseStart));
       final purchase = source.substring(purchaseStart, purchaseEnd);
       expect(purchase, contains('TextField(controller: item.notes'));
-      expect(purchase, contains("labelText: 'Note dell’oggetto (facoltative)'"));
+      expect(purchase, contains("labelText: 'Note (facoltative)'"));
       expect(purchase, contains("_items[i].notes.text.trim()"));
     });
 
