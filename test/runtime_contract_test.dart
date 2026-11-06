@@ -15,6 +15,7 @@ void main() {
   final dashboardCollectionCategoryCardSource = File('lib/dashboard/dashboard_collection_category_card.dart').readAsStringSync();
   final dashboardCollectionHeaderSource = File('lib/dashboard/dashboard_collection_header.dart').readAsStringSync();
   final dashboardHomeHeaderSource = File('lib/dashboard/dashboard_home_header.dart').readAsStringSync();
+  final dashboardHomeFooterSource = File('lib/dashboard/dashboard_home_footer.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -46,6 +47,15 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('il footer dashboard mantiene marchio, colore e allineamento', () {
+      expect(dashboardHomeFooterSource, contains('class DashboardHomeFooter extends StatelessWidget'));
+      expect(dashboardHomeFooterSource, contains("'COLLECTION by VALORA'"));
+      expect(dashboardHomeFooterSource, contains('Colors.white38'));
+      expect(dashboardHomeFooterSource, contains('letterSpacing: 1'));
+      expect(source, contains("import 'dashboard/dashboard_home_footer.dart';"));
+      expect(source, contains('const DashboardHomeFooter()'));
     });
 
     test('l’intestazione dashboard mantiene titolo e descrizione nella vista lista', () {

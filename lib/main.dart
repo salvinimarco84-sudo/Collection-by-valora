@@ -22,6 +22,7 @@ import 'dashboard/dashboard_section_overlay.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
 import 'dashboard/dashboard_home_header.dart';
+import 'dashboard/dashboard_home_footer.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -3156,7 +3157,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           child: Text('Conteggio catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
         ),
       const SizedBox(height: 12),
-      Center(child: Text('COLLECTION by VALORA', style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1))),
+      const DashboardHomeFooter(),
     ],
   );
   }
