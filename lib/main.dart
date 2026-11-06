@@ -20,6 +20,7 @@ import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
+import 'dashboard/dashboard_menu_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -3060,53 +3061,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
     required IconData icon,
     required VoidCallback onTap,
     String? trailingText,
-  }) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    decoration: BoxDecoration(
-      color: const Color(0xFF151515),
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: color.withValues(alpha: 0.85), width: 1.25),
-    ),
-    child: Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-          child: Row(children: [
-            Container(
-              width: 48, height: 48,
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
-              clipBehavior: Clip.antiAlias,
-              child: (ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title]) is String &&
-                      ((ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title])?.isNotEmpty ?? false)
-                  ? Image.network(
-                      (ValoraAppearance.instance.imageUrls[title] ?? ValoraAppearance.instance.imageUrls[title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title])!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 27),
-                    )
-                  : Icon(icon, color: color, size: 27),
-            ),
-            const SizedBox(width: 13),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15)),
-              const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12),
-                maxLines: 2, overflow: TextOverflow.ellipsis),
-            ])),
-            if (trailingText != null) ...[
-              const SizedBox(width: 6),
-              Text(trailingText, style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
-            ],
-            const SizedBox(width: 5),
-            Icon(Icons.chevron_right, color: color, size: 29),
-          ]),
-        ),
-      ),
-    ),
-  );
+  }) {
+    final imageUrl = ValoraAppearance.instance.imageUrls[title] ??
+        ValoraAppearance.instance.imageUrls[
+            title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title];
+    return DashboardMenuCard(
+      title: title,
+      subtitle: subtitle,
+      color: color,
+      icon: icon,
+      onTap: onTap,
+      trailingText: trailingText,
+      imageUrl: imageUrl,
+    );
+  }
 
   Widget buildDashboard() {
     if (ValoraAppearance.instance.useBlockLayout) {
