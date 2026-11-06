@@ -157,7 +157,7 @@ void main() {
       for (final asset in [
         'assets/menu_sections/01_VENDITE.jpg',
         'assets/menu_sections/02_ACQUISTI.jpg',
-        'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
+        'assets/menu_sections/menu_ricerche_viola.png',
         'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
         'assets/menu_sections/05_CATALOGO.jpg',
         'assets/menu_sections/06_REPORT.jpg',
