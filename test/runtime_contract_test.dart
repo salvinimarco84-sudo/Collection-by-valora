@@ -153,6 +153,21 @@ void main() {
       expect(confirmFlow, contains('salvato e verificato'));
     });
 
+    test('le schermate delle sezioni ripristinano gli sfondi locali dedicati', () {
+      for (final asset in [
+        'assets/menu_sections/01_VENDITE.jpg',
+        'assets/menu_sections/02_ACQUISTI.jpg',
+        'assets/menu_sections/03_RICERCHE.jpg',
+        'assets/menu_sections/04_VALUTAZIONI.jpg',
+        'assets/menu_sections/05_CATALOGO.jpg',
+        'assets/menu_sections/06_REPORT.jpg',
+      ]) {
+        expect(source, contains(asset));
+      }
+      expect(source, contains('Image.asset(backgroundAsset, fit: BoxFit.cover'));
+      expect(source, contains('appearance.card.withValues(alpha: 0.84)'));
+    });
+
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
       expect(source, contains('_loadIncompleteMetadataCatalog'));
       expect(source, contains('_runPr12AiBatch'));
