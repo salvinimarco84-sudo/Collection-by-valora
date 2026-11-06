@@ -56,7 +56,7 @@ void main() {
       expect(initStart, isNonNegative);
       expect(initEnd, greaterThan(initStart));
       final init = source.substring(initStart, initEnd);
-      expect(init, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'OBJECT_MASTER'"));
+      expect(init, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER'"));
       expect(init, contains('_loadCollectionCategories();'));
     });
 
