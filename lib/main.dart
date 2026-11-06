@@ -19,6 +19,7 @@ import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_section_header.dart';
+import 'dashboard/dashboard_section_footer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -3414,9 +3415,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                                                 : null,
           )),
           const SizedBox(height: 12),
-          OutlinedButton(onPressed: () => setState(() => selectedSection = null),
-            style: OutlinedButton.styleFrom(backgroundColor: Colors.transparent, foregroundColor: appearance.colorFor(section.title), side: BorderSide(color: appearance.colorFor(section.title).withValues(alpha: 0.55))),
-            child: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
+          DashboardSectionFooter(
+            label: ValoraI18n.tr('TORNA ALLA DASHBOARD'),
+            accentColor: appearance.colorFor(section.title),
+            onPressed: () => setState(() => selectedSection = null),
+          ),
         ]),
       ],
     );

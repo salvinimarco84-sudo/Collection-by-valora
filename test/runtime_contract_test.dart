@@ -8,6 +8,7 @@ void main() {
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
   final dashboardHeaderSource = File('lib/dashboard/dashboard_section_header.dart').readAsStringSync();
+  final dashboardFooterSource = File('lib/dashboard/dashboard_section_footer.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
@@ -174,6 +175,10 @@ void main() {
       expect(dashboardHeaderSource, contains('        title,'));
       expect(dashboardHeaderSource, contains('        description,'));
       expect(dashboardHeaderSource, contains('fontSize: 24'));
+      expect(dashboardFooterSource, contains('OutlinedButton')); 
+      expect(dashboardFooterSource, contains('backgroundColor: Colors.transparent'));
+      expect(dashboardFooterSource, contains('withValues(alpha: 0.55)'));
+      expect(source, contains('DashboardSectionFooter('));
       expect(procedureCardSource, contains('Colors.black.withValues(alpha: 0.20)'));
       expect(source, contains('Colors.black.withValues(alpha: 0.22)'));
       expect(themeSource, contains("'VALUTAZIONI': Color(0xFFD6A83F)"));
