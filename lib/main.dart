@@ -346,7 +346,7 @@ class ValoraAppearance extends ChangeNotifier {
     'CATALOGO': Color(0xFF3978C5),
     'ACQUISTI': Color(0xFFC74444),
     'VENDITE': Color(0xFF39875B),
-    'VALUTAZIONI': Color(0xFF8556C7),
+    'VALUTAZIONI': Color(0xFFD6A83F),
     'REPORT': Color(0xFFE17D35),
     'RICERCHE': Color(0xFFD6A83F),
     'CONTROLLO': Color(0xFF777777),
@@ -397,9 +397,11 @@ class ValoraAppearance extends ChangeNotifier {
       if (path != null && path.isNotEmpty) imagePaths[k] = path;
     }
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
-    // RICERCHE eredita stabilmente il colore oro, anche sui dispositivi con preferenze precedenti.
-    colors['RICERCHE'] = defaults['RICERCHE']!;
-    await p.setInt('valora_color_RICERCHE', defaults['RICERCHE']!.value);
+    // RICERCHE e VALUTAZIONI mantengono stabilmente l'accento oro anche con preferenze precedenti.
+    for (final section in const ['RICERCHE', 'VALUTAZIONI']) {
+      colors[section] = defaults[section]!;
+      await p.setInt('valora_color_$section', defaults[section]!.value);
+    }
     final used=<int>{};
     for(final k in defaults.keys) {
       if(!used.add(colors[k]!.value)) {
@@ -3271,12 +3273,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
         Positioned.fill(
           child: IgnorePointer(
-            child: ColoredBox(color: Colors.black.withValues(alpha: 0.48)),
+            child: ColoredBox(color: Colors.black.withValues(alpha: 0.22)),
           ),
         ),
         ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-          Icon(section.icon, color: appearance.colorFor(section.title), size: 52),
-          const SizedBox(height: 12),
           Text(section.title, textAlign: TextAlign.center, style: TextStyle(
             color: appearance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
           const SizedBox(height: 6),
@@ -3285,22 +3285,13 @@ class _HomeDashboardState extends State<HomeDashboard> {
           const SizedBox(height: 20),
           ...procedures.map((procedure) => Card(
             margin: const EdgeInsets.only(bottom: 10),
-            color: appearance.card.withValues(alpha: 0.84),
+            color: Colors.black.withValues(alpha: 0.20),
             child: ListTile(
               enabled: procedure.enabled,
-              leading: CircleAvatar(
-                backgroundColor: procedure.enabled ? appearance.colorFor(section.title).withValues(alpha: 0.18) : appearance.neutralOverlay,
-                child: Icon(procedure.enabled
-                    ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
-                    : Icons.lock_outline,
-                  color: procedure.enabled ? appearance.colorFor(section.title) : appearance.textFaint),
-              ),
               title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
                 color: procedure.enabled ? appearance.textPrimary : appearance.textFaint)),
               subtitle: Text(ValoraI18n.tr(procedure.description)),
               isThreeLine: true,
-              trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
-                color: procedure.enabled ? appearance.colorFor(section.title) : appearance.neutralOverlayStrong),
               onTap: !procedure.enabled
                   ? null
                   : procedure.title == 'Ricerca oggetti'
@@ -3336,8 +3327,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             ),
           )),
           const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
-            icon: const Icon(Icons.dashboard_outlined), label: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
+          OutlinedButton(onPressed: () => setState(() => selectedSection = null),
+            style: OutlinedButton.styleFrom(backgroundColor: Colors.transparent, foregroundColor: appearance.colorFor(section.title), side: BorderSide(color: appearance.colorFor(section.title).withValues(alpha: 0.55))),
+            child: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
         ]),
       ],
     );
