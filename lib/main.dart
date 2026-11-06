@@ -1046,7 +1046,7 @@ class _SourceRegistryPageState extends State<SourceRegistryPage> {
               Expanded(child: Slider(value: priority.toDouble(), min: 1, max: 100, divisions: 99, label: '$priority', onChanged: (v) => updateDialog(() => priority = v.round()))),
               Text('$priority'),
             ]),
-            TextFormField(controller: note, decoration: const InputDecoration(labelText: 'Note / cosa verifica questa fonte')),
+            TextFormField(controller: note, decoration: const InputDecoration(labelText: 'Note')),
             const SizedBox(height: 8),
             Text('La fonte verrà salvata come “da verificare”. Inserirla non significa che ogni dato trovato sia automaticamente attendibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
           ]),
@@ -9794,8 +9794,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         ]),
         const SizedBox(height: 8),
         TextField(controller: item.notes, minLines: 2, maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Note dell’oggetto (facoltative)', alignLabelWithHint: true,
-            helperText: 'Le note saranno salvate nella scheda del singolo oggetto.'),
+          decoration: const InputDecoration(labelText: 'Note (facoltative)', alignLabelWithHint: true),
           onChanged: (_) => setState(_invalidate)),
       ])));
   }
