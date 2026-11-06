@@ -32,6 +32,7 @@ import 'dashboard/dashboard_category_panel.dart';
 import 'dashboard/dashboard_category_no_records_notice.dart';
 import 'dashboard/dashboard_category_loading_notice.dart';
 import 'dashboard/dashboard_catalog_count_error_notice.dart';
+import 'dashboard/dashboard_assistant_fab.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -2928,13 +2929,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   ? buildDashboard()
                   : buildSection(selectedSection!)),
         ]),
-        floatingActionButton: FloatingActionButton.extended(
-          heroTag: 'valora_global_assistant',
+        floatingActionButton: DashboardAssistantFab(
           onPressed: () => Navigator.of(context).push(MaterialPageRoute(
             builder: (_) => ValoraAssistantPage(screenContext: selectedSection?.title ?? 'Dashboard'),
           )),
-          icon: const Icon(Icons.mic_none),
-          label: Text(ValoraI18n.tr('ASSISTENTE')),
+          label: ValoraI18n.tr('ASSISTENTE'),
         ),
       );
 

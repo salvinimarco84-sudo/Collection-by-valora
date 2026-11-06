@@ -25,6 +25,7 @@ void main() {
   final dashboardCategoryNoRecordsNoticeSource = File('lib/dashboard/dashboard_category_no_records_notice.dart').readAsStringSync();
   final dashboardCategoryLoadingNoticeSource = File('lib/dashboard/dashboard_category_loading_notice.dart').readAsStringSync();
   final dashboardCatalogCountErrorNoticeSource = File('lib/dashboard/dashboard_catalog_count_error_notice.dart').readAsStringSync();
+  final dashboardAssistantFabSource = File('lib/dashboard/dashboard_assistant_fab.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -76,6 +77,16 @@ void main() {
       expect(dashboardCategoryLoadingNoticeSource, contains('LinearProgressIndicator()'));
       expect(source, contains("import 'dashboard/dashboard_category_loading_notice.dart';"));
       expect(source, contains('const DashboardCategoryLoadingNotice()'));
+    });
+
+    test('il pulsante assistente globale mantiene icona, etichetta e callback', () {
+      expect(dashboardAssistantFabSource, contains('class DashboardAssistantFab extends StatelessWidget'));
+      expect(dashboardAssistantFabSource, contains("heroTag: 'valora_global_assistant'"));
+      expect(dashboardAssistantFabSource, contains('Icons.mic_none'));
+      expect(dashboardAssistantFabSource, contains('onPressed: onPressed'));
+      expect(source, contains("import 'dashboard/dashboard_assistant_fab.dart';"));
+      expect(source, contains('floatingActionButton: DashboardAssistantFab('));
+      expect(source, contains('screenContext: selectedSection?.title ?? \'Dashboard\''));
     });
 
     test('l’avviso conteggio catalogo mantiene messaggio, margine e stile', () {
