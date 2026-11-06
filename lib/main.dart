@@ -41,6 +41,7 @@ String _valoraImageProxyUrl(String rawUrl) {
     'bits-and-blocks.co.uk',
     'www.brickeconomy.com',
     'i5.walmartimages.com',
+    'shopdeinerd.com',
   };
   if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
   return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
