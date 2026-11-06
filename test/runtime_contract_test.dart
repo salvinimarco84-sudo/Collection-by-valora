@@ -128,9 +128,11 @@ void main() {
       expect(source, contains('_pendingPurchases'));
       expect(source, contains('_currentPurchaseOperation()'));
       expect(source, contains('_queueCurrentAndStartNext'));
+      expect(source, contains("'operazioni': [..._pendingPurchases, _currentPurchaseOperation()]"));
       expect(source, contains('reread.length == expectedPurchases'));
       expect(source, contains("r['numero_acquisti'] == expectedPurchases"));
       expect(source, contains('AGGIUNGI UN ALTRO ACQUISTO ALLA CODA'));
+      expect(source, isNot(contains('Vuoi effettuare un altro acquisto?')));
     });
 
     test('la consultazione inserzioni attive ha un codice dedicato', () {
