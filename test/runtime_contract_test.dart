@@ -16,6 +16,7 @@ void main() {
   final dashboardCollectionHeaderSource = File('lib/dashboard/dashboard_collection_header.dart').readAsStringSync();
   final dashboardHomeHeaderSource = File('lib/dashboard/dashboard_home_header.dart').readAsStringSync();
   final dashboardHomeFooterSource = File('lib/dashboard/dashboard_home_footer.dart').readAsStringSync();
+  final dashboardCollectionErrorBannerSource = File('lib/dashboard/dashboard_collection_error_banner.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -47,6 +48,15 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('il banner errore catalogo mantiene sfondo, margini e testo leggibile', () {
+      expect(dashboardCollectionErrorBannerSource, contains('class DashboardCollectionErrorBanner extends StatelessWidget'));
+      expect(dashboardCollectionErrorBannerSource, contains('Color(0xFF3B1717)'));
+      expect(dashboardCollectionErrorBannerSource, contains('BorderRadius.circular(10)'));
+      expect(dashboardCollectionErrorBannerSource, contains('Colors.white'));
+      expect(source, contains("import 'dashboard/dashboard_collection_error_banner.dart';"));
+      expect(source, contains('DashboardCollectionErrorBanner(message:'));
     });
 
     test('il footer dashboard mantiene marchio, colore e allineamento', () {

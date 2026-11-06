@@ -23,6 +23,7 @@ import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
 import 'dashboard/dashboard_home_header.dart';
 import 'dashboard/dashboard_home_footer.dart';
+import 'dashboard/dashboard_collection_error_banner.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -3204,11 +3205,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         countLabel: _catalogLoading ? '…' : '${_catalogRows.length}',
       ),
       if (_catalogError != null)
-        Container(
-          margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: const Color(0xFF3B1717), borderRadius: BorderRadius.circular(10)),
-          child: Text('Catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.white)),
-        ),
+        DashboardCollectionErrorBanner(message: 'Catalogo non disponibile: $_catalogError'),
       if (!_catalogLoading) ...[
         if (_collectionCategories.isEmpty)
           const Padding(padding: EdgeInsets.all(12), child: Text('Nessuna categoria configurata nel master.', style: TextStyle(color: Colors.white70))),
