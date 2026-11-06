@@ -1,0 +1,3 @@
+Temporary connectivity test.
+Created on an isolated test branch to verify ChatGPT GitHub write access.
+No application code or production configuration changed.
