@@ -61,6 +61,12 @@ void main() {
       expect(source, contains('final int? initialObjectCode;'));
     });
 
+    test('PR-02 carica il master categorie prima di mostrare il selettore modificabile', () {
+      expect(source, contains("if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER')"));
+      expect(source, contains("_loadCollectionCategories();"));
+      expect(source, contains("if (_destination == 'COLLEZIONE') _collectionCategoryField()"));
+    });
+
     test('PR-02 accumula le modifiche fino alla risposta finale e mantiene separata la categoria', () {
       expect(source, contains('_selectedCollectionCategory'));
       expect(source, contains('categoria_collezione_selezionata'));
