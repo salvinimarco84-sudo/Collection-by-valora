@@ -86,8 +86,8 @@ void main() {
       expect(dashboardCategoryBrandMarkSource, contains("base == 'SAINT SEIYA'"));
       expect(dashboardCategoryBrandMarkSource, contains("base == 'MOTO DIE-CAST'"));
       expect(dashboardCategoryBrandMarkSource, contains('fallbackIcon'));
-      expect(source, contains("import 'dashboard/dashboard_category_brand_mark.dart';"));
-      expect(source, contains('DashboardCategoryBrandMark(category: category, color: color, fallbackIcon: icon)'));
+      expect(dashboardCategoryPanelHeaderSource, contains("import 'dashboard_category_brand_mark.dart';"));
+      expect(dashboardCategoryPanelHeaderSource, contains('DashboardCategoryBrandMark('));
     });
 
     test('l’avviso categorie vuote conserva padding e stile del testo', () {
