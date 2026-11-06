@@ -167,5 +167,11 @@ void main() {
       expect(source, contains('eeiekkflpnkummxtvljy'));
       expect(source, isNot(contains('bufwceckrmbocctarthj')));
     });
+
+    test('PR-02 carica il master categorie prima di mostrare il selettore modificabile', () {
+      expect(source, contains("if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER')"));
+      expect(source, contains("_loadCollectionCategories();"));
+      expect(source, contains("if (_destination == 'COLLEZIONE') _collectionCategoryField()"));
+    });
   });
 }
