@@ -21,6 +21,7 @@ void main() {
   final dashboardCategoryBrandMarkSource = File('lib/dashboard/dashboard_category_brand_mark.dart').readAsStringSync();
   final dashboardCategoryObjectPreviewSource = File('lib/dashboard/dashboard_category_object_preview.dart').readAsStringSync();
   final dashboardCategoryPanelHeaderSource = File('lib/dashboard/dashboard_category_panel_header.dart').readAsStringSync();
+  final dashboardCategoryNoRecordsNoticeSource = File('lib/dashboard/dashboard_category_no_records_notice.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -52,6 +53,15 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('l’avviso categoria senza record mantiene testo e stile', () {
+      expect(dashboardCategoryNoRecordsNoticeSource, contains('class DashboardCategoryNoRecordsNotice extends StatelessWidget'));
+      expect(dashboardCategoryNoRecordsNoticeSource, contains('Nessun record riconosciuto in questa categoria.'));
+      expect(dashboardCategoryNoRecordsNoticeSource, contains('EdgeInsets.fromLTRB(4, 10, 4, 5)'));
+      expect(dashboardCategoryNoRecordsNoticeSource, contains('Colors.white70'));
+      expect(source, contains("import 'dashboard/dashboard_category_no_records_notice.dart';"));
+      expect(source, contains('const DashboardCategoryNoRecordsNotice()'));
     });
 
     test('l’intestazione categoria conserva marchio, conteggio e navigazione VEDI TUTTI', () {

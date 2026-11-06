@@ -28,6 +28,7 @@ import 'dashboard/dashboard_collection_empty_notice.dart';
 import 'dashboard/dashboard_category_brand_mark.dart';
 import 'dashboard/dashboard_category_object_preview.dart';
 import 'dashboard/dashboard_category_panel_header.dart';
+import 'dashboard/dashboard_category_no_records_notice.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -2859,8 +2860,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           if (_catalogLoading)
             const Padding(padding: EdgeInsets.all(14), child: LinearProgressIndicator())
           else if (rows.isEmpty)
-            const Padding(padding: EdgeInsets.fromLTRB(4, 10, 4, 5),
-              child: Text('Nessun record riconosciuto in questa categoria.', style: TextStyle(color: Colors.white70, fontSize: 12)))
+            const DashboardCategoryNoRecordsNotice()
           else
             SizedBox(height: 118, child: ListView.separated(
               scrollDirection: Axis.horizontal,
