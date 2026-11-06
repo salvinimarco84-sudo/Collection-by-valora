@@ -78,6 +78,14 @@ void main() {
       expect(source, contains('final int? initialObjectCode;'));
     });
 
+    test('PR-02 carica e preseleziona la categoria COLLEZIONE esistente', () {
+      expect(source, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER'"));
+      expect(source, contains("key: ValueKey('collection-category-"));
+      expect(source, contains("from('oggetto_collezione_categoria').select('codice_categoria')"));
+      expect(source, contains('_selectedCollectionCategory = assignedCollectionCategory'));
+      expect(source, contains('collection-category-'));
+    });
+
     test('PR-02 accumula le modifiche fino alla risposta finale e mantiene separata la categoria', () {
       expect(source, contains('_selectedCollectionCategory'));
       expect(source, contains('categoria_collezione_selezionata'));
