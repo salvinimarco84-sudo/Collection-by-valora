@@ -132,7 +132,8 @@ void main() {
       expect(dashboardCategoryObjectPreviewSource, contains('height: 75'));
       expect(dashboardCategoryObjectPreviewSource, contains('onTap: onTap'));
       expect(source, contains("import 'dashboard/dashboard_category_object_preview.dart';"));
-      expect(source, contains('DashboardCategoryObjectPreview('));
+      expect(dashboardCategoryPreviewListSource, contains('DashboardCategoryObjectPreview('));
+      expect(source, contains('DashboardCategoryPreviewList('));
     });
 
     test('il marchio grafico categoria conserva i loghi e lo stile delle collezioni', () {
