@@ -6,6 +6,7 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
+  final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
@@ -166,7 +167,9 @@ void main() {
       ]) {
         expect(source, contains(asset));
       }
-      expect(source, contains('Image.asset(backgroundAsset, fit: BoxFit.cover'));
+      expect(dashboardBackgroundSource, contains('Image.asset('));
+      expect(dashboardBackgroundSource, contains('backgroundAsset'));
+      expect(dashboardBackgroundSource, contains('errorBuilder'));
       expect(procedureCardSource, contains('Colors.black.withValues(alpha: 0.20)'));
       expect(source, contains('Colors.black.withValues(alpha: 0.22)'));
       expect(themeSource, contains("'VALUTAZIONI': Color(0xFFD6A83F)"));
