@@ -124,6 +124,15 @@ void main() {
       expect(source, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
     });
 
+    test('PR-04 preserves every queued purchase until final save', () {
+      expect(source, contains('_pendingPurchases'));
+      expect(source, contains('_currentPurchaseOperation()'));
+      expect(source, contains('_queueCurrentAndStartNext'));
+      expect(source, contains('reread.length == expectedPurchases'));
+      expect(source, contains("r['numero_acquisti'] == expectedPurchases"));
+      expect(source, contains('AGGIUNGI UN ALTRO ACQUISTO ALLA CODA'));
+    });
+
     test('la consultazione inserzioni attive ha un codice dedicato', () {
       expect(source, contains('REPORT-ACTIVE-LISTINGS'));
     });
