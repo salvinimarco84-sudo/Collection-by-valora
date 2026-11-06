@@ -16,6 +16,7 @@ import 'package:pdf/pdf.dart' as pw_core;
 import 'package:flutter/material.dart';
 import 'themes/valora_theme.dart';
 import 'procedures/procedure_registry.dart';
+import 'procedures/procedure_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -3378,88 +3379,47 @@ class _HomeDashboardState extends State<HomeDashboard> {
           Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
             style: TextStyle(color: appearance.textSecondary)),
           const SizedBox(height: 20),
-          ...procedures.map((procedure) => Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            color: Colors.black.withValues(alpha: 0.20),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: appearance.colorFor(section.title).withValues(alpha: 0.72),
-                width: 1.1,
-              ),
-            ),
-            child: ListTile(
-              dense: true,
-              visualDensity: const VisualDensity(horizontal: 0, vertical: -1),
-              enabled: procedure.enabled,
-              leading: CircleAvatar(
-                radius: 16,
-                backgroundColor: procedure.enabled
-                    ? appearance.colorFor(section.title).withValues(alpha: 0.18)
-                    : appearance.neutralOverlay,
-                child: Icon(
-                  procedure.enabled
-                      ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
-                      : Icons.lock_outline,
-                  size: 18,
-                  color: procedure.enabled
-                      ? appearance.colorFor(section.title)
-                      : appearance.textFaint,
-                ),
-              ),
-              title: Text(
-                ValoraI18n.tr(procedure.title),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: procedure.enabled ? appearance.textPrimary : appearance.textFaint,
-                ),
-              ),
-              subtitle: Text(
-                ValoraI18n.tr(procedure.description),
-                style: const TextStyle(fontSize: 11.5),
-              ),
-              trailing: Icon(
-                procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
-                size: 18,
-                color: procedure.enabled
-                    ? appearance.colorFor(section.title)
-                    : appearance.neutralOverlayStrong,
-              ),
-              isThreeLine: true,
-              onTap: !procedure.enabled
-                  ? null
-                  : procedure.title == 'Ricerca oggetti'
-                      ? () => Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => const CategoryObjectSearchPage()))
-                      : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
-                          ? () => Navigator.of(context).push(MaterialPageRoute(
-                                builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
-                          : procedure.apiCode == 'SOURCE-REGISTRY'
-                              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
-                              : (procedure.apiCode == 'CREATE-COLLECTION-CATEGORY' || procedure.apiCode == 'EDIT-COLLECTION-CATEGORY')
-                                  ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())); await _loadDashboardCatalog(); }
-                                  : procedure.apiCode == 'USER-SALES-PLATFORMS'
-                                      ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
-                                      : procedure.apiCode == 'LAUNCH-VALORA'
-                                          ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
-                                          : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
-                                              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
-                                              : procedure.apiCode == 'WRITE-PR-04'
-                                                  ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
-                                                  : procedure.apiCode == 'WRITE-PR-05'
-                                                      ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
-                                                      : procedure.apiCode == 'WRITE-PR-06'
-                                                          ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
-                                                          : procedure.apiCode == 'WRITE-PR-08'
-                                                              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr08CloseSalesPage()))
-                                                              : procedure.apiCode != null
-                                                                  ? () => Navigator.of(context).push(MaterialPageRoute(
-                                                                        builder: (_) => procedure.apiCode == 'PR-12-BATCH'
-                                                                            ? const Pr12BatchPage()
-                                                                            : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode == 'WRITE-PR-08' ? 'PR-08' : procedure.apiCode == 'WRITE-PR-07' ? 'PR-07' : procedure.apiCode == 'WRITE-PR-09' ? 'PR-09' : procedure.apiCode == 'WRITE-PR-06' ? 'PR-06' : procedure.apiCode!)))
-                                                                  : null,
-            ),
+          ...procedures.map((procedure) => ProcedureCard(
+            procedure: procedure,
+            title: ValoraI18n.tr(procedure.title),
+            description: ValoraI18n.tr(procedure.description),
+            accentColor: appearance.colorFor(section.title),
+            textPrimary: appearance.textPrimary,
+            textFaint: appearance.textFaint,
+            neutralOverlay: appearance.neutralOverlay,
+            neutralOverlayStrong: appearance.neutralOverlayStrong,
+            onTap: !procedure.enabled
+                ? null
+                : procedure.title == 'Ricerca oggetti'
+                    ? () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const CategoryObjectSearchPage()))
+                    : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
+                        ? () => Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
+                        : procedure.apiCode == 'SOURCE-REGISTRY'
+                            ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
+                            : (procedure.apiCode == 'CREATE-COLLECTION-CATEGORY' || procedure.apiCode == 'EDIT-COLLECTION-CATEGORY')
+                                ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())); await _loadDashboardCatalog(); }
+                                : procedure.apiCode == 'USER-SALES-PLATFORMS'
+                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
+                                    : procedure.apiCode == 'LAUNCH-VALORA'
+                                        ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
+                                        : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
+                                            ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
+                                            : procedure.apiCode == 'WRITE-PR-04'
+                                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
+                                                : procedure.apiCode == 'WRITE-PR-05'
+                                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
+                                                    : procedure.apiCode == 'WRITE-PR-06'
+                                                        ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
+                                                        : procedure.apiCode == 'WRITE-PR-08'
+                                                            ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr08CloseSalesPage()))
+                                                            : procedure.apiCode != null
+                                                                ? () => Navigator.of(context).push(MaterialPageRoute(
+                                                                      builder: (_) => procedure.apiCode == 'PR-12-BATCH'
+                                                                          ? const Pr12BatchPage()
+                                                                          : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode == 'WRITE-PR-08' ? 'PR-08' : procedure.apiCode == 'WRITE-PR-07' ? 'PR-07' : procedure.apiCode == 'WRITE-PR-09' ? 'PR-09' : procedure.apiCode == 'WRITE-PR-06' ? 'PR-06' : procedure.apiCode!)))
+                                                                : null,
           )),
           const SizedBox(height: 12),
           OutlinedButton(onPressed: () => setState(() => selectedSection = null),
