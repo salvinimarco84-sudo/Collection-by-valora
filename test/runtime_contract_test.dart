@@ -19,6 +19,7 @@ void main() {
   final dashboardCollectionErrorBannerSource = File('lib/dashboard/dashboard_collection_error_banner.dart').readAsStringSync();
   final dashboardCollectionEmptyNoticeSource = File('lib/dashboard/dashboard_collection_empty_notice.dart').readAsStringSync();
   final dashboardCategoryBrandMarkSource = File('lib/dashboard/dashboard_category_brand_mark.dart').readAsStringSync();
+  final dashboardCategoryObjectPreviewSource = File('lib/dashboard/dashboard_category_object_preview.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -50,6 +51,18 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('l’anteprima oggetto categoria conserva immagini, fallback, dimensioni e navigazione', () {
+      expect(dashboardCategoryObjectPreviewSource, contains('class DashboardCategoryObjectPreview extends StatelessWidget'));
+      expect(dashboardCategoryObjectPreviewSource, contains('Image.network('));
+      expect(dashboardCategoryObjectPreviewSource, contains('errorBuilder'));
+      expect(dashboardCategoryObjectPreviewSource, contains('BoxFit.contain'));
+      expect(dashboardCategoryObjectPreviewSource, contains('width: 98'));
+      expect(dashboardCategoryObjectPreviewSource, contains('height: 75'));
+      expect(dashboardCategoryObjectPreviewSource, contains('onTap: onTap'));
+      expect(source, contains("import 'dashboard/dashboard_category_object_preview.dart';"));
+      expect(source, contains('DashboardCategoryObjectPreview('));
     });
 
     test('il marchio grafico categoria conserva i loghi e lo stile delle collezioni', () {

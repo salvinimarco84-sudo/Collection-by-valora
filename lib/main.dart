@@ -26,6 +26,7 @@ import 'dashboard/dashboard_home_footer.dart';
 import 'dashboard/dashboard_collection_error_banner.dart';
 import 'dashboard/dashboard_collection_empty_notice.dart';
 import 'dashboard/dashboard_category_brand_mark.dart';
+import 'dashboard/dashboard_category_object_preview.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -2872,26 +2873,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
               itemBuilder: (context, index) {
                 final row = rows[index];
                 final url = _dashboardImageUrl(row);
-                return SizedBox(width: 98, child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
+                return DashboardCategoryObjectPreview(
+                  description: _dashboardDescription(row),
+                  imageUrl: url == null ? null : _valoraImageProxyUrl(url),
+                  icon: icon,
+                  color: color,
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
                     title: 'Scheda oggetto', apiCode: 'OBJECT_MASTER',
                     initialObjectCode: int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString()),
                   ))),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Container(height: 75, width: 98,
-                      decoration: BoxDecoration(color: const Color(0xFF111111), borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: Colors.white24)),
-                      clipBehavior: Clip.antiAlias,
-                      child: url == null
-                        ? Icon(icon, color: color.withValues(alpha: 0.9), size: 34)
-                        : Image.network(_valoraImageProxyUrl(url), fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 34))),
-                    const SizedBox(height: 4),
-                    Text(_dashboardDescription(row), maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 10, height: 1.1)),
-                  ]),
-                ));
+                );
               },
             )),
         ]),
