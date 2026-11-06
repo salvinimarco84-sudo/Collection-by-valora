@@ -33,6 +33,7 @@ import 'dashboard/dashboard_category_no_records_notice.dart';
 import 'dashboard/dashboard_category_loading_notice.dart';
 import 'dashboard/dashboard_catalog_count_error_notice.dart';
 import 'dashboard/dashboard_assistant_fab.dart';
+import 'dashboard/dashboard_app_bar.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -2884,27 +2885,17 @@ class _HomeDashboardState extends State<HomeDashboard> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
+        appBar: DashboardAppBar(
           backgroundColor: ValoraAppearance.instance.background.withValues(alpha: 0.82),
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          leading: selectedSection == null && !showCollection ? null : IconButton(
-            tooltip: 'Torna alla dashboard',
-            onPressed: () => setState(() { selectedSection = null; showCollection = false; }),
-            icon: const Icon(Icons.arrow_back),
-          ),
-          title: const Text('COLLECTION by VALORA', style: TextStyle(
-            fontWeight: FontWeight.bold, letterSpacing: 1,
-          )),
-          actions: [
-            IconButton(tooltip: 'Profilo utente', onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserProfilePage()));
-            }, icon: const Icon(Icons.account_circle_outlined)),
-            IconButton(tooltip: 'Personalizza interfaccia', onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppearanceSettingsPage()));
-            }, icon: const Icon(Icons.palette_outlined)),
-            IconButton(tooltip: 'Esci', onPressed: logout, icon: const Icon(Icons.logout)),
-          ],
+          showBackButton: selectedSection != null || showCollection,
+          onBack: () => setState(() { selectedSection = null; showCollection = false; }),
+          onProfileTap: () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserProfilePage()));
+          },
+          onAppearanceTap: () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppearanceSettingsPage()));
+          },
+          onLogout: logout,
         ),
         body: Stack(children: [
           Positioned.fill(

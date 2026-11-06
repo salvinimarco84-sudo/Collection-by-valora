@@ -26,6 +26,7 @@ void main() {
   final dashboardCategoryLoadingNoticeSource = File('lib/dashboard/dashboard_category_loading_notice.dart').readAsStringSync();
   final dashboardCatalogCountErrorNoticeSource = File('lib/dashboard/dashboard_catalog_count_error_notice.dart').readAsStringSync();
   final dashboardAssistantFabSource = File('lib/dashboard/dashboard_assistant_fab.dart').readAsStringSync();
+  final dashboardAppBarSource = File('lib/dashboard/dashboard_app_bar.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -421,6 +422,20 @@ void main() {
       expect(source, contains("if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER')"));
       expect(source, contains("_loadCollectionCategories();"));
       expect(source, contains("if (_destination == 'COLLEZIONE') _collectionCategoryField()"));
+    });
+
+    test('la AppBar dashboard conserva titolo, pulsanti e callback di navigazione', () {
+      expect(dashboardAppBarSource, contains('class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget'));
+      expect(dashboardAppBarSource, contains("Text('COLLECTION by VALORA'"));
+      expect(dashboardAppBarSource, contains('Icons.account_circle_outlined'));
+      expect(dashboardAppBarSource, contains('Icons.palette_outlined'));
+      expect(dashboardAppBarSource, contains('Icons.logout'));
+      expect(dashboardAppBarSource, contains('onPressed: onBack'));
+      expect(dashboardAppBarSource, contains('onPressed: onProfileTap'));
+      expect(dashboardAppBarSource, contains('onPressed: onAppearanceTap'));
+      expect(dashboardAppBarSource, contains('onPressed: onLogout'));
+      expect(source, contains("import 'dashboard/dashboard_app_bar.dart';"));
+      expect(source, contains('appBar: DashboardAppBar('));
     });
   });
 }
