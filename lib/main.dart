@@ -3029,10 +3029,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         onTap: () => setState(() => selectedSection = section),
       )),
       if (_catalogError != null)
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text('Conteggio catalogo non disponibile: $_catalogError', style: const TextStyle(color: Colors.orangeAccent, fontSize: 12)),
-        ),
+        DashboardCatalogCountErrorNotice(message: 'Conteggio catalogo non disponibile: $_catalogError'),
       const SizedBox(height: 12),
       const DashboardHomeFooter(),
     ],

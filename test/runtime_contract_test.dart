@@ -24,6 +24,7 @@ void main() {
   final dashboardCategoryPanelSource = File('lib/dashboard/dashboard_category_panel.dart').readAsStringSync();
   final dashboardCategoryNoRecordsNoticeSource = File('lib/dashboard/dashboard_category_no_records_notice.dart').readAsStringSync();
   final dashboardCategoryLoadingNoticeSource = File('lib/dashboard/dashboard_category_loading_notice.dart').readAsStringSync();
+  final dashboardCatalogCountErrorNoticeSource = File('lib/dashboard/dashboard_catalog_count_error_notice.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -75,6 +76,16 @@ void main() {
       expect(dashboardCategoryLoadingNoticeSource, contains('LinearProgressIndicator()'));
       expect(source, contains("import 'dashboard/dashboard_category_loading_notice.dart';"));
       expect(source, contains('const DashboardCategoryLoadingNotice()'));
+    });
+
+    test('l’avviso conteggio catalogo mantiene messaggio, margine e stile', () {
+      expect(dashboardCatalogCountErrorNoticeSource, contains('class DashboardCatalogCountErrorNotice extends StatelessWidget'));
+      expect(dashboardCatalogCountErrorNoticeSource, contains('EdgeInsets.only(top: 8)'));
+      expect(dashboardCatalogCountErrorNoticeSource, contains('Colors.orangeAccent'));
+      expect(dashboardCatalogCountErrorNoticeSource, contains('fontSize: 12'));
+      expect(dashboardCatalogCountErrorNoticeSource, contains('message'));
+      expect(source, contains("import 'dashboard/dashboard_catalog_count_error_notice.dart';"));
+      expect(source, contains('DashboardCatalogCountErrorNotice(message:'));
     });
 
     test('l’avviso categoria senza record mantiene testo e stile', () {
