@@ -21,6 +21,7 @@ import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
+import 'dashboard/dashboard_grid_menu_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -3106,30 +3107,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
             final icon=entry['icon'] as IconData;
             final url=ValoraAppearance.instance.imageUrls[title] ??
               ValoraAppearance.instance.imageUrls[title=='VENDITE E INSERZIONI'?'VENDITE':title];
-            return Material(
-              color: const Color(0xFF151515),
-              borderRadius: BorderRadius.circular(15),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(15),
-                onTap: entry['tap'] as VoidCallback,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(borderRadius:BorderRadius.circular(15),border:Border.all(color:color,width:1.4)),
-                  child: Column(mainAxisAlignment:MainAxisAlignment.center,children:[
-                    Expanded(child:ClipRRect(
-                      borderRadius:BorderRadius.circular(11),
-                      child:url!=null && url.isNotEmpty
-                        ? Image.network(_valoraImageProxyUrl(url),fit:(sectionKey == 'RICERCHE' || sectionKey == 'VALUTAZIONI') ? BoxFit.cover : BoxFit.contain,width:double.infinity,errorBuilder:(_,__,___)=>Icon(icon,color:color,size:42))
-                        : Icon(icon,color:color,size:42),
-                    )),
-                    const SizedBox(height:8),
-                    Text(title,textAlign:TextAlign.center,style:TextStyle(color:color,fontWeight:FontWeight.bold,fontSize:12)),
-                    const SizedBox(height:4),
-                    if(title=='COLLEZIONE') Text(_catalogLoading?'…':'${_catalogRows.length} record',style:const TextStyle(color:Colors.white70,fontSize:10)),
-                    Icon(Icons.chevron_right,color:color,size:23),
-                  ]),
-                ),
-              ),
+            return DashboardGridMenuCard(
+              title: title,
+              color: color,
+              icon: icon,
+              onTap: entry['tap'] as VoidCallback,
+              imageUrl: url == null ? null : _valoraImageProxyUrl(url),
+              imageFit: (sectionKey == 'RICERCHE' || sectionKey == 'VALUTAZIONI')
+                  ? BoxFit.cover
+                  : BoxFit.contain,
+              footerText: title == 'COLLEZIONE'
+                  ? (_catalogLoading ? '…' : '${_catalogRows.length} record')
+                  : null,
             );
           },
         );

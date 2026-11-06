@@ -10,8 +10,21 @@ void main() {
   final dashboardHeaderSource = File('lib/dashboard/dashboard_section_header.dart').readAsStringSync();
   final dashboardFooterSource = File('lib/dashboard/dashboard_section_footer.dart').readAsStringSync();
   final dashboardMenuCardSource = File('lib/dashboard/dashboard_menu_card.dart').readAsStringSync();
+  final dashboardGridMenuCardSource = File('lib/dashboard/dashboard_grid_menu_card.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('la card a blocchi della dashboard conserva immagine, colori, conteggio e navigazione', () {
+      expect(dashboardGridMenuCardSource, contains('class DashboardGridMenuCard extends StatelessWidget'));
+      expect(dashboardGridMenuCardSource, contains('Image.network('));
+      expect(dashboardGridMenuCardSource, contains('errorBuilder'));
+      expect(dashboardGridMenuCardSource, contains('imageFit'));
+      expect(dashboardGridMenuCardSource, contains('footerText'));
+      expect(dashboardGridMenuCardSource, contains('onTap: onTap'));
+      expect(source, contains("import 'dashboard/dashboard_grid_menu_card.dart';"));
+      expect(source, contains('return DashboardGridMenuCard('));
+      expect(source, contains('imageUrl: url == null ? null : _valoraImageProxyUrl(url)'));
+    });
+
     test('la card del menu dashboard conserva immagini, colori e navigazione', () {
       expect(dashboardMenuCardSource, contains('class DashboardMenuCard extends StatelessWidget'));
       expect(dashboardMenuCardSource, contains('Image.network('));
