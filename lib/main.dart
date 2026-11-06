@@ -18,6 +18,7 @@ import 'themes/valora_theme.dart';
 import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
+import 'dashboard/dashboard_section_header.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -3363,11 +3364,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ),
         ),
         ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-          Text(section.title, textAlign: TextAlign.center, style: TextStyle(
-            color: appearance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
-          const SizedBox(height: 6),
-          Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
-            style: TextStyle(color: appearance.textSecondary)),
+          DashboardSectionHeader(
+            title: section.title,
+            description: ValoraI18n.tr(section.description),
+            accentColor: appearance.colorFor(section.title),
+            secondaryTextColor: appearance.textSecondary,
+          ),
           const SizedBox(height: 20),
           ...procedures.map((procedure) => ProcedureCard(
             procedure: procedure,
