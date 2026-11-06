@@ -3229,70 +3229,118 @@ class _HomeDashboardState extends State<HomeDashboard> {
     ],
   );
 
+  String _sectionBackgroundAsset(String section) {
+    const assets = <String, String>{
+      'VENDITE': 'assets/menu_sections/01_VENDITE.jpg',
+      'ACQUISTI': 'assets/menu_sections/02_ACQUISTI.jpg',
+      'RICERCHE': 'assets/menu_sections/03_RICERCHE.jpg',
+      'VALUTAZIONI': 'assets/menu_sections/04_VALUTAZIONI.jpg',
+      'CATALOGO': 'assets/menu_sections/05_CATALOGO.jpg',
+      'REPORT': 'assets/menu_sections/06_REPORT.jpg',
+      'COLLEZIONE': 'assets/menu_sections/01_collezione_personale.png',
+    };
+    return assets[section] ?? '';
+  }
+
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
-    return ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-      Icon(section.icon, color: ValoraAppearance.instance.colorFor(section.title), size: 52),
-      const SizedBox(height: 12),
-      Text(section.title, textAlign: TextAlign.center, style: TextStyle(
-        color: ValoraAppearance.instance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
-      const SizedBox(height: 6),
-      Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
-        style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-      const SizedBox(height: 20),
-      ...procedures.map((procedure) => Card(
-        margin: const EdgeInsets.only(bottom: 10),
-        child: ListTile(
-          enabled: procedure.enabled,
-          leading: CircleAvatar(
-            backgroundColor: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title).withValues(alpha: 0.18) : ValoraAppearance.instance.neutralOverlay,
-            child: Icon(procedure.enabled
-                ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
-                : Icons.lock_outline,
-              color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.textFaint),
+    final appearance = ValoraAppearance.instance;
+    final customImage = appearance.imageUrls[section.title];
+    final backgroundAsset = _sectionBackgroundAsset(section.title);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: customImage != null && customImage.isNotEmpty
+                ? Image.network(
+                    _valoraImageProxyUrl(customImage),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => backgroundAsset.isNotEmpty
+                        ? Image.asset(backgroundAsset, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => ColoredBox(color: appearance.background))
+                        : ColoredBox(color: appearance.background),
+                  )
+                : backgroundAsset.isNotEmpty
+                    ? Image.asset(backgroundAsset, fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        errorBuilder: (_, __, ___) => ColoredBox(color: appearance.background))
+                    : ColoredBox(color: appearance.background),
           ),
-          title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
-            color: procedure.enabled ? ValoraAppearance.instance.textPrimary : ValoraAppearance.instance.textFaint)),
-          subtitle: Text(ValoraI18n.tr(procedure.description)),
-          isThreeLine: true,
-          trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
-            color: procedure.enabled ? ValoraAppearance.instance.colorFor(section.title) : ValoraAppearance.instance.neutralOverlayStrong),
-          onTap: !procedure.enabled
-              ? null
-              : procedure.title == 'Ricerca oggetti'
-                  ? () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => const CategoryObjectSearchPage()))
-                  : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
-                      ? () => Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
-                      : procedure.apiCode == 'SOURCE-REGISTRY'
-                  ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
-                  : (procedure.apiCode == 'CREATE-COLLECTION-CATEGORY' || procedure.apiCode == 'EDIT-COLLECTION-CATEGORY')
-                      ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())); await _loadDashboardCatalog(); }
-                  : procedure.apiCode == 'USER-SALES-PLATFORMS'
-                      ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
-                      : procedure.apiCode == 'LAUNCH-VALORA'
-                          ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
-                          : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
-                              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
-                              : procedure.apiCode == 'WRITE-PR-04'
-                          ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
-                          : procedure.apiCode == 'WRITE-PR-05'
-                               ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
-                               : procedure.apiCode == 'WRITE-PR-06'
-                                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
-                               : procedure.apiCode == 'WRITE-PR-08'
-                                   ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr08CloseSalesPage()))
-                               : procedure.apiCode != null
-                      ? () => Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => procedure.apiCode == 'PR-12-BATCH' ? const Pr12BatchPage() : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode == 'WRITE-PR-08' ? 'PR-08' : procedure.apiCode == 'WRITE-PR-07' ? 'PR-07' : procedure.apiCode == 'WRITE-PR-09' ? 'PR-09' : procedure.apiCode == 'WRITE-PR-06' ? 'PR-06' : procedure.apiCode!)))
-                      : null,
         ),
-      )),
-      const SizedBox(height: 12),
-      OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
-        icon: const Icon(Icons.dashboard_outlined), label: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
-    ]);
+        Positioned.fill(
+          child: IgnorePointer(
+            child: ColoredBox(color: Colors.black.withValues(alpha: 0.48)),
+          ),
+        ),
+        ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
+          Icon(section.icon, color: appearance.colorFor(section.title), size: 52),
+          const SizedBox(height: 12),
+          Text(section.title, textAlign: TextAlign.center, style: TextStyle(
+            color: appearance.colorFor(section.title), fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const SizedBox(height: 6),
+          Text(ValoraI18n.tr(section.description), textAlign: TextAlign.center,
+            style: TextStyle(color: appearance.textSecondary)),
+          const SizedBox(height: 20),
+          ...procedures.map((procedure) => Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            color: appearance.card.withValues(alpha: 0.84),
+            child: ListTile(
+              enabled: procedure.enabled,
+              leading: CircleAvatar(
+                backgroundColor: procedure.enabled ? appearance.colorFor(section.title).withValues(alpha: 0.18) : appearance.neutralOverlay,
+                child: Icon(procedure.enabled
+                    ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
+                    : Icons.lock_outline,
+                  color: procedure.enabled ? appearance.colorFor(section.title) : appearance.textFaint),
+              ),
+              title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
+                color: procedure.enabled ? appearance.textPrimary : appearance.textFaint)),
+              subtitle: Text(ValoraI18n.tr(procedure.description)),
+              isThreeLine: true,
+              trailing: Icon(procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
+                color: procedure.enabled ? appearance.colorFor(section.title) : appearance.neutralOverlayStrong),
+              onTap: !procedure.enabled
+                  ? null
+                  : procedure.title == 'Ricerca oggetti'
+                      ? () => Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => const CategoryObjectSearchPage()))
+                      : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
+                          ? () => Navigator.of(context).push(MaterialPageRoute(
+                                builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
+                          : procedure.apiCode == 'SOURCE-REGISTRY'
+                              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
+                              : (procedure.apiCode == 'CREATE-COLLECTION-CATEGORY' || procedure.apiCode == 'EDIT-COLLECTION-CATEGORY')
+                                  ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())); await _loadDashboardCatalog(); }
+                                  : procedure.apiCode == 'USER-SALES-PLATFORMS'
+                                      ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
+                                      : procedure.apiCode == 'LAUNCH-VALORA'
+                                          ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
+                                          : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
+                                              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
+                                              : procedure.apiCode == 'WRITE-PR-04'
+                                                  ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
+                                                  : procedure.apiCode == 'WRITE-PR-05'
+                                                      ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
+                                                      : procedure.apiCode == 'WRITE-PR-06'
+                                                          ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
+                                                          : procedure.apiCode == 'WRITE-PR-08'
+                                                              ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr08CloseSalesPage()))
+                                                              : procedure.apiCode != null
+                                                                  ? () => Navigator.of(context).push(MaterialPageRoute(
+                                                                        builder: (_) => procedure.apiCode == 'PR-12-BATCH'
+                                                                            ? const Pr12BatchPage()
+                                                                            : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode == 'WRITE-PR-08' ? 'PR-08' : procedure.apiCode == 'WRITE-PR-07' ? 'PR-07' : procedure.apiCode == 'WRITE-PR-09' ? 'PR-09' : procedure.apiCode == 'WRITE-PR-06' ? 'PR-06' : procedure.apiCode!)))
+                                                                  : null,
+            ),
+          )),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(onPressed: () => setState(() => selectedSection = null),
+            icon: const Icon(Icons.dashboard_outlined), label: Text(ValoraI18n.tr('TORNA ALLA DASHBOARD'))),
+        ]),
+      ],
+    );
   }
 
   void showProcedureInfo(ProcedureEntry procedure) {
