@@ -1,8 +1,8 @@
 -- PR-01: la categoria selezionata nella maschera è una categoria COLLEZIONE,
 -- non una categoria merceologica. La categoria COLLEZIONE viene collegata
 -- dal client a oggetto_collezione_categoria dopo la conferma del salvataggio.
--- Questa funzione non deve bloccare la creazione del blocco richiedendo
--- un codice di categorie_merceologiche non presente nella maschera.
+-- I codici categoria della maschera non sono campi accettati dalla funzione
+-- master PR-01 e devono essere rimossi prima di inoltrare il singolo oggetto.
 
 CREATE OR REPLACE FUNCTION collection.pr_01_nuovo_oggetto_runtime(p_payload jsonb)
 RETURNS jsonb
@@ -80,10 +80,11 @@ BEGIN
     );
   END IF;
 
-  -- La categoria COLLEZIONE è gestita separatamente dal client e salvata
-  -- in oggetto_collezione_categoria. Non va confusa con oggetto_categoria.
+  -- Entrambi i campi categoria sono UI metadata, non campi della funzione
+  -- master. La categoria COLLEZIONE resta associata dal client tramite
+  -- oggetto_collezione_categoria dopo la creazione dell'oggetto.
   FOR v_item IN SELECT value FROM jsonb_array_elements(v_items) LOOP
-    v_clean := v_item - 'codice_categoria';
+    v_clean := v_item - 'codice_categoria' - 'codice_categoria_collezione';
 
     SELECT *
       INTO v_result
