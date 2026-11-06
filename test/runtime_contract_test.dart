@@ -165,7 +165,12 @@ void main() {
         expect(source, contains(asset));
       }
       expect(source, contains('Image.asset(backgroundAsset, fit: BoxFit.cover'));
-      expect(source, contains('appearance.card.withValues(alpha: 0.84)'));
+      expect(source, contains('Colors.black.withValues(alpha: 0.20)'));
+      expect(source, contains('Colors.black.withValues(alpha: 0.22)'));
+      expect(source, contains("'VALUTAZIONI': Color(0xFFD6A83F)"));
+      expect(source, contains("'RICERCHE': Color(0xFFD6A83F)"));
+      expect(source, contains("'VALUTAZIONI': 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
+      expect(source, contains("'RICERCHE': 'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png'"));
     });
 
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
