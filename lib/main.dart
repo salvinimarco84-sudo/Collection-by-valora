@@ -4684,6 +4684,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Widget _collectionCategoryField() => Padding(padding: const EdgeInsets.only(bottom: 12), child: DropdownButtonFormField<String>(
+    key: ValueKey('collection-category-${_selectedCollectionCategory ?? 'none'}-${_collectionCategories.length}-$_categoriesLoading'),
     value: _collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory) ? _selectedCollectionCategory : null,
     decoration: InputDecoration(labelText: 'Categoria COLLEZIONE *', helperText: _categoriesLoading ? 'Caricamento categorie…' : 'Seleziona la categoria principale.'),
     items: _collectionCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria'].toString(), child: Text((e['descrizione'] ?? e['codice_categoria']).toString()))).toList(),
