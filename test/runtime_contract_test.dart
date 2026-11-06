@@ -6,6 +6,15 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('le immagini dei record rilevano caricamento ed errore e consentono retry', () {
+      expect(source, contains('class ValoraNetworkImage extends StatefulWidget'));
+      expect(source, contains('loadingBuilder: (context, child, progress)'));
+      expect(source, contains('errorBuilder: (context, error, stackTrace)'));
+      expect(source, contains("Text('Immagine non caricata'"));
+      expect(source, contains("tooltip: 'Riprova a caricare l’immagine'"));
+      expect(source, contains('ValoraNetworkImage(url: imageUrl, width: imageSize'));
+      expect(source, contains('child: ValoraNetworkImage('));
+    });
     test('PR-04 consente di inserire e salvare le note del singolo oggetto', () {
       final draftStart = source.indexOf('class _PurchaseItemDraft');
       final draftEnd = source.indexOf('/// PR-04:', draftStart);

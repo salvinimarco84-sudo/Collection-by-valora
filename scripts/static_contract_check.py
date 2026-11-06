@@ -14,6 +14,10 @@ workflow_path = root / ".github" / "workflows" / "collection-valora-ci.yml"
 workflow = workflow_path.read_text(encoding="utf-8") if workflow_path.exists() else ""
 
 checks = {
+    "record image widget detects loading and decode/network failures": "class ValoraNetworkImage extends StatefulWidget" in main and "errorBuilder: (context, error, stackTrace)" in main,
+    "record image failure is visible and retryable": "Immagine non caricata" in main and "Riprova a caricare l’immagine" in main,
+    "collection cards use monitored image widget": "ValoraNetworkImage(url: imageUrl, width: imageSize" in main,
+    "object detail uses monitored image widget": "child: ValoraNetworkImage(" in main,
     "object edit action is wired": "MODIFICA OGGETTO" in main and "Future<void> _openObjectForEdit()" in main,
     "put-for-sale action is wired": "METTI IN VENDITA" in main and "Future<void> _putObjectForSale()" in main,
     "new sale screen exists": "class NewSalePage" in main,

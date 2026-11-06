@@ -42,6 +42,93 @@ String _valoraImageProxyUrl(String rawUrl) {
   return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
 }
 
+
+/// Immagine di un record con rilevamento automatico di caricamento ed errore.
+/// L'errore di rete o decodifica non resta silenzioso: viene mostrato un fallback
+/// esplicito e l'utente può riprovare senza riaprire la scheda.
+class ValoraNetworkImage extends StatefulWidget {
+  const ValoraNetworkImage({
+    super.key,
+    required this.url,
+    required this.width,
+    required this.height,
+    this.fit = BoxFit.contain,
+    this.fallbackIcon = Icons.broken_image_outlined,
+  });
+
+  final String url;
+  final double width;
+  final double height;
+  final BoxFit fit;
+  final IconData fallbackIcon;
+
+  @override
+  State<ValoraNetworkImage> createState() => _ValoraNetworkImageState();
+}
+
+class _ValoraNetworkImageState extends State<ValoraNetworkImage> {
+  int _retryKey = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = _valoraImageProxyUrl(widget.url);
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: Image.network(
+        url,
+        key: ValueKey<String>('$url#$_retryKey'),
+        width: widget.width,
+        height: widget.height,
+        fit: widget.fit,
+        filterQuality: FilterQuality.medium,
+        loadingBuilder: (context, child, progress) {
+          if (progress == null) return child;
+          final expected = progress.expectedTotalBytes;
+          final value = expected == null || expected == 0
+              ? null
+              : progress.cumulativeBytesLoaded / expected;
+          return Center(child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2, value: value),
+          ));
+        },
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('VALORA IMAGE ERROR [$url]: $error');
+          return Container(
+            alignment: Alignment.center,
+            color: ValoraAppearance.instance.neutralOverlay,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(widget.fallbackIcon, size: 28,
+                    color: ValoraAppearance.instance.textFaint),
+                const SizedBox(height: 3),
+                Text('Immagine non caricata', textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 10,
+                    color: ValoraAppearance.instance.textSecondary)),
+                SizedBox(
+                  height: 28,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Riprova a caricare l’immagine',
+                    onPressed: () => setState(() => _retryKey++),
+                    icon: Icon(Icons.refresh, size: 18,
+                      color: ValoraAppearance.instance.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
@@ -5608,19 +5695,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           if (imageUrl != null && imageUrl.startsWith('http'))
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                _valoraImageProxyUrl(imageUrl),
+              child: ValoraNetworkImage(
+                url: imageUrl,
                 width: double.infinity,
                 height: 240,
                 fit: BoxFit.contain,
-                loadingBuilder: (context, child, progress) => progress == null
-                  ? child
-                  : SizedBox(height: 180, child: Center(child: CircularProgressIndicator(value: progress.expectedTotalBytes == null ? null : progress.cumulativeBytesLoaded / progress.expectedTotalBytes!))),
-                errorBuilder: (_, __, ___) => Column(children: [
-                  Icon(Icons.broken_image_outlined, size: 42, color: ValoraAppearance.instance.textFaint),
-                  const SizedBox(height: 6),
-                  Text('Immagine registrata, ma anteprima non disponibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                ]),
               ),
             )
           else
@@ -7104,8 +7183,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: imageUrl.startsWith('http')
-                  ? Image.network(_valoraImageProxyUrl(imageUrl), width: imageSize, height: imageSize, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _imagePlaceholder(size: imageSize))
+                  ? ValoraNetworkImage(url: imageUrl, width: imageSize, height: imageSize, fit: BoxFit.cover)
                   : _imagePlaceholder(size: imageSize),
               ),
               const SizedBox(width: 12),
