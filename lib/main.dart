@@ -47,6 +47,7 @@ String _valoraImageProxyUrl(String rawUrl) {
     'www.lego.com',
     'images.pristineauction.com',
     'super-briques.fr',
+    'instructions.hasbro.com',
   };
   if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
   return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
