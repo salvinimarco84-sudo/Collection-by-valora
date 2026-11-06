@@ -20,6 +20,7 @@ import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_section_overlay.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
+import 'dashboard/dashboard_collection_header.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -3199,18 +3200,10 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildCollection() => ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
     children: [
-      Padding(
-        padding: const EdgeInsets.only(bottom: 14),
-        child: Row(children: [
-          const Icon(Icons.inventory_2_outlined, color: goldColor, size: 34),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(ValoraI18n.tr('COLLEZIONE'), style: const TextStyle(color: goldColor, fontSize: 21, fontWeight: FontWeight.bold)),
-            SizedBox(height: 3),
-            Text(ValoraI18n.tr('Seleziona un tema per consultare i relativi oggetti.'), style: TextStyle(color: Colors.white70, fontSize: 12)),
-          ])),
-          Text(_catalogLoading ? '…' : '${_catalogRows.length}', style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.bold)),
-        ]),
+      DashboardCollectionHeader(
+        title: ValoraI18n.tr('COLLEZIONE'),
+        subtitle: ValoraI18n.tr('Seleziona un tema per consultare i relativi oggetti.'),
+        countLabel: _catalogLoading ? '…' : '${_catalogRows.length}',
       ),
       if (_catalogError != null)
         Container(

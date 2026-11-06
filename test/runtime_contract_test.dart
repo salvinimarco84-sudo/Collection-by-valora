@@ -13,6 +13,7 @@ void main() {
   final dashboardGridMenuCardSource = File('lib/dashboard/dashboard_grid_menu_card.dart').readAsStringSync();
   final dashboardOverlaySource = File('lib/dashboard/dashboard_section_overlay.dart').readAsStringSync();
   final dashboardCollectionCategoryCardSource = File('lib/dashboard/dashboard_collection_category_card.dart').readAsStringSync();
+  final dashboardCollectionHeaderSource = File('lib/dashboard/dashboard_collection_header.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -44,6 +45,15 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('l’intestazione della collezione mantiene titolo, descrizione e conteggio', () {
+      expect(dashboardCollectionHeaderSource, contains('class DashboardCollectionHeader extends StatelessWidget'));
+      expect(dashboardCollectionHeaderSource, contains('Icons.inventory_2_outlined'));
+      expect(dashboardCollectionHeaderSource, contains('countLabel'));
+      expect(source, contains("import 'dashboard/dashboard_collection_header.dart';"));
+      expect(source, contains('DashboardCollectionHeader('));
+      expect(source, contains("title: ValoraI18n.tr('COLLEZIONE')"));
     });
 
     test('la card categoria collezione mantiene logo, conteggio, anteprime e navigazione', () {
