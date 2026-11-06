@@ -34,6 +34,7 @@ import 'dashboard/dashboard_category_loading_notice.dart';
 import 'dashboard/dashboard_catalog_count_error_notice.dart';
 import 'dashboard/dashboard_assistant_fab.dart';
 import 'dashboard/dashboard_app_bar.dart';
+import 'dashboard/dashboard_category_preview_list.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -2855,25 +2856,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ? const DashboardCategoryLoadingNotice()
           : rows.isEmpty
               ? const DashboardCategoryNoRecordsNotice()
-              : SizedBox(height: 118, child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: rows.length > 5 ? 5 : rows.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final row = rows[index];
+              : DashboardCategoryPreviewList(
+                  rows: rows,
+                  icon: icon,
+                  color: color,
+                  descriptionFor: _dashboardDescription,
+                  imageUrlFor: (row) {
                     final url = _dashboardImageUrl(row);
-                    return DashboardCategoryObjectPreview(
-                      description: _dashboardDescription(row),
-                      imageUrl: url == null ? null : _valoraImageProxyUrl(url),
-                      icon: icon,
-                      color: color,
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
-                        title: 'Scheda oggetto', apiCode: 'OBJECT_MASTER',
-                        initialObjectCode: int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString()),
-                      ))),
-                    );
+                    return url == null ? null : _valoraImageProxyUrl(url);
                   },
-                )),
+                  onObjectTap: (row) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ObjectRuntimePage(
+                    title: 'Scheda oggetto', apiCode: 'OBJECT_MASTER',
+                    initialObjectCode: int.tryParse((row['codice_oggetto'] ?? row['id'] ?? '').toString()),
+                  ))),
+                ),
     );
   }
 

@@ -27,6 +27,7 @@ void main() {
   final dashboardCatalogCountErrorNoticeSource = File('lib/dashboard/dashboard_catalog_count_error_notice.dart').readAsStringSync();
   final dashboardAssistantFabSource = File('lib/dashboard/dashboard_assistant_fab.dart').readAsStringSync();
   final dashboardAppBarSource = File('lib/dashboard/dashboard_app_bar.dart').readAsStringSync();
+  final dashboardCategoryPreviewListSource = File('lib/dashboard/dashboard_category_preview_list.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -436,6 +437,18 @@ void main() {
       expect(dashboardAppBarSource, contains('onPressed: onLogout'));
       expect(source, contains("import 'dashboard/dashboard_app_bar.dart';"));
       expect(source, contains('appBar: DashboardAppBar('));
+    });
+
+    test('l anteprima orizzontale categoria mantiene limite, layout e callback', () {
+      expect(dashboardCategoryPreviewListSource, contains('class DashboardCategoryPreviewList extends StatelessWidget'));
+      expect(dashboardCategoryPreviewListSource, contains('height: 118'));
+      expect(dashboardCategoryPreviewListSource, contains('scrollDirection: Axis.horizontal'));
+      expect(dashboardCategoryPreviewListSource, contains('rows.length > 5 ? 5 : rows.length'));
+      expect(dashboardCategoryPreviewListSource, contains('descriptionFor(row)'));
+      expect(dashboardCategoryPreviewListSource, contains('imageUrlFor(row)'));
+      expect(dashboardCategoryPreviewListSource, contains('onObjectTap(row)'));
+      expect(source, contains("import 'dashboard/dashboard_category_preview_list.dart';"));
+      expect(source, contains('DashboardCategoryPreviewList('));
     });
   });
 }
