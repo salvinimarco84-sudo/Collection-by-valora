@@ -17,7 +17,7 @@ void main() {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
       expect(dashboardOverlaySource, contains('class DashboardSectionOverlay extends StatelessWidget'));
       expect(dashboardOverlaySource, contains('IgnorePointer('));
-      expect(dashboardOverlaySource, contains('Colors.black.withValues(alpha: 0.22)'));
+      expect(dashboardOverlaySource, contains('Color.fromRGBO(0, 0, 0, 0.22)'));
       expect(source, contains('const Positioned.fill(child: DashboardSectionOverlay())'));
     });
 

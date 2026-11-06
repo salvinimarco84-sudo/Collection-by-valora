@@ -18,7 +18,6 @@ import 'themes/valora_theme.dart';
 import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
-import 'dashboard/dashboard_section_overlay.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -3317,7 +3316,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
             imageUrlResolver: _valoraImageProxyUrl,
           ),
         ),
-        const Positioned.fill(child: DashboardSectionOverlay()),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: ColoredBox(color: Colors.black.withValues(alpha: 0.22)),
+          ),
+        ),
         ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
           DashboardSectionHeader(
             title: section.title,
