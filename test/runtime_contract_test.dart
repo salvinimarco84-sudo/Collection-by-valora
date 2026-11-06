@@ -6,6 +6,12 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
+      expect(source, contains("'cdn.rebrickable.com'"));
+      expect(source, contains("'bits-and-blocks.co.uk'"));
+      expect(source, contains("functions/v1/collection-image-proxy"));
+    });
+
     test('le cartelle degli sfondi e dei temi restano incluse nel bundle', () {
       final manifest = File('pubspec.yaml').readAsStringSync();
       expect(manifest, contains('assets/patrimony_sections/'));
