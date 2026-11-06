@@ -9,6 +9,7 @@ void main() {
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
       expect(source, contains("'cdn.rebrickable.com'"));
       expect(source, contains("'bits-and-blocks.co.uk'"));
+      expect(source, contains("'www.brickeconomy.com'"));
       expect(source, contains("functions/v1/collection-image-proxy"));
     });
 
