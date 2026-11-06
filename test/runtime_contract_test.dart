@@ -9,8 +9,21 @@ void main() {
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
   final dashboardHeaderSource = File('lib/dashboard/dashboard_section_header.dart').readAsStringSync();
   final dashboardFooterSource = File('lib/dashboard/dashboard_section_footer.dart').readAsStringSync();
+  final dashboardMenuCardSource = File('lib/dashboard/dashboard_menu_card.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('la card del menu dashboard conserva immagini, colori e navigazione', () {
+      expect(dashboardMenuCardSource, contains('class DashboardMenuCard extends StatelessWidget'));
+      expect(dashboardMenuCardSource, contains('Image.network('));
+      expect(dashboardMenuCardSource, contains('errorBuilder'));
+      expect(dashboardMenuCardSource, contains('color.withValues(alpha: 0.85)'));
+      expect(dashboardMenuCardSource, contains('onTap: onTap'));
+      expect(dashboardMenuCardSource, contains('trailingText'));
+      expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
+      expect(source, contains('return DashboardMenuCard('));
+      expect(source, contains('imageUrl: imageUrl'));
+    });
+
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
       expect(source, contains("'cdn.rebrickable.com'"));
       expect(source, contains("'bits-and-blocks.co.uk'"));
