@@ -3233,8 +3233,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
     const assets = <String, String>{
       'VENDITE': 'assets/menu_sections/01_VENDITE.jpg',
       'ACQUISTI': 'assets/menu_sections/02_ACQUISTI.jpg',
-      'RICERCHE': 'assets/menu_sections/03_RICERCHE.jpg',
-      'VALUTAZIONI': 'assets/menu_sections/04_VALUTAZIONI.jpg',
+      'RICERCHE': 'assets/menu_sections/VALORA_RICERCHE_CELESTE.jpg',
+      'VALUTAZIONI': 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
       'CATALOGO': 'assets/menu_sections/05_CATALOGO.jpg',
       'REPORT': 'assets/menu_sections/06_REPORT.jpg',
       'COLLEZIONE': 'assets/menu_sections/01_collezione_personale.png',
