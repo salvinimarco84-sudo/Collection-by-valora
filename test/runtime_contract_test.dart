@@ -23,6 +23,7 @@ void main() {
   final dashboardCategoryPanelHeaderSource = File('lib/dashboard/dashboard_category_panel_header.dart').readAsStringSync();
   final dashboardCategoryPanelSource = File('lib/dashboard/dashboard_category_panel.dart').readAsStringSync();
   final dashboardCategoryNoRecordsNoticeSource = File('lib/dashboard/dashboard_category_no_records_notice.dart').readAsStringSync();
+  final dashboardCategoryLoadingNoticeSource = File('lib/dashboard/dashboard_category_loading_notice.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -66,6 +67,14 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_category_panel.dart';"));
       expect(source, contains('return DashboardCategoryPanel('));
       expect(source, contains('recordCount: rows.length'));
+    });
+
+    test('l’avviso caricamento categoria mantiene padding e indicatore', () {
+      expect(dashboardCategoryLoadingNoticeSource, contains('class DashboardCategoryLoadingNotice extends StatelessWidget'));
+      expect(dashboardCategoryLoadingNoticeSource, contains('EdgeInsets.all(14)'));
+      expect(dashboardCategoryLoadingNoticeSource, contains('LinearProgressIndicator()'));
+      expect(source, contains("import 'dashboard/dashboard_category_loading_notice.dart';"));
+      expect(source, contains('const DashboardCategoryLoadingNotice()'));
     });
 
     test('l’avviso categoria senza record mantiene testo e stile', () {
