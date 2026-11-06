@@ -11,8 +11,16 @@ void main() {
   final dashboardFooterSource = File('lib/dashboard/dashboard_section_footer.dart').readAsStringSync();
   final dashboardMenuCardSource = File('lib/dashboard/dashboard_menu_card.dart').readAsStringSync();
   final dashboardGridMenuCardSource = File('lib/dashboard/dashboard_grid_menu_card.dart').readAsStringSync();
+  final dashboardOverlaySource = File('lib/dashboard/dashboard_section_overlay.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
+      expect(dashboardOverlaySource, contains('class DashboardSectionOverlay extends StatelessWidget'));
+      expect(dashboardOverlaySource, contains('IgnorePointer('));
+      expect(dashboardOverlaySource, contains('Colors.black.withValues(alpha: 0.22)'));
+      expect(source, contains('const Positioned.fill(child: DashboardSectionOverlay())'));
+    });
+
     test('la card a blocchi della dashboard conserva immagine, colori, conteggio e navigazione', () {
       expect(dashboardGridMenuCardSource, contains('class DashboardGridMenuCard extends StatelessWidget'));
       expect(dashboardGridMenuCardSource, contains('Image.network('));
