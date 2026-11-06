@@ -10604,6 +10604,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
       if (!mounted) return;
       setState(() {
+        if (saved) _pendingPurchases.clear();
         _preview = r;
         _status = saved
           ? 'Tutti i $expectedPurchases acquisti sono stati salvati e verificati singolarmente.'
