@@ -10345,6 +10345,8 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   final _count = TextEditingController(text: '2');
   DateTime _date = DateTime.now();
   final List<_PurchaseItemDraft> _items = [_PurchaseItemDraft()];
+  // Gli acquisti confermati nel riepilogo restano in coda fino al commit unico.
+  final List<Map<String, dynamic>> _pendingPurchases = [];
   List<Map<String, dynamic>> _collectionCategories = [];
   bool _categoriesLoading = false;
   final String _session = _uuid.v4();
@@ -10506,28 +10508,49 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         _notice('Seleziona la categoria COLLEZIONE per l’oggetto ' + (i + 1).toString() + '.'); return false;
       }
       final p = _items[i].amount;
-      if (p == null || p < 0) {
-        _notice('Inserisci un prezzo valido per l’oggetto ' + (i + 1).toString() + '.'); return false;
+      if (p == null || p <= 0) {
+        _notice('Inserisci un prezzo maggiore di zero per l’oggetto ' + (i + 1).toString() + '.'); return false;
       }
     }
     return true;
   }
 
+  Map<String, dynamic> _currentPurchaseOperation() => {
+    'data_acquisto': _date.toIso8601String().substring(0, 10),
+    'importo_totale': double.parse(_total.toStringAsFixed(2)),
+    'valuta': 'EUR',
+    'oggetti': _items.map((e) => e.json()).toList(),
+  };
+
+  double get _pendingTotal => _pendingPurchases.fold<double>(0,
+    (sum, purchase) => sum + ((purchase['importo_totale'] as num?)?.toDouble() ?? 0));
+
   Map<String, dynamic> _payload({bool confirmed = false, bool finalConfirmation = false}) => {
-    // Contratto canonico di collection.pr_04_nuovo_acquisto(p_operazioni):
-    // le operazioni sono un array e ogni oggetto usa valore_acquisto.
-    'operazioni': [
-      {
-        'data_acquisto': _date.toIso8601String().substring(0, 10),
-        'importo_totale': double.parse(_total.toStringAsFixed(2)),
-        'valuta': 'EUR',
-        'oggetti': _items.map((e) => e.json()).toList(),
-      }
-    ],
+    // Ogni acquisto è un'operazione distinta: SÌ accoda, NO salva tutto insieme.
+    'operazioni': [..._pendingPurchases, _currentPurchaseOperation()],
     'dati_confermati': confirmed,
     'conferma_finale': finalConfirmation,
     'altra_operazione': false,
   };
+
+  void _queueCurrentAndStartNext() {
+    if (!_valid()) return;
+    final operation = _currentPurchaseOperation();
+    final queuedCount = _pendingPurchases.length + 1;
+    final queuedTotal = _pendingTotal + _total;
+    for (final item in _items) { item.dispose(); }
+    setState(() {
+      _pendingPurchases.add(operation);
+      _items..clear()..add(_PurchaseItemDraft());
+      _step = 0;
+      _type = 'SINGOLO';
+      _date = DateTime.now();
+      _count.text = '1';
+      _preview = null;
+      _dataConfirmed = false;
+      _status = '$queuedCount acquisti in coda (€ ${queuedTotal.toStringAsFixed(2)}). Nessuna scrittura eseguita.';
+    });
+  }
 
   Future<bool> _acquire() async {
     final r = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': _session});
@@ -10549,9 +10572,13 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     setState(() { _busy = true; _status = 'Controllo preliminare in TEST…'; _invalidate(); });
     try {
       if (!await _acquire()) return;
+      final expectedPurchases = _pendingPurchases.length + 1;
       final r = await _ValoraRuntimeApi.procedure('PR-04', 'preview', _payload(), sessionId: _session);
+      if (r['scrittura_eseguita'] == true || r['numero_acquisti'] != expectedPurchases) {
+        throw StateError('Anteprima incoerente: attesi $expectedPurchases acquisti, ricevuti ${r['numero_acquisti'] ?? 'nessun conteggio'}. Nessuna scrittura autorizzata.');
+      }
       if (!mounted) return;
-      setState(() { _preview = r; _step = 4; _status = 'Riepilogo pronto. SÌ riparte con un nuovo acquisto senza salvare questo; NO salva e chiude.'; });
+      setState(() { _preview = r; _step = 4; _status = 'Riepilogo pronto: $expectedPurchases acquisti inclusi. SÌ aggiunge un altro; NO salva l’intera coda.'; });
     } catch (e) {
       if (mounted) setState(() => _status = 'Controllo non riuscito: ' + e.toString());
     } finally { await _release(); if (mounted) setState(() => _busy = false); }
@@ -10564,40 +10591,29 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     setState(() { _busy = true; _status = 'Invio del salvataggio al runtime TEST…'; });
     try {
       if (!await _acquire()) return;
+      final expectedPurchases = _pendingPurchases.length + 1;
       final r = await _ValoraRuntimeApi.procedure('PR-04', 'save',
         _payload(confirmed: true, finalConfirmation: true), sessionId: _session, requestId: _uuid.v4());
-      final reread = r['rilettura_database'] ?? r['verifica_post_salvataggio'];
+      final reread = r['verifica_post_salvataggio'] ?? r['rilettura_database'];
       final rereadCount = reread is List ? reread.length : 0;
-      final verified = r['rilettura_verificata'] == true ||
-        r['verifica_post_scrittura'] == 'OK' || r['stato'] == 'SALVATO_E_VERIFICATO' ||
-        (reread is List && reread.isNotEmpty && reread.every((e) => e is Map && e['verificato'] == true));
-      final saved = r['scrittura_eseguita'] == true && verified && rereadCount >= 1;
+      final verified = reread is List && reread.length == expectedPurchases &&
+        reread.every((e) => e is Map && e['verificato'] == true && e['codice_acquisto'] != null);
+      final saved = r['scrittura_eseguita'] == true &&
+        r['stato'] == 'SALVATO_E_VERIFICATO' &&
+        r['numero_acquisti'] == expectedPurchases && verified && rereadCount == expectedPurchases;
       if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
       if (!mounted) return;
       setState(() {
+        if (saved) _pendingPurchases.clear();
         _preview = r;
         _status = saved
-          ? 'Acquisto salvato e rilettura verificata per tutti gli oggetti.'
-          : 'Salvataggio NON considerato concluso: il runtime non conferma scrittura e rilettura coerenti per tutti gli oggetti. La bozza resta disponibile.';
+          ? 'Tutti i $expectedPurchases acquisti sono stati salvati e verificati singolarmente.'
+          : 'Salvataggio NON concluso: attesi $expectedPurchases acquisti, riletture ricevute $rereadCount. La coda e la bozza restano disponibili.';
       });
       if (saved && mounted) {
-        final another = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
-          title: const Text('Acquisto verificato'),
-          content: const Text('Vuoi effettuare un altro acquisto?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('NO, TERMINA')),
-            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SÌ, ALTRO ACQUISTO')),
-          ],
-        ));
-        if (!mounted) return;
-        if (another == true) {
-          for (final i in _items) { i.dispose(); }
-          setState(() {
-            _step = 0; _type = 'SINGOLO'; _date = DateTime.now();
-            _items..clear()..add(_PurchaseItemDraft()); _count.text = '2';
-            _preview = null; _dataConfirmed = false; _status = 'Nuova bozza pronta. Nessun acquisto registrato.';
-          });
-        } else { Navigator.of(context).pop(); }
+        // Il ciclo di accodamento avviene prima del salvataggio.
+        // Dopo il commit verificato si chiude PR-04: nessuna seconda domanda post-scrittura.
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) setState(() => _status = 'Salvataggio non confermato: ' + e.toString());
@@ -10739,9 +10755,21 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     ]);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading('Riepilogo acquisto', 'SÌ riparte con un nuovo acquisto senza salvare questo. NO salva l’acquisto e chiude la procedura.'),
+      _heading('Riepilogo acquisti', 'SÌ aggiunge questo acquisto alla coda senza scrivere. NO salva insieme tutti gli acquisti in coda e quello corrente.'),
       Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _line('Tipo', _type == 'SINGOLO' ? 'Acquisto singolo' : 'Acquisto multiplo / lotto'),
+        if (_pendingPurchases.isNotEmpty) ...[
+          _line('ACQUISTI GIÀ IN CODA', _pendingPurchases.length.toString(), bold: true),
+          for (var p = 0; p < _pendingPurchases.length; p++) ...[
+            Text('Acquisto in coda ${p + 1} · ${_pendingPurchases[p]['data_acquisto']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            for (final raw in (_pendingPurchases[p]['oggetti'] as List).whereType<Map>())
+              _line((raw['descrizione'] ?? 'Oggetto').toString(), '€ ${((raw['valore_acquisto'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}'),
+            _line('Totale acquisto', '€ ${((_pendingPurchases[p]['importo_totale'] as num?)?.toDouble() ?? 0).toStringAsFixed(2)}', bold: true),
+            const Divider(height: 18),
+          ],
+          _line('SUBTOTALE IN CODA', '€ ${_pendingTotal.toStringAsFixed(2)}', bold: true),
+          const Divider(height: 22),
+        ],
+        _line('Acquisto corrente · tipo', _type == 'SINGOLO' ? 'Singolo' : 'Multiplo / lotto'),
         _line('Data acquisto', _dateLabel(_date)), _line('Oggetti distinti', _items.length.toString()),
         const Divider(height: 22),
         for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -10749,13 +10777,14 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
           Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
           Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
         ])),
-        const Divider(height: 22), _line('TOTALE ACQUISTO', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
+        const Divider(height: 22), _line('TOTALE ACQUISTO CORRENTE', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
+        if (_pendingPurchases.isNotEmpty) ...[
+          const Divider(height: 22),
+          _line('TOTALE DI TUTTI GLI ACQUISTI', '€ ' + (_pendingTotal + _total).toStringAsFixed(2).replaceAll('.', ','), bold: true),
+        ],
       ]))),
       const SizedBox(height: 12),
-      FilledButton(onPressed: _busy ? null : () {
-        for (final item in _items) { item.dispose(); }
-        setState(() { _step = 0; _type = 'SINGOLO'; _date = DateTime.now(); _items..clear()..add(_PurchaseItemDraft()); _count.text = '1'; _preview = null; _dataConfirmed = false; _status = 'Nuova bozza pronta. Nessun acquisto precedente è stato salvato.'; });
-      }, child: const Text('SÌ · INSERISCI UN ALTRO ACQUISTO')),
+      FilledButton(onPressed: _busy ? null : _queueCurrentAndStartNext, child: const Text('SÌ · AGGIUNGI UN ALTRO ACQUISTO ALLA CODA')),
       const SizedBox(height: 8),
       FilledButton(onPressed: _busy ? null : () { setState(() { _dataConfirmed = true; }); _save(); }, child: Text(_busy ? 'ATTENDI…' : 'NO · SALVA E ESCI')),
       OutlinedButton(onPressed: _busy ? null : () => setState(() { _step = 2; _invalidate(); }), child: const Text('MODIFICA DATI')),
