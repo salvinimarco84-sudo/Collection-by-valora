@@ -19,6 +19,7 @@ import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_section_overlay.dart';
+import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -3177,51 +3178,21 @@ class _HomeDashboardState extends State<HomeDashboard> {
       return matches;
     }).take(5).toList();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.20), borderRadius: BorderRadius.circular(16), border: Border.all(color: color.withValues(alpha: 0.75))),
-      child: Column(children: [
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          leading: (logoUrl ?? '').trim().isNotEmpty ? ClipRRect(borderRadius: BorderRadius.circular(9), child: Image.network(logoUrl!, width: 62, height: 46, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _categoryBrandMark(name, color, icon))) : _categoryBrandMark(name, color, icon),
-          title: Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text('$count', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8), const Icon(Icons.chevron_right, color: Colors.white70),
-          ]),
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: name, initialCategoryCode: code))),
-        ),
-        if (previewRows.isNotEmpty)
-          SizedBox(
-            height: 86,
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-              scrollDirection: Axis.horizontal,
-              itemCount: previewRows.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final row = previewRows[index];
-                final url = _dashboardImageUrl(row);
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    width: 76,
-                    decoration: BoxDecoration(color: const Color(0xFF111111), border: Border.all(color: Colors.white24), borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.all(3),
-                    child: url == null
-                        ? Icon(icon, color: color, size: 30)
-                        : Image.network(
-                            _valoraImageProxyUrl(url),
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 30),
-                          ),
-                  ),
-                );
-              },
-            ),
-          ),
-      ]),
+    return DashboardCollectionCategoryCard(
+      code: code,
+      name: name,
+      subtitle: subtitle,
+      color: color,
+      icon: icon,
+      count: count,
+      logoUrl: logoUrl,
+      previewImageUrls: previewRows.map((row) {
+        final url = _dashboardImageUrl(row);
+        return url == null ? null : _valoraImageProxyUrl(url);
+      }).toList(),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => CategoryObjectSearchPage(initialQuery: name, initialCategoryCode: code),
+      )),
     );
   }
 

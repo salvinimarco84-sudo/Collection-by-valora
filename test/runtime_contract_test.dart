@@ -12,6 +12,7 @@ void main() {
   final dashboardMenuCardSource = File('lib/dashboard/dashboard_menu_card.dart').readAsStringSync();
   final dashboardGridMenuCardSource = File('lib/dashboard/dashboard_grid_menu_card.dart').readAsStringSync();
   final dashboardOverlaySource = File('lib/dashboard/dashboard_section_overlay.dart').readAsStringSync();
+  final dashboardCollectionCategoryCardSource = File('lib/dashboard/dashboard_collection_category_card.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -43,6 +44,19 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('la card categoria collezione mantiene logo, conteggio, anteprime e navigazione', () {
+      expect(dashboardCollectionCategoryCardSource, contains('class DashboardCollectionCategoryCard extends StatelessWidget'));
+      expect(dashboardCollectionCategoryCardSource, contains('previewImageUrls'));
+      expect(dashboardCollectionCategoryCardSource, contains('Image.network('));
+      expect(dashboardCollectionCategoryCardSource, contains('errorBuilder'));
+      expect(dashboardCollectionCategoryCardSource, contains('onTap: onTap'));
+      expect(dashboardCollectionCategoryCardSource, contains('LEGO'));
+      expect(dashboardCollectionCategoryCardSource, contains('TRANSFORMERS'));
+      expect(source, contains("import 'dashboard/dashboard_collection_category_card.dart';"));
+      expect(source, contains('return DashboardCollectionCategoryCard('));
+      expect(source, contains('initialCategoryCode: code'));
     });
 
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
