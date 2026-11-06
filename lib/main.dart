@@ -48,6 +48,7 @@ String _valoraImageProxyUrl(String rawUrl) {
     'images.pristineauction.com',
     'super-briques.fr',
     'instructions.hasbro.com',
+    'bwtf.com',
     'media.entertainmentearth.com',
     'collecticontoys.com',
   };
