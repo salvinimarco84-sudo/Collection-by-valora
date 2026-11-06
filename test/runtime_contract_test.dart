@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
@@ -167,8 +168,8 @@ void main() {
       expect(source, contains('Image.asset(backgroundAsset, fit: BoxFit.cover'));
       expect(source, contains('Colors.black.withValues(alpha: 0.20)'));
       expect(source, contains('Colors.black.withValues(alpha: 0.22)'));
-      expect(source, contains("'VALUTAZIONI': Color(0xFFD6A83F)"));
-      expect(source, contains("'RICERCHE': Color(0xFFD6A83F)"));
+      expect(themeSource, contains("'VALUTAZIONI': Color(0xFFD6A83F)"));
+      expect(themeSource, contains("'RICERCHE': Color(0xFFD6A83F)"));
       expect(source, contains("'VALUTAZIONI': 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
       expect(source, contains("'RICERCHE': 'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png'"));
     });
