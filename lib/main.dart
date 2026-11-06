@@ -1,4 +1,5 @@
 import 'dart:io' show File;
+import 'dart:math' as math;
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -60,7 +61,285 @@ const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
 
+String _valoraThemeAsset(String id) => switch (id) {
+  'industrial' => 'assets/themes/industrial.jpg',
+  'emerald' => 'assets/themes/electric_green.jpg',
+  'black_gold' => 'assets/themes/black_gold.jpg',
+  'comic' => 'assets/themes/comic_style.jpg',
+  'midnight_blue' => 'assets/themes/midnight_blue.jpg',
+  'dark_red' => 'assets/themes/fire_red.jpg',
+  'pastel' => 'assets/themes/pastel.jpg',
+  'minimal_zen' => 'assets/themes/minimal_zen.jpg',
+  'royal_purple' => 'assets/themes/royal_purple.jpg',
+  'silver_light' => 'assets/themes/silver_light.jpg',
+  _ => 'assets/themes/electric_green.jpg',
+};
+
+class ValoraThemeBackdropPainter extends CustomPainter {
+  final String themeId;
+  final Color background;
+  final Color accent;
+  ValoraThemeBackdropPainter({required this.themeId, required this.background, required this.accent});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bounds = Offset.zero & size;
+    canvas.drawRect(bounds, Paint()..shader = LinearGradient(
+      begin: Alignment.topLeft, end: Alignment.bottomRight,
+      colors: [background, Color.lerp(background, accent, 0.075)!, background],
+    ).createShader(bounds));
+
+    // Profondità cromatica per la schermata principale: bagliori morbidi ai bordi,
+    // mantenendo il centro più quieto per la leggibilità delle schede.
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.92, -0.82),
+        radius: 1.15,
+        colors: [
+          accent.withValues(alpha: themeId == 'emerald' || themeId == 'dark_red' ? 0.32 : 0.22),
+          accent.withValues(alpha: 0.025),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.42, 1.0],
+      ).createShader(bounds);
+    canvas.drawRect(bounds, glowPaint);
+    final lowerGlow = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0.94, 0.88),
+        radius: 1.0,
+        colors: [accent.withValues(alpha: 0.14), Colors.transparent],
+      ).createShader(bounds);
+    canvas.drawRect(bounds, lowerGlow);
+
+    final p = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.1
+      ..color = accent.withValues(alpha: 0.24);
+    final fill = Paint()..style = PaintingStyle.fill..color = accent.withValues(alpha: 0.075);
+    switch (themeId) {
+      case 'emerald': // Circuiti elettronici stilizzati
+        for (var row = 0; row < 11; row++) {
+          final y = size.height * row / 10;
+          final path = Path()..moveTo(0, y);
+          var x = 0.0;
+          while (x < size.width) {
+            final step = 22.0 + ((row * 13 + x.toInt()) % 41);
+            path.lineTo(x + step * 0.55, y);
+            path.lineTo(x + step * 0.55, y + ((row % 2 == 0) ? 12 : -12));
+            path.lineTo(x + step, y + ((row % 2 == 0) ? 12 : -12));
+            x += step;
+          }
+          canvas.drawPath(path, p);
+          for (var col = 0; col < 7; col++) {
+            canvas.drawCircle(Offset((size.width / 7) * col + row * 5.0, y), 2.2, fill);
+          }
+        }
+        break;
+      case 'dark_red': // Crepe vulcaniche e bagliore magma
+        final crack = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.8
+          ..color = accent.withValues(alpha: 0.15);
+        for (var i = 0; i < 24; i++) {
+          final x = (i * 79.0) % (size.width + 30);
+          final y = (i * 113.0) % (size.height + 20);
+          final path = Path()..moveTo(x, y);
+          for (var n = 0; n < 5; n++) {
+            path.lineTo(x + n * 9 + ((i + n) % 3) * 7, y + n * 13.0);
+          }
+          canvas.drawPath(path, crack);
+        }
+        break;
+      case 'industrial':
+        for (var y = 0.0; y < size.height; y += 8) {
+          canvas.drawLine(Offset(0, y), Offset(size.width, y), p);
+        }
+        break;
+      case 'midnight_blue':
+        for (var i = 0; i < 80; i++) {
+          final x = (i * 67.0) % size.width;
+          final y = (i * 131.0) % size.height;
+          canvas.drawCircle(Offset(x, y), (i % 3 + 1).toDouble(), fill);
+          if (i % 4 == 0) canvas.drawLine(Offset(x, y), Offset(x + 18, y + 10), p);
+        }
+        break;
+      case 'black_gold':
+        final vein = Paint()..style = PaintingStyle.stroke..strokeWidth = 1.4
+          ..color = accent.withValues(alpha: 0.13);
+        for (var i = 0; i < 13; i++) {
+          final path = Path()..moveTo((i * 91.0) % size.width, 0);
+          for (var y = 0.0; y < size.height; y += 38) {
+            path.lineTo(((i * 91.0 + y * 0.37 + (i % 3) * 17) % size.width), y);
+          }
+          canvas.drawPath(path, vein);
+        }
+        break;
+      case 'comic':
+        for (var x = 0.0; x < size.width; x += 12) {
+          for (var y = 0.0; y < size.height; y += 12) {
+            canvas.drawCircle(Offset(x, y), 1.5, p..style = PaintingStyle.fill);
+          }
+        }
+        break;
+      case 'royal_purple':
+        for (var i = 0; i < 22; i++) {
+          final x = (i * 73.0) % size.width;
+          final y = (i * 97.0) % size.height;
+          final path = Path()..moveTo(x, y - 17)..lineTo(x + 9, y)..lineTo(x, y + 17)..lineTo(x - 9, y)..close();
+          canvas.drawPath(path, p);
+        }
+        break;
+      case 'silver_light':
+        for (var i = 0; i < 16; i++) {
+          final path = Path()..moveTo(0, i * 59.0);
+          path.cubicTo(size.width * .25, i * 59.0 + 30, size.width * .65, i * 59.0 - 24, size.width, i * 59.0 + 8);
+          canvas.drawPath(path, p);
+        }
+        break;
+      case 'minimal_zen':
+        for (var i = 0; i < 14; i++) {
+          canvas.drawOval(Rect.fromCenter(center: Offset(size.width * .78, size.height * .15 + i * 17.0), width: size.width * .7 + i * 8, height: 28 + i * 3.0), p);
+        }
+        break;
+      case 'pastel':
+        final soft = Paint()..shader = RadialGradient(colors: [accent.withValues(alpha: .12), Colors.transparent]).createShader(Rect.fromCircle(center: Offset(size.width * .82, size.height * .25), radius: size.width * .9));
+        canvas.drawRect(bounds, soft);
+        break;
+    }
+
+    // Forme materiche ampie e irregolari: rompono la griglia geometrica
+    // e creano masse visive più organiche, con luce e ombra sovrapposte.
+    final textureRandom = math.Random(themeId.hashCode ^ 0x51A7);
+    final organicHighlight = Paint()..style = PaintingStyle.fill;
+    final organicShadow = Paint()..style = PaintingStyle.fill;
+    if (themeId == 'dark_red' || themeId == 'black_gold' || themeId == 'royal_purple' ||
+        themeId == 'emerald' || themeId == 'industrial' || themeId == 'silver_light') {
+      for (var i = 0; i < 34; i++) {
+        final center = Offset(
+          textureRandom.nextDouble() * size.width,
+          textureRandom.nextDouble() * size.height,
+        );
+        final radiusX = size.width * (0.035 + textureRandom.nextDouble() * 0.13);
+        final radiusY = size.height * (0.012 + textureRandom.nextDouble() * 0.045);
+        final points = 7 + textureRandom.nextInt(7);
+        final polygon = Path();
+        for (var point = 0; point < points; point++) {
+          final angle = point * math.pi * 2 / points;
+          final irregularity = 0.55 + textureRandom.nextDouble() * 0.8;
+          final position = Offset(
+            center.dx + math.cos(angle) * radiusX * irregularity,
+            center.dy + math.sin(angle) * radiusY * irregularity,
+          );
+          if (point == 0) {
+            polygon.moveTo(position.dx, position.dy);
+          } else {
+            polygon.lineTo(position.dx, position.dy);
+          }
+        }
+        polygon.close();
+        organicShadow.color = Colors.black.withValues(alpha: themeId == 'silver_light' ? 0.045 : 0.11);
+        canvas.drawPath(polygon.shift(const Offset(1.8, 2.2)), organicShadow);
+        organicHighlight.color = accent.withValues(
+          alpha: (themeId == 'dark_red' || themeId == 'emerald') ? 0.075 : 0.055,
+        );
+        canvas.drawPath(polygon, organicHighlight);
+        if (themeId == 'dark_red' || themeId == 'black_gold') {
+          final edge = Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = textureRandom.nextDouble() * 1.3 + 0.35
+            ..color = accent.withValues(alpha: themeId == 'dark_red' ? 0.16 : 0.13);
+          canvas.drawPath(polygon, edge);
+        }
+      }
+    }
+
+    // Passaggio materico: grana fine, micrograffi e ombreggiatura per dare
+    // profondità alle superfici senza immagini remote o dipendenze dal database.
+    // Coordinate deterministiche: la texture resta stabile tra un rebuild e l'altro.
+    final isLight = background.computeLuminance() > 0.45;
+    final grain = Paint()..style = PaintingStyle.fill;
+    for (var i = 0; i < 520; i++) {
+      final x = ((i * 73.0 + (i % 11) * 17.0) % (size.width + 1));
+      final y = ((i * 137.0 + (i % 7) * 19.0) % (size.height + 1));
+      final radius = (i % 5 == 0) ? 1.15 : 0.55;
+      grain.color = (isLight ? Colors.black : Colors.white)
+          .withValues(alpha: (i % 4 == 0) ? 0.035 : 0.018);
+      canvas.drawCircle(Offset(x, y), radius, grain);
+    }
+
+    if (themeId == 'industrial' || themeId == 'silver_light') {
+      final scratch = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round;
+      for (var i = 0; i < 95; i++) {
+        final x = (i * 47.0) % (size.width + 1);
+        final y = (i * 83.0) % (size.height + 1);
+        scratch
+          ..strokeWidth = i % 7 == 0 ? 1.0 : 0.45
+          ..color = (i % 3 == 0 ? Colors.white : Colors.black)
+              .withValues(alpha: isLight ? 0.055 : 0.065);
+        canvas.drawLine(Offset(x, y), Offset(x + 8 + (i % 19), y + ((i % 5) - 2) * 0.45), scratch);
+      }
+    } else if (themeId == 'dark_red') {
+      final ember = Paint()..style = PaintingStyle.fill;
+      for (var i = 0; i < 90; i++) {
+        final x = (i * 97.0) % (size.width + 1);
+        final y = (i * 59.0) % (size.height + 1);
+        ember.color = accent.withValues(alpha: i % 9 == 0 ? 0.13 : 0.035);
+        canvas.drawCircle(Offset(x, y), i % 9 == 0 ? 1.7 : 0.65, ember);
+      }
+    } else if (themeId == 'black_gold') {
+      final mineralVein = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.65
+        ..color = accent.withValues(alpha: 0.10);
+      for (var i = 0; i < 18; i++) {
+        final startX = (i * 89.0) % (size.width + 1);
+        final path = Path()..moveTo(startX, 0);
+        for (var y = 24.0; y < size.height; y += 24) {
+          final bend = math.sin((i + y) * 0.031) * 15.0;
+          path.lineTo((startX + bend + y * 0.12).clamp(0.0, size.width), y);
+        }
+        canvas.drawPath(path, mineralVein);
+      }
+    }
+
+    // Vignettatura morbida: il contenuto e i pulsanti restano al centro della scena.
+    final vignette = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 1.05,
+        colors: [
+          Colors.transparent,
+          (isLight ? Colors.black : Colors.black).withValues(alpha: 0.20),
+        ],
+        stops: const [0.48, 1.0],
+      ).createShader(bounds);
+    canvas.drawRect(bounds, vignette);
+  }
+
+  @override
+  bool shouldRepaint(covariant ValoraThemeBackdropPainter oldDelegate) => themeId != oldDelegate.themeId || background != oldDelegate.background || accent != oldDelegate.accent;
+}
+
+
 class ValoraAppearance extends ChangeNotifier {
+  // Temi predefiniti: valori bloccati, selezionabili ma non modificabili singolarmente.
+  static const Map<String, Map<String, Object>> themePresets = {
+    'black_gold': {'name':'Black & Gold','background':0xFF101010,'card':0xB81C1C1C,'accent':0xFFD6B15E,'text':0xFFFFFFFF,'light':false,'comic':false,'zen':false},
+    'midnight_blue': {'name':'Midnight Blue','background':0xFF071321,'card':0xB810243A,'accent':0xFF20B8FF,'text':0xFFF4F8FF,'light':false,'comic':false,'zen':false},
+    'emerald': {'name':'Electric Green','background':0xFF050A07,'card':0x98101912,'accent':0xFF39FF62,'text':0xFFF1FFF4,'light':false,'comic':false,'zen':false},
+    'silver_light': {'name':'Silver Light','background':0xFFF1F4F7,'card':0xBFFFFFFF,'accent':0xFF2878C7,'text':0xFF172333,'light':true,'comic':false,'zen':false},
+    'dark_red': {'name':'Fire Red','background':0xFF100605,'card':0x98210B08,'accent':0xFFFF452E,'text':0xFFFFF5F2,'light':false,'comic':false,'zen':false},
+    'royal_purple': {'name':'Royal Purple','background':0xFF160D20,'card':0xB828153A,'accent':0xFFD44CFF,'text':0xFFFFF5FF,'light':false,'comic':false,'zen':false},
+    'comic': {'name':'Comic Style','background':0xFFFFD928,'card':0xFFFFFBEB,'accent':0xFFE51D2A,'text':0xFF101010,'light':true,'comic':true,'zen':false},
+    'minimal_zen': {'name':'Minimal Zen','background':0xFFF3EBDD,'card':0xFFFFFCF5,'accent':0xFFB93D32,'text':0xFF27251F,'light':true,'comic':false,'zen':true},
+    'industrial': {'name':'Industrial','background':0xFF20262B,'card':0xFF303940,'accent':0xFFB9C4CC,'text':0xFFF1F4F6,'light':false,'comic':false,'zen':false},
+    'pastel': {'name':'Pastel','background':0xFFFFF0F5,'card':0xFFFFFFFF,'accent':0xFF19B7C9,'text':0xFF293344,'light':true,'comic':false,'zen':false},
+  };
+  String selectedThemeId = 'black_gold';
+  Map<String, Object> get _theme => themePresets[selectedThemeId] ?? themePresets['black_gold']!;
+  String get selectedThemeName => _theme['name'] as String;
+  Color get accent => Color(_theme['accent'] as int);
+  bool get comicStyle => _theme['comic'] as bool;
+  bool get zenStyle => _theme['zen'] as bool;
+
   ValoraAppearance._();
   static final instance = ValoraAppearance._();
   static const Map<String, Color> defaults = {
@@ -94,18 +373,20 @@ class ValoraAppearance extends ChangeNotifier {
   final Map<String, String> imageUrls = {};
   final Map<String, String> imagePaths = {};
   Color colorFor(String section) => colors[section] ?? defaults[section] ?? goldColor;
-  Color get background => whiteBackground ? const Color(0xFFF5F5F5) : backgroundColor;
-  Color get card => whiteBackground ? Colors.white : cardColor;
-  Color get textPrimary => whiteBackground ? const Color(0xFF171717) : Colors.white;
-  Color get textSecondary => whiteBackground ? const Color(0xFF424242) : Colors.white70;
-  Color get textMuted => whiteBackground ? const Color(0xFF555555) : Colors.white60;
-  Color get textSubtle => whiteBackground ? const Color(0xFF626262) : Colors.white54;
-  Color get textFaint => whiteBackground ? const Color(0xFF666666) : Colors.white38;
-  Color get neutralOverlay => whiteBackground ? Colors.black.withValues(alpha: 0.06) : Colors.white10;
-  Color get neutralOverlayStrong => whiteBackground ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
+  Color get background => Color(_theme['background'] as int);
+  Color get card => Color(_theme['card'] as int);
+  Color get textPrimary => Color(_theme['text'] as int);
+  Color get textSecondary => (_theme['light'] as bool) ? const Color(0xFF424242) : Colors.white70;
+  Color get textMuted => (_theme['light'] as bool) ? const Color(0xFF555555) : Colors.white60;
+  Color get textSubtle => (_theme['light'] as bool) ? const Color(0xFF626262) : Colors.white54;
+  Color get textFaint => (_theme['light'] as bool) ? const Color(0xFF666666) : Colors.white38;
+  Color get neutralOverlay => (_theme['light'] as bool) ? Colors.black.withValues(alpha: 0.06) : Colors.white10;
+  Color get neutralOverlayStrong => (_theme['light'] as bool) ? Colors.black.withValues(alpha: 0.12) : Colors.white24;
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
-    whiteBackground = p.getBool('valora_white_background') ?? false; // Mantieni la scelta dell'utente.
+    selectedThemeId = p.getString('valora_selected_theme') ?? 'black_gold';
+    if (!themePresets.containsKey(selectedThemeId)) selectedThemeId = 'black_gold';
+    whiteBackground = _theme['light'] as bool;
     useBlockLayout = p.getBool('valora_block_layout') ?? false;
     imageUrls.clear();
     imagePaths.clear();
@@ -126,6 +407,15 @@ class ValoraAppearance extends ChangeNotifier {
         colors[k]=replacement;
       }
     }
+    notifyListeners();
+  }
+  Future<void> setTheme(String themeId) async {
+    if (!themePresets.containsKey(themeId)) return;
+    selectedThemeId = themeId;
+    whiteBackground = themePresets[themeId]!['light'] as bool;
+    final p = await SharedPreferences.getInstance();
+    await p.setString('valora_selected_theme', themeId);
+    await p.setBool('valora_white_background', whiteBackground);
     notifyListeners();
   }
   Future<void> setLayout(bool blocks) async {
@@ -162,9 +452,13 @@ class ValoraAppearance extends ChangeNotifier {
     final p=await SharedPreferences.getInstance(); await p.setInt('valora_color_$section',color.value); notifyListeners();
   }
   Future<void> reset() async {
-    whiteBackground=false; colors..clear()..addAll(defaults);
-    final p=await SharedPreferences.getInstance(); await p.setBool('valora_white_background', false);
-    for(final k in defaults.keys){await p.remove('valora_color_$k');}
+    selectedThemeId = 'black_gold';
+    whiteBackground = false;
+    colors..clear()..addAll(defaults);
+    final p = await SharedPreferences.getInstance();
+    await p.setString('valora_selected_theme', selectedThemeId);
+    await p.setBool('valora_white_background', false);
+    for (final k in defaults.keys) { await p.remove('valora_color_$k'); }
     notifyListeners();
   }
 }
@@ -380,7 +674,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
     final color=a.colorFor(section);
     final url=a.imageUrls[section];
     return Card(
-      color:const Color(0xFF171717),
+      color:const Color(0xFF171717).withValues(alpha:0.72),
       child:Padding(
         padding:const EdgeInsets.all(12),
         child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
@@ -412,8 +706,84 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
     );
   }
   @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('Personalizza VALORA')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
+    backgroundColor: Colors.transparent,
+    appBar:AppBar(
+      title:const Text('Personalizza VALORA'),
+      backgroundColor: Colors.black.withValues(alpha:0.48),
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+    ),
+    body: Stack(
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.asset(
+                  _valoraThemeAsset(a.selectedThemeId),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
+                ),
+                ColoredBox(color: Colors.black.withValues(alpha:0.32)),
+              ],
+            ),
+          ),
+        ),
+        ListView(padding:const EdgeInsets.all(16),children:[
+      const Text('TEMA APPLICAZIONE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
+      const SizedBox(height:8),
+      const Text('Scegli uno dei dieci temi predefiniti. Palette e stile sono bloccati; la scelta si applica all’interfaccia e viene salvata su questo dispositivo.'),
+      const SizedBox(height:8),
+      ...ValoraAppearance.themePresets.entries.map((entry) {
+        final theme = entry.value;
+        final selected = a.selectedThemeId == entry.key;
+        final accent = Color(theme['accent'] as int);
+        final previewDescription = switch (entry.key) {
+          'black_gold' => 'Marmo nero venato d’oro · elegante e premium',
+          'industrial' => 'Acciaio spazzolato e grafite · robusto e tecnico',
+          'comic' => 'Pop-art e contrasti netti · energico e colorato',
+          'midnight_blue' => 'Blu notte e bagliori elettrici · profondo e tecnologico',
+          'emerald' => 'Circuiti elettronici e verde neon · luminoso e futuristico',
+          'silver_light' => 'Marmo chiaro e venature argento · luminoso e minimale',
+          'dark_red' => 'Roccia vulcanica e magma · intenso e realistico',
+          'royal_purple' => 'Cristalli ametista e luce viola · creativo e raffinato',
+          'minimal_zen' => 'Pietra naturale e toni sabbia · semplice e rilassante',
+          'pastel' => 'Gradienti pastello morbidi · delicato e moderno',
+          _ => 'Tema coordinato predefinito',
+        };
+        return Card(
+          color: Color(theme['background'] as int).withValues(alpha: 0.78),
+          margin: const EdgeInsets.symmetric(vertical:4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(entry.key == 'comic' ? 3 : (entry.key == 'minimal_zen' ? 18 : 12)),
+            side: BorderSide(color: selected ? accent : accent.withValues(alpha:0.35), width: selected ? 2.2 : 1),
+          ),
+          child: ListTile(
+            leading: Container(width:34,height:34,decoration:BoxDecoration(
+              color:Color(theme['background'] as int),
+              borderRadius:BorderRadius.circular(entry.key == 'comic' ? 2 : 8),
+              border:Border.all(color:accent,width:entry.key == 'comic' ? 2 : 1),
+            ),child:CustomPaint(
+              painter:ValoraThemeBackdropPainter(
+                themeId:entry.key,
+                background:Color(theme['background'] as int),
+                accent:accent,
+              ),
+              child:Center(child:Icon(
+                entry.key == 'comic' ? Icons.auto_awesome : (entry.key == 'minimal_zen' ? Icons.spa_outlined : Icons.palette_outlined),
+                color:accent,size:20,
+              )),
+            )),
+            title:Text(theme['name'] as String,style:TextStyle(fontWeight:FontWeight.bold,color:a.textPrimary)),
+            subtitle:Text(previewDescription,style:TextStyle(color:(theme['light'] as bool) ? const Color(0xFF424242) : Colors.white70)),
+            trailing:selected ? Icon(Icons.check_circle,color:accent) : const Icon(Icons.radio_button_unchecked),
+            onTap:()=>a.setTheme(entry.key),
+          ),
+        );
+      }),
+      const SizedBox(height:20),
       const Text('CONFIGURAZIONE HOME',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:8),
       SegmentedButton<bool>(
@@ -427,39 +797,7 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       const SizedBox(height:8),
       const Text('La modalità iniziale è Schede con sfondo nero. Cambiare modalità modifica solo la presentazione, non le procedure o i dati.'),
       const SizedBox(height:20),
-      const Text('SFONDO',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
-      const SizedBox(height:8),
-      SegmentedButton<bool>(
-        segments: const [
-          ButtonSegment<bool>(value:false, icon:Icon(Icons.dark_mode_outlined), label:Text('Nero')),
-          ButtonSegment<bool>(value:true, icon:Icon(Icons.light_mode_outlined), label:Text('Bianco')),
-        ],
-        selected: <bool>{a.whiteBackground},
-        onSelectionChanged:(values)=>a.setBackground(values.first),
-        showSelectedIcon:true,
-      ),
-      const SizedBox(height:12),
-      const Text('COLORI DELLE SEZIONI',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
-      const SizedBox(height:4),
-      const Text('Scegli il colore distintivo di ciascuna sezione.'),
-      ...ValoraAppearance.defaults.keys.map((section){
-        final current=a.colorFor(section);
-        final available=ValoraAppearance.palette.where((c)=>c.value==current.value||
-          !a.colors.entries.any((e)=>e.key!=section&&e.value.value==c.value)).toList();
-        return Card(color:const Color(0xFF171717),child:Padding(
-          padding:const EdgeInsets.symmetric(horizontal:12,vertical:6),
-          child:Row(children:[
-            Container(width:22,height:22,decoration:BoxDecoration(color:current,borderRadius:BorderRadius.circular(5))),
-            const SizedBox(width:10),
-            Expanded(child:Text(section,style:TextStyle(color:a.textPrimary))),
-            DropdownButton<int>(value:current.value,items:available.map((c)=>DropdownMenuItem<int>(
-              value:c.value,child:Row(children:[
-                Container(width:20,height:20,decoration:BoxDecoration(color:c,borderRadius:BorderRadius.circular(4))),
-                const SizedBox(width:8),Text('#${c.value.toRadixString(16).substring(2).toUpperCase()}')
-              ]))).toList(),
-              onChanged:(v){if(v!=null)a.setColor(section,Color(v));}),
-          ])));
-      }),
+      const Text('I colori e lo sfondo sono gestiti dal tema predefinito selezionato. Puoi continuare a personalizzare il layout della Home e le immagini delle sezioni.',style:TextStyle(color:goldColor)),
       const SizedBox(height:20),
       const Text('IMMAGINE PERSONALIZZATA PER SEZIONE',style:TextStyle(color:goldColor,fontWeight:FontWeight.bold)),
       const SizedBox(height:4),
@@ -476,7 +814,10 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
         await a.setLayout(false);
         if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Ripristinata la configurazione iniziale: Schede, sfondo nero.')));
       },icon:const Icon(Icons.restart_alt),label:const Text('RIPRISTINA CONFIGURAZIONE INIZIALE')),
-    ]));
+    ]),
+      ],
+    ),
+  );
 }
 
 class StartupLoadingPage extends StatelessWidget {
@@ -2555,7 +2896,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
+          backgroundColor: ValoraAppearance.instance.background.withValues(alpha: 0.82),
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
           leading: selectedSection == null && !showCollection ? null : IconButton(
             tooltip: 'Torna alla dashboard',
             onPressed: () => setState(() { selectedSection = null; showCollection = false; }),
@@ -2574,11 +2919,29 @@ class _HomeDashboardState extends State<HomeDashboard> {
             IconButton(tooltip: 'Esci', onPressed: logout, icon: const Icon(Icons.logout)),
           ],
         ),
-        body: SafeArea(child: showCollection
-            ? buildCollection()
-            : selectedSection == null
-                ? buildDashboard()
-                : buildSection(selectedSection!)),
+        body: Stack(children: [
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(
+                    _valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
+                  ),
+                  ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(child: showCollection
+              ? buildCollection()
+              : selectedSection == null
+                  ? buildDashboard()
+                  : buildSection(selectedSection!)),
+        ]),
         floatingActionButton: FloatingActionButton.extended(
           heroTag: 'valora_global_assistant',
           onPressed: () => Navigator.of(context).push(MaterialPageRoute(
