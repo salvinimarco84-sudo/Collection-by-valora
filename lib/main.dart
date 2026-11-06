@@ -35,6 +35,7 @@ import 'dashboard/dashboard_catalog_count_error_notice.dart';
 import 'dashboard/dashboard_assistant_fab.dart';
 import 'dashboard/dashboard_app_bar.dart';
 import 'dashboard/dashboard_category_preview_list.dart';
+import 'dashboard/dashboard_procedure_info_dialog.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -3199,13 +3200,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
   }
 
   void showProcedureInfo(ProcedureEntry procedure) {
-    showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
-      title: Text(ValoraI18n.tr(procedure.title)),
-      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(ValoraI18n.tr(procedure.description)),
-      ]),
-      actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
-    ));
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => DashboardProcedureInfoDialog(
+        title: ValoraI18n.tr(procedure.title),
+        description: ValoraI18n.tr(procedure.description),
+        closeLabel: ValoraI18n.tr('CHIUDI'),
+        onClose: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
   }
 }
 

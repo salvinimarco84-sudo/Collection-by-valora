@@ -28,6 +28,7 @@ void main() {
   final dashboardAssistantFabSource = File('lib/dashboard/dashboard_assistant_fab.dart').readAsStringSync();
   final dashboardAppBarSource = File('lib/dashboard/dashboard_app_bar.dart').readAsStringSync();
   final dashboardCategoryPreviewListSource = File('lib/dashboard/dashboard_category_preview_list.dart').readAsStringSync();
+  final dashboardProcedureInfoDialogSource = File('lib/dashboard/dashboard_procedure_info_dialog.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -450,6 +451,16 @@ void main() {
       expect(dashboardCategoryPreviewListSource, contains('onObjectTap(row)'));
       expect(source, contains("import 'dashboard/dashboard_category_preview_list.dart';"));
       expect(source, contains('DashboardCategoryPreviewList('));
+    });
+
+    test('il dialog informativo procedura conserva testo e chiusura', () {
+      expect(dashboardProcedureInfoDialogSource, contains('class DashboardProcedureInfoDialog extends StatelessWidget'));
+      expect(dashboardProcedureInfoDialogSource, contains('Text(title)'));
+      expect(dashboardProcedureInfoDialogSource, contains('Text(description)'));
+      expect(dashboardProcedureInfoDialogSource, contains('Text(closeLabel)'));
+      expect(dashboardProcedureInfoDialogSource, contains('onPressed: onClose'));
+      expect(source, contains("import 'dashboard/dashboard_procedure_info_dialog.dart';"));
+      expect(source, contains('DashboardProcedureInfoDialog('));
     });
   });
 }
