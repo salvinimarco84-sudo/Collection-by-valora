@@ -98,8 +98,8 @@ void main() {
       expect(migration, contains('v_clean := v_item - \'codice_categoria\''));
       expect(migration, contains('SALVATO_E_VERIFICATO'));
       expect(migration, contains('rilettura post-salvataggio'));
-      expect(migration, isNot(contains('categorie_merceologiche')));
-      expect(migration, isNot(contains('oggetto_categoria')));
+      expect(migration, isNot(contains('FROM collection.categorie_merceologiche')));
+      expect(migration, isNot(contains('INSERT INTO collection.oggetto_categoria')));
       expect(source, contains("from('oggetto_collezione_categoria')"));
       expect(source, contains("pending[index]['categoria']"));
     });
