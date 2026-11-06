@@ -3877,11 +3877,51 @@ class _HomeDashboardState extends State<HomeDashboard> {
           ...procedures.map((procedure) => Card(
             margin: const EdgeInsets.only(bottom: 10),
             color: Colors.black.withValues(alpha: 0.20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: appearance.colorFor(section.title).withValues(alpha: 0.72),
+                width: 1.1,
+              ),
+            ),
             child: ListTile(
+              dense: true,
+              visualDensity: const VisualDensity(horizontal: 0, vertical: -1),
               enabled: procedure.enabled,
-              title: Text(ValoraI18n.tr(procedure.title), style: TextStyle(fontWeight: FontWeight.w600,
-                color: procedure.enabled ? appearance.textPrimary : appearance.textFaint)),
-              subtitle: Text(ValoraI18n.tr(procedure.description)),
+              leading: CircleAvatar(
+                radius: 16,
+                backgroundColor: procedure.enabled
+                    ? appearance.colorFor(section.title).withValues(alpha: 0.18)
+                    : appearance.neutralOverlay,
+                child: Icon(
+                  procedure.enabled
+                      ? (procedure.readOnly ? Icons.play_arrow : Icons.edit_outlined)
+                      : Icons.lock_outline,
+                  size: 18,
+                  color: procedure.enabled
+                      ? appearance.colorFor(section.title)
+                      : appearance.textFaint,
+                ),
+              ),
+              title: Text(
+                ValoraI18n.tr(procedure.title),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: procedure.enabled ? appearance.textPrimary : appearance.textFaint,
+                ),
+              ),
+              subtitle: Text(
+                ValoraI18n.tr(procedure.description),
+                style: const TextStyle(fontSize: 11.5),
+              ),
+              trailing: Icon(
+                procedure.enabled ? Icons.chevron_right : Icons.lock_outline,
+                size: 18,
+                color: procedure.enabled
+                    ? appearance.colorFor(section.title)
+                    : appearance.neutralOverlayStrong,
+              ),
               isThreeLine: true,
               onTap: !procedure.enabled
                   ? null
