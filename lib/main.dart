@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'themes/valora_theme.dart';
 import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
+import 'dashboard/dashboard_section_background.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -3349,22 +3350,11 @@ class _HomeDashboardState extends State<HomeDashboard> {
       fit: StackFit.expand,
       children: [
         Positioned.fill(
-          child: IgnorePointer(
-            child: customImage != null && customImage.isNotEmpty
-                ? Image.network(
-                    _valoraImageProxyUrl(customImage),
-                    fit: BoxFit.cover,
-                    alignment: Alignment.center,
-                    errorBuilder: (_, __, ___) => backgroundAsset.isNotEmpty
-                        ? Image.asset(backgroundAsset, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => ColoredBox(color: appearance.background))
-                        : ColoredBox(color: appearance.background),
-                  )
-                : backgroundAsset.isNotEmpty
-                    ? Image.asset(backgroundAsset, fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        errorBuilder: (_, __, ___) => ColoredBox(color: appearance.background))
-                    : ColoredBox(color: appearance.background),
+          child: DashboardSectionBackground(
+            customImage: customImage,
+            backgroundAsset: backgroundAsset,
+            backgroundColor: appearance.background,
+            imageUrlResolver: _valoraImageProxyUrl,
           ),
         ),
         Positioned.fill(
