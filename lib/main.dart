@@ -10611,23 +10611,9 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
           : 'Salvataggio NON concluso: attesi $expectedPurchases acquisti, riletture ricevute $rereadCount. La coda e la bozza restano disponibili.';
       });
       if (saved && mounted) {
-        final another = await showDialog<bool>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
-          title: const Text('Acquisto verificato'),
-          content: const Text('Vuoi effettuare un altro acquisto?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('NO, TERMINA')),
-            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('SÌ, ALTRO ACQUISTO')),
-          ],
-        ));
-        if (!mounted) return;
-        if (another == true) {
-          for (final i in _items) { i.dispose(); }
-          setState(() {
-            _step = 0; _type = 'SINGOLO'; _date = DateTime.now();
-            _items..clear()..add(_PurchaseItemDraft()); _count.text = '2';
-            _preview = null; _dataConfirmed = false; _status = 'Nuova bozza pronta. Nessun acquisto registrato.';
-          });
-        } else { Navigator.of(context).pop(); }
+        // Il ciclo di accodamento avviene prima del salvataggio.
+        // Dopo il commit verificato si chiude PR-04: nessuna seconda domanda post-scrittura.
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) setState(() => _status = 'Salvataggio non confermato: ' + e.toString());
