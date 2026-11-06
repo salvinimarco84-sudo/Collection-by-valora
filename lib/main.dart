@@ -27,6 +27,7 @@ import 'dashboard/dashboard_collection_error_banner.dart';
 import 'dashboard/dashboard_collection_empty_notice.dart';
 import 'dashboard/dashboard_category_brand_mark.dart';
 import 'dashboard/dashboard_category_object_preview.dart';
+import 'dashboard/dashboard_category_panel_header.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -2845,21 +2846,16 @@ class _HomeDashboardState extends State<HomeDashboard> {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            DashboardCategoryBrandMark(category: category, color: color, fallbackIcon: icon),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(category, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-              Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-            ])),
-            Text('${rows.length} record', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-            const SizedBox(width: 6),
-            TextButton(
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: category))),
-              style: TextButton.styleFrom(foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 7)),
-              child: const Text('VEDI TUTTI', style: TextStyle(fontSize: 10)),
+          DashboardCategoryPanelHeader(
+            category: category,
+            subtitle: subtitle,
+            color: color,
+            fallbackIcon: icon,
+            recordCount: rows.length,
+            onViewAll: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => CategoryObjectSearchPage(initialQuery: category)),
             ),
-          ]),
+          ),
           if (_catalogLoading)
             const Padding(padding: EdgeInsets.all(14), child: LinearProgressIndicator())
           else if (rows.isEmpty)

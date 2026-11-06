@@ -20,6 +20,7 @@ void main() {
   final dashboardCollectionEmptyNoticeSource = File('lib/dashboard/dashboard_collection_empty_notice.dart').readAsStringSync();
   final dashboardCategoryBrandMarkSource = File('lib/dashboard/dashboard_category_brand_mark.dart').readAsStringSync();
   final dashboardCategoryObjectPreviewSource = File('lib/dashboard/dashboard_category_object_preview.dart').readAsStringSync();
+  final dashboardCategoryPanelHeaderSource = File('lib/dashboard/dashboard_category_panel_header.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -51,6 +52,17 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
       expect(source, contains('return DashboardMenuCard('));
       expect(source, contains('imageUrl: imageUrl'));
+    });
+
+    test('l’intestazione categoria conserva marchio, conteggio e navigazione VEDI TUTTI', () {
+      expect(dashboardCategoryPanelHeaderSource, contains('class DashboardCategoryPanelHeader extends StatelessWidget'));
+      expect(dashboardCategoryPanelHeaderSource, contains('DashboardCategoryBrandMark('));
+      expect(dashboardCategoryPanelHeaderSource, contains('recordCount'));
+      expect(dashboardCategoryPanelHeaderSource, contains("Text('VEDI TUTTI'"));
+      expect(dashboardCategoryPanelHeaderSource, contains('onViewAll'));
+      expect(source, contains("import 'dashboard/dashboard_category_panel_header.dart';"));
+      expect(source, contains('DashboardCategoryPanelHeader('));
+      expect(source, contains('onViewAll: () => Navigator.of(context).push'));
     });
 
     test('l’anteprima oggetto categoria conserva immagini, fallback, dimensioni e navigazione', () {
