@@ -143,11 +143,32 @@ void main() {
       expect(confirmFlow, isNot(contains('await _confirmData()')));
     });
 
+    test('PR-02 salva e verifica la modifica prima della scelta successiva', () {
+      final start = source.indexOf('Future<void> _confirmPr02Changes() async {');
+      final end = source.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
+      expect(start, isNonNegative);
+      expect(end, greaterThan(start));
+      final confirmFlow = source.substring(start, end);
+      expect(confirmFlow, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(confirmFlow, contains('salvato e verificato'));
+    });
+
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
       expect(source, contains('_loadIncompleteMetadataCatalog'));
       expect(source, contains('_runPr12AiBatch'));
       expect(source, contains('LOTTO DA 10'));
       expect(source, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
+    });
+
+    test('PR-04 preserves every queued purchase until final save', () {
+      expect(source, contains('_pendingPurchases'));
+      expect(source, contains('_currentPurchaseOperation()'));
+      expect(source, contains('_queueCurrentAndStartNext'));
+      expect(source, contains("'operazioni': [..._pendingPurchases, _currentPurchaseOperation()]"));
+      expect(source, contains('reread.length == expectedPurchases'));
+      expect(source, contains("r['numero_acquisti'] == expectedPurchases"));
+      expect(source, contains('AGGIUNGI UN ALTRO ACQUISTO ALLA CODA'));
+      expect(source, isNot(contains('Vuoi effettuare un altro acquisto?')));
     });
 
     test('la consultazione inserzioni attive ha un codice dedicato', () {
