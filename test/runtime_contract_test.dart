@@ -14,7 +14,6 @@ void main() {
       expect(source, contains("for (final k in const ['RICERCHE', 'VALUTAZIONI'])"));
       expect(source, contains('sectionTint.withValues(alpha: isCompactImageSection ? 0.85 : 0.48)'));
       expect(source, contains('scale: 1.20'));
-      
       expect(source, contains('padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)'));
     });
 
@@ -89,7 +88,19 @@ void main() {
       expect(source, contains('NO, SALVA IL BLOCCO'));
       expect(source, contains('Future<void> _savePr01PendingObjects() async'));
       expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
-      expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
+    });
+
+    test('PR-01 rimuove dal payload master entrambe le chiavi categoria della maschera', () {
+      final migration = File('supabase/migrations/20261106050000_pr01_fix_collection_category_block_save.sql').readAsStringSync();
+      expect(migration, contains('CREATE OR REPLACE FUNCTION collection.pr_01_nuovo_oggetto_runtime'));
+      expect(migration, contains("v_clean := v_item - 'codice_categoria' - 'codice_categoria_collezione'"));
+      expect(migration, contains('SALVATO_E_VERIFICATO'));
+      expect(migration, contains('rilettura post-salvataggio'));
+      expect(migration, isNot(contains('FROM collection.categorie_merceologiche')));
+      expect(migration, isNot(contains('INSERT INTO collection.oggetto_categoria')));
+      expect(source, contains("'codice_categoria_collezione': _selectedCollectionCategory"));
+      expect(source, contains("from('oggetto_collezione_categoria')"));
+      expect(source, contains("pending[index]['categoria']"));
     });
 
     test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
