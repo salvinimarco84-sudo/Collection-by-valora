@@ -44,6 +44,7 @@ String _valoraImageProxyUrl(String rawUrl) {
     'shopdeinerd.com',
     'm3toys.com',
     'eshop.czechrepubrick.cz',
+    'www.lego.com',
   };
   if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
   return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
