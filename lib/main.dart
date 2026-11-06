@@ -37,6 +37,8 @@ String _valoraImageProxyUrl(String rawUrl) {
     'kurogami.com',
     'www.kurogami.com',
     'www.vendiloshop.it',
+    'cdn.rebrickable.com',
+    'bits-and-blocks.co.uk',
   };
   if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
   return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
