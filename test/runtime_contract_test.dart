@@ -14,6 +14,7 @@ void main() {
   final dashboardOverlaySource = File('lib/dashboard/dashboard_section_overlay.dart').readAsStringSync();
   final dashboardCollectionCategoryCardSource = File('lib/dashboard/dashboard_collection_category_card.dart').readAsStringSync();
   final dashboardCollectionCategoryHeaderSource = File('lib/dashboard/dashboard_collection_category_header.dart').readAsStringSync();
+  final dashboardCollectionCategoryLogoSource = File('lib/dashboard/dashboard_collection_category_logo.dart').readAsStringSync();
   final dashboardCollectionCategoryPreviewStripSource = File('lib/dashboard/dashboard_collection_category_preview_strip.dart').readAsStringSync();
   final dashboardCollectionHeaderSource = File('lib/dashboard/dashboard_collection_header.dart').readAsStringSync();
   final dashboardHomeHeaderSource = File('lib/dashboard/dashboard_home_header.dart').readAsStringSync();
@@ -292,11 +293,14 @@ void main() {
 
     test('l intestazione della card categoria conserva logo, testi, conteggio e navigazione', () {
       expect(dashboardCollectionCategoryHeaderSource, contains('class DashboardCollectionCategoryHeader extends StatelessWidget'));
-      expect(dashboardCollectionCategoryHeaderSource, contains('DashboardCategoryBrandMark('));
-      expect(dashboardCollectionCategoryHeaderSource, contains('Image.network('));
-      expect(dashboardCollectionCategoryHeaderSource, contains('errorBuilder'));
-      expect(dashboardCollectionCategoryHeaderSource, contains('width: 62'));
-      expect(dashboardCollectionCategoryHeaderSource, contains('height: 46'));
+      expect(dashboardCollectionCategoryHeaderSource, contains('DashboardCollectionCategoryLogo('));
+      expect(dashboardCollectionCategoryHeaderSource, contains("import 'dashboard_collection_category_logo.dart';"));
+      expect(dashboardCollectionCategoryLogoSource, contains('class DashboardCollectionCategoryLogo extends StatelessWidget'));
+      expect(dashboardCollectionCategoryLogoSource, contains('DashboardCategoryBrandMark('));
+      expect(dashboardCollectionCategoryLogoSource, contains('Image.network('));
+      expect(dashboardCollectionCategoryLogoSource, contains('errorBuilder'));
+      expect(dashboardCollectionCategoryLogoSource, contains('width: 62'));
+      expect(dashboardCollectionCategoryLogoSource, contains('height: 46'));
       expect(dashboardCollectionCategoryHeaderSource, contains('Text('));
       expect(dashboardCollectionCategoryHeaderSource, contains(r"'$count'"));
       expect(dashboardCollectionCategoryHeaderSource, contains('onTap: onTap'));
