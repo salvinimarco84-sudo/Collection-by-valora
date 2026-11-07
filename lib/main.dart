@@ -69,6 +69,7 @@ part 'purchases/pr05_runtime_procedure.dart';
 part 'purchases/pr04_form_content.dart';
 part 'purchases/pr04_page_frame.dart';
 part 'purchases/pr04_step_content.dart';
+part 'purchases/pr04_recognition_dialog.dart';
 part 'purchases/pr05_form_content.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
@@ -8093,59 +8094,14 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
         return u.startsWith('https://') || u.startsWith('http://');
       }).toList();
       final selection = await showDialog<Map<String, dynamic>>(
-        context: context, barrierDismissible: false,
-        builder: (ctx) {
-          int selected = -1;
-          return StatefulBuilder(builder: (ctx, refreshDialog) => AlertDialog(
-            title: const Text('PR-12 · Verifica oggetto e immagine'),
-            content: SizedBox(width: 560, child: SingleChildScrollView(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Descrizione proposta: ' + (clues['descrizione_provvisoria'] ?? 'Non rilevata').toString()),
-                Text('Marchio: ' + (clues['marchio'] ?? 'Non rilevato').toString()),
-                Text('Codice prodotto: ' + (clues['codice_prodotto'] ?? 'Non rilevato').toString()),
-                if ((clues['categoria'] ?? '').toString().trim().isNotEmpty) Text('Categoria: ' + clues['categoria'].toString()),
-                if (clues['incertezze'] is List && (clues['incertezze'] as List).isNotEmpty)
-                  Text('Da verificare: ' + (clues['incertezze'] as List).join(' · ')),
-                const Divider(),
-                const Text('Scegli l’immagine da associare all’oggetto', style: TextStyle(fontWeight: FontWeight.bold)),
-                RadioListTile<int>(
-                  value: -1, groupValue: selected,
-                  onChanged: (v) => refreshDialog(() => selected = v ?? -1),
-                  title: const Text('Mantieni la foto scattata'),
-                  subtitle: const Text('La foto del tuo esemplare'),
-                  secondary: ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.memory(bytes, width: 58, height: 58, fit: BoxFit.cover)),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                if (imageCandidates.isEmpty)
-                  const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('Nessuna immagine online utilizzabile. Puoi mantenere la foto originale.')),
-                for (var i = 0; i < imageCandidates.length; i++)
-                  RadioListTile<int>(
-                    value: i, groupValue: selected,
-                    onChanged: (v) => refreshDialog(() => selected = v ?? -1),
-                    contentPadding: EdgeInsets.zero,
-                    title: Text((imageCandidates[i]['title'] ?? 'Immagine trovata online').toString()),
-                    subtitle: Text((imageCandidates[i]['motore'] ?? imageCandidates[i]['url'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
-                    secondary: ClipRRect(borderRadius: BorderRadius.circular(6), child: Image.network(
-                      (imageCandidates[i]['image_url'] ?? imageCandidates[i]['immagine_url'] ?? imageCandidates[i]['url_immagine']).toString(),
-                      width: 58, height: 58, fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, size: 36),
-                    )),
-                  ),
-                const Divider(),
-                Text('Risultati catalografici PR-12: ${results.length}. I metadati proposti restano da verificare.'),
-                const Text('La ricerca non salva dati nel database.'),
-              ],
-            ))),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, <String,dynamic>{'annulla': true}), child: const Text('ANNULLA')),
-              FilledButton(onPressed: () => Navigator.pop(ctx, <String,dynamic>{
-                'use_original': selected < 0,
-                if (selected >= 0) 'candidate': imageCandidates[selected],
-              }), child: const Text('USA SELEZIONE')),
-            ],
-          ));
-        },
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Pr04RecognitionDialog(
+          photoBytes: bytes,
+          clues: clues,
+          results: results,
+          imageCandidates: imageCandidates,
+        ),
       );
       if (selection == null || selection['annulla'] == true) {
         if (mounted) setState(() => item.photoStatus = 'Ricerca terminata. Foto originale conservata; nessuna proposta applicata.');
