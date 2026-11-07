@@ -65,6 +65,7 @@ part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
+part 'reports/report_summary_panel.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
@@ -7267,14 +7268,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 return '${whole},${fixed[1]} €';
               }
               final balance = entries - exits;
-              return Container(
-                width: double.infinity,
+              return ReportSummaryPanel(
+                sectionColor: sectionColor,
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: sectionColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: sectionColor.withValues(alpha: 0.55)),
-                ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('RIEPILOGO FLUSSI DI CASSA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 10),
@@ -7336,14 +7332,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       ? 'TOTALE ACQUISTI'
                       : 'TOTALE OPERAZIONI';
               final money = total.toStringAsFixed(2).replaceAll('.', ',');
-              return Container(
-                width: double.infinity,
+              return ReportSummaryPanel(
+                sectionColor: sectionColor,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: sectionColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: sectionColor.withValues(alpha: 0.55)),
-                ),
                 child: Row(children: [
                   Expanded(child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
