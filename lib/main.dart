@@ -8215,87 +8215,46 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       const SizedBox(width: 8), Flexible(child: Text(value, textAlign: TextAlign.end, style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w600, color: bold ? goldColor : null))),
     ]));
 
-  Widget _content() {
-    if (_step == 0) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading('Che tipo di acquisto vuoi registrare?', 'Una transazione può contenere uno o più oggetti.'),
-      _choice('ACQUISTO SINGOLO', 'Una transazione · un oggetto', Icons.shopping_bag_outlined, _type == 'SINGOLO',
-        () => setState(() { _type = 'SINGOLO'; _resize(1); _count.text = '1'; })),
-      _choice('ACQUISTO MULTIPLO / LOTTO', 'Una transazione · più oggetti distinti', Icons.inventory_2_outlined, _type == 'LOTTO',
-        () => setState(() { _type = 'LOTTO'; if (_items.length < 2) _resize(2); _count.text = _items.length.toString(); })),
-      const SizedBox(height: 12), FilledButton(onPressed: _busy ? null : () => setState(() => _step = 1), child: const Text('CONTINUA')),
-    ]);
-
-    if (_step == 1) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading('Dati dell’acquisto', 'La data è unica per tutta la transazione.'),
-      Card(child: ListTile(leading: const Icon(Icons.calendar_month_outlined), title: const Text('Data acquisto'),
-        subtitle: Text(_dateLabel(_date)), trailing: const Icon(Icons.edit_calendar_outlined), onTap: _busy ? null : _pickDate)),
-      if (_type == 'LOTTO') ...[
-        const SizedBox(height: 10), TextField(controller: _count, keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Numero di oggetti distinti *', helperText: 'Quanti record oggetto devono essere creati nella stessa transazione?')),
-      ],
-      const SizedBox(height: 12), FilledButton(onPressed: _busy ? null : () {
-        if (_type == 'LOTTO') {
-          final n = int.tryParse(_count.text.trim());
-          if (n == null || n < 2 || n > 500) { _notice('Inserisci un numero compreso fra 2 e 500.'); return; }
-          _resize(n);
-        } else { _resize(1); }
-        setState(() => _step = 2);
-      }, child: const Text('CONTINUA AGLI OGGETTI')),
-      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 0), child: const Text('INDIETRO')),
-    ]);
-
-    if (_step == 2) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading(_type == 'SINGOLO' ? 'Descrivi l’oggetto acquistato' : 'Inserisci tutti gli oggetti del lotto',
-        _type == 'SINGOLO' ? 'Un oggetto, un record, un acquisto.' : 'Ogni oggetto ha il proprio prezzo e record; la transazione resta unica.'),
-      for (var i = 0; i < _items.length; i++) _itemEditor(i),
-      Card(child: Padding(padding: const EdgeInsets.all(12), child: _line('TOTALE ACQUISTO', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true))),
-      const SizedBox(height: 10), FilledButton(onPressed: _busy ? null : () { if (!_valid()) return; setState(() => _step = 3); }, child: const Text('RIEPILOGO ACQUISTO')),
-      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 1), child: const Text('INDIETRO')),
-    ]);
-
-    if (_step == 3) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading('Riepilogo acquisto', 'Controlla i dati prima di procedere. Nessuna scrittura è stata eseguita.'),
-      Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _line('Tipo', _type == 'SINGOLO' ? 'Acquisto singolo' : 'Acquisto multiplo / lotto'),
-        _line('Data acquisto', _dateLabel(_date)), _line('Oggetti distinti', _items.length.toString()),
-        const Divider(height: 22),
-        for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text((i + 1).toString() + '. ' + _items[i].description.text.trim(), style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
-          if (_items[i].notes.text.trim().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3), child: Text('Note: ' + _items[i].notes.text.trim(), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
-          Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
-        ])),
-        const Divider(height: 22), _line('TOTALE TRANSAZIONE', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
-      ]))),
-      const SizedBox(height: 10), FilledButton.icon(onPressed: _busy ? null : _runPreview, icon: const Icon(Icons.fact_check_outlined), label: const Text('CONTROLLA E MOSTRA RIEPILOGO')),
-      OutlinedButton(onPressed: _busy ? null : () => setState(() => _step = 2), child: const Text('MODIFICA OGGETTI')),
-    ]);
-
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      _heading('Riepilogo acquisti', 'SÌ aggiunge questo acquisto alla coda senza scrivere. NO salva insieme tutti gli acquisti in coda e quello corrente.'),
-      Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _line('Tipo', _type == 'SINGOLO' ? 'Acquisto singolo' : 'Acquisto multiplo / lotto'),
-        _line('Data acquisto', _dateLabel(_date)), _line('Oggetti distinti', _items.length.toString()),
-        const Divider(height: 22),
-        for (var i = 0; i < _items.length; i++) Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text((i + 1).toString() + '. ' + _items[i].description.text.trim(), style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(_items[i].destination + ' · ' + _items[i].condition + ' · ' + _items[i].completeness, style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
-          if (_items[i].notes.text.trim().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3), child: Text('Note: ' + _items[i].notes.text.trim(), style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12))),
-          Align(alignment: Alignment.centerRight, child: Text('€ ' + (_items[i].amount ?? 0).toStringAsFixed(2).replaceAll('.', ','))),
-        ])),
-        const Divider(height: 22), _line('TOTALE ACQUISTO CORRENTE', '€ ' + _total.toStringAsFixed(2).replaceAll('.', ','), bold: true),
-        if (_pendingPurchases.isNotEmpty) ...[
-          const Divider(height: 22),
-          _line('TOTALE DI TUTTI GLI ACQUISTI', '€ ' + (_pendingTotal + _total).toStringAsFixed(2).replaceAll('.', ','), bold: true),
-        ],
-      ]))),
-      const SizedBox(height: 12),
-      FilledButton(onPressed: _busy ? null : _queueCurrentAndStartNext, child: const Text('SÌ · AGGIUNGI UN ALTRO ACQUISTO ALLA CODA')),
-      const SizedBox(height: 8),
-      FilledButton(onPressed: _busy ? null : () { setState(() { _dataConfirmed = true; }); _save(); }, child: Text(_busy ? 'ATTENDI…' : 'NO · SALVA E ESCI')),
-      OutlinedButton(onPressed: _busy ? null : () => setState(() { _step = 2; _invalidate(); }), child: const Text('MODIFICA DATI')),
-    ]);
-  }
+  Widget _content() => Pr04PurchaseStepContent(
+    step: _step,
+    type: _type,
+    dateLabel: _dateLabel(_date),
+    countController: _count,
+    items: _items,
+    total: _total,
+    pendingPurchaseCount: _pendingPurchases.length,
+    pendingTotal: _pendingTotal,
+    busy: _busy,
+    itemEditor: _itemEditor,
+    onSelectSingle: () => setState(() { _type = 'SINGOLO'; _resize(1); _count.text = '1'; }),
+    onSelectLot: () => setState(() { _type = 'LOTTO'; if (_items.length < 2) _resize(2); _count.text = _items.length.toString(); }),
+    onContinue: () => setState(() => _step = 1),
+    onBackToType: () => setState(() => _step = 0),
+    onBackToDetails: () => setState(() => _step = 1),
+    onPickDate: _pickDate,
+    onContinueToItems: () {
+      if (_type == 'LOTTO') {
+        final n = int.tryParse(_count.text.trim());
+        if (n == null || n < 2 || n > 500) { _notice('Inserisci un numero compreso fra 2 e 500.'); return; }
+        _resize(n);
+      } else {
+        _resize(1);
+      }
+      setState(() => _step = 2);
+    },
+    onContinueToSummary: () {
+      if (!_valid()) return;
+      setState(() => _step = 3);
+    },
+    onRunPreview: _runPreview,
+    onQueueAnother: _queueCurrentAndStartNext,
+    onSaveAndExit: () {
+      setState(() { _dataConfirmed = true; });
+      _save();
+    },
+    onEditObjects: () => setState(() => _step = 2),
+    onEditData: () => setState(() { _step = 2; _invalidate(); }),
+  );
   @override
   Widget build(BuildContext context) => Pr04PurchasePageFrame(
     step: _step,
