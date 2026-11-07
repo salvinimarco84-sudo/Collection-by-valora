@@ -366,88 +366,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
         ),
       );
 
-  Widget _collectionCategoryMasterPanel(String code, String name, String subtitle, Color color, IconData icon, int count, {String? logoUrl}) {
-    final categoryKey = name.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-    final previewRows = _catalogRows.where((row) {
-      final category = _dashboardCategory(row).toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-      final rawCategory = (row['categoria'] ?? row['codice_categoria'] ?? '').toString()
-          .toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-      final matches = category == categoryKey || rawCategory == categoryKey ||
-          (categoryKey == 'SAINTSEIYA' && category == 'SAINTSEIYA') ||
-          (categoryKey == 'MOTODIECAST' && category == 'MOTODIECAST') ||
-          (categoryKey == 'GIJOE' && category == 'GIJOE') ||
-          (categoryKey == 'MODELKIT' && category == 'MODELKIT') ||
-          (categoryKey == 'FUNKOPOP' && category == 'FUNKOPOP');
-      return matches;
-    }).take(5).toList();
-
-    return DashboardCollectionCategoryCard(
-      code: code,
-      name: name,
-      subtitle: subtitle,
-      color: color,
-      icon: icon,
-      count: count,
-      logoUrl: logoUrl,
-      previewImageUrls: previewRows.map((row) {
-        final url = _dashboardImageUrl(row);
-        return url == null ? null : _valoraImageProxyUrl(url);
-      }).toList(),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => CategoryObjectSearchPage(initialQuery: name, initialCategoryCode: code),
-      )),
-    );
-  }
-
-  Widget buildCollection() => ListView(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-    children: [
-      DashboardCollectionHeader(
-        title: ValoraI18n.tr('COLLEZIONE'),
-        subtitle: ValoraI18n.tr('Seleziona un tema per consultare i relativi oggetti.'),
-        countLabel: _catalogLoading ? '…' : '${_catalogRows.length}',
-      ),
-      if (_catalogError != null)
-        DashboardCollectionErrorBanner(message: 'Catalogo non disponibile: $_catalogError'),
-      if (!_catalogLoading) ...[
-        if (_collectionCategories.isEmpty)
-          const DashboardCollectionEmptyNotice(),
-        ...(() {
-          // Prima le categorie con più oggetti disponibili; a parità mantiene
-          // l'ordine configurato nel master delle categorie.
-          final sortedCategories = List<Map<String, dynamic>>.from(_collectionCategories);
-          sortedCategories.sort((a, b) {
-            final codeA = (a['codice_categoria'] ?? '').toString();
-            final codeB = (b['codice_categoria'] ?? '').toString();
-            final countA = _collectionCategoryCounts[codeA] ?? 0;
-            final countB = _collectionCategoryCounts[codeB] ?? 0;
-            final byCount = countB.compareTo(countA);
-            if (byCount != 0) return byCount;
-            final orderA = int.tryParse((a['ordine_menu'] ?? '').toString()) ?? 999999;
-            final orderB = int.tryParse((b['ordine_menu'] ?? '').toString()) ?? 999999;
-            final byOrder = orderA.compareTo(orderB);
-            if (byOrder != 0) return byOrder;
-            return (a['descrizione'] ?? '').toString().compareTo((b['descrizione'] ?? '').toString());
-          });
-          return sortedCategories.map((category) {
-          final name = (category['descrizione'] ?? '').toString();
-          final hex = (category['colore_hex'] ?? '#D6B15E').toString().replaceFirst('#', '');
-          final parsed = int.tryParse(hex, radix: 16) ?? 0xD6B15E;
-          final color = Color(0xFF000000 | parsed);
-          final rawIcon = (category['icona'] ?? '').toString();
-          final icon = rawIcon.contains('extension') ? Icons.extension
-              : rawIcon.contains('menu_book') ? Icons.menu_book_outlined
-              : rawIcon.contains('two_wheeler') ? Icons.two_wheeler
-              : rawIcon.contains('shield') ? Icons.shield_outlined
-              : rawIcon.contains('smart_toy') ? Icons.smart_toy_outlined
-              : Icons.category_outlined;
-          final code = (category['codice_categoria'] ?? '').toString();
-          final count = _collectionCategoryCounts[code] ?? 0;
-          return _collectionCategoryMasterPanel(code, name, 'Apri la categoria e consulta gli oggetti', color, icon, count, logoUrl: (category['logo_url'] ?? '').toString());
-          });
-        })(),
-      ],
-    ],
+  Widget buildCollection() => DashboardCollectionContent(
+    catalogLoading: _catalogLoading,
+    catalogError: _catalogError,
+    catalogRows: _catalogRows,
+    categories: _collectionCategories,
+    categoryCounts: _collectionCategoryCounts,
+    categoryFor: _dashboardCategory,
+    imageUrlFor: (row) {
+      final url = _dashboardImageUrl(row);
+      return url == null ? null : _valoraImageProxyUrl(url);
+    },
+    onCategoryTap: (name, code) => Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => CategoryObjectSearchPage(initialQuery: name, initialCategoryCode: code),
+    )),
   );
 
   String _sectionBackgroundAsset(String section) {
