@@ -90,6 +90,14 @@ void main() {
       expect(objectCardsPresentationSource, contains('labelColor: ValoraAppearance.instance.textMuted'));
     });
 
+    test('la scheda oggetto risolve immagini solo da campi immagine e non da URL generici', () {
+      expect(objectCardsPresentationSource, contains('bool allowDirectUrl = false'));
+      expect(objectCardsPresentationSource, contains('allowDirectUrl: true'));
+      expect(objectCardsPresentationSource, contains("'url_immagine_catalogo'"));
+      expect(objectCardsPresentationSource, contains("'images'"));
+      expect(objectCardsPresentationSource, contains('non interpreta URL generici come immagini'));
+    });
+
     test('il segnaposto immagine oggetto conserva dimensioni, icona e colori configurabili', () {
       expect(objectImagePlaceholderSource, contains('class ObjectImagePlaceholder extends StatelessWidget'));
       expect(objectImagePlaceholderSource, contains('this.size = 88'));
