@@ -49,7 +49,7 @@ void main() {
       expect(dashboardBlockMenuGridSource, contains('DashboardGridMenuCard('));
       expect(source, contains("import 'dashboard/dashboard_block_menu_grid.dart';"));
       expect(source, contains('DashboardBlockMenuGrid('));
-      expect(source, contains('imageUrlFor: (title) {'))
+      expect(source, contains('imageUrlFor: (title) {'));
     });
 
     test('la card del menu dashboard conserva immagini, colori e navigazione', () {
