@@ -17,6 +17,7 @@ class Pr04PurchaseStepContent extends StatelessWidget {
     required this.onSelectLot,
     required this.onContinue,
     required this.onBack,
+    required this.onPickDate,
     required this.onContinueToItems,
     required this.onContinueToSummary,
     required this.onRunPreview,
@@ -40,6 +41,7 @@ class Pr04PurchaseStepContent extends StatelessWidget {
   final VoidCallback onSelectLot;
   final VoidCallback onContinue;
   final VoidCallback onBack;
+  final VoidCallback onPickDate;
   final VoidCallback onContinueToItems;
   final VoidCallback onContinueToSummary;
   final VoidCallback onRunPreview;
@@ -127,7 +129,7 @@ class Pr04PurchaseStepContent extends StatelessWidget {
           title: const Text('Data acquisto'),
           subtitle: Text(dateLabel),
           trailing: const Icon(Icons.edit_calendar_outlined),
-          onTap: busy ? null : onBack,
+          onTap: busy ? null : onPickDate,
         )),
         if (type == 'LOTTO') ...[
           const SizedBox(height: 10),
