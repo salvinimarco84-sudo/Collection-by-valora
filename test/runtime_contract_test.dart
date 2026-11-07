@@ -272,8 +272,8 @@ void main() {
       expect(dashboardCollectionCategoryCardSource, contains('Image.network('));
       expect(dashboardCollectionCategoryCardSource, contains('errorBuilder'));
       expect(dashboardCollectionCategoryCardSource, contains('onTap: onTap'));
-      expect(dashboardCollectionCategoryCardSource, contains('LEGO'));
-      expect(dashboardCollectionCategoryCardSource, contains('TRANSFORMERS'));
+      expect(dashboardCollectionCategoryCardSource, contains("import 'dashboard_category_brand_mark.dart';"));
+      expect(dashboardCollectionCategoryCardSource, contains('DashboardCategoryBrandMark(category: name, color: color, fallbackIcon: icon)'));
       expect(source, contains("import 'dashboard/dashboard_collection_category_card.dart';"));
       expect(source, contains('return DashboardCollectionCategoryCard('));
       expect(source, contains('initialCategoryCode: code'));
