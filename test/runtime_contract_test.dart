@@ -16,6 +16,7 @@ void main() {
   final dashboardCollectionHeaderSource = File('lib/dashboard/dashboard_collection_header.dart').readAsStringSync();
   final dashboardHomeHeaderSource = File('lib/dashboard/dashboard_home_header.dart').readAsStringSync();
   final dashboardHomeFooterSource = File('lib/dashboard/dashboard_home_footer.dart').readAsStringSync();
+  final dashboardHomeListContentSource = File('lib/dashboard/dashboard_home_list_content.dart').readAsStringSync();
   final dashboardCollectionErrorBannerSource = File('lib/dashboard/dashboard_collection_error_banner.dart').readAsStringSync();
   final dashboardCollectionEmptyNoticeSource = File('lib/dashboard/dashboard_collection_empty_notice.dart').readAsStringSync();
   final dashboardCategoryBrandMarkSource = File('lib/dashboard/dashboard_category_brand_mark.dart').readAsStringSync();
@@ -176,16 +177,30 @@ void main() {
       expect(dashboardHomeFooterSource, contains("'COLLECTION by VALORA'"));
       expect(dashboardHomeFooterSource, contains('Colors.white38'));
       expect(dashboardHomeFooterSource, contains('letterSpacing: 1'));
-      expect(source, contains("import 'dashboard/dashboard_home_footer.dart';"));
-      expect(source, contains('const DashboardHomeFooter()'));
+      expect(dashboardHomeListContentSource, contains('footer'));
+      expect(dashboardHomeListContentSource, contains("import 'dashboard_home_footer.dart';"));
+      expect(dashboardHomeListContentSource, contains('footer,'));
+    });
+
+    test('il contenuto lista dashboard conserva ordine, spaziatura e card', () {
+      expect(dashboardHomeListContentSource, contains('class DashboardHomeListContent extends StatelessWidget'));
+      expect(dashboardHomeListContentSource, contains('EdgeInsets.fromLTRB(16, 16, 16, 28)'));
+      expect(dashboardHomeListContentSource, contains('...sectionCards'));
+      expect(dashboardHomeListContentSource, contains('catalogError'));
+      expect(dashboardHomeListContentSource, contains('const SizedBox(height: 12)'));
+      expect(dashboardHomeListContentSource, contains('footer'));
+      expect(source, contains("import 'dashboard/dashboard_home_list_content.dart';"));
+      expect(source, contains('DashboardHomeListContent('));
     });
 
     test('l’intestazione dashboard mantiene titolo e descrizione nella vista lista', () {
       expect(dashboardHomeHeaderSource, contains('class DashboardHomeHeader extends StatelessWidget'));
       expect(dashboardHomeHeaderSource, contains('letterSpacing: 1.3'));
       expect(dashboardHomeHeaderSource, contains('Colors.white70'));
-      expect(source, contains("import 'dashboard/dashboard_home_header.dart';"));
-      expect(source, contains('DashboardHomeHeader('));
+      expect(dashboardHomeListContentSource, contains('header,'));
+      expect(dashboardHomeListContentSource, contains('collectionCard,'));
+      expect(source, contains("import 'dashboard/dashboard_home_list_content.dart';"));
+      expect(source, contains('DashboardHomeListContent('));
       expect(source, contains("title: ValoraI18n.tr('CENTRO OPERATIVO')"));
       expect(source, contains("subtitle: ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.')"));
     });

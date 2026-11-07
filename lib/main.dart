@@ -22,6 +22,7 @@ import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
 import 'dashboard/dashboard_home_header.dart';
 import 'dashboard/dashboard_home_footer.dart';
+import 'dashboard/dashboard_home_list_content.dart';
 import 'dashboard/dashboard_collection_error_banner.dart';
 import 'dashboard/dashboard_collection_empty_notice.dart';
 import 'dashboard/dashboard_category_brand_mark.dart';
@@ -2973,14 +2974,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
         },
       );
     }
-    return ListView(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-    children: [
-      DashboardHomeHeader(
+    return DashboardHomeListContent(
+      header: DashboardHomeHeader(
         title: ValoraI18n.tr('CENTRO OPERATIVO'),
         subtitle: ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'),
       ),
-      _menuCard(
+      collectionCard: _menuCard(
         title: ValoraI18n.tr('COLLEZIONE'),
         subtitle: ValoraI18n.tr('Tutti i temi e tutti i record della tua collezione'),
         color: goldColor,
@@ -2988,19 +2987,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
         trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
         onTap: () { setState(() => showCollection = true); _loadDashboardCatalog(); },
       ),
-      ...dashboardSections.map((section) => _menuCard(
+      sectionCards: dashboardSections.map((section) => _menuCard(
         title: ValoraI18n.tr(section.menuTitle ?? section.title),
         subtitle: ValoraI18n.tr(section.description),
         color: ValoraAppearance.instance.colorFor(section.title),
         icon: section.icon,
         onTap: () => setState(() => selectedSection = section),
-      )),
-      if (_catalogError != null)
-        DashboardCatalogCountErrorNotice(message: 'Conteggio catalogo non disponibile: $_catalogError'),
-      const SizedBox(height: 12),
-      const DashboardHomeFooter(),
-    ],
-  );
+      )).toList(),
+      catalogError: _catalogError != null
+          ? DashboardCatalogCountErrorNotice(message: 'Conteggio catalogo non disponibile: $_catalogError')
+          : null,
+      footer: const DashboardHomeFooter(),
+    );
   }
 
   Widget _collectionCategoryMasterPanel(String code, String name, String subtitle, Color color, IconData icon, int count, {String? logoUrl}) {
