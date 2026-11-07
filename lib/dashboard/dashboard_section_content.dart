@@ -9,12 +9,14 @@ class DashboardSectionContent extends StatelessWidget {
     super.key,
     required this.background,
     required this.header,
+    this.showHeader = true,
     required this.procedureCards,
     required this.footer,
   });
 
   final Widget background;
   final Widget header;
+  final bool showHeader;
   final List<Widget> procedureCards;
   final Widget footer;
 
@@ -25,10 +27,12 @@ class DashboardSectionContent extends StatelessWidget {
           Positioned.fill(child: background),
           const Positioned.fill(child: DashboardSectionOverlay()),
           ListView(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+            padding: EdgeInsets.fromLTRB(16, showHeader ? 20 : 8, 16, 28),
             children: [
-              header,
-              const SizedBox(height: 20),
+              if (showHeader) ...[
+                header,
+                const SizedBox(height: 20),
+              ]
               ...procedureCards,
               const SizedBox(height: 12),
               footer,
