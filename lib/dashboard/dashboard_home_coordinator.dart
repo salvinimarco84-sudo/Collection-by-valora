@@ -428,7 +428,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
                         ? () => Navigator.of(context).push(MaterialPageRoute(
                               builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
-                        : procedure.apiCode == 'SOURCE-REGISTRY'
+                        : procedure.apiCode == 'PURCHASES-COMPARE'
+                            ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PurchaseComparisonPage()))
+                            : procedure.apiCode == 'SOURCE-REGISTRY'
                             ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SourceRegistryPage()))
                             : (procedure.apiCode == 'CREATE-COLLECTION-CATEGORY' || procedure.apiCode == 'EDIT-COLLECTION-CATEGORY')
                                 ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())); await _loadDashboardCatalog(); }
