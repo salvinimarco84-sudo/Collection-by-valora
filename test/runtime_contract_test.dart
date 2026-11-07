@@ -14,6 +14,7 @@ void main() {
   // relativi agli import e alla direttiva part restano verificati su main.dart.
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
+  final pr01RuntimeProcedureSource = File('lib/procedures/pr01_runtime_procedure.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -427,10 +428,11 @@ void main() {
     });
 
     test('PR-01 accoda gli oggetti e salva il blocco solo dopo la scelta finale', () {
-      expect(source, contains('_pr01PendingObjects.add({'));
-      expect(source, contains('await _savePr01PendingObjects();'));
-      expect(source, contains('NO, SALVA IL BLOCCO'));
-      expect(source, contains('Future<void> _savePr01PendingObjects() async'));
+      expect(pr01RuntimeProcedureSource, contains('_pr01PendingObjects.add({'));
+      expect(pr01RuntimeProcedureSource, contains('await _savePr01PendingObjects();'));
+      expect(pr01RuntimeProcedureSource, contains('NO, SALVA IL BLOCCO'));
+      expect(pr01RuntimeProcedureSource, contains('Future<void> _savePr01PendingObjects() async'));
+      expect(source, contains('_confirmAndSaveNewObject'));
       expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
       expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
     });
