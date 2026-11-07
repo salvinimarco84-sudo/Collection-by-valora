@@ -45,7 +45,7 @@ void main() {
 
     test('la dashboard seleziona un solo layout e costruisce solo quello attivo', () {
       expect(dashboardHomeContentSource, contains('class DashboardHomeContent extends StatelessWidget'));
-      expect(dashboardHomeContentSource, contains('useBlockLayout ?'));
+      expect(dashboardHomeContentSource, contains('build(BuildContext context) => useBlockLayout'));
       expect(dashboardHomeContentSource, contains('blockContentBuilder()'));
       expect(dashboardHomeContentSource, contains('listContentBuilder()'));
       expect(source, contains("import 'dashboard/dashboard_home_content.dart';"));
