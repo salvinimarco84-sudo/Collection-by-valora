@@ -32,7 +32,7 @@ class DashboardSectionContent extends StatelessWidget {
               if (showHeader) ...[
                 header,
                 const SizedBox(height: 20),
-              ]
+              ],
               ...procedureCards,
               const SizedBox(height: 12),
               footer,
