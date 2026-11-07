@@ -35,6 +35,7 @@ void main() {
   final dashboardHomeContentSource = File('lib/dashboard/dashboard_home_content.dart').readAsStringSync();
   final dashboardSectionContentSource = File('lib/dashboard/dashboard_section_content.dart').readAsStringSync();
   final objectHistoryDetailRowSource = File('lib/history/object_history_detail_row.dart').readAsStringSync();
+  final objectImagePlaceholderSource = File('lib/objects/object_image_placeholder.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -63,6 +64,18 @@ void main() {
       expect(source, contains("import 'history/object_history_detail_row.dart';"));
       expect(source, contains('ObjectHistoryDetailRow('));
       expect(source, contains('labelColor: ValoraAppearance.instance.textMuted'));
+    });
+
+    test('il segnaposto immagine oggetto conserva dimensioni, icona e colori configurabili', () {
+      expect(objectImagePlaceholderSource, contains('class ObjectImagePlaceholder extends StatelessWidget'));
+      expect(objectImagePlaceholderSource, contains('this.size = 88'));
+      expect(objectImagePlaceholderSource, contains('Icons.image_not_supported_outlined'));
+      expect(objectImagePlaceholderSource, contains('width: size'));
+      expect(objectImagePlaceholderSource, contains('height: size'));
+      expect(source, contains("import 'objects/object_image_placeholder.dart';"));
+      expect(source, contains('ObjectImagePlaceholder('));
+      expect(source, contains('backgroundColor: ValoraAppearance.instance.neutralOverlay'));
+      expect(source, contains('iconColor: ValoraAppearance.instance.textFaint'));
     });
 
     test('la card a blocchi della dashboard conserva immagine, colori, conteggio e navigazione', () {
