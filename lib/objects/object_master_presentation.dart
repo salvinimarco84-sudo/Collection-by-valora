@@ -87,6 +87,8 @@ extension _ObjectMasterPresentation on _ObjectRuntimePageState {
     const sourceKeys = {
       'fonte', 'fonte_dati_prodotto', 'url_fonte', 'fonte_dati',
       'fonte_dati_catalogo', 'fonte_dati_oggetto', 'fonte_catalogo',
+      'fonte_oggetto', 'url_fonte_oggetto', 'url_fonte_catalogo',
+      'url_fonte_prodotto', 'fonte_metadati', 'fonte_immagine', 'url_fonte_immagine',
     };
     const imageKeys = {
       'url_immagine', 'immagine_url', 'foto_url', 'image_url',
