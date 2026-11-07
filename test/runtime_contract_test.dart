@@ -9,6 +9,7 @@ void main() {
   final pr04FormContentSource = File('lib/purchases/pr04_form_content.dart').readAsStringSync();
   final pr05FormContentSource = File('lib/purchases/pr05_form_content.dart').readAsStringSync();
   final pr04StepContentSource = File('lib/purchases/pr04_step_content.dart').readAsStringSync();
+  final pr04RecognitionDialogSource = File('lib/purchases/pr04_recognition_dialog.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -626,6 +627,14 @@ void main() {
       expect(dashboardGridMenuCardSource, contains('color: color.withValues(alpha: 0.20)'));
       expect(dashboardRuntimeSource, contains("'VALUTAZIONI': 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
       expect(dashboardRuntimeSource, contains("'RICERCHE': 'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png'"));
+    });
+
+    test('PR-04 separa la revisione PR-12 di metadati e immagine', () {
+      expect(source, contains('Pr04RecognitionDialog('));
+      expect(pr04RecognitionDialogSource, contains('Mantieni la foto scattata'));
+      expect(pr04RecognitionDialogSource, contains('USA SELEZIONE'));
+      expect(pr04RecognitionDialogSource, contains('imageCandidates[_selected]'));
+      expect(pr04RecognitionDialogSource, contains('La ricerca non salva dati nel database.'));
     });
 
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
