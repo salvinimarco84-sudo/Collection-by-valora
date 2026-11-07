@@ -389,6 +389,25 @@ void main() {
       expect(migration, contains('categoria COLLEZIONE mancante o non valida'));
     });
 
+    test('la scheda oggetto nasconde le fonti anche nella scheda metadati', () {
+      final metadataStart = source.indexOf('Widget _pr11MetadataTab(Map<String, dynamic> object)');
+      final metadataEnd = source.indexOf('Widget _pr11TechnicalDetails(', metadataStart);
+      expect(metadataStart, isNonNegative);
+      expect(metadataEnd, greaterThan(metadataStart));
+      final metadata = source.substring(metadataStart, metadataEnd);
+      expect(metadata, contains('sourceMetadataKeys'));
+      expect(metadata, contains("!sourceMetadataKeys.contains(entry.key)"));
+      expect(metadata, contains("!sourceMetadataKeys.contains(k)"));
+      expect(metadata, isNot(contains("'attributi_specifici', 'url_fonte', 'url_immagine'")));
+      for (final key in [
+        'fonte', 'url_fonte', 'fonte_dati_prodotto', 'fonte_oggetto',
+        'url_fonte_oggetto', 'url_fonte_catalogo', 'url_fonte_prodotto',
+        'fonte_metadati', 'fonte_immagine', 'url_fonte_immagine',
+      ]) {
+        expect(metadata, contains("'$key'"));
+      }
+    });
+
     test('la scheda oggetto espone modifica e avvio vendita', () {
       expect(source, contains("label: const Text('MODIFICA OGGETTO'"));
       expect(source, contains("label: const Text('METTI IN VENDITA'"));
