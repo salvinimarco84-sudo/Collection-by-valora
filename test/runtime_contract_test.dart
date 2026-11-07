@@ -82,8 +82,8 @@ void main() {
       expect(objectHistoryDetailRowSource, contains('fontSize: 12'));
       expect(objectHistoryDetailRowSource, contains('fontSize: 15'));
       expect(source, contains("import 'history/object_history_detail_row.dart';"));
-      expect(source, contains('ObjectHistoryDetailRow('));
-      expect(source, contains('labelColor: ValoraAppearance.instance.textMuted'));
+      expect(objectCardsPresentationSource, contains('ObjectHistoryDetailRow('));
+      expect(objectCardsPresentationSource, contains('labelColor: ValoraAppearance.instance.textMuted'));
     });
 
     test('il segnaposto immagine oggetto conserva dimensioni, icona e colori configurabili', () {
@@ -93,9 +93,9 @@ void main() {
       expect(objectImagePlaceholderSource, contains('width: size'));
       expect(objectImagePlaceholderSource, contains('height: size'));
       expect(source, contains("import 'objects/object_image_placeholder.dart';"));
-      expect(source, contains('ObjectImagePlaceholder('));
-      expect(source, contains('backgroundColor: ValoraAppearance.instance.neutralOverlay'));
-      expect(source, contains('iconColor: ValoraAppearance.instance.textFaint'));
+      expect(objectCardsPresentationSource, contains('ObjectImagePlaceholder('));
+      expect(objectCardsPresentationSource, contains('backgroundColor: ValoraAppearance.instance.neutralOverlay'));
+      expect(objectCardsPresentationSource, contains('iconColor: ValoraAppearance.instance.textFaint'));
     });
 
     test('il chip metadati oggetto conserva icona, etichetta e stile compatto', () {
@@ -107,8 +107,8 @@ void main() {
       expect(objectInfoChipSource, contains('BorderRadius.circular(20)'));
       expect(objectInfoChipSource, contains('Icon(icon, size: 13, color: color)'));
       expect(source, contains("import 'objects/object_info_chip.dart';"));
-      expect(source, contains('ObjectInfoChip('));
-      expect(source, contains('color: sectionColor'));
+      expect(objectCardsPresentationSource, contains('ObjectInfoChip('));
+      expect(objectCardsPresentationSource, contains('color: sectionColor'));
     });
 
     test('la card a blocchi della dashboard conserva immagine, colori, conteggio e navigazione', () {
