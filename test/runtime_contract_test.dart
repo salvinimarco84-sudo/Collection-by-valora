@@ -6,6 +6,8 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
+  final pr04FormContentSource = File('lib/purchases/pr04_form_content.dart').readAsStringSync();
+  final pr05FormContentSource = File('lib/purchases/pr05_form_content.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -376,9 +378,10 @@ void main() {
       expect(purchaseStart, isNonNegative);
       expect(purchaseEnd, greaterThan(purchaseStart));
       final purchase = source.substring(purchaseStart, purchaseEnd);
-      expect(purchase, contains('TextField(controller: item.notes'));
-      expect(purchase, contains("labelText: 'Note (facoltative)'"));
-      expect(purchase, contains("_items[i].notes.text.trim()"));
+      expect(pr04FormContentSource, contains('TextField('));
+      expect(pr04FormContentSource, contains('controller: item.notes'));
+      expect(pr04FormContentSource, contains("labelText: 'Note (facoltative)'"));
+      expect(purchaseRuntimeSource, contains("_items[i].notes.text.trim()"));
     });
 
     test('Report acquisti mostra il dettaglio leggibile degli oggetti', () {
@@ -403,7 +406,7 @@ void main() {
       final end = source.indexOf('class Pr12BatchPage', start);
       expect(start, isNonNegative);
       expect(end, greaterThan(start));
-      final edit = '$source\\n$pr05RuntimeProcedureSource';
+      final edit = '$source\\n$pr05RuntimeProcedureSource\\n$pr05FormContentSource';
       expect(edit, contains("'data_acquisto':_date.text.trim()"));
       expect(edit, contains("'importo_totale':_money(_total.text)"));
       expect(edit, isNot(contains("'oggetti':_items")));
