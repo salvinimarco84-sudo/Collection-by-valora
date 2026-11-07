@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  // Le verifiche d'integrazione includono il coordinatore estratto; i contratti
+  // relativi agli import e alla direttiva part restano verificati su main.dart.
+  final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
@@ -61,9 +64,9 @@ void main() {
       expect(dashboardHomeContentSource, contains('blockContentBuilder()'));
       expect(dashboardHomeContentSource, contains('listContentBuilder()'));
       expect(source, contains("import 'dashboard/dashboard_home_content.dart';"));
-      expect(source, contains('DashboardHomeContent('));
-      expect(source, contains('blockContentBuilder: () {'));
-      expect(source, contains('listContentBuilder: () => DashboardHomeListContent('));
+      expect(dashboardRuntimeSource, contains('DashboardHomeContent('));
+      expect(dashboardRuntimeSource, contains('blockContentBuilder: () {'));
+      expect(dashboardRuntimeSource, contains('listContentBuilder: () => DashboardHomeListContent('));
     });
 
     test('la riga dettaglio cronologia conserva gerarchia tipografica e spaziatura', () {
@@ -111,8 +114,8 @@ void main() {
       expect(dashboardBlockMenuGridSource, contains('DashboardGridMenuCard('));
       expect(source, contains("import 'dashboard/dashboard_block_menu_grid.dart';"));
       expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
-      expect(source, contains('DashboardHomeBlockContent('));
-      expect(source, contains('imageUrlFor: (title) {'));
+      expect(dashboardRuntimeSource, contains('DashboardHomeBlockContent('));
+      expect(dashboardRuntimeSource, contains('imageUrlFor: (title) {'));
     });
 
     test('la card del menu dashboard conserva immagini, colori e navigazione', () {
@@ -123,8 +126,8 @@ void main() {
       expect(dashboardMenuCardSource, contains('onTap: onTap'));
       expect(dashboardMenuCardSource, contains('trailingText'));
       expect(source, contains("import 'dashboard/dashboard_menu_card.dart';"));
-      expect(source, contains('return DashboardMenuCard('));
-      expect(source, contains('imageUrl: imageUrl'));
+      expect(dashboardRuntimeSource, contains('return DashboardMenuCard('));
+      expect(dashboardRuntimeSource, contains('imageUrl: imageUrl'));
     });
 
     test('il pannello categoria conserva contenitore, intestazione e contenuto', () {
@@ -135,8 +138,8 @@ void main() {
       expect(dashboardCategoryPanelSource, contains('DashboardCategoryPanelHeader('));
       expect(dashboardCategoryPanelSource, contains('child,'));
       expect(source, contains("import 'dashboard/dashboard_category_panel.dart';"));
-      expect(source, contains('return DashboardCategoryPanel('));
-      expect(source, contains('recordCount: rows.length'));
+      expect(dashboardRuntimeSource, contains('return DashboardCategoryPanel('));
+      expect(dashboardRuntimeSource, contains('recordCount: rows.length'));
     });
 
     test('l’avviso caricamento categoria mantiene padding e indicatore', () {
@@ -144,7 +147,7 @@ void main() {
       expect(dashboardCategoryLoadingNoticeSource, contains('EdgeInsets.all(14)'));
       expect(dashboardCategoryLoadingNoticeSource, contains('LinearProgressIndicator()'));
       expect(source, contains("import 'dashboard/dashboard_category_loading_notice.dart';"));
-      expect(source, contains('const DashboardCategoryLoadingNotice()'));
+      expect(dashboardRuntimeSource, contains('const DashboardCategoryLoadingNotice()'));
     });
 
     test('il pulsante assistente globale mantiene icona, etichetta e callback', () {
@@ -153,7 +156,7 @@ void main() {
       expect(dashboardAssistantFabSource, contains('Icons.mic_none'));
       expect(dashboardAssistantFabSource, contains('onPressed: onPressed'));
       expect(source, contains("import 'dashboard/dashboard_assistant_fab.dart';"));
-      expect(source, contains('floatingActionButton: DashboardAssistantFab('));
+      expect(dashboardRuntimeSource, contains('floatingActionButton: DashboardAssistantFab('));
       expect(source, contains('screenContext: selectedSection?.title ?? \'Dashboard\''));
     });
 
@@ -164,7 +167,7 @@ void main() {
       expect(dashboardCatalogCountErrorNoticeSource, contains('fontSize: 12'));
       expect(dashboardCatalogCountErrorNoticeSource, contains('message'));
       expect(source, contains("import 'dashboard/dashboard_catalog_count_error_notice.dart';"));
-      expect(source, contains('DashboardCatalogCountErrorNotice(message:'));
+      expect(dashboardRuntimeSource, contains('DashboardCatalogCountErrorNotice(message:'));
     });
 
     test('l’avviso categoria senza record mantiene testo e stile', () {
@@ -173,7 +176,7 @@ void main() {
       expect(dashboardCategoryNoRecordsNoticeSource, contains('EdgeInsets.fromLTRB(4, 10, 4, 5)'));
       expect(dashboardCategoryNoRecordsNoticeSource, contains('Colors.white70'));
       expect(source, contains("import 'dashboard/dashboard_category_no_records_notice.dart';"));
-      expect(source, contains('const DashboardCategoryNoRecordsNotice()'));
+      expect(dashboardRuntimeSource, contains('const DashboardCategoryNoRecordsNotice()'));
     });
 
     test('l’intestazione categoria conserva marchio, conteggio e navigazione VEDI TUTTI', () {
@@ -185,8 +188,8 @@ void main() {
       expect(dashboardCategoryPanelSource, contains("import 'dashboard_category_panel_header.dart';"));
       expect(dashboardCategoryPanelSource, contains('DashboardCategoryPanelHeader('));
       expect(source, contains("import 'dashboard/dashboard_category_panel.dart';"));
-      expect(source, contains('return DashboardCategoryPanel('));
-      expect(source, contains('onViewAll: () => Navigator.of(context).push'));
+      expect(dashboardRuntimeSource, contains('return DashboardCategoryPanel('));
+      expect(dashboardRuntimeSource, contains('onViewAll: () => Navigator.of(context).push'));
     });
 
     test('l’anteprima oggetto categoria conserva immagini, fallback, dimensioni e navigazione', () {
@@ -202,7 +205,7 @@ void main() {
       expect(dashboardCategoryObjectPreviewSource, contains('onTap: onTap'));
       expect(source, contains("import 'dashboard/dashboard_category_object_preview.dart';"));
       expect(dashboardCategoryPreviewListSource, contains('DashboardCategoryObjectPreview('));
-      expect(source, contains('DashboardCategoryPreviewList('));
+      expect(dashboardRuntimeSource, contains('DashboardCategoryPreviewList('));
     });
 
     test('il marchio grafico categoria conserva i loghi e lo stile delle collezioni', () {
@@ -224,7 +227,7 @@ void main() {
       expect(dashboardCollectionEmptyNoticeSource, contains('Nessuna categoria configurata nel master.'));
       expect(dashboardCollectionEmptyNoticeSource, contains('Colors.white70'));
       expect(source, contains("import 'dashboard/dashboard_collection_empty_notice.dart';"));
-      expect(source, contains('const DashboardCollectionEmptyNotice()'));
+      expect(dashboardRuntimeSource, contains('const DashboardCollectionEmptyNotice()'));
     });
 
     test('il banner errore catalogo mantiene sfondo, margini e testo leggibile', () {
@@ -233,7 +236,7 @@ void main() {
       expect(dashboardCollectionErrorBannerSource, contains('BorderRadius.circular(10)'));
       expect(dashboardCollectionErrorBannerSource, contains('Colors.white'));
       expect(source, contains("import 'dashboard/dashboard_collection_error_banner.dart';"));
-      expect(source, contains('DashboardCollectionErrorBanner(message:'));
+      expect(dashboardRuntimeSource, contains('DashboardCollectionErrorBanner(message:'));
     });
 
     test('il footer dashboard mantiene marchio, colore e allineamento', () {
@@ -254,7 +257,7 @@ void main() {
       expect(dashboardHomeListContentSource, contains('const SizedBox(height: 12)'));
       expect(dashboardHomeListContentSource, contains('footer'));
       expect(source, contains("import 'dashboard/dashboard_home_list_content.dart';"));
-      expect(source, contains('DashboardHomeListContent('));
+      expect(dashboardRuntimeSource, contains('DashboardHomeListContent('));
     });
 
     test('l’intestazione dashboard mantiene titolo e descrizione nella vista lista', () {
@@ -264,9 +267,9 @@ void main() {
       expect(dashboardHomeListContentSource, contains('header,'));
       expect(dashboardHomeListContentSource, contains('collectionCard,'));
       expect(source, contains("import 'dashboard/dashboard_home_list_content.dart';"));
-      expect(source, contains('DashboardHomeListContent('));
-      expect(source, contains("title: ValoraI18n.tr('CENTRO OPERATIVO')"));
-      expect(source, contains("subtitle: ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.')"));
+      expect(dashboardRuntimeSource, contains('DashboardHomeListContent('));
+      expect(dashboardRuntimeSource, contains("title: ValoraI18n.tr('CENTRO OPERATIVO')"));
+      expect(dashboardRuntimeSource, contains("subtitle: ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.')"));
     });
 
     test('l’intestazione della collezione mantiene titolo, descrizione e conteggio', () {
@@ -274,8 +277,8 @@ void main() {
       expect(dashboardCollectionHeaderSource, contains('Icons.inventory_2_outlined'));
       expect(dashboardCollectionHeaderSource, contains('countLabel'));
       expect(source, contains("import 'dashboard/dashboard_collection_header.dart';"));
-      expect(source, contains('DashboardCollectionHeader('));
-      expect(source, contains("title: ValoraI18n.tr('COLLEZIONE')"));
+      expect(dashboardRuntimeSource, contains('DashboardCollectionHeader('));
+      expect(dashboardRuntimeSource, contains("title: ValoraI18n.tr('COLLEZIONE')"));
     });
 
     test('la card categoria collezione mantiene logo, conteggio, anteprime e navigazione', () {
@@ -292,8 +295,8 @@ void main() {
       expect(dashboardCollectionCategoryCardSource, contains("import 'dashboard_collection_category_header.dart';"));
       expect(dashboardCollectionCategoryCardSource, contains('DashboardCollectionCategoryHeader('));
       expect(source, contains("import 'dashboard/dashboard_collection_category_card.dart';"));
-      expect(source, contains('return DashboardCollectionCategoryCard('));
-      expect(source, contains('initialCategoryCode: code'));
+      expect(dashboardRuntimeSource, contains('return DashboardCollectionCategoryCard('));
+      expect(dashboardRuntimeSource, contains('initialCategoryCode: code'));
     });
 
     test('l intestazione della card categoria conserva logo, testi, conteggio e navigazione', () {
@@ -480,15 +483,15 @@ void main() {
       expect(dashboardFooterSource, contains('OutlinedButton')); 
       expect(dashboardFooterSource, contains('backgroundColor: Colors.transparent'));
       expect(dashboardFooterSource, contains('withValues(alpha: 0.55)'));
-      expect(source, contains('DashboardSectionFooter('));
+      expect(dashboardRuntimeSource, contains('DashboardSectionFooter('));
       expect(procedureCardSource, contains('Colors.black.withValues(alpha: 0.20)'));
       expect(source, contains('Colors.black.withValues(alpha: 0.22)'));
       expect(themeSource, contains("'VALUTAZIONI': Color(0xFFD6A83F)"));
       expect(themeSource, contains("'RICERCHE': Color(0xFF38BDF8)"));
       expect(dashboardMenuCardSource, contains('color: color.withValues(alpha: 0.20)'));
       expect(dashboardGridMenuCardSource, contains('color: color.withValues(alpha: 0.20)'));
-      expect(source, contains("'VALUTAZIONI': 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
-      expect(source, contains("'RICERCHE': 'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png'"));
+      expect(dashboardRuntimeSource, contains("'VALUTAZIONI': 'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg'"));
+      expect(dashboardRuntimeSource, contains("'RICERCHE': 'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png'"));
     });
 
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
@@ -544,7 +547,7 @@ void main() {
       expect(dashboardAppBarSource, contains('onPressed: onAppearanceTap'));
       expect(dashboardAppBarSource, contains('onPressed: onLogout'));
       expect(source, contains("import 'dashboard/dashboard_app_bar.dart';"));
-      expect(source, contains('appBar: DashboardAppBar('));
+      expect(dashboardRuntimeSource, contains('appBar: DashboardAppBar('));
     });
 
     test('l anteprima orizzontale categoria mantiene limite, layout e callback', () {
@@ -556,7 +559,7 @@ void main() {
       expect(dashboardCategoryPreviewListSource, contains('imageUrlFor(row)'));
       expect(dashboardCategoryPreviewListSource, contains('onObjectTap(row)'));
       expect(source, contains("import 'dashboard/dashboard_category_preview_list.dart';"));
-      expect(source, contains('DashboardCategoryPreviewList('));
+      expect(dashboardRuntimeSource, contains('DashboardCategoryPreviewList('));
     });
 
     test('il dialog informativo procedura conserva testo e chiusura', () {
@@ -566,7 +569,7 @@ void main() {
       expect(dashboardProcedureInfoDialogSource, contains('Text(closeLabel)'));
       expect(dashboardProcedureInfoDialogSource, contains('onPressed: onClose'));
       expect(source, contains("import 'dashboard/dashboard_procedure_info_dialog.dart';"));
-      expect(source, contains('DashboardProcedureInfoDialog('));
+      expect(dashboardRuntimeSource, contains('DashboardProcedureInfoDialog('));
     });
 
     test('la griglia dashboard conserva breakpoint, card e immagini', () {
@@ -583,7 +586,7 @@ void main() {
       expect(dashboardBlockMenuGridSource, contains("title == 'COLLEZIONE'"));
       expect(source, contains("import 'dashboard/dashboard_block_menu_grid.dart';"));
       expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
-      expect(source, contains('DashboardHomeBlockContent('));
+      expect(dashboardRuntimeSource, contains('DashboardHomeBlockContent('));
     });
     test('il coordinatore del menu principale è isolato senza alterarne i flussi', () {
       expect(dashboardHomeCoordinatorSource, contains("part of '../main.dart';"));
@@ -643,7 +646,7 @@ void main() {
       expect(dashboardSectionContentSource, contains('...procedureCards'));
       expect(dashboardSectionContentSource, contains('footer'));
       expect(source, contains("import 'dashboard/dashboard_section_content.dart';"));
-      expect(source, contains('DashboardSectionContent('));
+      expect(dashboardRuntimeSource, contains('DashboardSectionContent('));
     });
   });
 }
