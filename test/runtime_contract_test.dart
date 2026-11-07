@@ -837,4 +837,20 @@ void main() {
       expect(dashboardRuntimeSource, contains('DashboardSectionContent('));
     });
   });
+  test('Acquisti comparati confronta solo prodotti identificati ed è in sola lettura', () {
+    final page = File('lib/purchases/purchase_comparison_page.dart').readAsStringSync();
+    expect(page, contains("from('acquisti_oggetti')"));
+    expect(page, contains("from('master_oggetti')"));
+    expect(page, contains("from('master_acquisti')"));
+    expect(page, contains("'prezzo_unitario': amount / qty"));
+    expect(page, contains("entries.length < 2"));
+    expect(page, contains("Differenza massimo/minimo"));
+    expect(page, isNot(contains(".insert(")));
+    expect(page, isNot(contains(".update(")));
+    expect(page, isNot(contains(".delete(")));
+    expect(File('lib/procedures/procedure_registry.dart').readAsStringSync(), contains("apiCode: 'PURCHASES-COMPARE'"));
+    expect(File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync(), contains("const PurchaseComparisonPage()"));
+    expect(source, contains("import 'purchases/purchase_comparison_page.dart';"));
+  });
+
 }
