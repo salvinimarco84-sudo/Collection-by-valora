@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'dashboard_category_brand_mark.dart';
+import 'dashboard_collection_category_logo.dart';
 
 /// Intestazione della scheda categoria con marchio, descrizione e conteggio.
 class DashboardCollectionCategoryHeader extends StatelessWidget {
@@ -26,26 +26,12 @@ class DashboardCollectionCategoryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        leading: (logoUrl ?? '').trim().isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(9),
-                child: Image.network(
-                  logoUrl!,
-                  width: 62,
-                  height: 46,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => DashboardCategoryBrandMark(
-                    category: name,
-                    color: color,
-                    fallbackIcon: icon,
-                  ),
-                ),
-              )
-            : DashboardCategoryBrandMark(
-                category: name,
-                color: color,
-                fallbackIcon: icon,
-              ),
+        leading: DashboardCollectionCategoryLogo(
+          category: name,
+          color: color,
+          fallbackIcon: icon,
+          logoUrl: logoUrl,
+        ),
         title: Text(
           name,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
