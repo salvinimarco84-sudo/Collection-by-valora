@@ -19,6 +19,7 @@ void main() {
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
+  final reportSummaryPanelSource = File('lib/reports/report_summary_panel.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -704,6 +705,19 @@ void main() {
       expect(valoraI18nSource, contains('static String tr('));
       expect(source, contains("import 'localization/valora_i18n.dart';"));
       expect(source, isNot(contains('class ValoraI18n extends ChangeNotifier')));
+    });
+
+    test('i riepiloghi report condividono il pannello grafico senza spostare i calcoli', () {
+      expect(reportSummaryPanelSource, contains('class ReportSummaryPanel extends StatelessWidget'));
+      expect(reportSummaryPanelSource, contains('sectionColor.withValues(alpha: 0.12)'));
+      expect(reportSummaryPanelSource, contains('BorderRadius.circular(14)'));
+      expect(source, contains("part 'reports/report_summary_panel.dart';"));
+      expect(source, contains('ReportSummaryPanel('));
+      expect(source, contains("'TOTALE ENTRATE'"));
+      expect(source, contains("'TOTALE USCITE'"));
+      expect(source, contains("'SALDO (ENTRATE − USCITE)'"));
+      expect(source, contains("'TOTALE VENDITE'"));
+      expect(source, contains("'TOTALE ACQUISTI'"));
     });
 
     test('il contenuto della sezione mantiene sfondo, overlay, procedure e ritorno', () {
