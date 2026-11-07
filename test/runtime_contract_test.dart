@@ -32,6 +32,7 @@ void main() {
   final dashboardProcedureInfoDialogSource = File('lib/dashboard/dashboard_procedure_info_dialog.dart').readAsStringSync();
   final dashboardBlockMenuGridSource = File('lib/dashboard/dashboard_block_menu_grid.dart').readAsStringSync();
   final dashboardHomeBlockContentSource = File('lib/dashboard/dashboard_home_block_content.dart').readAsStringSync();
+  final dashboardHomeContentSource = File('lib/dashboard/dashboard_home_content.dart').readAsStringSync();
   final dashboardSectionContentSource = File('lib/dashboard/dashboard_section_content.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
@@ -40,6 +41,17 @@ void main() {
       expect(dashboardOverlaySource, contains('IgnorePointer('));
       expect(dashboardOverlaySource, contains('Color.fromRGBO(0, 0, 0, 0.22)'));
       expect(dashboardSectionContentSource, contains('const Positioned.fill(child: DashboardSectionOverlay())'));
+    });
+
+    test('la dashboard seleziona un solo layout e costruisce solo quello attivo', () {
+      expect(dashboardHomeContentSource, contains('class DashboardHomeContent extends StatelessWidget'));
+      expect(dashboardHomeContentSource, contains('useBlockLayout ?'));
+      expect(dashboardHomeContentSource, contains('blockContentBuilder()'));
+      expect(dashboardHomeContentSource, contains('listContentBuilder()'));
+      expect(source, contains("import 'dashboard/dashboard_home_content.dart';"));
+      expect(source, contains('DashboardHomeContent('));
+      expect(source, contains('blockContentBuilder: () {'));
+      expect(source, contains('listContentBuilder: () => DashboardHomeListContent('));
     });
 
     test('la card a blocchi della dashboard conserva immagine, colori, conteggio e navigazione', () {
