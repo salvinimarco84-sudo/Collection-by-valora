@@ -11,6 +11,7 @@ void main() {
   final pr04StepContentSource = File('lib/purchases/pr04_step_content.dart').readAsStringSync();
   final pr04RecognitionDialogSource = File('lib/purchases/pr04_recognition_dialog.dart').readAsStringSync();
   final pr04PhotoFieldSource = File('lib/purchases/pr04_photo_field.dart').readAsStringSync();
+  final pr05SearchSectionSource = File('lib/purchases/pr05_search_section.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -70,6 +71,16 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('PR-05 separa la ricerca acquisto dalla maschera di modifica', () {
+      expect(source, contains("part 'purchases/pr05_search_section.dart';"));
+      expect(pr05FormContentSource, contains('Pr05PurchaseSearchSection('));
+      expect(pr05SearchSectionSource, contains('class Pr05PurchaseSearchSection extends StatelessWidget'));
+      expect(pr05SearchSectionSource, contains('Codice acquisto o descrizione'));
+      expect(pr05SearchSectionSource, contains('foundSummary(row)'));
+      expect(pr05SearchSectionSource, contains('onTap: busy ? null : () => onLoad(row)'));
+    });
+
+
     test('il campo foto PR-04 conserva acquisizione, anteprima e fallback', () {
       expect(source, contains("part 'purchases/pr04_photo_field.dart';"));
       expect(pr04FormContentSource, contains('Pr04PurchasePhotoField('));
