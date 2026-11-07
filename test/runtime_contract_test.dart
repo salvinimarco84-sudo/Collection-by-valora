@@ -12,7 +12,7 @@ void main() {
   final dashboardCollectionContentSource = File('lib/dashboard/dashboard_collection_content.dart').readAsStringSync();
   // Le verifiche d'integrazione includono il coordinatore estratto; i contratti
   // relativi agli import e alla direttiva part restano verificati su main.dart.
-  final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource';
+  final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
