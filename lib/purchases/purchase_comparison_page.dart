@@ -17,7 +17,7 @@ class _PurchaseComparisonPageState extends State<PurchaseComparisonPage> {
   String _s(dynamic v) => (v ?? '').toString().trim();
   double _n(dynamic v) => double.tryParse(_s(v).replaceAll(',', '.')) ?? 0;
   String _key(String maker, String code) =>
-      '${maker.toUpperCase().replaceAll(RegExp(r'\\s+'), ' ').trim()}|${code.toUpperCase().replaceAll(RegExp(r'\\s+'), '').trim()}';
+      '${maker.toUpperCase().replaceAll(RegExp(r'\s+'), ' ').trim()}|${code.toUpperCase().replaceAll(RegExp(r'\s+'), '').trim()}';
 
   @override
   void initState() { super.initState(); _load(); }
