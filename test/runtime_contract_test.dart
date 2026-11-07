@@ -13,6 +13,7 @@ void main() {
   // Le verifiche d'integrazione includono il coordinatore estratto; i contratti
   // relativi agli import e alla direttiva part restano verificati su main.dart.
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
+  final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -405,6 +406,24 @@ void main() {
       expect(source, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(source, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(source, contains('oggetto_collezione_categoria'));
+    });
+
+    test('la maschera PR-01 è separata e mantiene tutti i campi originali', () {
+      expect(source, contains("import 'procedures/pr01_form_content.dart';"));
+      expect(source, contains('Pr01FormContent('));
+      expect(pr01FormContentSource, contains('class Pr01FormContent extends StatelessWidget'));
+      for (final label in [
+        'IDENTIFICAZIONE OGGETTO',
+        'DATI IDENTIFICATIVI · INSERIMENTO MANUALE',
+        'DATI INSERIBILI',
+        'VALORI DETERMINATI DA ALTRE PROCEDURE',
+      ]) {
+        expect(pr01FormContentSource, contains(label));
+      }
+      expect(pr01FormContentSource, contains('descriptionField'));
+      expect(pr01FormContentSource, contains('collectionCategoryField'));
+      expect(pr01FormContentSource, contains('totalValueField'));
+      expect(pr01FormContentSource, contains('marketValueField'));
     });
 
     test('PR-01 accoda gli oggetti e salva il blocco solo dopo la scelta finale', () {
