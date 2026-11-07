@@ -610,7 +610,7 @@ void main() {
       expect(dashboardCollectionContentSource, contains('class DashboardCollectionContent extends StatelessWidget'));
       expect(dashboardCollectionContentSource, contains('sortedCategories.sort'));
       expect(dashboardCollectionContentSource, contains('previewImageUrls: previewRows.map(imageUrlFor).toList()'));
-      expect(source, contains(\"part 'dashboard/dashboard_collection_content.dart';\"));
+      expect(source, contains("part 'dashboard/dashboard_collection_content.dart';"));
       expect(dashboardHomeCoordinatorSource, contains('Widget buildSection(DashboardSection section)'));
       expect(source, contains("part 'dashboard/dashboard_home_coordinator.dart';"));
       expect(source, isNot(contains('class HomeDashboard extends StatefulWidget')));
