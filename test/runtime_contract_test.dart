@@ -4,14 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
-  // Le verifiche d'integrazione includono il coordinatore estratto; i contratti
-  // relativi agli import e alla direttiva part restano verificati su main.dart.
-  final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
   final authenticationGateSource = File('lib/authentication/authentication_gate.dart').readAsStringSync();
   final dashboardHomeCoordinatorSource = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
+  // Le verifiche d'integrazione includono il coordinatore estratto; i contratti
+  // relativi agli import e alla direttiva part restano verificati su main.dart.
+  final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource';
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
