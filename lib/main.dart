@@ -6034,11 +6034,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Widget _pr11MetadataTab(Map<String, dynamic> object) {
+    const sourceMetadataKeys = <String>{
+      'fonte', 'url_fonte', 'fonte_dati', 'fonte_dati_prodotto',
+      'fonte_dati_catalogo', 'fonte_dati_oggetto', 'fonte_catalogo',
+      'fonte_oggetto', 'url_fonte_oggetto', 'url_fonte_catalogo',
+      'url_fonte_prodotto', 'fonte_metadati', 'fonte_immagine',
+      'url_fonte_immagine',
+    };
     const baseKeys = [
       'produttore', 'anno_uscita', 'codice_prodotto', 'categoria', 'tema',
       'sezione', 'sottotema', 'nome_ufficiale', 'numero_pezzi',
       'numero_minifigure', 'dettagli_pezzi', 'contenuto_confezione',
-      'modalita_altern', 'attributi_specifici', 'url_fonte', 'url_immagine',
+      'modalita_altern', 'attributi_specifici', 'url_immagine',
       'stato_verifica', 'prezzo_lancio',
     ];
     String labelFor(String key) => key
