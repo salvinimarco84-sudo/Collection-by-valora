@@ -16,6 +16,7 @@ void main() {
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
   final pr01RuntimeProcedureSource = File('lib/procedures/pr01_runtime_procedure.dart').readAsStringSync();
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
+  final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -409,6 +410,21 @@ void main() {
       expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02RuntimeProcedureSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(pr02RuntimeProcedureSource, contains('oggetto_collezione_categoria'));
+    });
+
+    test('PR-03 mantiene selezione, conferma e salvataggio nel runtime estratto', () {
+      expect(pr03RuntimeProcedureSource, contains("part of '../main.dart';"));
+      expect(pr03RuntimeProcedureSource, contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async'));
+      expect(pr03RuntimeProcedureSource, contains('Future<void> _confirmPr03Closure() async'));
+      expect(pr03RuntimeProcedureSource, contains('Future<void> _savePr03PendingClosures() async'));
+      expect(pr03RuntimeProcedureSource, contains('_pr03PendingClosures.add({'));
+      expect(pr03RuntimeProcedureSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'preview'"));
+      expect(pr03RuntimeProcedureSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'review'"));
+      expect(pr03RuntimeProcedureSource, contains("'PR-03', 'save'"));
+      expect(pr03RuntimeProcedureSource, contains("result['scrittura_eseguita'] != true"));
+      expect(source, contains("part 'procedures/pr03_runtime_procedure.dart';"));
+      expect(source, isNot(contains('Future<void> _confirmPr03Closure() async')));
+      expect(source, isNot(contains('Future<void> _savePr03PendingClosures() async')));
     });
 
     test('la maschera PR-01 è separata e mantiene tutti i campi originali', () {
