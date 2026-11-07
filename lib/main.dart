@@ -16,6 +16,7 @@ import 'package:pdf/pdf.dart' as pw_core;
 import 'package:flutter/material.dart';
 import 'themes/valora_theme.dart';
 import 'localization/valora_i18n.dart';
+import 'startup/startup_failure_page.dart';
 import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
@@ -165,7 +166,7 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
         ),
         home: widget.startupError == null
             ? const AuthenticationGate()
-            : StartupFailurePage(error: widget.startupError!),
+            : StartupFailurePage(error: widget.startupError!, accentColor: goldColor),
       );
 }
 
@@ -404,54 +405,6 @@ class StartupLoadingPage extends StatelessWidget {
                   const SizedBox(height: 14),
                   const Text('Inizializzazione dell’app in corso…', textAlign: TextAlign.center),
                 ],
-              ),
-            ),
-          ),
-        ),
-      );
-}
-
-class StartupFailurePage extends StatelessWidget {
-  const StartupFailurePage({super.key, required this.error});
-
-  final String error;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        color: goldColor, size: 64),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'COLLECTION by VALORA',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: goldColor,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Avvio non completato. Il dettaglio seguente aiuta a individuare la causa.',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    SelectableText(
-                      error,
-                      style: const TextStyle(color: Color(0xFFE35D5D)),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
