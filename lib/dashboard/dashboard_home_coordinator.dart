@@ -248,8 +248,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: selectedSection != null,
         appBar: DashboardAppBar(
-          backgroundColor: ValoraAppearance.instance.background.withValues(alpha: 0.82),
+          backgroundColor: ValoraAppearance.instance.background.withValues(alpha: selectedSection != null ? 0.12 : 0.82),
           showBackButton: selectedSection != null || showCollection,
           onBack: () => setState(() { selectedSection = null; showCollection = false; }),
           onProfileTap: () {
@@ -267,7 +268,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 fit: StackFit.expand,
                 children: [
                   Image.asset(
-                    valoraThemeAsset(ValoraAppearance.instance.selectedThemeId),
+                    selectedSection == null
+                        ? valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)
+                        : _sectionBackgroundAsset(selectedSection!.title),
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
                     errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
@@ -401,18 +404,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final customImage = appearance.imageUrls[section.title];
     final backgroundAsset = _sectionBackgroundAsset(section.title);
     return DashboardSectionContent(
-      background: DashboardSectionBackground(
-        customImage: customImage,
-        backgroundAsset: backgroundAsset,
-        backgroundColor: appearance.background,
-        imageUrlResolver: _valoraImageProxyUrl,
-      ),
+      background: const SizedBox.shrink(),
       header: DashboardSectionHeader(
         title: section.title,
         description: ValoraI18n.tr(section.description),
         accentColor: appearance.colorFor(section.title),
         secondaryTextColor: appearance.textSecondary,
       ),
+      showHeader: section.title != 'CATALOGO',
       procedureCards: [
             ...procedures.map((procedure) => ProcedureCard(
             procedure: procedure,
