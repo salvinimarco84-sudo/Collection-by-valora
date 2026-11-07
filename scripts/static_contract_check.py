@@ -9,6 +9,7 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 main = (root / "lib" / "main.dart").read_text(encoding="utf-8")
+pr02_runtime = (root / "lib" / "procedures" / "pr02_runtime_procedure.dart").read_text(encoding="utf-8")
 pubspec = (root / "pubspec.yaml").read_text(encoding="utf-8")
 workflow_path = root / ".github" / "workflows" / "collection-valora-ci.yml"
 workflow = workflow_path.read_text(encoding="utf-8") if workflow_path.exists() else ""
@@ -20,7 +21,7 @@ checks = {
     "new sale can preselect the requested object": "NewSalePage(initialObjectCode: id)" in main and "final int? initialObjectCode;" in main,
     "PR-02 loads editable collection categories": "widget.apiCode == 'PR-02'" in main and "_loadCollectionCategories();" in main and "_collectionCategoryField()" in main,
     "PR-02 collection category is selected": "_selectedCollectionCategory" in main and "categoria_collezione_selezionata" in main,
-    "PR-02 removes technical category from object payload": "oggetto_collezione_categoria" in main and "_savePr02PendingChanges" in main,
+    "PR-02 removes technical category from object payload": "oggetto_collezione_categoria" in pr02_runtime and "_savePr02PendingChanges" in pr02_runtime,
     "PR-01 validates collection category": "Seleziona una categoria COLLEZIONE valida." in main,
     "PR-12 catalog scan exists": "_loadIncompleteMetadataCatalog" in main,
     "PR-12 batch engine exists": "_runPr12AiBatch" in main and "LOTTO DA 10" in main,
