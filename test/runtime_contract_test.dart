@@ -90,6 +90,12 @@ void main() {
       expect(objectCardsPresentationSource, contains('labelColor: ValoraAppearance.instance.textMuted'));
     });
 
+    test('la card oggetto disponibile non mostra chip per dati mancanti', () {
+      expect(objectCardsPresentationSource, contains("if (destination != 'Non indicata' || condition != 'Non indicata')"));
+      expect(objectCardsPresentationSource, contains("if (destination != 'Non indicata')"));
+      expect(objectCardsPresentationSource, contains("if (condition != 'Non indicata')"));
+    });
+
     test('la scheda oggetto risolve immagini solo da campi immagine e non da URL generici', () {
       expect(objectCardsPresentationSource, contains('bool allowDirectUrl = false'));
       expect(objectCardsPresentationSource, contains('allowDirectUrl: true'));
