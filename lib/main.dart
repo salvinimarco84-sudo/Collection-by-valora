@@ -18,6 +18,7 @@ import 'themes/valora_theme.dart';
 import 'localization/valora_i18n.dart';
 import 'startup/startup_failure_page.dart';
 import 'startup/startup_loading_page.dart';
+import 'authentication/authentication_gate.dart';
 import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
@@ -166,7 +167,10 @@ class _CollectionValoraAppState extends State<CollectionValoraApp> {
           ),
         ),
         home: widget.startupError == null
-            ? const AuthenticationGate()
+            ? AuthenticationGate(
+                authenticatedBuilder: (_) => const HomeDashboard(),
+                unauthenticatedBuilder: (_) => const LoginPage(),
+              )
             : StartupFailurePage(error: widget.startupError!, accentColor: goldColor),
       );
 }
@@ -380,18 +384,6 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       ],
     ),
   );
-}
-
-class AuthenticationGate extends StatelessWidget {
-  const AuthenticationGate({super.key});
-  @override
-  Widget build(BuildContext context) => StreamBuilder<AuthState>(
-        stream: Supabase.instance.client.auth.onAuthStateChange,
-        builder: (context, snapshot) =>
-            Supabase.instance.client.auth.currentSession != null
-                ? const HomeDashboard()
-                : const LoginPage(),
-      );
 }
 
 class LoginPage extends StatefulWidget {
