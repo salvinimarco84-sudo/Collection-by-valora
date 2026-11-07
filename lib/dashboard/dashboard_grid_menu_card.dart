@@ -23,7 +23,7 @@ class DashboardGridMenuCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFF151515),
+      color: color.withValues(alpha: 0.20),
       borderRadius: BorderRadius.circular(15),
       child: InkWell(
         borderRadius: BorderRadius.circular(15),
