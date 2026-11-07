@@ -34,6 +34,7 @@ void main() {
   final dashboardHomeBlockContentSource = File('lib/dashboard/dashboard_home_block_content.dart').readAsStringSync();
   final dashboardHomeContentSource = File('lib/dashboard/dashboard_home_content.dart').readAsStringSync();
   final dashboardSectionContentSource = File('lib/dashboard/dashboard_section_content.dart').readAsStringSync();
+  final objectHistoryDetailRowSource = File('lib/history/object_history_detail_row.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -52,6 +53,16 @@ void main() {
       expect(source, contains('DashboardHomeContent('));
       expect(source, contains('blockContentBuilder: () {'));
       expect(source, contains('listContentBuilder: () => DashboardHomeListContent('));
+    });
+
+    test('la riga dettaglio cronologia conserva gerarchia tipografica e spaziatura', () {
+      expect(objectHistoryDetailRowSource, contains('class ObjectHistoryDetailRow extends StatelessWidget'));
+      expect(objectHistoryDetailRowSource, contains('padding: const EdgeInsets.only(bottom: 2)'));
+      expect(objectHistoryDetailRowSource, contains('fontSize: 12'));
+      expect(objectHistoryDetailRowSource, contains('fontSize: 15'));
+      expect(source, contains("import 'history/object_history_detail_row.dart';"));
+      expect(source, contains('ObjectHistoryDetailRow('));
+      expect(source, contains('labelColor: ValoraAppearance.instance.textMuted'));
     });
 
     test('la card a blocchi della dashboard conserva immagine, colori, conteggio e navigazione', () {
