@@ -27,7 +27,7 @@ class DashboardMenuCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: color.withValues(alpha: 0.20),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withValues(alpha: 0.85), width: 1.25),
       ),
