@@ -67,6 +67,7 @@ part 'procedures/pr03_runtime_procedure.dart';
 part 'purchases/pr04_runtime_procedure.dart';
 part 'purchases/pr05_runtime_procedure.dart';
 part 'purchases/pr04_form_content.dart';
+part 'purchases/pr04_page_frame.dart';
 part 'purchases/pr05_form_content.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
