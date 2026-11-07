@@ -9,6 +9,7 @@ void main() {
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
   final authenticationGateSource = File('lib/authentication/authentication_gate.dart').readAsStringSync();
   final dashboardHomeCoordinatorSource = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
+  final dashboardCollectionContentSource = File('lib/dashboard/dashboard_collection_content.dart').readAsStringSync();
   // Le verifiche d'integrazione includono il coordinatore estratto; i contratti
   // relativi agli import e alla direttiva part restano verificati su main.dart.
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource';
@@ -605,7 +606,11 @@ void main() {
       expect(dashboardHomeCoordinatorSource, contains('class _HomeDashboardState extends State<HomeDashboard>'));
       expect(dashboardHomeCoordinatorSource, contains('Future<void> _loadDashboardCatalog() async'));
       expect(dashboardHomeCoordinatorSource, contains('Widget buildDashboard()'));
-      expect(dashboardHomeCoordinatorSource, contains('Widget buildCollection()'));
+      expect(dashboardHomeCoordinatorSource, contains('Widget buildCollection() => DashboardCollectionContent('));
+      expect(dashboardCollectionContentSource, contains('class DashboardCollectionContent extends StatelessWidget'));
+      expect(dashboardCollectionContentSource, contains('sortedCategories.sort'));
+      expect(dashboardCollectionContentSource, contains('previewImageUrls: previewRows.map(imageUrlFor).toList()'));
+      expect(source, contains(\"part 'dashboard/dashboard_collection_content.dart';\"));
       expect(dashboardHomeCoordinatorSource, contains('Widget buildSection(DashboardSection section)'));
       expect(source, contains("part 'dashboard/dashboard_home_coordinator.dart';"));
       expect(source, isNot(contains('class HomeDashboard extends StatefulWidget')));
