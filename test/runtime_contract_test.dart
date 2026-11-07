@@ -31,6 +31,7 @@ void main() {
   final dashboardCategoryPreviewListSource = File('lib/dashboard/dashboard_category_preview_list.dart').readAsStringSync();
   final dashboardProcedureInfoDialogSource = File('lib/dashboard/dashboard_procedure_info_dialog.dart').readAsStringSync();
   final dashboardBlockMenuGridSource = File('lib/dashboard/dashboard_block_menu_grid.dart').readAsStringSync();
+  final dashboardHomeBlockContentSource = File('lib/dashboard/dashboard_home_block_content.dart').readAsStringSync();
   final dashboardSectionContentSource = File('lib/dashboard/dashboard_section_content.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
@@ -50,7 +51,8 @@ void main() {
       expect(dashboardGridMenuCardSource, contains('onTap: onTap'));
       expect(dashboardBlockMenuGridSource, contains('DashboardGridMenuCard('));
       expect(source, contains("import 'dashboard/dashboard_block_menu_grid.dart';"));
-      expect(source, contains('DashboardBlockMenuGrid('));
+      expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
+      expect(source, contains('DashboardHomeBlockContent('));
       expect(source, contains('imageUrlFor: (title) {'));
     });
 
@@ -494,7 +496,8 @@ void main() {
       expect(dashboardBlockMenuGridSource, contains("sectionKey == 'RICERCHE' || sectionKey == 'VALUTAZIONI'"));
       expect(dashboardBlockMenuGridSource, contains("title == 'COLLEZIONE'"));
       expect(source, contains("import 'dashboard/dashboard_block_menu_grid.dart';"));
-      expect(source, contains('DashboardBlockMenuGrid('));
+      expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
+      expect(source, contains('DashboardHomeBlockContent('));
     });
     test('il contenuto della sezione mantiene sfondo, overlay, procedure e ritorno', () {
       expect(dashboardSectionContentSource, contains('class DashboardSectionContent extends StatelessWidget'));
