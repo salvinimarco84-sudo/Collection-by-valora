@@ -298,7 +298,7 @@ void main() {
       expect(dashboardCollectionCategoryHeaderSource, contains('width: 62'));
       expect(dashboardCollectionCategoryHeaderSource, contains('height: 46'));
       expect(dashboardCollectionCategoryHeaderSource, contains('Text('));
-      expect(dashboardCollectionCategoryHeaderSource, contains("'$count'"));
+      expect(dashboardCollectionCategoryHeaderSource, contains(r"'$count'"));
       expect(dashboardCollectionCategoryHeaderSource, contains('onTap: onTap'));
       expect(dashboardCollectionCategoryCardSource, contains("import 'dashboard_collection_category_header.dart';"));
       expect(dashboardCollectionCategoryCardSource, contains('DashboardCollectionCategoryHeader('));
