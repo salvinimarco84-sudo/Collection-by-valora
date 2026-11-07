@@ -30,6 +30,7 @@ void main() {
   final dashboardCategoryPreviewListSource = File('lib/dashboard/dashboard_category_preview_list.dart').readAsStringSync();
   final dashboardProcedureInfoDialogSource = File('lib/dashboard/dashboard_procedure_info_dialog.dart').readAsStringSync();
   final dashboardBlockMenuGridSource = File('lib/dashboard/dashboard_block_menu_grid.dart').readAsStringSync();
+  final dashboardSectionContentSource = File('lib/dashboard/dashboard_section_content.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -479,6 +480,15 @@ void main() {
       expect(dashboardBlockMenuGridSource, contains("title == 'COLLEZIONE'"));
       expect(source, contains("import 'dashboard/dashboard_block_menu_grid.dart';"));
       expect(source, contains('DashboardBlockMenuGrid('));
+    });
+    test('il contenuto della sezione mantiene sfondo, overlay, procedure e ritorno', () {
+      expect(dashboardSectionContentSource, contains('class DashboardSectionContent extends StatelessWidget'));
+      expect(dashboardSectionContentSource, contains('Positioned.fill(child: background)'));
+      expect(dashboardSectionContentSource, contains('DashboardSectionOverlay()'));
+      expect(dashboardSectionContentSource, contains('...procedureCards'));
+      expect(dashboardSectionContentSource, contains('footer'));
+      expect(source, contains("import 'dashboard/dashboard_section_content.dart';"));
+      expect(source, contains('DashboardSectionContent('));
     });
   });
 }
