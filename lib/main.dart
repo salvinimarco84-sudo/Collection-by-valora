@@ -8510,7 +8510,7 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
   String _code(Map<String,dynamic> r)=>(r['codice_acquisto']??r['purchase_code']??r['id']??'').toString();
   String _name(Map<String,dynamic> r)=>(r['descrizione_acquisto']??r['descrizione']??r['description']??'Acquisto').toString();
   dynamic _totalValue(Map<String,dynamic> r)=>r['importo_totale']??r['totale']??r['prezzo_acquisto']??r['amount'];
-  double get _allocated=>_items.fold<double>(0,(s,r)=>s+(_money(r['importo']??r['prezzo_acquisto']??r['valore'])??0));
+  double get _allocated=>_items.fold<double>(0,(s,r)=>s+((_money(r['importo']??r['prezzo_acquisto']??r['valore'])??0)*(int.tryParse((r['quantita']??1).toString())??1)));
   void _msg(String s)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(s)));
   Map<String,dynamic> _unwrap(Map<String,dynamic> r){
     final v=r['result'];return v is Map?Map<String,dynamic>.from(v):r;
@@ -8559,15 +8559,15 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
     if(_purchase==null||_code(_purchase!).isEmpty){_msg('Seleziona un acquisto con codice valido.');return false;}
     if(DateTime.tryParse(_date.text.trim())==null){_msg('Data non valida. Usa AAAA-MM-GG.');return false;}
     final total=_money(_total.text);
-    if(total==null||total<0||_description.text.trim().isEmpty){_msg('Descrizione e totale sono obbligatori.');return false;}
+    if(total==null||total<=0){_msg('Il totale deve essere maggiore di zero.');return false;}
     if(_items.isEmpty||_items.any((r)=>_money(r['importo']??r['prezzo_acquisto']??r['valore'])==null)){_msg('Allocazioni non complete: salvataggio bloccato.');return false;}
     if((_allocated-total).abs()>0.009){_msg('Quadratura non valida: somma allocazioni diversa dal totale.');return false;}
     return true;
   }
   Map<String,dynamic> _payload({bool confirmed=false,bool finalConfirmation=false})=> {
     'codice_acquisto':_code(_purchase!), 'purchase_code':_code(_purchase!),
-    'data_acquisto':_date.text.trim(),'descrizione_acquisto':_description.text.trim(),
-    'importo_totale':_money(_total.text),'oggetti':_items,
+    'data_acquisto':_date.text.trim(),
+    'importo_totale':_money(_total.text),
     'dati_confermati':confirmed,'conferma_finale':finalConfirmation,
     'mantieni_codici_oggetto':true,'non_eliminare_ricreare':true,
     'aggiorna_cassa':true,'registra_storico':true,'verifica_quadratura':true,
@@ -8584,15 +8584,19 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
     try{
       await _lock();
       final r=await _ValoraRuntimeApi.procedure('PR-05','save',_payload(confirmed:true,finalConfirmation:true),sessionId:_session,requestId:_uuid.v4());
-      final reread=r['rilettura_database'];
-      final verified=r['rilettura_verificata']==true||r['verifica_post_scrittura']=='OK'||r['stato']=='SALVATO_E_VERIFICATO';
-      final audit=r['storico_aggiornato']==true||r['audit_registrato']==true;
-      final cash=r['cassa_aggiornata']==true||r['movimenti_cassa_aggiornati']==true;
-      final code=(r['codice_acquisto']??r['purchase_code']??_code(_purchase!)).toString()==_code(_purchase!);
-      final saved=r['scrittura_eseguita']==true&&verified&&audit&&cash&&code&&reread is Map;
+      final rawResults=r['risultati'];
+      final results=rawResults is List?rawResults.whereType<Map>().map((v)=>Map<String,dynamic>.from(v)).toList():<Map<String,dynamic>>[];
+      final saved=r['scrittura_eseguita']==true&&r['stato']=='SALVATO_E_VERIFICATO'&&results.length==1&&results.every((v){
+        final sameCode=(v['codice_acquisto']??'').toString()==_code(_purchase!);
+        final cash=_money(v['importo_cassa']);
+        final allocation=_money(v['quadratura_oggetti']);
+        return sameCode&&v['verifica_database']==true&&cash!=null&&allocation!=null&&
+          (cash-(_money(_total.text)??0)).abs()<=0.009&&
+          (allocation-(_money(_total.text)??0)).abs()<=0.009;
+      });
       if(r['blocco_rilasciato_automaticamente']==true)_locked=false;
       if(!mounted)return;
-      setState((){_last=r;_status=saved?'Modifica verificata: codice conservato, cassa e storico aggiornati.':'Modifica NON considerata conclusa: il runtime non ha confermato tutti i controlli richiesti.';});
+      setState((){_last=r;_status=saved?'Modifica verificata: codice conservato, quadratura, cassa e database confermati dalla procedura.':'Modifica NON considerata conclusa: la procedura non ha restituito tutte le verifiche richieste.';});
       if(saved&&mounted){
         final again=await showDialog<bool>(context:context,barrierDismissible:false,builder:(ctx)=>AlertDialog(
           title:const Text('Modifica verificata'),content:const Text('Vuoi modificare un altro acquisto?'),
@@ -8610,7 +8614,7 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
     final color=ValoraAppearance.instance.colorFor('ACQUISTI');
     return Scaffold(appBar:AppBar(title:const Text('PR-05 · MODIFICA ACQUISTO')),
       body:SafeArea(child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:820),child:ListView(padding:const EdgeInsets.all(16),children:[
-        const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Nessuna eliminazione/ricreazione. Quadratura, cassa, storico e rilettura sono obbligatori.'))),
+        const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Sono modificabili solo data e totale. Oggetti e descrizione restano in sola lettura. La quadratura deve restare invariata; cassa e storico sono gestiti dalla procedura SQL.'))),
         Text('1 · CERCA ACQUISTO',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
         TextField(controller:_query,decoration:const InputDecoration(labelText:'Codice acquisto o descrizione'),onSubmitted:(_)=>_search()),
         FilledButton(onPressed:_busy?null:_search,child:const Text('CERCA')),
@@ -8618,7 +8622,7 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
         if(_purchase!=null)...[
           const Divider(height:24),Text('2 · MODIFICA SCHEDA ESISTENTE',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
           _line('Codice acquisto',_code(_purchase!)),
-          TextField(controller:_description,decoration:const InputDecoration(labelText:'Descrizione acquisto *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
+          TextField(controller:_description,readOnly:true,decoration:const InputDecoration(labelText:'Descrizione acquisto · sola lettura')),
           TextField(controller:_date,decoration:const InputDecoration(labelText:'Data acquisto (AAAA-MM-GG) *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
           TextField(controller:_total,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Totale acquisto (€) *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
           _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),_line('Totale','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
