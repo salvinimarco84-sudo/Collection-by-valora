@@ -8,7 +8,8 @@ void main() {
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
   final pr04FormContentSource = File('lib/purchases/pr04_form_content.dart').readAsStringSync();
   final pr05FormContentSource = File('lib/purchases/pr05_form_content.dart').readAsStringSync();
-  final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource';
+  final pr04StepContentSource = File('lib/purchases/pr04_step_content.dart').readAsStringSync();
+  final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
