@@ -13,6 +13,7 @@ void main() {
   final dashboardGridMenuCardSource = File('lib/dashboard/dashboard_grid_menu_card.dart').readAsStringSync();
   final dashboardOverlaySource = File('lib/dashboard/dashboard_section_overlay.dart').readAsStringSync();
   final dashboardCollectionCategoryCardSource = File('lib/dashboard/dashboard_collection_category_card.dart').readAsStringSync();
+  final dashboardCollectionCategoryPreviewStripSource = File('lib/dashboard/dashboard_collection_category_preview_strip.dart').readAsStringSync();
   final dashboardCollectionHeaderSource = File('lib/dashboard/dashboard_collection_header.dart').readAsStringSync();
   final dashboardHomeHeaderSource = File('lib/dashboard/dashboard_home_header.dart').readAsStringSync();
   final dashboardHomeFooterSource = File('lib/dashboard/dashboard_home_footer.dart').readAsStringSync();
@@ -269,8 +270,13 @@ void main() {
     test('la card categoria collezione mantiene logo, conteggio, anteprime e navigazione', () {
       expect(dashboardCollectionCategoryCardSource, contains('class DashboardCollectionCategoryCard extends StatelessWidget'));
       expect(dashboardCollectionCategoryCardSource, contains('previewImageUrls'));
-      expect(dashboardCollectionCategoryCardSource, contains('Image.network('));
-      expect(dashboardCollectionCategoryCardSource, contains('errorBuilder'));
+      expect(dashboardCollectionCategoryCardSource, contains('DashboardCollectionCategoryPreviewStrip('));
+      expect(dashboardCollectionCategoryPreviewStripSource, contains('class DashboardCollectionCategoryPreviewStrip extends StatelessWidget'));
+      expect(dashboardCollectionCategoryPreviewStripSource, contains('height: 86'));
+      expect(dashboardCollectionCategoryPreviewStripSource, contains('width: 76'));
+      expect(dashboardCollectionCategoryPreviewStripSource, contains('Image.network('));
+      expect(dashboardCollectionCategoryPreviewStripSource, contains('errorBuilder'));
+      expect(dashboardCollectionCategoryPreviewStripSource, contains('BoxFit.contain'));
       expect(dashboardCollectionCategoryCardSource, contains('onTap: onTap'));
       expect(dashboardCollectionCategoryCardSource, contains("import 'dashboard_category_brand_mark.dart';"));
       expect(dashboardCollectionCategoryCardSource, contains('DashboardCategoryBrandMark(category: name, color: color, fallbackIcon: icon)'));
