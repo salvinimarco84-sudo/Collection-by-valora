@@ -18,6 +18,7 @@ void main() {
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
+  final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -460,6 +461,14 @@ void main() {
       expect(source, contains("'fonte_assegnazione': 'MANUALE'"));
       expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
       expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
+    });
+
+    test('Le schede elenco e cronologia restano nel componente di presentazione dedicato', () {
+      expect(objectCardsPresentationSource, contains('Widget _objectCard('));
+      expect(objectCardsPresentationSource, contains('Widget _historyCard('));
+      expect(objectCardsPresentationSource, contains('_valoraImageProxyUrl(imageUrl)'));
+      expect(objectCardsPresentationSource, contains('CHIUSURA OGGETTO · PR-03'));
+      expect(source, contains("part 'objects/object_cards_presentation.dart';"));
     });
 
     test('Visualizza scheda non mostra le fonti dati prodotto ma conserva i valori nel record', () {
