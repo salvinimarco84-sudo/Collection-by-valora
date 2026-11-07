@@ -157,7 +157,7 @@ void main() {
       expect(dashboardAssistantFabSource, contains('onPressed: onPressed'));
       expect(source, contains("import 'dashboard/dashboard_assistant_fab.dart';"));
       expect(dashboardRuntimeSource, contains('floatingActionButton: DashboardAssistantFab('));
-      expect(source, contains('screenContext: selectedSection?.title ?? \'Dashboard\''));
+      expect(dashboardRuntimeSource, contains('screenContext: selectedSection?.title ?? \'Dashboard\''));
     });
 
     test('l’avviso conteggio catalogo mantiene messaggio, margine e stile', () {
@@ -472,7 +472,7 @@ void main() {
         'assets/menu_sections/05_CATALOGO.jpg',
         'assets/menu_sections/06_REPORT.jpg',
       ]) {
-        expect(source, contains(asset));
+        expect(dashboardRuntimeSource, contains(asset));
       }
       expect(dashboardBackgroundSource, contains('Image.asset('));
       expect(dashboardBackgroundSource, contains('backgroundAsset'));
