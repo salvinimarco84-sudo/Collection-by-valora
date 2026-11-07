@@ -66,6 +66,7 @@ part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
 part 'purchases/pr04_runtime_procedure.dart';
 part 'purchases/pr05_runtime_procedure.dart';
+part 'purchases/pr04_form_content.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
@@ -8194,63 +8195,16 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       subtitle: Text(subtitle), trailing: Icon(selected ? Icons.radio_button_checked : Icons.radio_button_off),
       onTap: _busy ? null : onTap));
 
-  Widget _itemEditor(int n) {
-    final item = _items[n];
-    return Card(key: ValueKey('pr04-item-' + n.toString()), margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('OGGETTO ' + (n + 1).toString(), style: TextStyle(color: ValoraAppearance.instance.colorFor('ACQUISTI'), fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        TextField(controller: item.description, decoration: const InputDecoration(labelText: 'Descrizione oggetto *'),
-          onChanged: (_) => setState(_invalidate)),
-        const SizedBox(height: 6),
-        SizedBox(width: double.infinity, child: OutlinedButton.icon(
-          onPressed: _busy ? null : () => _photoAndRecognize(item),
-          icon: const Icon(Icons.camera_alt_outlined),
-          label: const Text('SCATTA FOTO · RICONOSCIMENTO PR-12'),
-        )),
-        if (item.photoUrl != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(item.photoUrl!, height: 130, width: double.infinity, fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => item.photoBytes != null
-              ? Image.memory(item.photoBytes!, height: 130, width: double.infinity, fit: BoxFit.contain)
-              : const Icon(Icons.broken_image_outlined)),
-        )) else if (item.photoBytes != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.memory(item.photoBytes!, height: 130, width: double.infinity, fit: BoxFit.contain),
-        )),
-        Text(item.photoStatus, style: TextStyle(fontSize: 12, color: ValoraAppearance.instance.textSecondary)),
-        const SizedBox(height: 8),
-        TextField(controller: item.price, keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Prezzo di acquisto (€) *', hintText: 'Es. 25,00'),
-          onChanged: (_) => setState(_invalidate)),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(value: item.destination, decoration: const InputDecoration(labelText: 'Destinazione'),
-          items: const [DropdownMenuItem(value: 'COLLEZIONE', child: Text('COLLEZIONE')), DropdownMenuItem(value: 'RIVENDITA', child: Text('RIVENDITA'))],
-          onChanged: _busy ? null : (v) => setState(() { item.destination = v ?? item.destination; if (item.destination != 'COLLEZIONE') item.collectionCategoryCode = null; _invalidate(); })),
-        if (item.destination == 'COLLEZIONE') ...[
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(value: _collectionCategories.any((e) => e['codice_categoria'] == item.collectionCategoryCode) ? item.collectionCategoryCode : null,
-            decoration: InputDecoration(labelText: 'Categoria COLLEZIONE *', helperText: _categoriesLoading ? 'Caricamento categorie…' : 'Categoria principale dell’oggetto'),
-            items: _collectionCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria'].toString(), child: Text((e['descrizione'] ?? e['codice_categoria']).toString()))).toList(),
-            onChanged: _busy ? null : (v) => setState(() { item.collectionCategoryCode = v; _invalidate(); })),
-        ],
-        const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: DropdownButtonFormField<String>(value: item.condition, decoration: const InputDecoration(labelText: 'Condizione'),
-            items: const [DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')), DropdownMenuItem(value: 'USATO', child: Text('USATO')), DropdownMenuItem(value: 'DA RIPARARE', child: Text('DA RIPARARE'))],
-            onChanged: _busy ? null : (v) => setState(() { item.condition = v ?? item.condition; _invalidate(); }))),
-          const SizedBox(width: 8),
-          Expanded(child: DropdownButtonFormField<String>(value: item.completeness, decoration: const InputDecoration(labelText: 'Completezza'),
-            items: const [DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')), DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')), DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI'))],
-            onChanged: _busy ? null : (v) => setState(() { item.completeness = v ?? item.completeness; _invalidate(); }))),
-        ]),
-        const SizedBox(height: 8),
-        TextField(controller: item.notes, minLines: 2, maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Note (facoltative)', alignLabelWithHint: true,
-            ),
-          onChanged: (_) => setState(_invalidate)),
-      ])));
-  }
+  Widget _itemEditor(int n) => Pr04ItemEditor(
+    key: ValueKey('pr04-item-' + n.toString()),
+    index: n,
+    item: _items[n],
+    busy: _busy,
+    categories: _collectionCategories,
+    categoriesLoading: _categoriesLoading,
+    onChanged: () => setState(_invalidate),
+    onPhoto: () => _photoAndRecognize(_items[n]),
+  );
 
   Widget _line(String label, String value, {bool bold = false}) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4), child: Row(children: [
