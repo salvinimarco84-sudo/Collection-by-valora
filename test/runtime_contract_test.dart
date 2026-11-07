@@ -8,6 +8,7 @@ void main() {
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
   final authenticationGateSource = File('lib/authentication/authentication_gate.dart').readAsStringSync();
+  final dashboardHomeCoordinatorSource = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -584,6 +585,19 @@ void main() {
       expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
       expect(source, contains('DashboardHomeBlockContent('));
     });
+    test('il coordinatore del menu principale è isolato senza alterarne i flussi', () {
+      expect(dashboardHomeCoordinatorSource, contains("part of '../main.dart';"));
+      expect(dashboardHomeCoordinatorSource, contains('class HomeDashboard extends StatefulWidget'));
+      expect(dashboardHomeCoordinatorSource, contains('class _HomeDashboardState extends State<HomeDashboard>'));
+      expect(dashboardHomeCoordinatorSource, contains('Future<void> _loadDashboardCatalog() async'));
+      expect(dashboardHomeCoordinatorSource, contains('Widget buildDashboard()'));
+      expect(dashboardHomeCoordinatorSource, contains('Widget buildCollection()'));
+      expect(dashboardHomeCoordinatorSource, contains('Widget buildSection(DashboardSection section)'));
+      expect(source, contains("part 'dashboard/dashboard_home_coordinator.dart';"));
+      expect(source, isNot(contains('class HomeDashboard extends StatefulWidget')));
+      expect(source, isNot(contains('class _HomeDashboardState extends State<HomeDashboard>')));
+    });
+
     test('il gate autenticazione conserva il flusso sessione e i due percorsi', () {
       expect(authenticationGateSource, contains('class AuthenticationGate extends StatelessWidget'));
       expect(authenticationGateSource, contains('onAuthStateChange'));
