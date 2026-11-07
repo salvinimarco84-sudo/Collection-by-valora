@@ -514,6 +514,13 @@ void main() {
       expect(source, contains("part 'objects/object_master_presentation.dart';"));
     });
 
+    test('la vista dettagli standard nasconde le chiavi delle fonti oggetto', () {
+      expect(source, contains("'fonte_dati_catalogo'"));
+      expect(source, contains("'url_fonte_immagine'"));
+      expect(source, contains("!const {"));
+      expect(source, contains("}.contains(e.key))"));
+    });
+
     test('Visualizza scheda risolve l’immagine usando url_fonte e non il nome file', () {
       expect(source, contains("select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')"));
       expect(source, contains("row['riferimento_immagine']"));
