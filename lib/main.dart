@@ -21,6 +21,7 @@ import 'startup/startup_loading_page.dart';
 import 'authentication/authentication_gate.dart';
 import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
+import 'procedures/pr01_form_content.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
@@ -7327,84 +7328,38 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               style: TextStyle(color: sectionColor)),
           )),
         if (_isWrite && code == 'PR-01') ...[
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('IDENTIFICAZIONE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text('Codice oggetto: assegnato automaticamente dal database al salvataggio.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                const SizedBox(height: 8),
-                _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
-                const SizedBox(height: 10),
-                _imageField(),
-              ]),
+          Pr01FormContent(
+            sectionColor: sectionColor,
+            descriptionField: _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
+            imageField: _imageField(),
+            producerField: _field(_producer, 'Produttore (facoltativo)'),
+            yearField: _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
+            productCodeField: _field(_family, 'Codice prodotto (facoltativo)'),
+            conditionField: _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
+            completenessField: _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+            destinationField: _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() { _destination = v!; if (_destination != 'COLLEZIONE') _selectedCollectionCategory = null; })),
+            collectionCategoryField: _destination == 'COLLEZIONE' ? _collectionCategoryField() : null,
+            quantityField: _field(_quantity, 'Quantità', type: TextInputType.number),
+            unitPriceField: _field(_unitPrice, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
+            totalValueField: TextField(
+              controller: _totalValue,
+              readOnly: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Valore totale calcolato (€)',
+                helperText: 'Quantità × prezzo unitario. Il totale viene registrato in valore_oggetto.',
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('DATI IDENTIFICATIVI · INSERIMENTO MANUALE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                _field(_producer, 'Produttore (facoltativo)'),
-                _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
-                _field(_family, 'Codice prodotto (facoltativo)'),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('DATI INSERIBILI', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-                _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
-                _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() { _destination = v!; if (_destination != 'COLLEZIONE') _selectedCollectionCategory = null; })),
-                if (_destination == 'COLLEZIONE') _collectionCategoryField(),
-                _field(_quantity, 'Quantità', type: TextInputType.number),
-                _field(_unitPrice, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: TextField(
-                    controller: _totalValue,
-                    readOnly: true,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                      labelText: 'Valore totale calcolato (€)',
-                      helperText: 'Quantità × prezzo unitario. Il totale viene registrato in valore_oggetto.',
-                    ),
-                  ),
-                ),
-                _field(_notes, 'Note', lines: 2),
-              ]),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('VALORI DETERMINATI DA ALTRE PROCEDURE', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text('Valore di mercato attuale (€)', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                const SizedBox(height: 4),
-                TextField(
-                  controller: _marketValue,
-                  readOnly: true,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    hintText: '0,00',
-                    helperText: 'Valore restituito dalla procedura di valutazione. 0,00 finché non è disponibile una stima.',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text('La stima verrà valorizzata dalla procedura di valutazione del mercato, non inserita manualmente.', style: TextStyle(color: ValoraAppearance.instance.textSubtle, fontSize: 11)),
-              ]),
+            notesField: _field(_notes, 'Note', lines: 2),
+            marketValueField: TextField(
+              controller: _marketValue,
+              readOnly: true,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                hintText: '0,00',
+                helperText: 'Valore restituito dalla procedura di valutazione. 0,00 finché non è disponibile una stima.',
+                border: OutlineInputBorder(),
+              ),
             ),
           ),
         ],
