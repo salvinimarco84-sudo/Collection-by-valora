@@ -726,9 +726,17 @@ void main() {
     test('la riga operazione report mantiene immagini, importi e interazione', () {
       expect(reportOperationCardSource, contains('class ReportOperationCard extends StatelessWidget'));
       expect(reportOperationCardSource, contains('Image.network('));
+      expect(reportOperationCardSource, contains("imageUrl.startsWith('https://')"));
+      expect(reportOperationCardSource, contains("imageUrl.startsWith('http://')"));
+      expect(reportOperationCardSource, contains('showImage && hasImage'));
+      expect(reportOperationCardSource, contains('errorBuilder:'));
       expect(reportOperationCardSource, contains('                  imageUrl,'));
       expect(reportOperationCardSource, contains('Icons.receipt_long_outlined'));
+      expect(reportOperationCardSource, contains('title: Text(title'));
+      expect(reportOperationCardSource, contains('subtitle: Text(subtitle)'));
+      expect(reportOperationCardSource, contains('trailing: trailingText == null ? null : Text(trailingText!)'));
       expect(reportOperationCardSource, contains('onTap'));
+      expect(source, contains('_reportCanShowObjectImages'));
       expect(source, contains("part 'reports/report_operation_card.dart';"));
       expect(source, contains('ReportOperationCard('));
       expect(source, contains('_showPurchaseReportDetail(item)'));
