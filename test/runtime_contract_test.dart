@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -578,6 +579,13 @@ void main() {
       expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
       expect(source, contains('DashboardHomeBlockContent('));
     });
+    test('la localizzazione resta separata dal file principale', () {
+      expect(valoraI18nSource, contains('class ValoraI18n extends ChangeNotifier'));
+      expect(valoraI18nSource, contains('static String tr('));
+      expect(source, contains("import 'localization/valora_i18n.dart';"));
+      expect(source, isNot(contains('class ValoraI18n extends ChangeNotifier')));
+    });
+
     test('il contenuto della sezione mantiene sfondo, overlay, procedure e ritorno', () {
       expect(dashboardSectionContentSource, contains('class DashboardSectionContent extends StatelessWidget'));
       expect(dashboardSectionContentSource, contains('Positioned.fill(child: background)'));
