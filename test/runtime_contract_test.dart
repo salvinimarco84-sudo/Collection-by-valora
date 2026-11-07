@@ -36,6 +36,7 @@ void main() {
   final dashboardSectionContentSource = File('lib/dashboard/dashboard_section_content.dart').readAsStringSync();
   final objectHistoryDetailRowSource = File('lib/history/object_history_detail_row.dart').readAsStringSync();
   final objectImagePlaceholderSource = File('lib/objects/object_image_placeholder.dart').readAsStringSync();
+  final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -76,6 +77,19 @@ void main() {
       expect(source, contains('ObjectImagePlaceholder('));
       expect(source, contains('backgroundColor: ValoraAppearance.instance.neutralOverlay'));
       expect(source, contains('iconColor: ValoraAppearance.instance.textFaint'));
+    });
+
+    test('il chip metadati oggetto conserva icona, etichetta e stile compatto', () {
+      expect(objectInfoChipSource, contains('class ObjectInfoChip extends StatelessWidget'));
+      expect(objectInfoChipSource, contains('required this.icon'));
+      expect(objectInfoChipSource, contains('required this.label'));
+      expect(objectInfoChipSource, contains('required this.color'));
+      expect(objectInfoChipSource, contains('EdgeInsets.symmetric(horizontal: 8, vertical: 5)'));
+      expect(objectInfoChipSource, contains('BorderRadius.circular(20)'));
+      expect(objectInfoChipSource, contains('Icon(icon, size: 13, color: color)'));
+      expect(source, contains("import 'objects/object_info_chip.dart';"));
+      expect(source, contains('ObjectInfoChip('));
+      expect(source, contains('color: sectionColor'));
     });
 
     test('la card a blocchi della dashboard conserva immagine, colori, conteggio e navigazione', () {
