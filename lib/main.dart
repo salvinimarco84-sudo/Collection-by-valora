@@ -72,6 +72,7 @@ part 'purchases/pr04_page_frame.dart';
 part 'purchases/pr04_step_content.dart';
 part 'purchases/pr04_recognition_dialog.dart';
 part 'purchases/pr05_form_content.dart';
+part 'purchases/pr05_search_section.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
