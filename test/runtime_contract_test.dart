@@ -382,7 +382,7 @@ void main() {
       expect(pr04FormContentSource, contains('TextField('));
       expect(pr04FormContentSource, contains('controller: item.notes'));
       expect(pr04FormContentSource, contains("labelText: 'Note (facoltative)'"));
-      expect(purchaseRuntimeSource, contains("_items[i].notes.text.trim()"));
+      expect(pr04StepContentSource, contains('items[i].notes.text.trim()'));
     });
 
     test('Report acquisti mostra il dettaglio leggibile degli oggetti', () {
