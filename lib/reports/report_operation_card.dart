@@ -29,7 +29,7 @@ class ReportOperationCard extends StatelessWidget {
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  imageUrl,
+                  _valoraImageProxyUrl(imageUrl),
                   width: 64,
                   height: 64,
                   fit: BoxFit.cover,
