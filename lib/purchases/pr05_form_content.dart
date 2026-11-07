@@ -54,13 +54,6 @@ class Pr05EditPurchaseForm extends StatelessWidget {
   final VoidCallback onSave;
   final ValueChanged<bool> onConfirmedChanged;
 
-  Widget _line(String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(children: [
-      Expanded(child: Text(label)),
-      Flexible(child: Text(value, textAlign: TextAlign.end)),
-    ]),
-  );
 
   @override
   Widget build(BuildContext context) {
@@ -97,28 +90,19 @@ class Pr05EditPurchaseForm extends StatelessWidget {
               onDateChanged: onDateChanged,
               onTotalChanged: onTotalChanged,
             ),
-            FilledButton(onPressed: busy ? null : onPreview, child: const Text('MOSTRA RIEPILOGO')),
-            if (lastResult != null) Card(child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('RIEPILOGO MODIFICA', style: TextStyle(fontWeight: FontWeight.bold)),
-                _line('Codice acquisto', purchaseCode),
-                _line('Data', dateController.text.trim()),
-                _line('Descrizione', descriptionController.text.trim()),
-                _line('Oggetti collegati', items.length.toString()),
-                _line('Totale acquisto', '€ ${currentTotal.toStringAsFixed(2)}'),
-                _line('Somma allocazioni', '€ ${allocated.toStringAsFixed(2)}'),
-                const Text('I codici degli oggetti collegati vengono conservati. Il salvataggio aggiorna cassa e storico tramite runtime.'),
-              ]),
-            )),
-            CheckboxListTile(
-              value: confirmed,
-              title: const Text('Confermo il riepilogo e autorizzo il salvataggio.'),
-              onChanged: busy || lastResult == null ? null : (v) => onConfirmedChanged(v ?? false),
-            ),
-            FilledButton(
-              onPressed: busy || !confirmed || lastResult == null ? null : onSave,
-              child: Text(busy ? 'ATTENDI…' : 'SALVA MODIFICA E TERMINA'),
+            Pr05ConfirmationSection(
+              busy: busy,
+              confirmed: confirmed,
+              lastResult: lastResult,
+              purchaseCode: purchaseCode,
+              date: dateController.text.trim(),
+              description: descriptionController.text.trim(),
+              itemCount: items.length,
+              currentTotal: currentTotal,
+              allocated: allocated,
+              onPreview: onPreview,
+              onConfirmedChanged: onConfirmedChanged,
+              onSave: onSave,
             ),
           ],
           if (busy) const LinearProgressIndicator(),
