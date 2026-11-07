@@ -17,6 +17,7 @@ void main() {
   final pr01RuntimeProcedureSource = File('lib/procedures/pr01_runtime_procedure.dart').readAsStringSync();
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
+  final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -459,6 +460,13 @@ void main() {
       expect(source, contains("'fonte_assegnazione': 'MANUALE'"));
       expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
       expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
+    });
+
+    test('Visualizza scheda non mostra le fonti dati prodotto ma conserva i valori nel record', () {
+      expect(objectMasterPresentationSource, contains("'fonte_dati_prodotto'"));
+      expect(objectMasterPresentationSource, contains("!sourceKeys.contains(e.key)"));
+      expect(objectMasterPresentationSource, contains('Widget _masterDetails(Map<String, dynamic> object)'));
+      expect(source, contains("part 'objects/object_master_presentation.dart';"));
     });
 
     test('Visualizza scheda risolve l’immagine usando url_fonte e non il nome file', () {
