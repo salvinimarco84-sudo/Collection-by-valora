@@ -95,6 +95,24 @@ const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
 const Color goldColor = Color(0xFFD6B15E);
 
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ValoraAppearance.instance.load();
+  String? startupError;
+  try {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      publishableKey: publishableKey,
+    );
+  } catch (error, stackTrace) {
+    startupError = '$error';
+    debugPrint('VALORA startup initialization failed: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+  runApp(CollectionValoraApp(startupError: startupError));
+}
+
+
 class CollectionValoraApp extends StatefulWidget {
   const CollectionValoraApp({super.key, this.startupError});
   final String? startupError;
