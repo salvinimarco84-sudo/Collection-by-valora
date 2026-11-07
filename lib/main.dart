@@ -36,6 +36,7 @@ import 'dashboard/dashboard_assistant_fab.dart';
 import 'dashboard/dashboard_app_bar.dart';
 import 'dashboard/dashboard_category_preview_list.dart';
 import 'dashboard/dashboard_procedure_info_dialog.dart';
+import 'dashboard/dashboard_block_menu_grid.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_menu_card.dart';
@@ -2949,50 +2950,28 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   Widget buildDashboard() {
     if (ValoraAppearance.instance.useBlockLayout) {
-      return LayoutBuilder(builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 600 ? 3 : 2;
-        final entries = <Map<String, dynamic>>[
-          {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
-          ...dashboardSections.map((section)=> {
-            'title':ValoraI18n.tr(section.menuTitle ?? section.title),
-            'sectionKey':section.title,
-            'subtitle':ValoraI18n.tr(section.description),
-            'color':ValoraAppearance.instance.colorFor(section.title),
-            'icon':section.icon,
-            'tap':() => setState(()=>selectedSection=section),
-          }),
-        ];
-        return GridView.builder(
-          padding: const EdgeInsets.all(14),
-          itemCount: entries.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns, crossAxisSpacing: 10, mainAxisSpacing: 10,
-            childAspectRatio: constraints.maxWidth < 600 ? 0.98 : 1.18,
-          ),
-          itemBuilder: (context,index) {
-            final entry=entries[index];
-            final title=entry['title'] as String;
-            final sectionKey=(entry['sectionKey'] ?? title).toString();
-            final color=entry['color'] as Color;
-            final icon=entry['icon'] as IconData;
-            final url=ValoraAppearance.instance.imageUrls[title] ??
-              ValoraAppearance.instance.imageUrls[title=='VENDITE E INSERZIONI'?'VENDITE':title];
-            return DashboardGridMenuCard(
-              title: title,
-              color: color,
-              icon: icon,
-              onTap: entry['tap'] as VoidCallback,
-              imageUrl: url == null ? null : _valoraImageProxyUrl(url),
-              imageFit: (sectionKey == 'RICERCHE' || sectionKey == 'VALUTAZIONI')
-                  ? BoxFit.cover
-                  : BoxFit.contain,
-              footerText: title == 'COLLEZIONE'
-                  ? (_catalogLoading ? '…' : '${_catalogRows.length} record')
-                  : null,
-            );
-          },
-        );
-      });
+      final entries = <Map<String, dynamic>>[
+        {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
+        ...dashboardSections.map((section)=> {
+          'title':ValoraI18n.tr(section.menuTitle ?? section.title),
+          'sectionKey':section.title,
+          'subtitle':ValoraI18n.tr(section.description),
+          'color':ValoraAppearance.instance.colorFor(section.title),
+          'icon':section.icon,
+          'tap':() => setState(()=>selectedSection=section),
+        }),
+      ];
+      return DashboardBlockMenuGrid(
+        entries: entries,
+        catalogLoading: _catalogLoading,
+        catalogCount: _catalogRows.length,
+        imageUrlFor: (title) {
+          final url = ValoraAppearance.instance.imageUrls[title] ??
+              ValoraAppearance.instance.imageUrls[
+                  title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title];
+          return url == null ? null : _valoraImageProxyUrl(url);
+        },
+      );
     }
     return ListView(
     padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),

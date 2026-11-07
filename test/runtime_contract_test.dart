@@ -29,6 +29,7 @@ void main() {
   final dashboardAppBarSource = File('lib/dashboard/dashboard_app_bar.dart').readAsStringSync();
   final dashboardCategoryPreviewListSource = File('lib/dashboard/dashboard_category_preview_list.dart').readAsStringSync();
   final dashboardProcedureInfoDialogSource = File('lib/dashboard/dashboard_procedure_info_dialog.dart').readAsStringSync();
+  final dashboardBlockMenuGridSource = File('lib/dashboard/dashboard_block_menu_grid.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
@@ -461,6 +462,18 @@ void main() {
       expect(dashboardProcedureInfoDialogSource, contains('onPressed: onClose'));
       expect(source, contains("import 'dashboard/dashboard_procedure_info_dialog.dart';"));
       expect(source, contains('DashboardProcedureInfoDialog('));
+    });
+
+    test('la griglia dashboard conserva breakpoint, card e immagini', () {
+      expect(dashboardBlockMenuGridSource, contains('class DashboardBlockMenuGrid extends StatelessWidget'));
+      expect(dashboardBlockMenuGridSource, contains('constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 600 ? 3 : 2'));
+      expect(dashboardBlockMenuGridSource, contains('childAspectRatio: constraints.maxWidth < 600 ? 0.98 : 1.18'));
+      expect(dashboardBlockMenuGridSource, contains('DashboardGridMenuCard('));
+      expect(dashboardBlockMenuGridSource, contains('imageUrlFor(title)'));
+      expect(dashboardBlockMenuGridSource, contains("sectionKey == 'RICERCHE' || sectionKey == 'VALUTAZIONI'"));
+      expect(dashboardBlockMenuGridSource, contains("title == 'COLLEZIONE'"));
+      expect(source, contains("import 'dashboard/dashboard_block_menu_grid.dart';"));
+      expect(source, contains('DashboardBlockMenuGrid('));
     });
   });
 }
