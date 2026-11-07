@@ -401,8 +401,6 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     final appearance = ValoraAppearance.instance;
-    final customImage = appearance.imageUrls[section.title];
-    final backgroundAsset = _sectionBackgroundAsset(section.title);
     return DashboardSectionContent(
       background: const SizedBox.shrink(),
       header: DashboardSectionHeader(
