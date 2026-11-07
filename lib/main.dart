@@ -67,6 +67,7 @@ part 'procedures/pr03_runtime_procedure.dart';
 part 'purchases/pr04_runtime_procedure.dart';
 part 'purchases/pr05_runtime_procedure.dart';
 part 'purchases/pr04_form_content.dart';
+part 'purchases/pr05_form_content.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
@@ -8332,42 +8333,37 @@ class _EditPurchasePageState extends State<EditPurchasePage> {
 
   Widget _line(String a,String b)=>Padding(padding:const EdgeInsets.symmetric(vertical:4),child:Row(children:[Expanded(child:Text(a)),Flexible(child:Text(b,textAlign:TextAlign.end))]));
   @override
-  Widget build(BuildContext context){
-    final color=ValoraAppearance.instance.colorFor('ACQUISTI');
-    return Scaffold(appBar:AppBar(title:const Text('PR-05 · MODIFICA ACQUISTO')),
-      body:SafeArea(child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:820),child:ListView(padding:const EdgeInsets.all(16),children:[
-        const Card(child:Padding(padding:EdgeInsets.all(12),child:Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Sono modificabili solo data e totale. Oggetti e descrizione restano in sola lettura. La quadratura deve restare invariata; cassa e storico sono gestiti dalla procedura SQL.'))),
-        Text('1 · CERCA ACQUISTO',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
-        TextField(controller:_query,decoration:const InputDecoration(labelText:'Codice acquisto o descrizione'),onSubmitted:(_)=>_search()),
-        FilledButton(onPressed:_busy?null:_search,child:const Text('CERCA')),
-        for(final row in _found) Card(child:ListTile(title:Text(_name(row)),subtitle:Text('Codice: '+_code(row)+' · Totale: '+((_money(_totalValue(row))??0).toStringAsFixed(2))+' €'),trailing:const Icon(Icons.chevron_right),onTap:_busy?null:()=>_load(row))),
-        if(_purchase!=null)...[
-          const Divider(height:24),Text('2 · MODIFICA SCHEDA ESISTENTE',style:TextStyle(color:color,fontWeight:FontWeight.bold)),
-          _line('Codice acquisto',_code(_purchase!)),
-          TextField(controller:_description,readOnly:true,decoration:const InputDecoration(labelText:'Descrizione acquisto · sola lettura')),
-          TextField(controller:_date,decoration:const InputDecoration(labelText:'Data acquisto (AAAA-MM-GG) *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
-          TextField(controller:_total,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:const InputDecoration(labelText:'Totale acquisto (€) *'),onChanged:(_)=>setState((){_last=null;_confirmed=false;})),
-          _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),_line('Totale','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
-          if (((_money(_total.text) ?? -999) - _allocated).abs() > 0.009) const Text('QUADRATURA NON VALIDA: il salvataggio è bloccato.',style:TextStyle(color:Colors.redAccent,fontWeight:FontWeight.bold)),
-          for(final item in _items) Card(child:ListTile(title:Text((item['descrizione_oggetto']??item['descrizione']??item['nome']??'Oggetto collegato').toString()),subtitle:Text('Codice oggetto: '+(item['codice_oggetto']??item['object_code']??item['id']??'non disponibile').toString()),trailing:Text('€ '+((_money(item['importo']??item['prezzo_acquisto']??item['valore'])??0).toStringAsFixed(2))))),
-          FilledButton(onPressed:_busy?null:_preview,child:const Text('MOSTRA RIEPILOGO')),
-          if(_last!=null) Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-            const Text('RIEPILOGO MODIFICA',style:TextStyle(fontWeight:FontWeight.bold)),
-            _line('Codice acquisto',_code(_purchase!)),
-            _line('Data',_date.text.trim()),
-            _line('Descrizione',_description.text.trim()),
-            _line('Oggetti collegati',_items.length.toString()),
-            _line('Totale acquisto','€ '+((_money(_total.text)??0).toStringAsFixed(2))),
-            _line('Somma allocazioni','€ '+_allocated.toStringAsFixed(2)),
-            const Text('I codici degli oggetti collegati vengono conservati. Il salvataggio aggiorna cassa e storico tramite runtime.'),
-          ]))),
-          CheckboxListTile(value:_confirmed,title:const Text('Confermo il riepilogo e autorizzo il salvataggio.'),onChanged:_busy||_last==null?null:(v)=>setState(()=>_confirmed=v??false)),
-          FilledButton(onPressed:_busy||!_confirmed||_last==null?null:_save,child:Text(_busy?'ATTENDI…':'SALVA MODIFICA E TERMINA')),
-        ],
-        if(_busy)const LinearProgressIndicator(),
-        Card(child:Padding(padding:const EdgeInsets.all(12),child:Text(_status))),
-      ])))));
-  }
+  Widget build(BuildContext context) => Pr05EditPurchaseForm(
+    queryController: _query,
+    dateController: _date,
+    totalController: _total,
+    descriptionController: _description,
+    busy: _busy,
+    confirmed: _confirmed,
+    status: _status,
+    found: _found,
+    purchase: _purchase,
+    items: _items,
+    lastResult: _last,
+    purchaseCode: _purchase == null ? '' : _code(_purchase!),
+    purchaseName: _purchase == null ? '' : _name(_purchase!),
+    foundSummary: (row) => 'Codice: ${_code(row)} · Totale: ${((_money(_totalValue(row)) ?? 0).toStringAsFixed(2))} €',
+    itemSummary: (item) => (
+      (item['descrizione_oggetto'] ?? item['descrizione'] ?? item['nome'] ?? 'Oggetto collegato').toString(),
+      'Codice oggetto: ${(item['codice_oggetto'] ?? item['object_code'] ?? item['id'] ?? 'non disponibile').toString()}',
+      '€ ${((_money(item['importo'] ?? item['prezzo_acquisto'] ?? item['valore']) ?? 0).toStringAsFixed(2))}'
+    ),
+    allocated: _allocated,
+    currentTotal: _money(_total.text) ?? 0,
+    onSearch: _search,
+    onLoad: _load,
+    onDateChanged: () => setState(() { _last = null; _confirmed = false; }),
+    onTotalChanged: () => setState(() { _last = null; _confirmed = false; }),
+    onPreview: _preview,
+    onSave: _save,
+    onConfirmedChanged: (value) => setState(() => _confirmed = value),
+  );
+
 }
 
 
