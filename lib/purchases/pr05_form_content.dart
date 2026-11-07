@@ -74,19 +74,14 @@ class Pr05EditPurchaseForm extends StatelessWidget {
             padding: EdgeInsets.all(12),
             child: Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Sono modificabili solo data e totale. Oggetti e descrizione restano in sola lettura. La quadratura deve restare invariata; cassa e storico sono gestiti dalla procedura SQL.'),
           )),
-          Text('1 · CERCA ACQUISTO', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-          TextField(
-            controller: queryController,
-            decoration: const InputDecoration(labelText: 'Codice acquisto o descrizione'),
-            onSubmitted: (_) => onSearch(),
+          Pr05PurchaseSearchSection(
+            queryController: queryController,
+            busy: busy,
+            found: found,
+            foundSummary: foundSummary,
+            onSearch: onSearch,
+            onLoad: onLoad,
           ),
-          FilledButton(onPressed: busy ? null : onSearch, child: const Text('CERCA')),
-          for (final row in found) Card(child: ListTile(
-            title: Text((row['descrizione_acquisto'] ?? row['descrizione'] ?? row['description'] ?? 'Acquisto').toString()),
-            subtitle: Text(foundSummary(row)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: busy ? null : () => onLoad(row),
-          )),
           if (purchase != null) ...[
             const Divider(height: 24),
             Text('2 · MODIFICA SCHEDA ESISTENTE', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
