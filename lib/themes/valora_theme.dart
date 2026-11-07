@@ -290,7 +290,7 @@ class ValoraAppearance extends ChangeNotifier {
     'VENDITE': Color(0xFF39875B),
     'VALUTAZIONI': Color(0xFFD6A83F),
     'REPORT': Color(0xFFE17D35),
-    'RICERCHE': Color(0xFFD6A83F),
+    'RICERCHE': Color(0xFF38BDF8),
     'CONTROLLO': Color(0xFF777777),
     'COLLEZIONE': Color(0xFFD6B45C),
     'LEGO': Color(0xFFE31B23),
@@ -339,7 +339,7 @@ class ValoraAppearance extends ChangeNotifier {
       if (path != null && path.isNotEmpty) imagePaths[k] = path;
     }
     for (final k in defaults.keys) { final v=p.getInt('valora_color_$k'); if(v!=null) colors[k]=Color(v); }
-    // RICERCHE e VALUTAZIONI mantengono stabilmente l'accento oro anche con preferenze precedenti.
+    // RICERCHE mantiene l'accento celeste e VALUTAZIONI quello oro anche con preferenze precedenti.
     for (final section in const ['RICERCHE', 'VALUTAZIONI']) {
       colors[section] = defaults[section]!;
       await p.setInt('valora_color_$section', defaults[section]!.value);
