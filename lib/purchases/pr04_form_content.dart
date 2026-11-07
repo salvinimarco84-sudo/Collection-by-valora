@@ -37,32 +37,13 @@ class Pr04ItemEditor extends StatelessWidget {
           onChanged: (_) => onChanged(),
         ),
         const SizedBox(height: 6),
-        SizedBox(width: double.infinity, child: OutlinedButton.icon(
-          onPressed: busy ? null : onPhoto,
-          icon: const Icon(Icons.camera_alt_outlined),
-          label: const Text('SCATTA FOTO · RICONOSCIMENTO PR-12'),
-        )),
-        if (item.photoUrl != null) Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(item.photoUrl!, height: 130, width: double.infinity,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => item.photoBytes != null
-                ? Image.memory(item.photoBytes!, height: 130, width: double.infinity, fit: BoxFit.contain)
-                : const Icon(Icons.broken_image_outlined),
-            ),
-          ),
-        ) else if (item.photoBytes != null) Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.memory(item.photoBytes!, height: 130, width: double.infinity, fit: BoxFit.contain),
-          ),
+        Pr04PurchasePhotoField(
+          busy: busy,
+          photoUrl: item.photoUrl,
+          photoBytes: item.photoBytes,
+          photoStatus: item.photoStatus,
+          onPhoto: onPhoto,
         ),
-        Text(item.photoStatus, style: TextStyle(
-          fontSize: 12, color: ValoraAppearance.instance.textSecondary,
-        )),
         const SizedBox(height: 8),
         TextField(
           controller: item.price,
