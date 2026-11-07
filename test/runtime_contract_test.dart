@@ -283,8 +283,8 @@ void main() {
       expect(dashboardCollectionCategoryPreviewStripSource, contains('errorBuilder'));
       expect(dashboardCollectionCategoryPreviewStripSource, contains('BoxFit.contain'));
       expect(dashboardCollectionCategoryCardSource, contains('onTap: onTap'));
-      expect(dashboardCollectionCategoryCardSource, contains("import 'dashboard_category_brand_mark.dart';"));
-      expect(dashboardCollectionCategoryCardSource, contains('DashboardCategoryBrandMark(category: name, color: color, fallbackIcon: icon)'));
+      expect(dashboardCollectionCategoryCardSource, contains("import 'dashboard_collection_category_header.dart';"));
+      expect(dashboardCollectionCategoryCardSource, contains('DashboardCollectionCategoryHeader('));
       expect(source, contains("import 'dashboard/dashboard_collection_category_card.dart';"));
       expect(source, contains('return DashboardCollectionCategoryCard('));
       expect(source, contains('initialCategoryCode: code'));
