@@ -132,11 +132,15 @@ extension _ObjectCardsPresentation on _ObjectRuntimePageState {
                 Text('Data inizio vendita: ${_valueFor(item, ['data_inizio_vendita'], 'Non indicata')}',
                   style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
               ] else if (availableStyle) ...[
-                Wrap(spacing: 6, runSpacing: 6, children: [
-                  infoChip(Icons.inventory_2_outlined, destination),
-                  infoChip(Icons.verified_outlined, condition),
-                ]),
-                const SizedBox(height: 7),
+                if (destination != 'Non indicata' || condition != 'Non indicata')
+                  Wrap(spacing: 6, runSpacing: 6, children: [
+                    if (destination != 'Non indicata')
+                      infoChip(Icons.inventory_2_outlined, destination),
+                    if (condition != 'Non indicata')
+                      infoChip(Icons.verified_outlined, condition),
+                  ]),
+                if (destination != 'Non indicata' || condition != 'Non indicata')
+                  const SizedBox(height: 7),
                 Row(children: [
                   Icon(Icons.circle, size: 8, color: sectionColor),
                   const SizedBox(width: 6),
