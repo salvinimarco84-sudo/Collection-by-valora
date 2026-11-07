@@ -37,6 +37,7 @@ import 'dashboard/dashboard_app_bar.dart';
 import 'dashboard/dashboard_category_preview_list.dart';
 import 'dashboard/dashboard_procedure_info_dialog.dart';
 import 'dashboard/dashboard_block_menu_grid.dart';
+import 'dashboard/dashboard_home_block_content.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_section_content.dart';
@@ -2962,7 +2963,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           'tap':() => setState(()=>selectedSection=section),
         }),
       ];
-      return DashboardBlockMenuGrid(
+      return DashboardHomeBlockContent(
         entries: entries,
         catalogLoading: _catalogLoading,
         catalogCount: _catalogRows.length,
