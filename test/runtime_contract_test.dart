@@ -476,7 +476,20 @@ void main() {
     });
 
     test('Visualizza scheda non mostra le fonti dati prodotto ma conserva i valori nel record', () {
-      expect(objectMasterPresentationSource, contains("'fonte_dati_prodotto'"));
+      for (final sourceKey in [
+        'fonte_dati_prodotto',
+        'fonte_dati_oggetto',
+        'fonte_oggetto',
+        'url_fonte',
+        'url_fonte_oggetto',
+        'url_fonte_catalogo',
+        'url_fonte_prodotto',
+        'fonte_metadati',
+        'fonte_immagine',
+        'url_fonte_immagine',
+      ]) {
+        expect(objectMasterPresentationSource, contains("'$sourceKey'"), reason: sourceKey);
+      }
       expect(objectMasterPresentationSource, contains("!sourceKeys.contains(e.key)"));
       expect(objectMasterPresentationSource, contains('Widget _masterDetails(Map<String, dynamic> object)'));
       expect(source, contains("part 'objects/object_master_presentation.dart';"));
