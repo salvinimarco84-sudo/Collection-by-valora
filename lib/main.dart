@@ -66,6 +66,7 @@ part 'procedures/pr03_runtime_procedure.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
+part 'reports/report_operation_card.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
@@ -7162,13 +7163,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
               final imageUrl = (item['url_immagine_catalogo'] ?? item['url_immagine'] ?? '').toString().trim();
               final objectId = int.tryParse((item['codice_oggetto'] ?? item['id_oggetto'] ?? '').toString())
                   ?? _reportImageObjectIdsByDescription[(item['descrizione_oggetto'] ?? item['descrizione'] ?? item['nome_oggetto'] ?? item['titolo'] ?? '').toString().trim().toLowerCase()];
-              return Card(child: ListTile(
-                leading: _reportCanShowObjectImages && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))
-                    ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(imageUrl, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.receipt_long_outlined, color: sectionColor)))
-                    : Icon(Icons.receipt_long_outlined, color: sectionColor),
-                title: Text(description.toString(), style: const TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}'),
-                trailing: amount == null ? null : Text('${(double.tryParse(amount.toString()) ?? 0).toStringAsFixed(2).replaceAll('.', ',')} ${item['valuta'] ?? 'EUR'}'),
+              return ReportOperationCard(
+                sectionColor: sectionColor,
+                showImage: _reportCanShowObjectImages,
+                imageUrl: imageUrl,
+                title: description.toString(),
+                subtitle: '$dateValue · ${item['codice_vendita'] ?? item['codice_acquisto'] ?? item['codice_movimento'] ?? ''}',
+                trailingText: amount == null ? null : '${(double.tryParse(amount.toString()) ?? 0).toStringAsFixed(2).replaceAll('.', ',')} ${item['valuta'] ?? 'EUR'}',
                 onTap: widget.apiCode == 'REPORT-PURCHASES'
                     ? () => _showPurchaseReportDetail(item)
                     : objectId != null && objectId > 0 && widget.apiCode != 'REPORT-CASH'
@@ -7180,7 +7181,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                         content: SingleChildScrollView(child: SelectableText(_pretty(item))),
                         actions: [TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(ValoraI18n.tr('CHIUDI')))],
                       )),
-              ));
+              );
             }
             return _objectCard(item, availableStyle: isAvailableList || _isCollectionThemeReport || _isActiveListingsReport, activeListing: _isActiveListingsReport, onTap: (isAvailableList || _isCollectionThemeReport || _isActiveListingsReport)
               ? () => Navigator.of(context).push(MaterialPageRoute(
