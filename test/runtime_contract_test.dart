@@ -6,6 +6,7 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
+  final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -580,6 +581,15 @@ void main() {
       expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
       expect(source, contains('DashboardHomeBlockContent('));
     });
+    test('la schermata di caricamento avvio conserva messaggio e indicatore', () {
+      expect(startupLoadingPageSource, contains('class StartupLoadingPage extends StatelessWidget'));
+      expect(startupLoadingPageSource, contains('CircularProgressIndicator(color: accentColor)'));
+      expect(startupLoadingPageSource, contains('COLLECTION by VALORA'));
+      expect(startupLoadingPageSource, contains('Inizializzazione dell’app in corso'));
+      expect(source, contains("import 'startup/startup_loading_page.dart';"));
+      expect(source, isNot(contains('class StartupLoadingPage extends StatelessWidget')));
+    });
+
     test('la schermata di errore avvio resta separata e mostra il dettaglio', () {
       expect(startupFailurePageSource, contains('class StartupFailurePage extends StatelessWidget'));
       expect(startupFailurePageSource, contains('SelectableText('));
