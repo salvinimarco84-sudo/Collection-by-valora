@@ -21,6 +21,8 @@ void main() {
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
   final reportSummaryPanelSource = File('lib/reports/report_summary_panel.dart').readAsStringSync();
   final reportOperationCardSource = File('lib/reports/report_operation_card.dart').readAsStringSync();
+  final reportPaginationControlsSource = File('lib/reports/report_pagination_controls.dart').readAsStringSync();
+
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -718,6 +720,19 @@ void main() {
       expect(source, contains('ReportOperationCard('));
       expect(source, contains('_showPurchaseReportDetail(item)'));
       expect(source, contains('initialObjectCode: objectId'));
+    });
+
+    test('la paginazione dei report mantiene intervallo e callback di navigazione', () {
+      expect(reportPaginationControlsSource, contains('class ReportPaginationControls extends StatelessWidget'));
+      expect(reportPaginationControlsSource, contains('currentPage * pageSize + 1'));
+      expect(reportPaginationControlsSource, contains('Gruppo precedente'));
+      expect(reportPaginationControlsSource, contains('Gruppo successivo'));
+      expect(reportPaginationControlsSource, contains('onPressed: onPrevious'));
+      expect(reportPaginationControlsSource, contains('onPressed: onNext'));
+      expect(source, contains("part 'reports/report_pagination_controls.dart';"));
+      expect(source, contains('ReportPaginationControls('));
+      expect(source, contains('_changeAvailablePage(_availablePage - 1)'));
+      expect(source, contains('_changeAvailablePage(_availablePage + 1)'));
     });
 
     test('i riepiloghi report condividono il pannello grafico senza spostare i calcoli', () {
