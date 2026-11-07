@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'dashboard_category_brand_mark.dart';
+import 'dashboard_collection_category_preview_strip.dart';
 
 /// Scheda categoria della collezione, con logo e anteprime degli oggetti.
 class DashboardCollectionCategoryCard extends StatelessWidget {
@@ -64,36 +65,10 @@ class DashboardCollectionCategoryCard extends StatelessWidget {
               onTap: onTap,
             ),
             if (previewImageUrls.isNotEmpty)
-              SizedBox(
-                height: 86,
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-                  scrollDirection: Axis.horizontal,
-                  itemCount: previewImageUrls.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final url = previewImageUrls[index];
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        width: 76,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF111111),
-                          border: Border.all(color: Colors.white24),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(3),
-                        child: url == null
-                            ? Icon(icon, color: color, size: 30)
-                            : Image.network(
-                                url,
-                                fit: BoxFit.contain,
-                                errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 30),
-                              ),
-                      ),
-                    );
-                  },
-                ),
+              DashboardCollectionCategoryPreviewStrip(
+                imageUrls: previewImageUrls,
+                icon: icon,
+                color: color,
               ),
           ],
         ),
