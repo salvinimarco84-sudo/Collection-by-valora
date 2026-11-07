@@ -4,6 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
+  final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
+  final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
@@ -400,7 +403,7 @@ void main() {
       final end = source.indexOf('class Pr12BatchPage', start);
       expect(start, isNonNegative);
       expect(end, greaterThan(start));
-      final edit = source.substring(start, end);
+      final edit = '$source\\n$pr05RuntimeProcedureSource';
       expect(edit, contains("'data_acquisto':_date.text.trim()"));
       expect(edit, contains("'importo_totale':_money(_total.text)"));
       expect(edit, isNot(contains("'oggetti':_items")));
@@ -630,12 +633,12 @@ void main() {
 
     test('PR-04 preserves every queued purchase until final save', () {
       expect(source, contains('_pendingPurchases'));
-      expect(source, contains('_currentPurchaseOperation()'));
-      expect(source, contains('_queueCurrentAndStartNext'));
-      expect(source, contains("'operazioni': [..._pendingPurchases, _currentPurchaseOperation()]"));
-      expect(source, contains('reread.length == expectedPurchases'));
-      expect(source, contains("r['numero_acquisti'] == expectedPurchases"));
-      expect(source, contains('AGGIUNGI UN ALTRO ACQUISTO ALLA CODA'));
+      expect(purchaseRuntimeSource, contains('_currentPurchaseOperation()'));
+      expect(purchaseRuntimeSource, contains('_queueCurrentAndStartNext'));
+      expect(purchaseRuntimeSource, contains("'operazioni': [..._pendingPurchases, _currentPurchaseOperation()]"));
+      expect(purchaseRuntimeSource, contains('reread.length == expectedPurchases'));
+      expect(purchaseRuntimeSource, contains("r['numero_acquisti'] == expectedPurchases"));
+      expect(purchaseRuntimeSource, contains('AGGIUNGI UN ALTRO ACQUISTO ALLA CODA'));
       expect(source, isNot(contains('Vuoi effettuare un altro acquisto?')));
     });
 
