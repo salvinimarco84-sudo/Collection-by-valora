@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
+  final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -579,6 +580,16 @@ void main() {
       expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
       expect(source, contains('DashboardHomeBlockContent('));
     });
+    test('la schermata di errore avvio resta separata e mostra il dettaglio', () {
+      expect(startupFailurePageSource, contains('class StartupFailurePage extends StatelessWidget'));
+      expect(startupFailurePageSource, contains('SelectableText('));
+      expect(startupFailurePageSource, contains('Avvio non completato.'));
+      expect(startupFailurePageSource, contains('required this.accentColor'));
+      expect(source, contains("import 'startup/startup_failure_page.dart';"));
+      expect(source, contains('StartupFailurePage(error: widget.startupError!, accentColor: goldColor)'));
+      expect(source, isNot(contains('class StartupFailurePage extends StatelessWidget')));
+    });
+
     test('la localizzazione resta separata dal file principale', () {
       expect(valoraI18nSource, contains('class ValoraI18n extends ChangeNotifier'));
       expect(valoraI18nSource, contains('static String tr('));
