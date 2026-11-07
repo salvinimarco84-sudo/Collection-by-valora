@@ -8,33 +8,35 @@ extension _ObjectCardsPresentation on _ObjectRuntimePageState {
   }) {
     final code = _valueFor(item, ['codice_oggetto', 'id'], 'Codice n/d');
     final desc = _valueFor(item, ['descrizione_oggetto', 'descrizione', 'nome'], 'Oggetto senza descrizione');
-    String firstImage(dynamic value) {
+    String firstImage(dynamic value, {bool allowDirectUrl = false}) {
       const imageKeys = <String>[
         'url_immagine_catalogo', 'url_immagine', 'immagine_url', 'foto_url',
         'image_url', 'immagine_principale', 'url_foto', 'foto', 'immagine',
         'image', 'imageUrl', 'photo_url', 'main_image_url', 'image_uri',
         'photo_uri', 'url_foto_principale', 'percorso_immagine',
+        'immagini', 'images', 'gallery', 'galleria_foto',
       ];
+      bool isHttpUrl(dynamic candidate) => candidate is String &&
+          (candidate.trim().startsWith('https://') || candidate.trim().startsWith('http://'));
       if (value is Map) {
         for (final key in imageKeys) {
           final candidate = value[key];
-          if (candidate is String && (candidate.startsWith('https://') || candidate.startsWith('http://'))) {
-            return candidate.trim();
-          }
+          final found = firstImage(candidate, allowDirectUrl: true);
+          if (found.isNotEmpty) return found;
         }
-        // Alcuni runtime restituiscono i metadati immagine annidati in JSON.
+        // Esplora i metadati annidati, ma non interpreta URL generici come immagini:
+        // potrebbero essere link alle fonti o alle pagine prodotto.
         for (final nested in value.values) {
           final found = firstImage(nested);
           if (found.isNotEmpty) return found;
         }
       } else if (value is Iterable) {
         for (final nested in value) {
-          final found = firstImage(nested);
+          final found = firstImage(nested, allowDirectUrl: allowDirectUrl);
           if (found.isNotEmpty) return found;
         }
-      } else if (value is String) {
-        final trimmed = value.trim();
-        if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) return trimmed;
+      } else if (allowDirectUrl && isHttpUrl(value)) {
+        return (value as String).trim();
       }
       return '';
     }
