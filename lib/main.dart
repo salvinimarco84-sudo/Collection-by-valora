@@ -40,6 +40,7 @@ import 'dashboard/dashboard_block_menu_grid.dart';
 import 'dashboard/dashboard_home_block_content.dart';
 import 'dashboard/dashboard_home_content.dart';
 import 'history/object_history_detail_row.dart';
+import 'objects/object_image_placeholder.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_section_content.dart';
@@ -7437,9 +7438,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     );
   }
 
-  Widget _imagePlaceholder({double size = 88}) => Container(
-    width: size, height: size, color: ValoraAppearance.instance.neutralOverlay,
-    child: Icon(Icons.image_not_supported_outlined, color: ValoraAppearance.instance.textFaint, size: 30),
+  Widget _imagePlaceholder({double size = 88}) => ObjectImagePlaceholder(
+    size: size,
+    backgroundColor: ValoraAppearance.instance.neutralOverlay,
+    iconColor: ValoraAppearance.instance.textFaint,
   );
 
   Widget _historyCard(Map<String, dynamic> event) {
