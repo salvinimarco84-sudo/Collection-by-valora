@@ -395,6 +395,24 @@ void main() {
       expect(init, contains('_loadCollectionCategories();'));
     });
 
+    test('PR-05 rispetta i campi modificabili e la risposta verificata del runtime', () {
+      final start = source.indexOf('class _EditPurchasePageState');
+      final end = source.indexOf('class Pr12BatchPage', start);
+      expect(start, isNonNegative);
+      expect(end, greaterThan(start));
+      final edit = source.substring(start, end);
+      expect(edit, contains("'data_acquisto':_date.text.trim()"));
+      expect(edit, contains("'importo_totale':_money(_total.text)"));
+      expect(edit, isNot(contains("'oggetti':_items")));
+      expect(edit, isNot(contains("'descrizione_acquisto':_description.text.trim()")));
+      expect(edit, contains('readOnly:true'));
+      expect(edit, contains('(r[\'quantita\']??1)'));
+      expect(edit, contains("r['risultati']"));
+      expect(edit, contains("v['verifica_database']==true"));
+      expect(edit, contains("v['importo_cassa']"));
+      expect(edit, contains("v['quadratura_oggetti']"));
+    });
+
     test('PR-04 persiste la categoria selezionata sull’oggetto acquistato', () {
       final migration = File('supabase/migrations/20261104100000_pr04_persist_collection_category.sql').readAsStringSync();
       expect(migration, contains('codice_categoria_collezione'));
