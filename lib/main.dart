@@ -6062,7 +6062,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     // i valori del catalogo e del JSON specifico sono la fonte più completa.
     for (final entry in _pr11CategoryValues.entries) {
       final value = entry.value;
-      if (value != null && value.toString().trim().isNotEmpty) {
+      if (!sourceMetadataKeys.contains(entry.key) &&
+          value != null && value.toString().trim().isNotEmpty) {
         values[entry.key] = value;
       }
     }
@@ -6071,7 +6072,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final rawSpecific = _pr11CategoryValues['attributi_specifici'];
     if (rawSpecific is Map) {
       for (final entry in Map<String, dynamic>.from(rawSpecific).entries) {
-        if (entry.value != null && entry.value.toString().trim().isNotEmpty) {
+        if (!sourceMetadataKeys.contains(entry.key) &&
+            entry.value != null && entry.value.toString().trim().isNotEmpty) {
           values.putIfAbsent(entry.key, () => entry.value);
         }
       }
@@ -6084,7 +6086,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     final categoryFields = _pr11CategoryFieldDefinitions
         .map((d) => d['nome_campo']?.toString() ?? '')
-        .where((k) => k.isNotEmpty)
+        .where((k) => k.isNotEmpty && !sourceMetadataKeys.contains(k))
         .toSet();
     // I campi specifici di altre categorie non devono finire nella sezione
     // "IDENTIFICAZIONE" come se fossero metadati generali (es. personaggi
@@ -6113,10 +6115,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     };
     final common = values.keys.where((k) =>
         !categoryFields.contains(k) &&
+        !sourceMetadataKeys.contains(k) &&
         !fieldsOwnedByOtherCategories.contains(k)).toList();
     final category = _pr11CategoryFieldDefinitions
         .map((d) => d['nome_campo']?.toString() ?? '')
-        .where((k) => k.isNotEmpty)
+        .where((k) => k.isNotEmpty && !sourceMetadataKeys.contains(k))
         .toList();
     Widget field(String key, {Map<String, dynamic>? definition}) {
       final value = values[key];
