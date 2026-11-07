@@ -15,6 +15,7 @@ void main() {
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
   final pr01RuntimeProcedureSource = File('lib/procedures/pr01_runtime_procedure.dart').readAsStringSync();
+  final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -401,12 +402,13 @@ void main() {
 
     test('PR-02 accumula le modifiche fino alla risposta finale e mantiene separata la categoria', () {
       expect(source, contains('_selectedCollectionCategory'));
-      expect(source, contains('categoria_collezione_selezionata'));
+      expect(pr02RuntimeProcedureSource, contains('categoria_collezione_selezionata'));
       expect(source, contains('_pr02AwaitingNextChoice'));
-      expect(source, contains('_continuePr02WithAnotherObject()'));
-      expect(source, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
-      expect(source, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
-      expect(source, contains('oggetto_collezione_categoria'));
+      expect(source, contains('onPressed: _continuePr02WithAnotherObject'));
+      expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
+      expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(pr02RuntimeProcedureSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
+      expect(pr02RuntimeProcedureSource, contains('oggetto_collezione_categoria'));
     });
 
     test('la maschera PR-01 è separata e mantiene tutti i campi originali', () {
@@ -463,11 +465,11 @@ void main() {
     });
 
     test('PR-02 conferma in linea senza dialoghi o chiamate preview/review intermedie', () {
-      final start = source.indexOf('Future<void> _confirmPr02Changes() async {');
-      final end = source.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
+      final start = pr02RuntimeProcedureSource.indexOf('Future<void> _confirmPr02Changes() async {');
+      final end = pr02RuntimeProcedureSource.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
       expect(start, isNonNegative);
       expect(end, greaterThan(start));
-      final confirmFlow = source.substring(start, end);
+      final confirmFlow = pr02RuntimeProcedureSource.substring(start, end);
       expect(confirmFlow, contains('_pr02PendingChanges.add'));
       expect(confirmFlow, contains('_pr02AwaitingNextChoice = true'));
       expect(confirmFlow, isNot(contains('showDialog')));
