@@ -38,6 +38,7 @@ import 'dashboard/dashboard_category_preview_list.dart';
 import 'dashboard/dashboard_procedure_info_dialog.dart';
 import 'dashboard/dashboard_block_menu_grid.dart';
 import 'dashboard/dashboard_home_block_content.dart';
+import 'dashboard/dashboard_home_content.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_section_content.dart';
@@ -2950,57 +2951,58 @@ class _HomeDashboardState extends State<HomeDashboard> {
     );
   }
 
-  Widget buildDashboard() {
-    if (ValoraAppearance.instance.useBlockLayout) {
-      final entries = <Map<String, dynamic>>[
-        {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
-        ...dashboardSections.map((section)=> {
-          'title':ValoraI18n.tr(section.menuTitle ?? section.title),
-          'sectionKey':section.title,
-          'subtitle':ValoraI18n.tr(section.description),
-          'color':ValoraAppearance.instance.colorFor(section.title),
-          'icon':section.icon,
-          'tap':() => setState(()=>selectedSection=section),
-        }),
-      ];
-      return DashboardHomeBlockContent(
-        entries: entries,
-        catalogLoading: _catalogLoading,
-        catalogCount: _catalogRows.length,
-        imageUrlFor: (title) {
-          final url = ValoraAppearance.instance.imageUrls[title] ??
-              ValoraAppearance.instance.imageUrls[
-                  title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title];
-          return url == null ? null : _valoraImageProxyUrl(url);
+  Widget buildDashboard() => DashboardHomeContent(
+        useBlockLayout: ValoraAppearance.instance.useBlockLayout,
+        blockContentBuilder: () {
+          final entries = <Map<String, dynamic>>[
+            {'title':'COLLEZIONE','subtitle':'Tutti i temi e tutti i record','color':goldColor,'icon':Icons.inventory_2_outlined,'tap':() => setState(() => showCollection=true)},
+            ...dashboardSections.map((section)=> {
+              'title':ValoraI18n.tr(section.menuTitle ?? section.title),
+              'sectionKey':section.title,
+              'subtitle':ValoraI18n.tr(section.description),
+              'color':ValoraAppearance.instance.colorFor(section.title),
+              'icon':section.icon,
+              'tap':() => setState(()=>selectedSection=section),
+            }),
+          ];
+          return DashboardHomeBlockContent(
+            entries: entries,
+            catalogLoading: _catalogLoading,
+            catalogCount: _catalogRows.length,
+            imageUrlFor: (title) {
+              final url = ValoraAppearance.instance.imageUrls[title] ??
+                  ValoraAppearance.instance.imageUrls[
+                      title == 'VENDITE E INSERZIONI' ? 'VENDITE' : title];
+              return url == null ? null : _valoraImageProxyUrl(url);
+            },
+          );
         },
+        listContentBuilder: () => DashboardHomeListContent(
+          header: DashboardHomeHeader(
+            title: ValoraI18n.tr('CENTRO OPERATIVO'),
+            subtitle: ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'),
+          ),
+          collectionCard: _menuCard(
+            title: ValoraI18n.tr('COLLEZIONE'),
+            subtitle: ValoraI18n.tr('Tutti i temi e tutti i record della tua collezione'),
+            color: goldColor,
+            icon: Icons.inventory_2_outlined,
+            trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
+            onTap: () { setState(() => showCollection = true); _loadDashboardCatalog(); },
+          ),
+          sectionCards: dashboardSections.map((section) => _menuCard(
+            title: ValoraI18n.tr(section.menuTitle ?? section.title),
+            subtitle: ValoraI18n.tr(section.description),
+            color: ValoraAppearance.instance.colorFor(section.title),
+            icon: section.icon,
+            onTap: () => setState(() => selectedSection = section),
+          )).toList(),
+          catalogError: _catalogError != null
+              ? DashboardCatalogCountErrorNotice(message: 'Conteggio catalogo non disponibile: $_catalogError')
+              : null,
+          footer: const DashboardHomeFooter(),
+        ),
       );
-    }
-    return DashboardHomeListContent(
-      header: DashboardHomeHeader(
-        title: ValoraI18n.tr('CENTRO OPERATIVO'),
-        subtitle: ValoraI18n.tr('Scegli una sezione per accedere alle relative funzioni.'),
-      ),
-      collectionCard: _menuCard(
-        title: ValoraI18n.tr('COLLEZIONE'),
-        subtitle: ValoraI18n.tr('Tutti i temi e tutti i record della tua collezione'),
-        color: goldColor,
-        icon: Icons.inventory_2_outlined,
-        trailingText: _catalogLoading ? '…' : '${_catalogRows.length} record',
-        onTap: () { setState(() => showCollection = true); _loadDashboardCatalog(); },
-      ),
-      sectionCards: dashboardSections.map((section) => _menuCard(
-        title: ValoraI18n.tr(section.menuTitle ?? section.title),
-        subtitle: ValoraI18n.tr(section.description),
-        color: ValoraAppearance.instance.colorFor(section.title),
-        icon: section.icon,
-        onTap: () => setState(() => selectedSection = section),
-      )).toList(),
-      catalogError: _catalogError != null
-          ? DashboardCatalogCountErrorNotice(message: 'Conteggio catalogo non disponibile: $_catalogError')
-          : null,
-      footer: const DashboardHomeFooter(),
-    );
-  }
 
   Widget _collectionCategoryMasterPanel(String code, String name, String subtitle, Color color, IconData icon, int count, {String? logoUrl}) {
     final categoryKey = name.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
