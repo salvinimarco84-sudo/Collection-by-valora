@@ -18,7 +18,6 @@ import 'themes/valora_theme.dart';
 import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
-import 'dashboard/dashboard_section_overlay.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
 import 'dashboard/dashboard_home_header.dart';
@@ -39,6 +38,7 @@ import 'dashboard/dashboard_procedure_info_dialog.dart';
 import 'dashboard/dashboard_block_menu_grid.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
+import 'dashboard/dashboard_section_content.dart';
 import 'dashboard/dashboard_menu_card.dart';
 import 'dashboard/dashboard_grid_menu_card.dart';
 import 'package:flutter/foundation.dart';
@@ -3105,27 +3105,21 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final appearance = ValoraAppearance.instance;
     final customImage = appearance.imageUrls[section.title];
     final backgroundAsset = _sectionBackgroundAsset(section.title);
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Positioned.fill(
-          child: DashboardSectionBackground(
-            customImage: customImage,
-            backgroundAsset: backgroundAsset,
-            backgroundColor: appearance.background,
-            imageUrlResolver: _valoraImageProxyUrl,
-          ),
-        ),
-        const Positioned.fill(child: DashboardSectionOverlay()),
-        ListView(padding: const EdgeInsets.fromLTRB(16, 20, 16, 28), children: [
-          DashboardSectionHeader(
-            title: section.title,
-            description: ValoraI18n.tr(section.description),
-            accentColor: appearance.colorFor(section.title),
-            secondaryTextColor: appearance.textSecondary,
-          ),
-          const SizedBox(height: 20),
-          ...procedures.map((procedure) => ProcedureCard(
+    return DashboardSectionContent(
+      background: DashboardSectionBackground(
+        customImage: customImage,
+        backgroundAsset: backgroundAsset,
+        backgroundColor: appearance.background,
+        imageUrlResolver: _valoraImageProxyUrl,
+      ),
+      header: DashboardSectionHeader(
+        title: section.title,
+        description: ValoraI18n.tr(section.description),
+        accentColor: appearance.colorFor(section.title),
+        secondaryTextColor: appearance.textSecondary,
+      ),
+      procedureCards: [
+            ...procedures.map((procedure) => ProcedureCard(
             procedure: procedure,
             title: ValoraI18n.tr(procedure.title),
             description: ValoraI18n.tr(procedure.description),
@@ -3167,14 +3161,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                                                           : ObjectRuntimePage(title: procedure.title, apiCode: procedure.apiCode == 'WRITE-PR-08' ? 'PR-08' : procedure.apiCode == 'WRITE-PR-07' ? 'PR-07' : procedure.apiCode == 'WRITE-PR-09' ? 'PR-09' : procedure.apiCode == 'WRITE-PR-06' ? 'PR-06' : procedure.apiCode!)))
                                                                 : null,
           )),
-          const SizedBox(height: 12),
-          DashboardSectionFooter(
-            label: ValoraI18n.tr('TORNA ALLA DASHBOARD'),
-            accentColor: appearance.colorFor(section.title),
-            onPressed: () => setState(() => selectedSection = null),
-          ),
-        ]),
       ],
+      footer: DashboardSectionFooter(
+        label: ValoraI18n.tr('TORNA ALLA DASHBOARD'),
+        accentColor: appearance.colorFor(section.title),
+        onPressed: () => setState(() => selectedSection = null),
+      ),
     );
   }
 
