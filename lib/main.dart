@@ -7119,6 +7119,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       'url_immagine', 'immagine_url', 'foto_url', 'image_url',
                       'immagine_principale', 'url_foto', 'foto', 'immagine',
                       'image', 'imageUrl', 'photo_url', 'main_image_url',
+                    }.contains(e.key) && !const {
+                      'fonte', 'fonte_dati', 'fonte_dati_prodotto',
+                      'fonte_dati_catalogo', 'fonte_dati_oggetto',
+                      'fonte_catalogo', 'fonte_oggetto', 'url_fonte',
+                      'url_fonte_oggetto', 'url_fonte_catalogo',
+                      'url_fonte_prodotto', 'fonte_metadati',
+                      'fonte_immagine', 'url_fonte_immagine',
                     }.contains(e.key))
                 .map((e) => _detailFieldCard(e.key, e.value)),
           ],
