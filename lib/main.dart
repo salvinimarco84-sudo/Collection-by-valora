@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'themes/valora_theme.dart';
 import 'localization/valora_i18n.dart';
 import 'startup/startup_failure_page.dart';
+import 'startup/startup_loading_page.dart';
 import 'procedures/procedure_registry.dart';
 import 'procedures/procedure_card.dart';
 import 'dashboard/dashboard_section_background.dart';
@@ -379,37 +380,6 @@ class _AppearanceSettingsPageState extends State<AppearanceSettingsPage>{
       ],
     ),
   );
-}
-
-class StartupLoadingPage extends StatelessWidget {
-  const StartupLoadingPage({super.key});
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.inventory_2_outlined, color: goldColor, size: 64),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'COLLECTION by VALORA',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: goldColor, fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  const CircularProgressIndicator(color: goldColor),
-                  const SizedBox(height: 14),
-                  const Text('Inizializzazione dell’app in corso…', textAlign: TextAlign.center),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
 }
 
 class AuthenticationGate extends StatelessWidget {
