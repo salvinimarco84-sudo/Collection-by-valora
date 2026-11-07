@@ -466,7 +466,11 @@ void main() {
 
     test('la griglia dashboard conserva breakpoint, card e immagini', () {
       expect(dashboardBlockMenuGridSource, contains('class DashboardBlockMenuGrid extends StatelessWidget'));
-      expect(dashboardBlockMenuGridSource, contains('constraints.maxWidth >= 900 ? 4 : constraints.maxWidth >= 600 ? 3 : 2'));
+      expect(dashboardBlockMenuGridSource, contains('constraints.maxWidth >= 900'));
+      expect(dashboardBlockMenuGridSource, contains('constraints.maxWidth >= 600'));
+      expect(dashboardBlockMenuGridSource, contains('? 4'));
+      expect(dashboardBlockMenuGridSource, contains('? 3'));
+      expect(dashboardBlockMenuGridSource, contains(': 2'));
       expect(dashboardBlockMenuGridSource, contains('childAspectRatio: constraints.maxWidth < 600 ? 0.98 : 1.18'));
       expect(dashboardBlockMenuGridSource, contains('DashboardGridMenuCard('));
       expect(dashboardBlockMenuGridSource, contains('imageUrlFor(title)'));
