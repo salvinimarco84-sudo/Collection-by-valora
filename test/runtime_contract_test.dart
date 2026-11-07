@@ -10,6 +10,7 @@ void main() {
   final pr05FormContentSource = File('lib/purchases/pr05_form_content.dart').readAsStringSync();
   final pr04StepContentSource = File('lib/purchases/pr04_step_content.dart').readAsStringSync();
   final pr04RecognitionDialogSource = File('lib/purchases/pr04_recognition_dialog.dart').readAsStringSync();
+  final pr04PhotoFieldSource = File('lib/purchases/pr04_photo_field.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -69,6 +70,18 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('il campo foto PR-04 conserva acquisizione, anteprima e fallback', () {
+      expect(source, contains("part 'purchases/pr04_photo_field.dart';"));
+      expect(pr04FormContentSource, contains('Pr04PurchasePhotoField('));
+      expect(pr04PhotoFieldSource, contains('class Pr04PurchasePhotoField extends StatelessWidget'));
+      expect(pr04PhotoFieldSource, contains('SCATTA FOTO · RICONOSCIMENTO PR-12'));
+      expect(pr04PhotoFieldSource, contains('Image.network('));
+      expect(pr04PhotoFieldSource, contains('Image.memory('));
+      expect(pr04PhotoFieldSource, contains('photoStatus'));
+      expect(pr04PhotoFieldSource, contains('onPressed: busy ? null : onPhoto'));
+    });
+
+
     test('il velo di contrasto della sezione mantiene overlay e non intercetta i tocchi', () {
       expect(dashboardOverlaySource, contains('class DashboardSectionOverlay extends StatelessWidget'));
       expect(dashboardOverlaySource, contains('IgnorePointer('));
