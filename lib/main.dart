@@ -76,6 +76,7 @@ part 'purchases/pr05_search_section.dart';
 part 'purchases/pr05_details_section.dart';
 part 'purchases/pr05_confirmation_section.dart';
 part 'purchases/pr05_page_frame.dart';
+part 'procedures/pr06_page_frame.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
@@ -7900,11 +7901,7 @@ class _NewSalePageState extends State<NewSalePage> {
   Widget build(BuildContext context) {
     final sectionColor = ValoraAppearance.instance.colorFor('VENDITE');
     final filtered = _filteredObjects;
-    return Scaffold(
-      appBar: AppBar(title: const Text('PR-06 · NUOVA VENDITA')),
-      body: SafeArea(child: Center(child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 820),
-        child: ListView(padding: const EdgeInsets.all(16), children: [
+    return Pr06NewSalePageFrame(children: [
           Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(
             'AMBIENTE TEST · La vendita non viene registrata finché non confermi esplicitamente il riepilogo. Sono selezionabili solo oggetti destinati alla RIVENDITA e disponibili.',
             style: TextStyle(color: ValoraAppearance.instance.textSecondary)))),
@@ -8019,9 +8016,7 @@ class _NewSalePageState extends State<NewSalePage> {
             ]))),
           if (_preview != null) const SizedBox(height: 8),
           if (_preview != null) SelectableText(const JsonEncoder.withIndent('  ').convert(_preview!)),
-        ]),
-      ))),
-    );
+      ]);
   }
 }
 

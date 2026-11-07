@@ -15,6 +15,7 @@ void main() {
   final pr05DetailsSectionSource = File('lib/purchases/pr05_details_section.dart').readAsStringSync();
   final pr05ConfirmationSectionSource = File('lib/purchases/pr05_confirmation_section.dart').readAsStringSync();
   final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
+  final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -92,6 +93,14 @@ void main() {
       expect(pr05ConfirmationSectionSource, contains('onConfirmedChanged(value ?? false)'));
       expect(pr05ConfirmationSectionSource, contains('busy || !confirmed || lastResult == null ? null : onSave'));
       expect(pr05ConfirmationSectionSource, contains('SALVA MODIFICA E TERMINA'));
+    });
+
+    test('PR-06 isola il contenitore della pagina senza spostare la logica di vendita', () {
+      expect(source, contains("part 'procedures/pr06_page_frame.dart';"));
+      expect(source, contains('Pr06NewSalePageFrame(children: ['));
+      expect(pr06PageFrameSource, contains("AppBar(title: const Text('PR-06 · NUOVA VENDITA'))"));
+      expect(pr06PageFrameSource, contains('maxWidth: 820'));
+      expect(pr06PageFrameSource, contains('ListView('));
     });
 
     test('PR-05 isola il contenitore della pagina senza spostare la logica delle sezioni', () {
