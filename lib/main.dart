@@ -39,6 +39,7 @@ import 'dashboard/dashboard_procedure_info_dialog.dart';
 import 'dashboard/dashboard_block_menu_grid.dart';
 import 'dashboard/dashboard_home_block_content.dart';
 import 'dashboard/dashboard_home_content.dart';
+import 'history/object_history_detail_row.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_section_content.dart';
@@ -7519,16 +7520,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     );
   }
 
-  Widget _historyDetailRow(String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 2),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
-        const SizedBox(height: 1),
-        Text(value, style: const TextStyle(fontSize: 15)),
-      ],
-    ),
+  Widget _historyDetailRow(String label, String value) => ObjectHistoryDetailRow(
+    label: label,
+    value: value,
+    labelColor: ValoraAppearance.instance.textMuted,
   );
 
   Future<void> _openObjectForEdit() async {
