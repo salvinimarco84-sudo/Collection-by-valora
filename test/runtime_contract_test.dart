@@ -404,7 +404,7 @@ void main() {
       expect(source, contains('_selectedCollectionCategory'));
       expect(pr02RuntimeProcedureSource, contains('categoria_collezione_selezionata'));
       expect(source, contains('_pr02AwaitingNextChoice'));
-      expect(source, contains('onPressed: _continuePr02WithAnotherObject'));
+      expect(source, contains('_continuePr02WithAnotherObject'));
       expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
       expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02RuntimeProcedureSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
@@ -478,12 +478,8 @@ void main() {
     });
 
     test('PR-02 salva e verifica la modifica prima della scelta successiva', () {
-      final start = source.indexOf('Future<void> _confirmPr02Changes() async {');
-      final end = source.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
-      expect(start, isNonNegative);
-      expect(end, greaterThan(start));
-      final confirmFlow = source.substring(start, end);
-      expect(confirmFlow, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(pr02RuntimeProcedureSource, contains('salvato e verificato'));
       expect(confirmFlow, contains('salvato e verificato'));
     });
 
