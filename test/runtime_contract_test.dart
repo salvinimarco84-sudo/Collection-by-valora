@@ -12,6 +12,7 @@ void main() {
   final pr04RecognitionDialogSource = File('lib/purchases/pr04_recognition_dialog.dart').readAsStringSync();
   final pr04PhotoFieldSource = File('lib/purchases/pr04_photo_field.dart').readAsStringSync();
   final pr05SearchSectionSource = File('lib/purchases/pr05_search_section.dart').readAsStringSync();
+  final pr05DetailsSectionSource = File('lib/purchases/pr05_details_section.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -71,6 +72,17 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('PR-05 separa i dettagli modificabili conservando quadratura e sola lettura', () {
+      expect(source, contains("part 'purchases/pr05_details_section.dart';"));
+      expect(pr05FormContentSource, contains('Pr05PurchaseDetailsSection('));
+      expect(pr05DetailsSectionSource, contains('readOnly: true'));
+      expect(pr05DetailsSectionSource, contains('QUADRATURA NON VALIDA'));
+      expect(pr05DetailsSectionSource, contains('onDateChanged()'));
+      expect(pr05DetailsSectionSource, contains('onTotalChanged()'));
+      expect(pr05DetailsSectionSource, contains('itemSummary(item)'));
+    });
+
+
     test('PR-05 separa la ricerca acquisto dalla maschera di modifica', () {
       expect(source, contains("part 'purchases/pr05_search_section.dart';"));
       expect(pr05FormContentSource, contains('Pr05PurchaseSearchSection('));
@@ -432,7 +444,7 @@ void main() {
       final end = source.indexOf('class Pr12BatchPage', start);
       expect(start, isNonNegative);
       expect(end, greaterThan(start));
-      final edit = '$source\\n$pr05RuntimeProcedureSource\\n$pr05FormContentSource';
+      final edit = '$source\\n$pr05RuntimeProcedureSource\\n$pr05FormContentSource\\n$pr05DetailsSectionSource';
       expect(edit, contains("'data_acquisto':_date.text.trim()"));
       expect(edit, contains("'importo_totale':_money(_total.text)"));
       expect(edit, isNot(contains("'oggetti':_items")));
