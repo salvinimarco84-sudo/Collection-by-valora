@@ -7,6 +7,7 @@ void main() {
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
+  final authenticationGateSource = File('lib/authentication/authentication_gate.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -581,6 +582,18 @@ void main() {
       expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
       expect(source, contains('DashboardHomeBlockContent('));
     });
+    test('il gate autenticazione conserva il flusso sessione e i due percorsi', () {
+      expect(authenticationGateSource, contains('class AuthenticationGate extends StatelessWidget'));
+      expect(authenticationGateSource, contains('onAuthStateChange'));
+      expect(authenticationGateSource, contains('currentSession != null'));
+      expect(authenticationGateSource, contains('authenticatedBuilder(context)'));
+      expect(authenticationGateSource, contains('unauthenticatedBuilder(context)'));
+      expect(source, contains("import 'authentication/authentication_gate.dart';"));
+      expect(source, contains('authenticatedBuilder: (_) => const HomeDashboard()'));
+      expect(source, contains('unauthenticatedBuilder: (_) => const LoginPage()'));
+      expect(source, isNot(contains('class AuthenticationGate extends StatelessWidget')));
+    });
+
     test('la schermata di caricamento avvio conserva messaggio e indicatore', () {
       expect(startupLoadingPageSource, contains('class StartupLoadingPage extends StatelessWidget'));
       expect(startupLoadingPageSource, contains('CircularProgressIndicator(color: accentColor)'));
