@@ -22,6 +22,7 @@ void main() {
   final dashboardCollectionEmptyNoticeSource = File('lib/dashboard/dashboard_collection_empty_notice.dart').readAsStringSync();
   final dashboardCategoryBrandMarkSource = File('lib/dashboard/dashboard_category_brand_mark.dart').readAsStringSync();
   final dashboardCategoryObjectPreviewSource = File('lib/dashboard/dashboard_category_object_preview.dart').readAsStringSync();
+  final dashboardCategoryObjectImageFallbackSource = File('lib/dashboard/dashboard_category_object_image_fallback.dart').readAsStringSync();
   final dashboardCategoryPanelHeaderSource = File('lib/dashboard/dashboard_category_panel_header.dart').readAsStringSync();
   final dashboardCategoryPanelSource = File('lib/dashboard/dashboard_category_panel.dart').readAsStringSync();
   final dashboardCategoryNoRecordsNoticeSource = File('lib/dashboard/dashboard_category_no_records_notice.dart').readAsStringSync();
@@ -184,8 +185,11 @@ void main() {
     test('l’anteprima oggetto categoria conserva immagini, fallback, dimensioni e navigazione', () {
       expect(dashboardCategoryObjectPreviewSource, contains('class DashboardCategoryObjectPreview extends StatelessWidget'));
       expect(dashboardCategoryObjectPreviewSource, contains('Image.network('));
+      expect(dashboardCategoryObjectPreviewSource, contains('DashboardCategoryObjectImageFallback('));
       expect(dashboardCategoryObjectPreviewSource, contains('errorBuilder'));
       expect(dashboardCategoryObjectPreviewSource, contains('BoxFit.contain'));
+      expect(dashboardCategoryObjectImageFallbackSource, contains('class DashboardCategoryObjectImageFallback extends StatelessWidget'));
+      expect(dashboardCategoryObjectImageFallbackSource, contains('size: 34'));
       expect(dashboardCategoryObjectPreviewSource, contains('width: 98'));
       expect(dashboardCategoryObjectPreviewSource, contains('height: 75'));
       expect(dashboardCategoryObjectPreviewSource, contains('onTap: onTap'));
