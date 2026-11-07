@@ -41,6 +41,7 @@ import 'dashboard/dashboard_home_block_content.dart';
 import 'dashboard/dashboard_home_content.dart';
 import 'history/object_history_detail_row.dart';
 import 'objects/object_image_placeholder.dart';
+import 'objects/object_info_chip.dart';
 import 'dashboard/dashboard_section_header.dart';
 import 'dashboard/dashboard_section_footer.dart';
 import 'dashboard/dashboard_section_content.dart';
@@ -7330,18 +7331,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final formattedSalePrice = formatMoney(salePrice, currency);
     final formattedObjectValue = formatMoney(objectValue, objectValueCurrency);
     final imageSize = availableStyle ? 104.0 : 88.0;
-    Widget infoChip(IconData icon, String label) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: sectionColor.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: sectionColor.withValues(alpha: 0.28)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 13, color: sectionColor),
-        const SizedBox(width: 4),
-        Flexible(child: Text(label, style: const TextStyle(fontSize: 11))),
-      ]),
+    Widget infoChip(IconData icon, String label) => ObjectInfoChip(
+      icon: icon,
+      label: label,
+      color: sectionColor,
     );
 
     return Card(
