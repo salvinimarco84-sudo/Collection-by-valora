@@ -46,9 +46,10 @@ void main() {
       expect(dashboardGridMenuCardSource, contains('imageFit'));
       expect(dashboardGridMenuCardSource, contains('footerText'));
       expect(dashboardGridMenuCardSource, contains('onTap: onTap'));
-      expect(source, contains("import 'dashboard/dashboard_grid_menu_card.dart';"));
-      expect(source, contains('return DashboardGridMenuCard('));
-      expect(source, contains('imageUrl: url == null ? null : _valoraImageProxyUrl(url)'));
+      expect(dashboardBlockMenuGridSource, contains('DashboardGridMenuCard('));
+      expect(source, contains("import 'dashboard/dashboard_block_menu_grid.dart';"));
+      expect(source, contains('DashboardBlockMenuGrid('));
+      expect(source, contains('imageUrlFor: (title) =>'))
     });
 
     test('la card del menu dashboard conserva immagini, colori e navigazione', () {
