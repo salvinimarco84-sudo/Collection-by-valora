@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'dashboard_category_object_image_fallback.dart';
+
 /// Anteprima compatta di un oggetto nella striscia orizzontale della categoria.
 class DashboardCategoryObjectPreview extends StatelessWidget {
   final String description;
@@ -34,11 +36,11 @@ class DashboardCategoryObjectPreview extends StatelessWidget {
           ),
           clipBehavior: Clip.antiAlias,
           child: imageUrl == null
-              ? Icon(icon, color: color.withValues(alpha: 0.9), size: 34)
+              ? DashboardCategoryObjectImageFallback(icon: icon, color: color.withValues(alpha: 0.9))
               : Image.network(
                   imageUrl!,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 34),
+                  errorBuilder: (_, __, ___) => DashboardCategoryObjectImageFallback(icon: icon, color: color),
                 ),
         ),
         const SizedBox(height: 4),
