@@ -72,19 +72,3 @@ class ValoraI18n extends ChangeNotifier {
   static String tr(String source, [String? language]) => _words[language ?? instance.code]?[source] ?? _common[language ?? instance.code]?[source] ?? _sections[language ?? instance.code]?[source] ?? _profile[language ?? instance.code]?[source] ?? _workflow[language ?? instance.code]?[source] ?? source;
 }
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await ValoraAppearance.instance.load();
-  String? startupError;
-  try {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      publishableKey: publishableKey,
-    );
-  } catch (error, stackTrace) {
-    startupError = '$error';
-    debugPrint('VALORA startup initialization failed: $error');
-    debugPrintStack(stackTrace: stackTrace);
-  }
-  runApp(CollectionValoraApp(startupError: startupError));
-}
