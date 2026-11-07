@@ -588,6 +588,17 @@ void main() {
       expect(dashboardHomeBlockContentSource, contains('DashboardBlockMenuGrid('));
       expect(dashboardRuntimeSource, contains('DashboardHomeBlockContent('));
     });
+    test('il tema scelto resta applicato alla dashboard dopo la chiusura della personalizzazione', () {
+      expect(dashboardHomeCoordinatorSource, contains('ValoraAppearance.instance.addListener(_onAppearanceChanged)'));
+      expect(dashboardHomeCoordinatorSource, contains('void _onAppearanceChanged()'));
+      expect(dashboardHomeCoordinatorSource, contains('if (mounted) setState(() {})'));
+      expect(dashboardHomeCoordinatorSource, contains('ValoraAppearance.instance.removeListener(_onAppearanceChanged)'));
+      expect(dashboardHomeCoordinatorSource, contains('valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)'));
+      expect(themeSource, contains("Future<void> setTheme(String themeId) async"));
+      expect(themeSource, contains("await p.setString('valora_selected_theme', themeId)"));
+      expect(themeSource, contains('notifyListeners();'));
+    });
+
     test('il coordinatore del menu principale è isolato senza alterarne i flussi', () {
       expect(dashboardHomeCoordinatorSource, contains("part of '../main.dart';"));
       expect(dashboardHomeCoordinatorSource, contains('class HomeDashboard extends StatefulWidget'));
