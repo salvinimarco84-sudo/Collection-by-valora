@@ -20,6 +20,7 @@ import 'startup/startup_failure_page.dart';
 import 'startup/startup_loading_page.dart';
 import 'authentication/authentication_gate.dart';
 import 'procedures/procedure_registry.dart';
+import 'purchases/purchase_comparison_page.dart';
 import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
 import 'dashboard/dashboard_section_background.dart';
