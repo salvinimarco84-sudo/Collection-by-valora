@@ -20,6 +20,7 @@ void main() {
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
   final reportSummaryPanelSource = File('lib/reports/report_summary_panel.dart').readAsStringSync();
+  final reportOperationCardSource = File('lib/reports/report_operation_card.dart').readAsStringSync();
   final themeSource = File('lib/themes/valora_theme.dart').readAsStringSync();
   final procedureCardSource = File('lib/procedures/procedure_card.dart').readAsStringSync();
   final dashboardBackgroundSource = File('lib/dashboard/dashboard_section_background.dart').readAsStringSync();
@@ -705,6 +706,17 @@ void main() {
       expect(valoraI18nSource, contains('static String tr('));
       expect(source, contains("import 'localization/valora_i18n.dart';"));
       expect(source, isNot(contains('class ValoraI18n extends ChangeNotifier')));
+    });
+
+    test('la riga operazione report mantiene immagini, importi e interazione', () {
+      expect(reportOperationCardSource, contains('class ReportOperationCard extends StatelessWidget'));
+      expect(reportOperationCardSource, contains('Image.network(imageUrl'));
+      expect(reportOperationCardSource, contains('Icons.receipt_long_outlined'));
+      expect(reportOperationCardSource, contains('onTap'));
+      expect(source, contains("part 'reports/report_operation_card.dart';"));
+      expect(source, contains('ReportOperationCard('));
+      expect(source, contains('_showPurchaseReportDetail(item)'));
+      expect(source, contains('initialObjectCode: objectId'));
     });
 
     test('i riepiloghi report condividono il pannello grafico senza spostare i calcoli', () {
