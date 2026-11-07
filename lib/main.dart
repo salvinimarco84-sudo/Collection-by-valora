@@ -67,6 +67,7 @@ part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
 part 'reports/report_operation_card.dart';
+part 'reports/report_pagination_controls.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
@@ -7195,26 +7196,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           }),
           if ((isAvailableList || useStandardReportPaging) && availablePageCount > 1) ...[
             const SizedBox(height: 8),
-            Card(child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              child: Row(children: [
-                IconButton(
-                  tooltip: 'Gruppo precedente',
-                  onPressed: _loading || _availablePage == 0 ? null : () => _changeAvailablePage(_availablePage - 1),
-                  icon: const Icon(Icons.arrow_back_ios_new),
-                ),
-                Expanded(child: Text(
-                  '${_availablePage * _availablePageSize + 1}–${((_availablePage + 1) * _availablePageSize) > _rows.length ? _rows.length : ((_availablePage + 1) * _availablePageSize)} di ${_rows.length} · Gruppo ${_availablePage + 1}/$availablePageCount',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontWeight: FontWeight.w600),
-                )),
-                IconButton(
-                  tooltip: 'Gruppo successivo',
-                  onPressed: _loading || _availablePage + 1 >= availablePageCount ? null : () => _changeAvailablePage(_availablePage + 1),
-                  icon: const Icon(Icons.arrow_forward_ios),
-                ),
-              ]),
-            )),
+            ReportPaginationControls(
+              currentPage: _availablePage,
+              pageSize: _availablePageSize,
+              totalItems: _rows.length,
+              pageCount: availablePageCount,
+              textColor: ValoraAppearance.instance.textSecondary,
+              onPrevious: _loading || _availablePage == 0
+                  ? null
+                  : () => _changeAvailablePage(_availablePage - 1),
+              onNext: _loading || _availablePage + 1 >= availablePageCount
+                  ? null
+                  : () => _changeAvailablePage(_availablePage + 1),
+            ),
           ],
           if (widget.apiCode == 'REPORT-CASH') ...[
             const SizedBox(height: 18),
