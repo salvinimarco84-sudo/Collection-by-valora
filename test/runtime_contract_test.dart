@@ -756,7 +756,7 @@ void main() {
       expect(reportOperationCardSource, contains("imageUrl.startsWith('http://')"));
       expect(reportOperationCardSource, contains('showImage && hasImage'));
       expect(reportOperationCardSource, contains('errorBuilder:'));
-      expect(reportOperationCardSource, contains('                  imageUrl,'));
+      expect(reportOperationCardSource, contains('_valoraImageProxyUrl(imageUrl)'));
       expect(reportOperationCardSource, contains('Icons.receipt_long_outlined'));
       expect(reportOperationCardSource, contains('title: Text(title'));
       expect(reportOperationCardSource, contains('subtitle: Text(subtitle)'));
