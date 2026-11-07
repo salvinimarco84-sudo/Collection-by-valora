@@ -411,7 +411,7 @@ void main() {
       expect(edit, contains("'importo_totale':_money(_total.text)"));
       expect(edit, isNot(contains("'oggetti':_items")));
       expect(edit, isNot(contains("'descrizione_acquisto':_description.text.trim()")));
-      expect(edit, contains('readOnly:true'));
+      expect(edit, contains('readOnly: true'));
       expect(edit, contains('(r[\'quantita\']??1)'));
       expect(edit, contains("r['risultati']"));
       expect(edit, contains("v['verifica_database']==true"));
