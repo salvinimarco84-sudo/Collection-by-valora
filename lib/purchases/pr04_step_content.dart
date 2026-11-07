@@ -16,7 +16,8 @@ class Pr04PurchaseStepContent extends StatelessWidget {
     required this.onSelectSingle,
     required this.onSelectLot,
     required this.onContinue,
-    required this.onBack,
+    required this.onBackToType,
+    required this.onBackToDetails,
     required this.onPickDate,
     required this.onContinueToItems,
     required this.onContinueToSummary,
@@ -40,7 +41,8 @@ class Pr04PurchaseStepContent extends StatelessWidget {
   final VoidCallback onSelectSingle;
   final VoidCallback onSelectLot;
   final VoidCallback onContinue;
-  final VoidCallback onBack;
+  final VoidCallback onBackToType;
+  final VoidCallback onBackToDetails;
   final VoidCallback onPickDate;
   final VoidCallback onContinueToItems;
   final VoidCallback onContinueToSummary;
@@ -144,7 +146,7 @@ class Pr04PurchaseStepContent extends StatelessWidget {
         ],
         const SizedBox(height: 12),
         FilledButton(onPressed: busy ? null : onContinueToItems, child: const Text('CONTINUA AGLI OGGETTI')),
-        OutlinedButton(onPressed: busy ? null : onBack, child: const Text('INDIETRO')),
+        OutlinedButton(onPressed: busy ? null : onBackToType, child: const Text('INDIETRO')),
       ],
     );
 
@@ -160,7 +162,7 @@ class Pr04PurchaseStepContent extends StatelessWidget {
         )),
         const SizedBox(height: 10),
         FilledButton(onPressed: busy ? null : onContinueToSummary, child: const Text('RIEPILOGO ACQUISTO')),
-        OutlinedButton(onPressed: busy ? null : onBack, child: const Text('INDIETRO')),
+        OutlinedButton(onPressed: busy ? null : onBackToDetails, child: const Text('INDIETRO')),
       ],
     );
 
