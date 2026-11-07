@@ -8296,21 +8296,13 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     ]);
   }
   @override
-  Widget build(BuildContext context) {
-    final c = ValoraAppearance.instance.colorFor('ACQUISTI');
-    return Scaffold(appBar: AppBar(title: const Text('PR-04 · NUOVO ACQUISTO')),
-      body: SafeArea(child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 820),
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Card(child: Padding(padding: EdgeInsets.all(12), child: Text('AMBIENTE TEST · Nessun acquisto viene registrato senza conferma esplicita. Dopo il salvataggio è obbligatoria la rilettura di verifica.'))),
-          const SizedBox(height: 12),
-          ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: (_step + 1) / 5, minHeight: 5, color: c)),
-          const SizedBox(height: 8), Text('PASSAGGIO ' + (_step + 1).toString() + ' DI 5', style: TextStyle(color: c, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1)),
-          const SizedBox(height: 14), if (_busy) const LinearProgressIndicator(),
-          _content(), const SizedBox(height: 12),
-          Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(_status))),
-        ])))));
-  }
-}
+  Widget build(BuildContext context) => Pr04PurchasePageFrame(
+    step: _step,
+    busy: _busy,
+    color: ValoraAppearance.instance.colorFor('ACQUISTI'),
+    status: _status,
+    content: _content(),
+  );}
 
 
 
