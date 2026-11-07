@@ -710,7 +710,8 @@ void main() {
 
     test('la riga operazione report mantiene immagini, importi e interazione', () {
       expect(reportOperationCardSource, contains('class ReportOperationCard extends StatelessWidget'));
-      expect(reportOperationCardSource, contains('Image.network(imageUrl'));
+      expect(reportOperationCardSource, contains('Image.network('));
+      expect(reportOperationCardSource, contains('                  imageUrl,'));
       expect(reportOperationCardSource, contains('Icons.receipt_long_outlined'));
       expect(reportOperationCardSource, contains('onTap'));
       expect(source, contains("part 'reports/report_operation_card.dart';"));
