@@ -37,7 +37,7 @@ void main() {
       expect(dashboardOverlaySource, contains('class DashboardSectionOverlay extends StatelessWidget'));
       expect(dashboardOverlaySource, contains('IgnorePointer('));
       expect(dashboardOverlaySource, contains('Color.fromRGBO(0, 0, 0, 0.22)'));
-      expect(source, contains('const Positioned.fill(child: DashboardSectionOverlay())'));
+      expect(dashboardSectionContentSource, contains('const Positioned.fill(child: DashboardSectionOverlay())'));
     });
 
     test('la card a blocchi della dashboard conserva immagine, colori, conteggio e navigazione', () {
