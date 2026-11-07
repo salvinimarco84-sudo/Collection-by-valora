@@ -14,6 +14,7 @@ void main() {
   final pr05SearchSectionSource = File('lib/purchases/pr05_search_section.dart').readAsStringSync();
   final pr05DetailsSectionSource = File('lib/purchases/pr05_details_section.dart').readAsStringSync();
   final pr05ConfirmationSectionSource = File('lib/purchases/pr05_confirmation_section.dart').readAsStringSync();
+  final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -91,6 +92,15 @@ void main() {
       expect(pr05ConfirmationSectionSource, contains('onConfirmedChanged(value ?? false)'));
       expect(pr05ConfirmationSectionSource, contains('busy || !confirmed || lastResult == null ? null : onSave'));
       expect(pr05ConfirmationSectionSource, contains('SALVA MODIFICA E TERMINA'));
+    });
+
+    test('PR-05 isola il contenitore della pagina senza spostare la logica delle sezioni', () {
+      expect(source, contains("part 'purchases/pr05_page_frame.dart';"));
+      expect(pr05FormContentSource, contains('Pr05EditPurchasePageFrame('));
+      expect(pr05PageFrameSource, contains("AppBar(title: const Text('PR-05 · MODIFICA ACQUISTO'))"));
+      expect(pr05PageFrameSource, contains('if (busy) const LinearProgressIndicator()'));
+      expect(pr05PageFrameSource, contains('Text(status)'));
+      expect(pr05PageFrameSource, contains('maxWidth: 820'));
     });
 
     test('PR-05 separa la ricerca acquisto dalla maschera di modifica', () {

@@ -58,57 +58,53 @@ class Pr05EditPurchaseForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = ValoraAppearance.instance.colorFor('ACQUISTI');
-    return Scaffold(
-      appBar: AppBar(title: const Text('PR-05 · MODIFICA ACQUISTO')),
-      body: SafeArea(child: Center(child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 820),
-        child: ListView(padding: const EdgeInsets.all(16), children: [
-          const Card(child: Padding(
-            padding: EdgeInsets.all(12),
-            child: Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Sono modificabili solo data e totale. Oggetti e descrizione restano in sola lettura. La quadratura deve restare invariata; cassa e storico sono gestiti dalla procedura SQL.'),
-          )),
-          Pr05PurchaseSearchSection(
-            queryController: queryController,
-            busy: busy,
-            found: found,
-            foundSummary: foundSummary,
-            onSearch: onSearch,
-            onLoad: onLoad,
+    return Pr05EditPurchasePageFrame(
+      busy: busy,
+      status: status,
+      children: [
+        const Card(child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Text('AMBIENTE TEST · Conserva codice acquisto e codici oggetto. Sono modificabili solo data e totale. Oggetti e descrizione restano in sola lettura. La quadratura deve restare invariata; cassa e storico sono gestiti dalla procedura SQL.'),
+        )),
+        Pr05PurchaseSearchSection(
+          queryController: queryController,
+          busy: busy,
+          found: found,
+          foundSummary: foundSummary,
+          onSearch: onSearch,
+          onLoad: onLoad,
+        ),
+        if (purchase != null) ...[
+          const Divider(height: 24),
+          Text('2 · MODIFICA SCHEDA ESISTENTE', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          Pr05PurchaseDetailsSection(
+            purchaseCode: purchaseCode,
+            descriptionController: descriptionController,
+            dateController: dateController,
+            totalController: totalController,
+            allocated: allocated,
+            currentTotal: currentTotal,
+            items: items,
+            itemSummary: itemSummary,
+            onDateChanged: onDateChanged,
+            onTotalChanged: onTotalChanged,
           ),
-          if (purchase != null) ...[
-            const Divider(height: 24),
-            Text('2 · MODIFICA SCHEDA ESISTENTE', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-            Pr05PurchaseDetailsSection(
-              purchaseCode: purchaseCode,
-              descriptionController: descriptionController,
-              dateController: dateController,
-              totalController: totalController,
-              allocated: allocated,
-              currentTotal: currentTotal,
-              items: items,
-              itemSummary: itemSummary,
-              onDateChanged: onDateChanged,
-              onTotalChanged: onTotalChanged,
-            ),
-            Pr05ConfirmationSection(
-              busy: busy,
-              confirmed: confirmed,
-              lastResult: lastResult,
-              purchaseCode: purchaseCode,
-              date: dateController.text.trim(),
-              description: descriptionController.text.trim(),
-              itemCount: items.length,
-              currentTotal: currentTotal,
-              allocated: allocated,
-              onPreview: onPreview,
-              onConfirmedChanged: onConfirmedChanged,
-              onSave: onSave,
-            ),
-          ],
-          if (busy) const LinearProgressIndicator(),
-          Card(child: Padding(padding: const EdgeInsets.all(12), child: Text(status))),
-        ]),
-      ))),
+          Pr05ConfirmationSection(
+            busy: busy,
+            confirmed: confirmed,
+            lastResult: lastResult,
+            purchaseCode: purchaseCode,
+            date: dateController.text.trim(),
+            description: descriptionController.text.trim(),
+            itemCount: items.length,
+            currentTotal: currentTotal,
+            allocated: allocated,
+            onPreview: onPreview,
+            onConfirmedChanged: onConfirmedChanged,
+            onSave: onSave,
+          ),
+        ],
+      ],
     );
   }
 }

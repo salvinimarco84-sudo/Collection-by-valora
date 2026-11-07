@@ -75,6 +75,7 @@ part 'purchases/pr05_form_content.dart';
 part 'purchases/pr05_search_section.dart';
 part 'purchases/pr05_details_section.dart';
 part 'purchases/pr05_confirmation_section.dart';
+part 'purchases/pr05_page_frame.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
