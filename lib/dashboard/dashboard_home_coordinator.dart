@@ -20,7 +20,20 @@ class _HomeDashboardState extends State<HomeDashboard> {
   @override
   void initState() {
     super.initState();
+    // La Dashboard deve ridisegnarsi quando cambia il tema dalla schermata
+    // Personalizzazione, che viene aperta sopra questa route.
+    ValoraAppearance.instance.addListener(_onAppearanceChanged);
     _loadDashboardCatalog();
+  }
+
+  void _onAppearanceChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    ValoraAppearance.instance.removeListener(_onAppearanceChanged);
+    super.dispose();
   }
 
   Future<void> _loadDashboardCatalog() async {
