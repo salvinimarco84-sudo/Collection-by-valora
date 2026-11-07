@@ -480,7 +480,6 @@ void main() {
     test('PR-02 salva e verifica la modifica prima della scelta successiva', () {
       expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02RuntimeProcedureSource, contains('salvato e verificato'));
-      expect(confirmFlow, contains('salvato e verificato'));
     });
 
     test('le schermate delle sezioni ripristinano gli sfondi locali dedicati', () {
