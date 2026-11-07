@@ -13,6 +13,7 @@ void main() {
   final dashboardGridMenuCardSource = File('lib/dashboard/dashboard_grid_menu_card.dart').readAsStringSync();
   final dashboardOverlaySource = File('lib/dashboard/dashboard_section_overlay.dart').readAsStringSync();
   final dashboardCollectionCategoryCardSource = File('lib/dashboard/dashboard_collection_category_card.dart').readAsStringSync();
+  final dashboardCollectionCategoryHeaderSource = File('lib/dashboard/dashboard_collection_category_header.dart').readAsStringSync();
   final dashboardCollectionCategoryPreviewStripSource = File('lib/dashboard/dashboard_collection_category_preview_strip.dart').readAsStringSync();
   final dashboardCollectionHeaderSource = File('lib/dashboard/dashboard_collection_header.dart').readAsStringSync();
   final dashboardHomeHeaderSource = File('lib/dashboard/dashboard_home_header.dart').readAsStringSync();
@@ -287,6 +288,20 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_collection_category_card.dart';"));
       expect(source, contains('return DashboardCollectionCategoryCard('));
       expect(source, contains('initialCategoryCode: code'));
+    });
+
+    test('l intestazione della card categoria conserva logo, testi, conteggio e navigazione', () {
+      expect(dashboardCollectionCategoryHeaderSource, contains('class DashboardCollectionCategoryHeader extends StatelessWidget'));
+      expect(dashboardCollectionCategoryHeaderSource, contains('DashboardCategoryBrandMark('));
+      expect(dashboardCollectionCategoryHeaderSource, contains('Image.network('));
+      expect(dashboardCollectionCategoryHeaderSource, contains('errorBuilder'));
+      expect(dashboardCollectionCategoryHeaderSource, contains('width: 62'));
+      expect(dashboardCollectionCategoryHeaderSource, contains('height: 46'));
+      expect(dashboardCollectionCategoryHeaderSource, contains('Text('));
+      expect(dashboardCollectionCategoryHeaderSource, contains("'$count'"));
+      expect(dashboardCollectionCategoryHeaderSource, contains('onTap: onTap'));
+      expect(dashboardCollectionCategoryCardSource, contains("import 'dashboard_collection_category_header.dart';"));
+      expect(dashboardCollectionCategoryCardSource, contains('DashboardCollectionCategoryHeader('));
     });
 
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
