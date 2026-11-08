@@ -22,7 +22,7 @@ class DashboardCollectionCategoryLogo extends StatelessWidget {
       ? ClipRRect(
           borderRadius: BorderRadius.circular(9),
           child: Image.network(
-            logoUrl!,
+            _valoraImageProxyUrl(logoUrl!),
             width: 62,
             height: 46,
             fit: BoxFit.cover,
