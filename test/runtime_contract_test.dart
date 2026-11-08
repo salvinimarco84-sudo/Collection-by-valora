@@ -147,7 +147,7 @@ void main() {
 
     test('PR-06 separa la maschera dalla pagina mantenendo i controlli e le azioni', () {
       expect(source, contains("part 'procedures/pr06_form_content.dart';"));
-      expect(source, contains('Widget build(BuildContext context) => _buildPr06FormContent(context);'));
+      expect(pr06PageStateSource, contains('Widget build(BuildContext context) => _buildPr06FormContent(context);'));
       expect(pr06FormContentSource, contains('extension _Pr06FormContent on _NewSalePageState'));
       expect(pr06FormContentSource, contains('_buildPr06PendingSalesSection(sectionColor)'));
       expect(pr06PendingSalesSectionSource, contains('extension _Pr06PendingSalesSection on _NewSalePageState'));
@@ -600,7 +600,7 @@ void main() {
       expect(source, contains("label: const Text('METTI IN VENDITA'"));
       expect(source, contains('Future<void> _openObjectForEdit()'));
       expect(source, contains('Future<void> _putObjectForSale()'));
-      expect(source, contains('class NewSalePage'));
+      expect(pr06PageStateSource, contains('class NewSalePage'));
       expect(source, contains('NewSalePage(initialObjectCode: id)'));
       expect(source, contains('final int? initialObjectCode;'));
     });
