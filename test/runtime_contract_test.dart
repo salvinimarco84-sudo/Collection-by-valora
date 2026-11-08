@@ -93,7 +93,7 @@ void main() {
       expect(pr08SalesPreviewCardSource, contains('class Pr08SalesPreviewCard extends StatelessWidget'));
       expect(pr08SalesPreviewCardSource, contains('RIEPILOGO DELLE CHIUSURE'));
       expect(pr08SalesPreviewCardSource, contains('CONFERMO I DATI'));
-      expect(pr08CloseSalesPageSource, contains('Pr08SalesPreviewCard('));
+      expect(pr08CloseSalesPageSource, contains('Pr08CloseSalesPreviewCard('));
       expect(pr08CloseSalesPageSource, contains('_selected.map((id)'));
       expect(pr08CloseSalesPageSource, contains('_confirmSelectedData'));
     });
