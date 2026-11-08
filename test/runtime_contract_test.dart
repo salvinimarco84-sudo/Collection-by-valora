@@ -29,6 +29,7 @@ void main() {
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
+  final writeProcedureActionPanelSource = File('lib/procedures/write_procedure_action_panel.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -88,6 +89,20 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
+      expect(source, contains("part 'procedures/write_procedure_action_panel.dart';"));
+      expect(writeProcedureActionPanelSource, contains('class WriteProcedureActionPanel extends StatelessWidget'));
+      expect(writeProcedureActionPanelSource, contains('1 · CONTROLLA DATI E ANTEPRIMA'));
+      expect(writeProcedureActionPanelSource, contains('2 · CONFERMO I DATI'));
+      expect(writeProcedureActionPanelSource, contains('3 · CONFERMA DEFINITIVA E SALVA'));
+      expect(writeProcedureActionPanelSource, contains('onPressed: loading || !hasPreview ? null : onConfirm'));
+      expect(writeProcedureActionPanelSource, contains('onPressed: loading || !dataConfirmed || !finalReady ? null : onSave'));
+      expect(source, contains('WriteProcedureActionPanel('));
+      expect(source, contains('onPreview: () => _run(_preview)'));
+      expect(source, contains('onConfirm: () => _run(_confirmData)'));
+      expect(source, contains('onSave: () => _run(_save)'));
+    });
+
     test('PR-08 estrae il riepilogo anteprima delle chiusure senza spostare i calcoli', () {
       expect(source, contains("part 'procedures/pr08_sales_preview_card.dart';"));
       expect(pr08SalesPreviewCardSource, contains('class Pr08CloseSalesPreviewCard extends StatelessWidget'));
