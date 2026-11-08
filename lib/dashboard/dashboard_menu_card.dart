@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/valora_image_proxy.dart';
 
 /// Card grafica riutilizzabile del menu principale.
 class DashboardMenuCard extends StatelessWidget {
@@ -50,7 +51,7 @@ class DashboardMenuCard extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 child: image != null && image.isNotEmpty
                     ? Image.network(
-                        _valoraImageProxyUrl(image),
+                        valoraImageProxyUrl(image),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 27),
                       )
