@@ -99,7 +99,7 @@ void main() {
 
     test('PR-06 separa il runtime della vendita dalla pagina mantenendo i controlli transazionali', () {
       expect(source, contains("part 'procedures/pr06_runtime_procedure.dart';"));
-      expect(source, contains('Pr06NewSalePageFrame(children: ['));
+      expect(pr06FormContentSource, contains('Pr06NewSalePageFrame(children: ['));
       expect(source, contains('void initState()'));
       expect(pr06RuntimeProcedureSource, contains('extension _Pr06RuntimeProcedure on _NewSalePageState'));
       expect(pr06RuntimeProcedureSource, contains("procedure('PR-06', 'preview'"));
