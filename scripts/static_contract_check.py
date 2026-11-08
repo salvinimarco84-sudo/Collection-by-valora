@@ -9,6 +9,7 @@ import sys
 
 root = Path(__file__).resolve().parents[1]
 main = (root / "lib" / "main.dart").read_text(encoding="utf-8")
+pr06_page_state = (root / "lib" / "procedures" / "pr06_page_state.dart").read_text(encoding="utf-8")
 pr02_runtime = (root / "lib" / "procedures" / "pr02_runtime_procedure.dart").read_text(encoding="utf-8")
 pubspec = (root / "pubspec.yaml").read_text(encoding="utf-8")
 workflow_path = root / ".github" / "workflows" / "collection-valora-ci.yml"
@@ -17,8 +18,8 @@ workflow = workflow_path.read_text(encoding="utf-8") if workflow_path.exists() e
 checks = {
     "object edit action is wired": "MODIFICA OGGETTO" in main and "Future<void> _openObjectForEdit()" in main,
     "put-for-sale action is wired": "METTI IN VENDITA" in main and "Future<void> _putObjectForSale()" in main,
-    "new sale screen exists": "class NewSalePage" in main,
-    "new sale can preselect the requested object": "NewSalePage(initialObjectCode: id)" in main and "final int? initialObjectCode;" in main,
+    "new sale screen exists": "class NewSalePage" in pr06_page_state,
+    "new sale can preselect the requested object": "NewSalePage(initialObjectCode: id)" in main and "final int? initialObjectCode;" in pr06_page_state,
     "PR-02 loads editable collection categories": "widget.apiCode == 'PR-02'" in main and "_loadCollectionCategories();" in main and "_collectionCategoryField()" in main,
     "PR-02 collection category is selected": "_selectedCollectionCategory" in main and "categoria_collezione_selezionata" in main,
     "PR-02 removes technical category from object payload": "oggetto_collezione_categoria" in pr02_runtime and "_savePr02PendingChanges" in pr02_runtime,
