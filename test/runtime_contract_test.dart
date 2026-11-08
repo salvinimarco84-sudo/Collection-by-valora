@@ -1095,4 +1095,30 @@ void main() {
     expect(source, contains("import 'purchases/purchase_comparison_page.dart';"));
   });
 
+
+  test('PR-09 usa la pagina modulare e offre entrambe le destinazioni dopo l’annullamento', () {
+    final page = File('lib/procedures/pr09_cancel_sales_page.dart').readAsStringSync();
+    final saleCard = File('lib/procedures/pr09_completed_sale_card.dart').readAsStringSync();
+    final previewCard = File('lib/procedures/pr09_cancel_sales_preview_card.dart').readAsStringSync();
+    final dashboard = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
+    final registry = File('lib/procedures/procedure_registry.dart').readAsStringSync();
+
+    expect(source, contains("part 'procedures/pr09_cancel_sales_page.dart';"));
+    expect(source, contains("part 'procedures/pr09_completed_sale_card.dart';"));
+    expect(source, contains("part 'procedures/pr09_cancel_sales_preview_card.dart';"));
+    expect(page, contains("'consultation_code': 'COMPLETED_SALES'"));
+    expect(page, contains("'PR-09', 'preview'"));
+    expect(page, contains("'PR-09', 'review'"));
+    expect(page, contains("'PR-09', 'save'"));
+    expect(page, contains("'rimetti_in_vendita': entry.value"));
+    expect(page, contains("'conferma_finale'] = true"));
+    expect(saleCard, contains('ANNULLA E RIMETTI IN VENDITA'));
+    expect(saleCard, contains('ANNULLA E RIMETTI IN COLLEZIONE'));
+    expect(previewCard, contains('USCITA compensativa'));
+    expect(previewCard, contains('nuovo ciclo di vendita'));
+    expect(previewCard, contains('COLLEZIONE con stato DISPONIBILE'));
+    expect(dashboard, contains('const Pr09CancelSalesPage()'));
+    expect(registry, contains('compensa l’incasso in cassa'));
+  });
+
 }
