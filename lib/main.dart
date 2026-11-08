@@ -86,6 +86,7 @@ part 'procedures/pr06_preview_confirmation_section.dart';
 part 'procedures/pr06_status_section.dart';
 part 'procedures/pr06_page_state.dart';
 part 'procedures/pr08_close_sales_page.dart';
+part 'procedures/pr08_sales_summary_card.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
