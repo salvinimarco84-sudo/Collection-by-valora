@@ -84,6 +84,7 @@ part 'procedures/pr06_object_selection_section.dart';
 part 'procedures/pr06_sale_details_section.dart';
 part 'procedures/pr06_preview_confirmation_section.dart';
 part 'procedures/pr06_status_section.dart';
+part 'procedures/pr06_page_state.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
@@ -7581,50 +7582,6 @@ class _PurchaseItemDraft {
     if (photoUrl != null) 'url_immagine_catalogo': photoUrl,
   };
   void dispose() { description.dispose(); price.dispose(); notes.dispose(); }
-}
-
-/// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
-class NewSalePage extends StatefulWidget {
-  const NewSalePage({super.key, this.initialObjectCode});
-  final int? initialObjectCode;
-
-  @override
-  State<NewSalePage> createState() => _NewSalePageState();
-}
-
-class _NewSalePageState extends State<NewSalePage> {
-  final String _session = _uuid.v4();
-  final TextEditingController _search = TextEditingController();
-  final TextEditingController _price = TextEditingController();
-  final TextEditingController _lotTotalPrice = TextEditingController();
-  final TextEditingController _notes = TextEditingController();
-  bool _lotMode = false;
-  final Set<int> _selectedLotObjects = <int>{};
-  List<Map<String, dynamic>> _objects = [];
-  List<Map<String, dynamic>> _platforms = [];
-  final Set<int> _selectedPlatforms = <int>{};
-  final List<Map<String, dynamic>> _pendingSales = [];
-  final List<String> _pendingDescriptions = [];
-  int? _selectedObject;
-  Map<String, dynamic>? _preview;
-  bool _busy = false, _locked = false, _loading = true, _confirmed = false;
-  String _status = 'Caricamento degli oggetti disponibili per la rivendita…';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void dispose() {
-    _search.dispose(); _price.dispose(); _lotTotalPrice.dispose(); _notes.dispose();
-    if (_locked) _releaseSilently();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => _buildPr06FormContent(context);
 }
 
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.

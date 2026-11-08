@@ -23,6 +23,7 @@ void main() {
   final pr06SaleDetailsSectionSource = File('lib/procedures/pr06_sale_details_section.dart').readAsStringSync();
   final pr06PreviewConfirmationSectionSource = File('lib/procedures/pr06_preview_confirmation_section.dart').readAsStringSync();
   final pr06StatusSectionSource = File('lib/procedures/pr06_status_section.dart').readAsStringSync();
+  final pr06PageStateSource = File('lib/procedures/pr06_page_state.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
@@ -109,6 +110,19 @@ void main() {
       expect(pr05ConfirmationSectionSource, contains('onConfirmedChanged(value ?? false)'));
       expect(pr05ConfirmationSectionSource, contains('busy || !confirmed || lastResult == null ? null : onSave'));
       expect(pr05ConfirmationSectionSource, contains('SALVA MODIFICA E TERMINA'));
+    });
+
+    test('PR-06 isola pagina e stato della nuova vendita mantenendo lifecycle e caricamento', () {
+      expect(source, contains("part 'procedures/pr06_page_state.dart';"));
+      expect(pr06PageStateSource, contains('class NewSalePage extends StatefulWidget'));
+      expect(pr06PageStateSource, contains('final int? initialObjectCode;'));
+      expect(pr06PageStateSource, contains('class _NewSalePageState extends State<NewSalePage>'));
+      expect(pr06PageStateSource, contains('void initState()'));
+      expect(pr06PageStateSource, contains('_load();'));
+      expect(pr06PageStateSource, contains('_search.dispose()'));
+      expect(pr06PageStateSource, contains('_releaseSilently()'));
+      expect(pr06PageStateSource, contains('_buildPr06FormContent(context)'));
+      expect(pr06PageStateSource, isNot(contains('Future<void> _saveSale()')));
     });
 
     test('PR-06 separa il runtime della vendita dalla pagina mantenendo i controlli transazionali', () {
