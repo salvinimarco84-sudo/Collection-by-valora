@@ -79,6 +79,7 @@ part 'purchases/pr05_page_frame.dart';
 part 'procedures/pr06_page_frame.dart';
 part 'procedures/pr06_runtime_procedure.dart';
 part 'procedures/pr06_form_content.dart';
+part 'procedures/pr06_pending_sales_section.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';

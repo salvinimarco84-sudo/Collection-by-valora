@@ -9,17 +9,7 @@ extension _Pr06FormContent on _NewSalePageState {
             'AMBIENTE TEST · La vendita non viene registrata finché non confermi esplicitamente il riepilogo. Sono selezionabili solo oggetti destinati alla RIVENDITA e disponibili.',
             style: TextStyle(color: ValoraAppearance.instance.textSecondary)))),
           const SizedBox(height: 12),
-          if (_pendingSales.isNotEmpty) Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('VENDITE IN ATTESA: '+_pendingSales.length.toString(), style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ...List.generate(_pendingSales.length, (i) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Text((i + 1).toString()+'. '+_pendingDescriptions[i]+' · €'+_pendingSales[i]['prezzo_di_vendita'].toString()),
-              )),
-              Text('Totale prezzi richiesti: €'+_pendingSales.fold<double>(0, (sum, row) => sum + ((row['prezzo_di_vendita'] as num?)?.toDouble() ?? 0)).toStringAsFixed(2)),
-              OutlinedButton.icon(onPressed: _busy ? null : _saveSale, icon: const Icon(Icons.save_outlined), label: const Text('TERMINA E SALVA IL LOTTO ORA')),
-            ]))),
+          if (_pendingSales.isNotEmpty) _buildPr06PendingSalesSection(sectionColor),
           const SizedBox(height: 12),
           Text('1. TIPO DI VENDITA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
           SwitchListTile(contentPadding: EdgeInsets.zero, value: _lotMode,
