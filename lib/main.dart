@@ -89,6 +89,7 @@ part 'procedures/pr08_close_sales_page.dart';
 part 'procedures/pr08_sales_summary_card.dart';
 part 'procedures/pr08_open_sale_card.dart';
 part 'procedures/pr08_sales_preview_card.dart';
+part 'procedures/write_procedure_action_panel.dart';
 part 'objects/object_master_presentation.dart';
 part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
@@ -6704,17 +6705,17 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ] else if (_isWrite && code == 'PR-03') ...[
           const SizedBox.shrink(),
         ] else if (_isWrite) ...[
-          FilledButton.icon(onPressed: _loading ? null : () => _run(_preview),
-            icon: Icon(Icons.fact_check_outlined), label: Text('1 · CONTROLLA DATI E ANTEPRIMA')),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(onPressed: _loading || _lastResult == null ? null : () => _run(_confirmData),
-            icon: Icon(Icons.verified_outlined), label: Text('2 · CONFERMO I DATI')),
-          const SizedBox(height: 8),
-          FilledButton.icon(onPressed: _loading || !_dataConfirmed || !_finalReady ? null : () => _run(_save),
-            icon: Icon(Icons.save_outlined), label: Text('3 · CONFERMA DEFINITIVA E SALVA')),
-          const SizedBox(height: 8),
-          if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
-            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
+          WriteProcedureActionPanel(
+            loading: _loading,
+            hasPreview: _lastResult != null,
+            dataConfirmed: _dataConfirmed,
+            finalReady: _finalReady,
+            lockHeld: _lockHeld,
+            onPreview: () => _run(_preview),
+            onConfirm: () => _run(_confirmData),
+            onSave: () => _run(_save),
+            onReleaseLock: () => _run(_releaseLock),
+          ),
         ] else if (!isMaster && !isAvailableList && !_isActiveListingsReport)
           FilledButton.icon(
             onPressed: _loading ? null : () => _run(isHistory ? _searchPr02Objects : _consult),
