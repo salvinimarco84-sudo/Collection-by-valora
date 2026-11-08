@@ -29,6 +29,8 @@ dependencies:
 
 dependency_overrides:
   shared_preferences_android: 2.4.10
+  # Pin stabile per evitare il binario nativo con hash errato in sqlite3 3.5.2.
+  sqlite3: 3.7.1
 
 dev_dependencies:
   flutter_test:

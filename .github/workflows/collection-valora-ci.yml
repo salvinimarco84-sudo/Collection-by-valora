@@ -26,6 +26,13 @@ jobs:
         run: flutter --version
       - name: Generate Android platform files
         run: flutter create . --platforms=android
+      - name: Use direct Gradle distribution host
+        shell: bash
+        run: |
+          set -euo pipefail
+          WRAPPER=android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's#https\\://services.gradle.org/distributions/gradle-9.3.1-all.zip#https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip#' "$WRAPPER"
+          grep -q 'downloads.gradle.org/distributions/gradle-9.3.1-bin.zip' "$WRAPPER"
       - name: Remove generated placeholder widget test
         run: rm -f test/widget_test.dart
       - name: Repair cached Dart packages
