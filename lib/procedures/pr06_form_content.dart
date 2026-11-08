@@ -24,20 +24,7 @@ extension _Pr06FormContent on _NewSalePageState {
           FilledButton.icon(onPressed: _busy || _loading || _objects.isEmpty ? null : _previewSale,
             icon: const Icon(Icons.fact_check_outlined), label: const Text('CONTROLLA E MOSTRA RIEPILOGO')),
           const SizedBox(height: 12),
-          if (_preview != null) Card(color: ValoraAppearance.instance.card, child: Padding(padding: const EdgeInsets.all(12), child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('3. RIEPILOGO PRIMA DEL SALVATAGGIO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              SelectableText(const JsonEncoder.withIndent('  ').convert(_preview)),
-              const SizedBox(height: 8),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero, value: _confirmed,
-                title: Text(_lotMode ? 'Confermo oggetti, prezzo totale del lotto e piattaforme.' : 'Confermo che oggetto, prezzo e piattaforme sono corretti.'),
-                onChanged: _busy ? null : (v) => setState(() => _confirmed = v == true),
-              ),
-              FilledButton.icon(onPressed: _busy || !_confirmed ? null : _saveSale,
-                icon: const Icon(Icons.save_outlined), label: const Text('SALVA LOTTO')),
-            ]))),
+          if (_preview != null) _buildPr06PreviewConfirmationSection(sectionColor),
           const SizedBox(height: 12),
           OutlinedButton.icon(onPressed: _busy ? null : _load,
             icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI DISPONIBILI')),
