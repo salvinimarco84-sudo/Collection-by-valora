@@ -132,7 +132,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
       final value = row[key];
       if (value == null || value.toString().trim().isEmpty) continue;
       if (value is num) return value.toDouble();
-      var raw = value.toString().trim().replaceAll('€', '').replaceAll('EUR', '').replaceAll(RegExp(r'\\s+'), '');
+      var raw = value.toString().trim().replaceAll('€', '').replaceAll('EUR', '').replaceAll(RegExp(r'\s+'), '');
       if (raw.contains(',') && raw.contains('.')) {
         raw = raw.lastIndexOf(',') > raw.lastIndexOf('.') ? raw.replaceAll('.', '').replaceAll(',', '.') : raw.replaceAll(',', '');
       } else if (raw.contains(',')) { raw = raw.replaceAll(',', '.'); }
@@ -144,7 +144,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
   String _money(dynamic value) {
     final number = value is num ? value.toDouble() : double.tryParse((value ?? 0).toString().replaceAll(',', '.')) ?? 0;
     final parts = number.toStringAsFixed(2).split('.');
-    final whole = parts[0].replaceAllMapped(RegExp(r'\\B(?=(\\d{3})+(?!\\d))'), (_) => '.');
+    final whole = parts[0].replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => '.');
     return '$whole,${parts[1]} €';
   }
 
@@ -275,11 +275,9 @@ class _SalesReportPageState extends State<SalesReportPage> {
           final date = (row['data_vendita'] ?? row['data_chiusura'] ?? row['data'] ?? 'Data non indicata').toString();
           final saleCode = (row['codice_vendita'] ?? row['codice_vendita_aperta'] ?? row['id_vendita'] ?? 'N/D').toString();
           final image = id == null ? '' : (_imageUrls[id] ?? '');
-          return ReportOperationCard(
-            sectionColor: color, showImage: true, imageUrl: image,
-            title: _description(row),
-            subtitle: 'Vendita #$saleCode · Oggetto #${id ?? 'N/D'} · Data: $date',
-            trailingText: _money(_amount(row)),
+          return SalesReportCard(
+            row: row, imageUrl: image,
+            amountLabel: _money(_amount(row)),
             onTap: id == null ? () {} : () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => ObjectRuntimePage(title: 'Scheda oggetto', apiCode: 'OBJECT_MASTER', initialObjectCode: id),
             )),
