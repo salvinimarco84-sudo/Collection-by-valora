@@ -30,7 +30,7 @@ class Pr04PurchasePhotoField extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.network(
-            photoUrl!,
+            _valoraImageProxyUrl(photoUrl!),
             height: 130,
             width: double.infinity,
             fit: BoxFit.contain,
