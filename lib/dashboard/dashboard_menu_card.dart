@@ -50,7 +50,7 @@ class DashboardMenuCard extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 child: image != null && image.isNotEmpty
                     ? Image.network(
-                        image,
+                        _valoraImageProxyUrl(image),
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 27),
                       )
