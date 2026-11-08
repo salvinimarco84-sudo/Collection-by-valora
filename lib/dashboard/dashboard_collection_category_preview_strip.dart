@@ -36,7 +36,7 @@ class DashboardCollectionCategoryPreviewStrip extends StatelessWidget {
                 child: url == null
                     ? Icon(icon, color: color, size: 30)
                     : Image.network(
-                        url,
+                        _valoraImageProxyUrl(url),
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 30),
                       ),
