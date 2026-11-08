@@ -245,28 +245,18 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
         controller: _pageScroll,
         padding: const EdgeInsets.all(14),
         children: [
-          Card(child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('VENDITE APERTE', style: TextStyle(color: appearance.colorFor('VENDITE'), fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text('${_sales.length} vendite aperte caricate dal database TEST. Seleziona una o più righe: le altre resteranno aperte.', style: TextStyle(color: appearance.textSecondary)),
-              const SizedBox(height: 10),
-              Row(children: [
-                Expanded(child: OutlinedButton.icon(
-                  onPressed: _loading || _sales.isEmpty ? null : () => setState(() {
-                    _selected.addAll(_sales.map((r) => int.tryParse('${r['codice_vendita_aperta']}')).whereType<int>());
-                    for (final r in _sales) { final id = int.tryParse('${r['codice_vendita_aperta']}'); if (id != null) { _dates.putIfAbsent(id, _today); _amounts.putIfAbsent(id, () => '${r['prezzo_di_vendita'] ?? ''}'); } }
-                    _preview = null; _review = null;
-                  }),
-                  icon: const Icon(Icons.select_all), label: const Text('SELEZIONA TUTTE'),
-                )),
-                const SizedBox(width: 8),
-                Expanded(child: OutlinedButton(onPressed: _loading ? null : () => setState(() { _selected.clear(); _preview = null; _review = null; }), child: const Text('DESELEZIONA TUTTE'))),
-              ]),
-              Text('Selezionate: ${_selected.length} / ${_sales.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            ]),
-          )),
+          Pr08SalesSummaryCard(
+            totalSales: _sales.length,
+            selectedSales: _selected.length,
+            headerColor: appearance.colorFor('VENDITE'),
+            secondaryTextColor: appearance.textSecondary,
+            onSelectAll: _loading || _sales.isEmpty ? null : () => setState(() {
+              _selected.addAll(_sales.map((r) => int.tryParse('\${r['codice_vendita_aperta']}')).whereType<int>());
+              for (final r in _sales) { final id = int.tryParse('\${r['codice_vendita_aperta']}'); if (id != null) { _dates.putIfAbsent(id, _today); _amounts.putIfAbsent(id, () => '\${r['prezzo_di_vendita'] ?? ''}'); } }
+              _preview = null; _review = null;
+            }),
+            onDeselectAll: _loading ? null : () => setState(() { _selected.clear(); _preview = null; _review = null; }),
+          ),
           if (_error != null) Card(color: Colors.red.withValues(alpha: 0.12), child: Padding(padding: const EdgeInsets.all(12), child: Text(_error!, style: const TextStyle(color: Colors.redAccent)))),
           if (_success != null) Card(color: Colors.green.withValues(alpha: 0.12), child: Padding(padding: const EdgeInsets.all(12), child: Text(_success!, style: const TextStyle(color: Colors.greenAccent)))),
           if (_sales.isEmpty && !_loading) const Card(child: Padding(padding: EdgeInsets.all(18), child: Text('Non ci sono vendite attualmente aperte.'))),
