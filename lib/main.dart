@@ -1094,7 +1094,7 @@ class _CollectibleCategoryRegistryPageState extends State<CollectibleCategoryReg
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: parsed.withValues(alpha: 0.18),
-                          child: (row['logo_url']??'').toString().trim().isNotEmpty ? ClipOval(child:Image.network(row['logo_url'].toString(),fit:BoxFit.cover,width:48,height:48,errorBuilder:(c,e,s)=>Icon(_icons[iconKey]??Icons.category_outlined,color:parsed))) : Icon(_icons[iconKey] ?? Icons.category_outlined, color: parsed),
+                          child: (row['logo_url']??'').toString().trim().isNotEmpty ? ClipOval(child:Image.network(_valoraImageProxyUrl(row['logo_url'].toString()),fit:BoxFit.cover,width:48,height:48,errorBuilder:(c,e,s)=>Icon(_icons[iconKey]??Icons.category_outlined,color:parsed))) : Icon(_icons[iconKey] ?? Icons.category_outlined, color: parsed),
                         ),
                         title: Text((row['descrizione'] ?? 'Categoria').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text('${row['codice_categoria']} · ${row['visibile'] == true ? 'Visibile nel menu' : 'Nascosta dal menu'}'),
@@ -6344,7 +6344,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
                                         child: Image.network(
-                                          imageUrl,
+                                          _valoraImageProxyUrl(imageUrl),
                                           width: 92,
                                           height: 112,
                                           fit: BoxFit.contain,
@@ -7829,7 +7829,7 @@ class _Pr12BatchPageState extends State<Pr12BatchPage> {
                           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             ClipRRect(borderRadius: BorderRadius.circular(8), child: SizedBox(width: 88, height: 100,
                               child: rawImage.startsWith('https://') || rawImage.startsWith('http://')
-                                ? Image.network(rawImage, fit: BoxFit.contain, errorBuilder: (_, __, ___) => Container(color: Colors.white10, child: const Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 30)))
+                                ? Image.network(_valoraImageProxyUrl(rawImage), fit: BoxFit.contain, errorBuilder: (_, __, ___) => Container(color: Colors.white10, child: const Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 30)))
                                 : Container(color: Colors.white10, child: const Icon(Icons.image_search_outlined, color: goldColor, size: 30)))),
                             const SizedBox(width: 12),
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
