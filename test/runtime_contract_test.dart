@@ -90,7 +90,7 @@ void main() {
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('PR-08 estrae il riepilogo anteprima delle chiusure senza spostare i calcoli', () {
       expect(source, contains("part 'procedures/pr08_sales_preview_card.dart';"));
-      expect(pr08SalesPreviewCardSource, contains('class Pr08SalesPreviewCard extends StatelessWidget'));
+      expect(pr08SalesPreviewCardSource, contains('class Pr08CloseSalesPreviewCard extends StatelessWidget'));
       expect(pr08SalesPreviewCardSource, contains('RIEPILOGO DELLE CHIUSURE'));
       expect(pr08SalesPreviewCardSource, contains('CONFERMO I DATI'));
       expect(pr08CloseSalesPageSource, contains('Pr08CloseSalesPreviewCard('));
