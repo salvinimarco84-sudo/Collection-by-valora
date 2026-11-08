@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/valora_image_proxy.dart';
 
 class DashboardGridMenuCard extends StatelessWidget {
   final String title;
@@ -42,7 +43,7 @@ class DashboardGridMenuCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(11),
                   child: imageUrl != null && imageUrl!.isNotEmpty
                       ? Image.network(
-                          _valoraImageProxyUrl(imageUrl!),
+                          valoraImageProxyUrl(imageUrl!),
                           fit: imageFit,
                           width: double.infinity,
                           errorBuilder: (_, __, ___) =>
