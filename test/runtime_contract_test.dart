@@ -101,7 +101,7 @@ void main() {
     test('PR-08 estrae la scheda della singola vendita mantenendo dati e callback', () {
       expect(source, contains("part 'procedures/pr08_open_sale_card.dart';"));
       expect(pr08OpenSaleCardSource, contains('class Pr08OpenSaleCard extends StatelessWidget'));
-      expect(pr08OpenSaleCardSource, contains('Vendita aperta #$id'));
+      expect(pr08OpenSaleCardSource, contains('Vendita aperta #\$id'));
       expect(pr08OpenSaleCardSource, contains('onChanged: loading ? null : onSelectionChanged'));
       expect(pr08OpenSaleCardSource, contains("labelText: 'Esito della chiusura *'"));
       expect(pr08OpenSaleCardSource, contains("labelText: 'Importo effettivo *'"));
