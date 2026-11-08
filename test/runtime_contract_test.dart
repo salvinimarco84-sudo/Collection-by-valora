@@ -673,7 +673,7 @@ void main() {
     test('le schermate delle sezioni ripristinano gli sfondi locali dedicati', () {
       for (final asset in [
         'assets/menu_sections/01_VENDITE.jpg',
-        'assets/menu_sections/05_CATALOGO.jpg',
+        'assets/menu_sections/02_ACQUISTI.jpg',
         'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png',
         'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
         'assets/menu_sections/05_CATALOGO.jpg',
