@@ -1126,6 +1126,26 @@ void main() {
 
   });
 
+  test('report vendite usa una pagina autonoma e una scheda dedicata', () {
+    final page = File('lib/reports/sales_report_page.dart').readAsStringSync();
+    final card = File('lib/reports/sales_report_card.dart').readAsStringSync();
+    final dashboard = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
+    expect(source, contains("part 'reports/sales_report_page.dart';"));
+    expect(source, contains("part 'reports/sales_report_card.dart';"));
+    expect(page, contains("'report_code': 'SALES_REPORT'"));
+    expect(page, contains("'data_da'"));
+    expect(page, contains("'data_a'"));
+    expect(page, contains('ReportPaginationControls('));
+    expect(page, contains('CREA FILE'));
+    expect(page, contains('master_metadati'));
+    expect(page, contains('collection-object-images-test'));
+    expect(page, contains('ReportSummaryPanel('));
+    expect(page, contains("from('master_oggetti')"), isFalse);
+    expect(card, contains('class SalesReportCard extends StatelessWidget'));
+    expect(dashboard, contains("procedure.apiCode == 'REPORT-SALES'"));
+    expect(dashboard, contains('const SalesReportPage()'));
+  });
+
   test('report vendite attive usa una pagina autonoma e una scheda separata', () {
         final page = File('lib/reports/active_sales_report_page.dart').readAsStringSync();
         final card = File('lib/reports/active_sale_report_card.dart').readAsStringSync();
