@@ -56,9 +56,11 @@ jobs:
           python -c "from pathlib import Path; import re; p=Path('android/app/build.gradle.kts') if Path('android/app/build.gradle.kts').exists() else Path('android/app/build.gradle'); s=p.read_text(); print('Gradle file:',p); print('compileSdk before:', [x for x in s.splitlines() if 'compileSdk' in x]); s2,n=re.subn(r'compileSdk\\s*=\\s*(?:flutter\\.compileSdkVersion|[0-9]+)', 'compileSdk = 36', s, count=1); s2,n2=re.subn(r'compileSdkVersion\\s+(?:flutter\\.compileSdkVersion|[0-9]+)', 'compileSdkVersion 36', s2, count=1); assert n+n2 == 1, 'Could not update exactly one compileSdk declaration'; p.write_text(s2); print('compileSdk after:', [x for x in s2.splitlines() if 'compileSdk' in x])"
           cp valora_logo.png assets/valora_logo.png
           python apply_valora_logo.py
-          WRAPPER=android/gradle/wrapper/gradle-wrapper.properties
-          python -c "from pathlib import Path; p=Path('$WRAPPER'); s=p.read_text(); lines=[line for line in s.splitlines() if line.startswith('distributionUrl=')]; assert len(lines)==1, 'Expected exactly one Gradle distributionUrl'; s=s.replace(lines[0], 'distributionUrl=https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip'); p.write_text(s+'\\n' if not s.endswith('\\n') else s)"
-          grep -Fq 'distributionUrl=https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip' "$WRAPPER"
+          $wrapper = "android/gradle/wrapper/gradle-wrapper.properties"
+          $content = Get-Content $wrapper -Raw
+          $content = [regex]::Replace($content, "(?m)^distributionUrl=.*$", "distributionUrl=https\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip")
+          Set-Content -Path $wrapper -Value $content -NoNewline
+          if (-not (Select-String -Path $wrapper -SimpleMatch "distributionUrl=https\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip" -Quiet)) { throw "Gradle distributionUrl non aggiornata" }
           rm -f test/widget_test.dart widget_test.dart main.dart
 
       - name: Verify Android Internet permission

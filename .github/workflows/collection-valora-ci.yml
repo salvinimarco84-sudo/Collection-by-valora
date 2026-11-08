@@ -31,7 +31,7 @@ jobs:
         run: |
           set -euo pipefail
           WRAPPER=android/gradle/wrapper/gradle-wrapper.properties
-          python -c "from pathlib import Path; p=Path('$WRAPPER'); s=p.read_text(); lines=[line for line in s.splitlines() if line.startswith('distributionUrl=')]; assert len(lines)==1, 'Expected exactly one Gradle distributionUrl'; s=s.replace(lines[0], 'distributionUrl=https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip'); p.write_text(s+'\\n' if not s.endswith('\\n') else s)"
+          sed -E -i 's#^distributionUrl=.*#distributionUrl=https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip#' "$WRAPPER"
           grep -Fq 'distributionUrl=https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip' "$WRAPPER"
       - name: Remove generated placeholder widget test
         run: rm -f test/widget_test.dart
