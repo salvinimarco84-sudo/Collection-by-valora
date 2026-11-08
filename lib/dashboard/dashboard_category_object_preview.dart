@@ -38,7 +38,7 @@ class DashboardCategoryObjectPreview extends StatelessWidget {
           child: imageUrl == null
               ? DashboardCategoryObjectImageFallback(icon: icon, color: color.withValues(alpha: 0.9))
               : Image.network(
-                  imageUrl!,
+                  _valoraImageProxyUrl(imageUrl!),
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => DashboardCategoryObjectImageFallback(icon: icon, color: color),
                 ),
