@@ -25,6 +25,7 @@ void main() {
   final pr06StatusSectionSource = File('lib/procedures/pr06_status_section.dart').readAsStringSync();
   final pr06PageStateSource = File('lib/procedures/pr06_page_state.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
+  final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -84,6 +85,19 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('PR-08 estrae la pagina Chiudi vendita mantenendo selezione e flusso di conferma', () {
+      expect(source, contains("part 'procedures/pr08_close_sales_page.dart';"));
+      expect(pr08CloseSalesPageSource, contains('class Pr08CloseSalesPage extends StatefulWidget'));
+      expect(pr08CloseSalesPageSource, contains('class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage>'));
+      expect(pr08CloseSalesPageSource, contains('_loadOpenSales();'));
+      expect(pr08CloseSalesPageSource, contains("procedure('PR-08', 'preview'"));
+      expect(pr08CloseSalesPageSource, contains("procedure('PR-08', 'review'"));
+      expect(pr08CloseSalesPageSource, contains("procedure('PR-08', 'save'"));
+      expect(pr08CloseSalesPageSource, contains('CONFERMA DEFINITIVA E SALVA'));
+      expect(pr08CloseSalesPageSource, contains('ANNULLA E LASCIA APERTE LE VENDITE'));
+      expect(source, isNot(contains('class Pr08CloseSalesPage extends StatefulWidget')));
+    });
+
     test('SQLite Android usa la libreria di sistema senza alterare Windows', () {
       expect(pubspecSource, contains('android: system'));
       expect(pubspecSource, contains('android: sqlite'));
