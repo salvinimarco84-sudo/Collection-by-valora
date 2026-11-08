@@ -57,8 +57,8 @@ jobs:
           cp valora_logo.png assets/valora_logo.png
           python apply_valora_logo.py
           WRAPPER=android/gradle/wrapper/gradle-wrapper.properties
-          sed -i 's#https\\://services.gradle.org/distributions/gradle-9.3.1-all.zip#https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip#' "$WRAPPER"
-          grep -q 'downloads.gradle.org/distributions/gradle-9.3.1-bin.zip' "$WRAPPER"
+          python -c "from pathlib import Path; p=Path('$WRAPPER'); s=p.read_text(); lines=[line for line in s.splitlines() if line.startswith('distributionUrl=')]; assert len(lines)==1, 'Expected exactly one Gradle distributionUrl'; s=s.replace(lines[0], 'distributionUrl=https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip'); p.write_text(s+'\\n' if not s.endswith('\\n') else s)"
+          grep -Fq 'distributionUrl=https\\://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip' "$WRAPPER"
           rm -f test/widget_test.dart widget_test.dart main.dart
 
       - name: Verify Android Internet permission

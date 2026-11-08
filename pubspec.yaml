@@ -32,6 +32,17 @@ dependency_overrides:
   # Pin stabile per evitare il binario nativo con hash errato in sqlite3 3.5.2.
   sqlite3: 3.7.1
 
+hooks:
+  user_defines:
+    sqlite3:
+      source:
+        linux: system
+        windows: system
+        default: sqlite3
+      name:
+        windows: winsqlite3
+        default: sqlite3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
