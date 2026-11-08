@@ -90,7 +90,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
       }
       if (!mounted) return;
       setState(() { _rows = all; _page = 0; _imageUrls.clear(); });
-      await _loadImages(all);
+      await _loadImages(all.take(_pageSize).toList());
     } catch (error) {
       if (mounted) setState(() { _error = 'Impossibile caricare il report vendite: $error'; });
     } finally {
@@ -209,6 +209,13 @@ class _SalesReportPageState extends State<SalesReportPage> {
     }
   }
 
+  Future<void> _changePage(int nextPage) async {
+    if (nextPage < 0 || nextPage >= (_rows.length / _pageSize).ceil()) return;
+    setState(() => _page = nextPage);
+    final start = nextPage * _pageSize;
+    await _loadImages(_rows.skip(start).take(_pageSize).toList());
+  }
+
   @override
   Widget build(BuildContext context) {
     final appearance = ValoraAppearance.instance;
@@ -286,15 +293,15 @@ class _SalesReportPageState extends State<SalesReportPage> {
         if (count > 1) ReportPaginationControls(
           currentPage: _page, pageSize: _pageSize, totalItems: _rows.length,
           pageCount: count, textColor: appearance.textSecondary,
-          onPrevious: _loading || _page == 0 ? null : () => setState(() => _page--),
-          onNext: _loading || _page + 1 >= count ? null : () => setState(() => _page++),
+          onPrevious: _loading || _page == 0 ? null : () => _changePage(_page - 1),
+          onNext: _loading || _page + 1 >= count ? null : () => _changePage(_page + 1),
         ),
         if (_loading && _rows.isNotEmpty) const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : () => _export(pdf: false), icon: const Icon(Icons.file_download_outlined), label: const Text('EXCEL'))),
+          Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : () => _export(pdf: false), icon: const Icon(Icons.file_download_outlined), label: const Text('CREA FILE EXCEL'))),
           const SizedBox(width: 8),
-          Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : () => _export(pdf: true), icon: const Icon(Icons.picture_as_pdf_outlined), label: const Text('PDF'))),
+          Expanded(child: OutlinedButton.icon(onPressed: _loading ? null : () => _export(pdf: true), icon: const Icon(Icons.picture_as_pdf_outlined), label: const Text('CREA FILE PDF'))),
         ]),
         const SizedBox(height: 8),
         OutlinedButton.icon(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close), label: const Text('CHIUDI E TORNA AL BLOCCO VENDITE')),
