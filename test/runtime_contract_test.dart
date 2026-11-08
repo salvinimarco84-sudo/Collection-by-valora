@@ -19,6 +19,7 @@ void main() {
   final pr06FormContentSource = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
   final pr06PendingSalesSectionSource = File('lib/procedures/pr06_pending_sales_section.dart').readAsStringSync();
   final pr06ObjectSelectionSectionSource = File('lib/procedures/pr06_object_selection_section.dart').readAsStringSync();
+  final pr06SaleDetailsSectionSource = File('lib/procedures/pr06_sale_details_section.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
@@ -133,6 +134,13 @@ void main() {
       expect(pr06ObjectSelectionSectionSource, contains('Oggetti selezionati nel lotto'));
       expect(pr06ObjectSelectionSectionSource, contains('Valore inventario'));
       expect(source, contains("part 'procedures/pr06_object_selection_section.dart';"));
+      expect(pr06FormContentSource, contains('..._buildPr06SaleDetailsSection(sectionColor)'));
+      expect(pr06SaleDetailsSectionSource, contains('extension _Pr06SaleDetailsSection on _NewSalePageState'));
+      expect(pr06SaleDetailsSectionSource, contains('PREZZO UNICO DEL LOTTO'));
+      expect(pr06SaleDetailsSectionSource, contains('Prezzo di vendita richiesto'));
+      expect(pr06SaleDetailsSectionSource, contains('Piattaforme di vendita'));
+      expect(pr06SaleDetailsSectionSource, contains('Note (facoltative)'));
+      expect(source, contains("part 'procedures/pr06_sale_details_section.dart';"));
       expect(source, contains("part 'procedures/pr06_pending_sales_section.dart';"));
       expect(pr06FormContentSource, contains('CONTROLLA E MOSTRA RIEPILOGO'));
       expect(pr06FormContentSource, contains('SALVA LOTTO'));
