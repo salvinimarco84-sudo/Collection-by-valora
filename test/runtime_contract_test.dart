@@ -1140,7 +1140,7 @@ void main() {
     expect(page, contains('master_metadati'));
     expect(page, contains('collection-object-images-test'));
     expect(page, contains('ReportSummaryPanel('));
-    expect(page, contains("from('master_oggetti')"), isFalse);
+    expect(page, isNot(contains("from('master_oggetti')")));
     expect(card, contains('class SalesReportCard extends StatelessWidget'));
     expect(dashboard, contains("procedure.apiCode == 'REPORT-SALES'"));
     expect(dashboard, contains('const SalesReportPage()'));
