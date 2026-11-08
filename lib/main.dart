@@ -98,6 +98,8 @@ part 'objects/object_cards_presentation.dart';
 part 'reports/report_summary_panel.dart';
 part 'reports/report_operation_card.dart';
 part 'reports/report_pagination_controls.dart';
+part 'reports/active_sales_report_page.dart';
+part 'reports/active_sale_report_card.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
