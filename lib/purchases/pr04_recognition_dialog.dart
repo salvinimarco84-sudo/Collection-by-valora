@@ -73,9 +73,9 @@ class _Pr04RecognitionDialogState extends State<Pr04RecognitionDialog> {
                 secondary: ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: Image.network(
-                    (widget.imageCandidates[i]['image_url'] ??
+                    _valoraImageProxyUrl((widget.imageCandidates[i]['image_url'] ??
                       widget.imageCandidates[i]['immagine_url'] ??
-                      widget.imageCandidates[i]['url_immagine']).toString(),
+                      widget.imageCandidates[i]['url_immagine']).toString()),
                     width: 58,
                     height: 58,
                     fit: BoxFit.contain,
