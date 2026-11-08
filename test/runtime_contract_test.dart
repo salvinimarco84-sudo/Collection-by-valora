@@ -670,6 +670,13 @@ void main() {
       expect(pr02RuntimeProcedureSource, contains('salvato e verificato'));
     });
 
+    test('ACQUISTI usa il layout del CATALOGO senza duplicare il titolo incorporato nello sfondo', () {
+      expect(dashboardHomeCoordinatorSource,
+        contains("showHeader: !['CATALOGO', 'ACQUISTI'].contains(section.title)"));
+      expect(dashboardHomeCoordinatorSource,
+        contains("'ACQUISTI': 'assets/menu_sections/02_ACQUISTI.jpg'"));
+    });
+
     test('le schermate delle sezioni ripristinano gli sfondi locali dedicati', () {
       for (final asset in [
         'assets/menu_sections/01_VENDITE.jpg',
