@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/valora_image_proxy.dart';
 
 import 'dashboard_category_object_image_fallback.dart';
 
@@ -38,7 +39,7 @@ class DashboardCategoryObjectPreview extends StatelessWidget {
           child: imageUrl == null
               ? DashboardCategoryObjectImageFallback(icon: icon, color: color.withValues(alpha: 0.9))
               : Image.network(
-                  _valoraImageProxyUrl(imageUrl!),
+                  valoraImageProxyUrl(imageUrl!),
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) => DashboardCategoryObjectImageFallback(icon: icon, color: color),
                 ),
