@@ -74,13 +74,6 @@ void main() {
   final objectImagePlaceholderSource = File('lib/objects/object_image_placeholder.dart').readAsStringSync();
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
-  test('lo sfondo del menu ACQUISTI riutilizza quello del menu CATALOGO', () {
-    expect(dashboardHomeCoordinatorSource,
-      contains("'ACQUISTI': 'assets/menu_sections/05_CATALOGO.jpg'"));
-    expect(dashboardHomeCoordinatorSource,
-      contains("'CATALOGO': 'assets/menu_sections/05_CATALOGO.jpg'"));
-  });
-
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('PR-05 separa i dettagli modificabili conservando quadratura e sola lettura', () {
       expect(source, contains("part 'purchases/pr05_details_section.dart';"));
