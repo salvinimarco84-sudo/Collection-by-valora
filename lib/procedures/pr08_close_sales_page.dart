@@ -251,8 +251,8 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
             headerColor: appearance.colorFor('VENDITE'),
             secondaryTextColor: appearance.textSecondary,
             onSelectAll: _loading || _sales.isEmpty ? null : () => setState(() {
-              _selected.addAll(_sales.map((r) => int.tryParse('\${r['codice_vendita_aperta']}')).whereType<int>());
-              for (final r in _sales) { final id = int.tryParse('\${r['codice_vendita_aperta']}'); if (id != null) { _dates.putIfAbsent(id, _today); _amounts.putIfAbsent(id, () => '\${r['prezzo_di_vendita'] ?? ''}'); } }
+              _selected.addAll(_sales.map((r) => int.tryParse('${r['codice_vendita_aperta']}')).whereType<int>());
+              for (final r in _sales) { final id = int.tryParse('${r['codice_vendita_aperta']}'); if (id != null) { _dates.putIfAbsent(id, _today); _amounts.putIfAbsent(id, () => '${r['prezzo_di_vendita'] ?? ''}'); } }
               _preview = null; _review = null;
             }),
             onDeselectAll: _loading ? null : () => setState(() { _selected.clear(); _preview = null; _review = null; }),
