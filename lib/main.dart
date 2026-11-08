@@ -184,6 +184,10 @@ String _valoraImageProxyUrl(String rawUrl) {
     'imgmarketplace.lojasrenner.com.br',
     'kaostech.net',
     'indemandtoys.co.uk',
+    'brickheads.co',
+    'atlbrick.com',
+    'www.transformerland.com',
+    'cdn.shopify.com',
   };;
   if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
   return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
