@@ -92,7 +92,7 @@ void main() {
       expect(pr08SalesSummaryCardSource, contains("'VENDITE APERTE'"));
       expect(pr08SalesSummaryCardSource, contains("'SELEZIONA TUTTE'"));
       expect(pr08SalesSummaryCardSource, contains("'DESELEZIONA TUTTE'"));
-      expect(pr08SalesSummaryCardSource, contains("'Selezionate: $selectedSales / $totalSales'"));
+      expect(pr08SalesSummaryCardSource, contains("'Selezionate: \$selectedSales / \$totalSales'"));
       expect(pr08CloseSalesPageSource, contains('Pr08SalesSummaryCard('));
       expect(pr08CloseSalesPageSource, isNot(contains("'SELEZIONA TUTTE'")));
     });
