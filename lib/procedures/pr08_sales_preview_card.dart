@@ -1,11 +1,11 @@
 part of '../main.dart';
 
-class Pr08SalesPreviewCard extends StatelessWidget {
+class Pr08CloseSalesPreviewCard extends StatelessWidget {
   final List<String> lines;
   final Color secondaryTextColor;
   final VoidCallback? onConfirm;
 
-  const Pr08SalesPreviewCard({
+  const Pr08CloseSalesPreviewCard({
     super.key,
     required this.lines,
     required this.secondaryTextColor,
