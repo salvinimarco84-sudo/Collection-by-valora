@@ -28,6 +28,7 @@ void main() {
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
+  final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -87,6 +88,16 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('PR-08 estrae il riepilogo anteprima delle chiusure senza spostare i calcoli', () {
+      expect(source, contains("part 'procedures/pr08_sales_preview_card.dart';"));
+      expect(pr08SalesPreviewCardSource, contains('class Pr08SalesPreviewCard extends StatelessWidget'));
+      expect(pr08SalesPreviewCardSource, contains('RIEPILOGO DELLE CHIUSURE'));
+      expect(pr08SalesPreviewCardSource, contains('CONFERMO I DATI'));
+      expect(pr08CloseSalesPageSource, contains('Pr08SalesPreviewCard('));
+      expect(pr08CloseSalesPageSource, contains('_selected.map((id)'));
+      expect(pr08CloseSalesPageSource, contains('_confirmSelectedData'));
+    });
+
     test('PR-08 separa il riepilogo vendite mantenendo contatori e selezione multipla', () {
       expect(source, contains("part 'procedures/pr08_sales_summary_card.dart';"));
       expect(pr08SalesSummaryCardSource, contains('class Pr08SalesSummaryCard extends StatelessWidget'));
