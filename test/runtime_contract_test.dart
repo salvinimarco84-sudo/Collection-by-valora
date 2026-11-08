@@ -150,7 +150,7 @@ void main() {
       expect(source, contains("part 'procedures/pr06_sale_details_section.dart';"));
       expect(source, contains("part 'procedures/pr06_pending_sales_section.dart';"));
       expect(pr06FormContentSource, contains('CONTROLLA E MOSTRA RIEPILOGO'));
-      expect(pr06FormContentSource, contains('SALVA LOTTO'));
+      expect(pr06PreviewConfirmationSectionSource, contains('SALVA LOTTO'));
       expect(pr06FormContentSource, contains('AGGIORNA OGGETTI DISPONIBILI'));
       expect(pr06FormContentSource, contains('Pr06NewSalePageFrame(children: ['));
     });
