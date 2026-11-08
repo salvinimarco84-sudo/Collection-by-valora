@@ -28,6 +28,8 @@ jobs:
         run: flutter create . --platforms=android
       - name: Remove generated placeholder widget test
         run: rm -f test/widget_test.dart
+      - name: Repair cached Dart packages
+        run: dart pub cache repair
       - name: Resolve dependencies
         run: flutter pub get
       - name: Analyze source
