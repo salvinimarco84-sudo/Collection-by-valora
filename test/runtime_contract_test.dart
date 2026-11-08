@@ -670,6 +670,13 @@ void main() {
         contains("'ACQUISTI': 'assets/menu_sections/02_ACQUISTI.jpg'"));
     });
 
+    test('VENDITE mantiene lo sfondo originale e adotta il layout del CATALOGO', () {
+      expect(dashboardHomeCoordinatorSource,
+        contains("'VENDITE': 'assets/menu_sections/01_VENDITE.jpg'"));
+      expect(dashboardHomeCoordinatorSource,
+        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE'].contains(section.title)"));
+    });
+
     test('le schermate delle sezioni ripristinano gli sfondi locali dedicati', () {
       for (final asset in [
         'assets/menu_sections/01_VENDITE.jpg',
