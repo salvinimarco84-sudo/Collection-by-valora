@@ -6970,7 +6970,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                 final hasExit = ['uscita','importo_uscita','totale_uscite','uscite'].any((k) => row[k] != null);
                 if (!hasEntry && !hasExit) {
                   final amount = fieldAmount(row, ['importo','importo_totale','amount']);
-                  final kind = '${row['tipo'] ?? row['tipo_movimento'] ?? row['categoria'] ?? ''}'.toLowerCase();
+                  final kind = '${row['tipologia'] ?? row['tipo'] ?? row['tipo_movimento'] ?? row['categoria'] ?? ''}'.toLowerCase();
                   if (kind.contains('entrata') || kind.contains('vendita') || kind.contains('accredito')) {
                     entries += amount;
                   } else if (kind.contains('uscita') || kind.contains('acquisto') || kind.contains('spesa') || kind.contains('giroconto')) {
