@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/valora_image_proxy.dart';
 
 import 'dashboard_category_brand_mark.dart';
 
@@ -22,7 +23,7 @@ class DashboardCollectionCategoryLogo extends StatelessWidget {
       ? ClipRRect(
           borderRadius: BorderRadius.circular(9),
           child: Image.network(
-            _valoraImageProxyUrl(logoUrl!),
+            valoraImageProxyUrl(logoUrl!),
             width: 62,
             height: 46,
             fit: BoxFit.cover,
