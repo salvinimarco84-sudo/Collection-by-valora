@@ -16,6 +16,7 @@ void main() {
   final pr05ConfirmationSectionSource = File('lib/purchases/pr05_confirmation_section.dart').readAsStringSync();
   final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
   final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
+  final pr06FormContentSource = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
@@ -114,6 +115,17 @@ void main() {
       expect(pr06PageFrameSource, contains("AppBar(title: const Text('PR-06 · NUOVA VENDITA'))"));
       expect(pr06PageFrameSource, contains('maxWidth: 820'));
       expect(pr06PageFrameSource, contains('ListView('));
+    });
+
+    test('PR-06 separa la maschera dalla pagina mantenendo i controlli e le azioni', () {
+      expect(source, contains("part 'procedures/pr06_form_content.dart';"));
+      expect(source, contains('Widget build(BuildContext context) => _buildPr06FormContent(context);'));
+      expect(pr06FormContentSource, contains('extension _Pr06FormContent on _NewSalePageState'));
+      expect(pr06FormContentSource, contains('VENDITE IN ATTESA'));
+      expect(pr06FormContentSource, contains('CONTROLLA E MOSTRA RIEPILOGO'));
+      expect(pr06FormContentSource, contains('SALVA LOTTO'));
+      expect(pr06FormContentSource, contains('AGGIORNA OGGETTI DISPONIBILI'));
+      expect(pr06FormContentSource, contains('Pr06NewSalePageFrame(children: ['));
     });
 
     test('PR-05 isola il contenitore della pagina senza spostare la logica delle sezioni', () {
