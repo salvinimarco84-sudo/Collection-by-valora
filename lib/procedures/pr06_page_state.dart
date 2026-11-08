@@ -1,3 +1,5 @@
+part of '../main.dart';
+
 /// PR-06: pagina e stato della nuova vendita.
 class NewSalePage extends StatefulWidget {
   const NewSalePage({super.key, this.initialObjectCode});
