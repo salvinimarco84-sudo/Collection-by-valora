@@ -27,6 +27,7 @@ void main() {
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
+  final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -95,6 +96,18 @@ void main() {
       expect(pr08SalesSummaryCardSource, contains("'Selezionate: \$selectedSales / \$totalSales'"));
       expect(pr08CloseSalesPageSource, contains('Pr08SalesSummaryCard('));
       expect(pr08CloseSalesPageSource, isNot(contains("'SELEZIONA TUTTE'")));
+    });
+
+    test('PR-08 estrae la scheda della singola vendita mantenendo dati e callback', () {
+      expect(source, contains("part 'procedures/pr08_open_sale_card.dart';"));
+      expect(pr08OpenSaleCardSource, contains('class Pr08OpenSaleCard extends StatelessWidget'));
+      expect(pr08OpenSaleCardSource, contains('Vendita aperta #$id'));
+      expect(pr08OpenSaleCardSource, contains('onChanged: loading ? null : onSelectionChanged'));
+      expect(pr08OpenSaleCardSource, contains("labelText: 'Esito della chiusura *'"));
+      expect(pr08OpenSaleCardSource, contains("labelText: 'Importo effettivo *'"));
+      expect(pr08OpenSaleCardSource, contains("labelText: 'Piattaforma effettiva *'"));
+      expect(pr08CloseSalesPageSource, contains('Pr08OpenSaleCard('));
+      expect(pr08CloseSalesPageSource, isNot(contains('CheckboxListTile(')));
     });
 
     test('PR-08 estrae la pagina Chiudi vendita mantenendo selezione e flusso di conferma', () {
