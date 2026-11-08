@@ -1119,6 +1119,10 @@ void main() {
     expect(previewCard, contains('COLLEZIONE con stato DISPONIBILE'));
     expect(dashboard, contains('const Pr09CancelSalesPage()'));
     expect(registry, contains('compensa l’incasso in cassa'));
+    expect(source, contains("row['tipologia'] ?? row['tipo'] ?? row['tipo_movimento']"));
+    final cashMigration = File('supabase/migrations/20261108161329_cash_report_include_sale_cancellation_reversals.sql').readAsStringSync();
+    expect(cashMigration, contains("'VENDITA ANNULLATA'"));
+    expect(cashMigration, contains("'saldo_netto'"));
   });
 
 }
