@@ -119,7 +119,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     // poi registro immagini/Storage. Un errore non deve bloccare i tentativi futuri.
     final selected = <Map<String, dynamic>>[];
     final activeCategories = rows.map(_dashboardCategory).toSet();
-    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'FUNKO POP', 'MODEL KIT', 'G.I. JOE', 'ALTRE COLLEZIONI']) {
+    for (final category in ['LEGO', 'SAINT SEIYA', 'MOTO DIE-CAST', 'FUMETTI', 'GUNDAM', 'TRANSFORMERS', 'FUNKO POP', 'MODEL KIT', 'G.I. JOE', 'GIOCHI DA TAVOLO', 'ALTRE COLLEZIONI']) {
       if (activeCategories.contains(category)) {
         selected.addAll(rows.where((row) => _dashboardCategory(row) == category).take(5));
       }
@@ -193,6 +193,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
     if (RegExp(r'gundam|gunpla|rx-78|wing zero|sazabi').hasMatch(d)) return 'GUNDAM';
     if (RegExp(r'transformers|autobot|decepticon|optimus prime|bumblebee').hasMatch(d)) return 'TRANSFORMERS';
     if (RegExp(r'funko\s*pop|funko pop!').hasMatch(d)) return 'FUNKO POP';
+    if (RegExp(r'\buno\b|dobble|monopoly|trivial pursuit|gioco da tavolo|board game').hasMatch(d)) return 'GIOCHI DA TAVOLO';
     if (RegExp(r'g\.i\.\s*joe|cobra commander|cobra officer|cobra trooper|sgt\. stalker').hasMatch(d)) return 'G.I. JOE';
     if (RegExp(r'model kit|mechanic collection|gunpla|plastic model kit').hasMatch(d)) return 'MODEL KIT';
     return 'ALTRE COLLEZIONI';
