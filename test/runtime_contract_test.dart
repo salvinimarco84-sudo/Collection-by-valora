@@ -21,6 +21,7 @@ void main() {
   final pr06ObjectSelectionSectionSource = File('lib/procedures/pr06_object_selection_section.dart').readAsStringSync();
   final pr06SaleDetailsSectionSource = File('lib/procedures/pr06_sale_details_section.dart').readAsStringSync();
   final pr06PreviewConfirmationSectionSource = File('lib/procedures/pr06_preview_confirmation_section.dart').readAsStringSync();
+  final pr06StatusSectionSource = File('lib/procedures/pr06_status_section.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
@@ -151,7 +152,13 @@ void main() {
       expect(source, contains("part 'procedures/pr06_pending_sales_section.dart';"));
       expect(pr06FormContentSource, contains('CONTROLLA E MOSTRA RIEPILOGO'));
       expect(pr06PreviewConfirmationSectionSource, contains('SALVA LOTTO'));
-      expect(pr06FormContentSource, contains('AGGIORNA OGGETTI DISPONIBILI'));
+      expect(source, contains("part 'procedures/pr06_status_section.dart';"));
+      expect(pr06FormContentSource, contains('..._buildPr06StatusSection(sectionColor)'));
+      expect(pr06StatusSectionSource, contains('extension _Pr06StatusSection on _NewSalePageState'));
+      expect(pr06StatusSectionSource, contains('AGGIORNA OGGETTI DISPONIBILI'));
+      expect(pr06StatusSectionSource, contains('Expanded(child: Text(_status))'));
+      expect(pr06FormContentSource, isNot(contains('SelectableText(const JsonEncoder.withIndent')));
+      expect(pr06StatusSectionSource, isNot(contains('JsonEncoder')));
       expect(pr06FormContentSource, contains('Pr06NewSalePageFrame(children: ['));
     });
 

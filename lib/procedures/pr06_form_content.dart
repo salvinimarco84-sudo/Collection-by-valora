@@ -26,16 +26,7 @@ extension _Pr06FormContent on _NewSalePageState {
           const SizedBox(height: 12),
           if (_preview != null) _buildPr06PreviewConfirmationSection(sectionColor),
           const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: _busy ? null : _load,
-            icon: const Icon(Icons.refresh), label: const Text('AGGIORNA OGGETTI DISPONIBILI')),
-          const SizedBox(height: 12),
-          Card(child: Padding(padding: const EdgeInsets.all(12), child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(_status.contains('non riuscito') || _status.contains('non confermato') ? Icons.error_outline : Icons.info_outline, color: sectionColor),
-              const SizedBox(width: 8), Expanded(child: Text(_status)),
-            ]))),
-          if (_preview != null) const SizedBox(height: 8),
-          if (_preview != null) SelectableText(const JsonEncoder.withIndent('  ').convert(_preview!)),
+          ..._buildPr06StatusSection(sectionColor),
       ]);
   }
 }
