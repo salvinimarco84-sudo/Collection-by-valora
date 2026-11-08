@@ -42,7 +42,7 @@ class DashboardGridMenuCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(11),
                   child: imageUrl != null && imageUrl!.isNotEmpty
                       ? Image.network(
-                          imageUrl!,
+                          _valoraImageProxyUrl(imageUrl!),
                           fit: imageFit,
                           width: double.infinity,
                           errorBuilder: (_, __, ___) =>
