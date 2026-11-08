@@ -448,7 +448,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                                         ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewSalePage()))
                                                         : procedure.apiCode == 'WRITE-PR-08'
                                                             ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr08CloseSalesPage()))
-                                                            : procedure.apiCode != null
+                                                            : procedure.apiCode == 'WRITE-PR-09'
+                                                                 ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr09CancelSalesPage()))
+                                                                 : procedure.apiCode != null
                                                                 ? () => Navigator.of(context).push(MaterialPageRoute(
                                                                       builder: (_) => procedure.apiCode == 'PR-12-BATCH'
                                                                           ? const Pr12BatchPage()
