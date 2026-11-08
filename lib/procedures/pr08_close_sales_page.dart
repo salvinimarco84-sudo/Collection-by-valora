@@ -239,33 +239,21 @@ class _Pr08CloseSalesPageState extends State<Pr08CloseSalesPage> {
             FilledButton.icon(onPressed: _loading ? null : () => _run(_previewSelected), icon: const Icon(Icons.fact_check_outlined),
               label: Text(_loading ? 'CONTROLLO IN CORSO…' : 'CONTROLLA ${_selected.length} CHIUSURE')),
           ],
-          if (_preview != null && _review == null) Card(child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('RIEPILOGO DELLE CHIUSURE', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text('${_selected.length} vendite selezionate. Controlla esito, importo e piattaforma prima di proseguire.',
-                style: TextStyle(color: appearance.textSecondary)),
-              const SizedBox(height: 8),
-              ..._selected.map((id) {
-                final row = _sales.firstWhere((r) => int.tryParse('${r['codice_vendita_aperta']}') == id);
-                final outcome = _outcomes[id] ?? 'Esito non indicato';
-                final details = outcome == 'VENDITA EFFETTIVA'
-                    ? ' · ${_money(_amounts[id], 'EUR')} · ${_dates[id] ?? _today()}'
-                    : '';
-                final matchingPlatforms = _platforms.where((p) => '${p['codice_piattaforma']}' == (_platformCodes[id] ?? ''))
-                    .map((p) => '${p['nome_piattaforma']}').toList();
-                final platform = matchingPlatforms.isEmpty ? null : matchingPlatforms.first;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Text('Vendita #$id · Oggetto #${row['codice_oggetto']} · $outcome$details${platform == null ? '' : ' · $platform'}'),
-                );
-              }),
-              const SizedBox(height: 10),
-              FilledButton(onPressed: _loading ? null : () => _run(_confirmSelectedData),
-                child: const Text('CONFERMO I DATI')),
-            ]),
-          )),
+          if (_preview != null && _review == null) Pr08CloseSalesPreviewCard(
+            lines: _selected.map((id) {
+              final row = _sales.firstWhere((r) => int.tryParse('${r['codice_vendita_aperta']}') == id);
+              final outcome = _outcomes[id] ?? 'Esito non indicato';
+              final details = outcome == 'VENDITA EFFETTIVA'
+                  ? ' · ${_money(_amounts[id], 'EUR')} · ${_dates[id] ?? _today()}'
+                  : '';
+              final matchingPlatforms = _platforms.where((p) => '${p['codice_piattaforma']}' == (_platformCodes[id] ?? ''))
+                  .map((p) => '${p['nome_piattaforma']}').toList();
+              final platform = matchingPlatforms.isEmpty ? null : matchingPlatforms.first;
+              return 'Vendita #$id · Oggetto #${row['codice_oggetto']} · $outcome$details${platform == null ? '' : ' · $platform'}';
+            }).toList(),
+            secondaryTextColor: appearance.textSecondary,
+            onConfirm: _loading ? null : () => _run(_confirmSelectedData),
+          ),
           if (_review != null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
