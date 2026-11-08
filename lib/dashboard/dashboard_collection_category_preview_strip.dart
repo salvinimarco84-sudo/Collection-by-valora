@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/valora_image_proxy.dart';
 
 /// Striscia orizzontale delle immagini di anteprima di una categoria.
 class DashboardCollectionCategoryPreviewStrip extends StatelessWidget {
@@ -36,7 +37,7 @@ class DashboardCollectionCategoryPreviewStrip extends StatelessWidget {
                 child: url == null
                     ? Icon(icon, color: color, size: 30)
                     : Image.network(
-                        _valoraImageProxyUrl(url),
+                        valoraImageProxyUrl(url),
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => Icon(icon, color: color, size: 30),
                       ),
