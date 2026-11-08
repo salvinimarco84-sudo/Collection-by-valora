@@ -1123,20 +1123,21 @@ void main() {
     final cashMigration = File('supabase/migrations/20261108161329_cash_report_include_sale_cancellation_reversals.sql').readAsStringSync();
     expect(cashMigration, contains("'VENDITA ANNULLATA'"));
     expect(cashMigration, contains("'saldo_netto'"));
-    test('report vendite attive usa una pagina autonoma e una scheda separata', () {
-      final page = File('lib/reports/active_sales_report_page.dart').readAsStringSync();
-      final card = File('lib/reports/active_sale_report_card.dart').readAsStringSync();
-      expect(source, contains("part 'reports/active_sales_report_page.dart';"));
-      expect(source, contains("part 'reports/active_sale_report_card.dart';"));
-      expect(page, contains("report_code': 'ACTIVE_LISTINGS_REPORT'"));
-      expect(page, contains("ActiveSaleReportCard("));
-      expect(page, contains("ReportPaginationControls("));
-      expect(page, contains("open_sales_list"));
-      expect(card, contains('class ActiveSaleReportCard extends StatelessWidget'));
-      expect(dashboardHomeCoordinatorSource, contains("procedure.apiCode == 'REPORT-ACTIVE-LISTINGS'"));
-      expect(dashboardHomeCoordinatorSource, contains('const ActiveSalesReportPage()'));
-    });
 
+  });
+
+  test('report vendite attive usa una pagina autonoma e una scheda separata', () {
+        final page = File('lib/reports/active_sales_report_page.dart').readAsStringSync();
+        final card = File('lib/reports/active_sale_report_card.dart').readAsStringSync();
+        expect(source, contains("part 'reports/active_sales_report_page.dart';"));
+        expect(source, contains("part 'reports/active_sale_report_card.dart';"));
+        expect(page, contains("report_code': 'ACTIVE_LISTINGS_REPORT'"));
+        expect(page, contains("ActiveSaleReportCard("));
+        expect(page, contains("ReportPaginationControls("));
+        expect(page, contains("open_sales_list"));
+        expect(card, contains('class ActiveSaleReportCard extends StatelessWidget'));
+        expect(dashboardHomeCoordinatorSource, contains("procedure.apiCode == 'REPORT-ACTIVE-LISTINGS'"));
+        expect(dashboardHomeCoordinatorSource, contains('const ActiveSalesReportPage()'));
   });
 
 }
