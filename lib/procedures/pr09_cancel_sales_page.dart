@@ -39,8 +39,8 @@ class _Pr09CancelSalesPageState extends State<Pr09CancelSalesPage> {
     super.dispose();
   }
 
-  Future<void> _loadCompletedSales({int offset = 0, bool clearSelection = false}) async {
-    if (_loading) return;
+  Future<void> _loadCompletedSales({int offset = 0, bool clearSelection = false, bool allowWhileBusy = false}) async {
+    if (_loading && !allowWhileBusy) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -76,9 +76,6 @@ class _Pr09CancelSalesPageState extends State<Pr09CancelSalesPage> {
           if (id != null) _saleCache[id] = row;
         }
         _loading = false;
-        if (rows.isEmpty && offset == 0) {
-          _success = null;
-        }
       });
     } catch (e) {
       if (mounted) setState(() {
@@ -141,9 +138,15 @@ class _Pr09CancelSalesPageState extends State<Pr09CancelSalesPage> {
   Future<void> _previewSelected() async {
     final payload = _payload();
     if (!_lockHeld && !await _acquireLock()) return;
-    final result = await _ValoraRuntimeApi.procedure(
-      'PR-09', 'preview', payload, sessionId: _sessionId,
-    );
+    late final Map<String, dynamic> result;
+    try {
+      result = await _ValoraRuntimeApi.procedure(
+        'PR-09', 'preview', payload, sessionId: _sessionId,
+      );
+    } catch (_) {
+      await _releaseLock();
+      rethrow;
+    }
     if (result['scrittura_eseguita'] == true || result['stato'] != 'BOZZA') {
       await _releaseLock();
       throw StateError('Anteprima PR-09 non valida. Nessuna vendita è stata annullata.');
@@ -220,7 +223,7 @@ class _Pr09CancelSalesPageState extends State<Pr09CancelSalesPage> {
       _preview = null;
       _review = null;
     });
-    await _loadCompletedSales(clearSelection: true);
+    await _loadCompletedSales(clearSelection: true, allowWhileBusy: true);
   }
 
   Future<void> _cancelDraft() async {
@@ -357,7 +360,7 @@ class _Pr09CancelSalesPageState extends State<Pr09CancelSalesPage> {
                           onPressed: _loading || _offset == 0 || _preview != null
                               ? null
                               : () => _loadCompletedSales(
-                                    offset: (_offset - _pageSize).clamp(0, 1 << 30),
+                                    offset: (_offset - _pageSize).clamp(0, 1 << 30).toInt(),
                                   ),
                           icon: const Icon(Icons.chevron_left),
                           label: const Text('PRECEDENTI'),
