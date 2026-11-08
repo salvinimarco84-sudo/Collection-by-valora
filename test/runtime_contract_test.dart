@@ -16,6 +16,7 @@ void main() {
   final pr05ConfirmationSectionSource = File('lib/purchases/pr05_confirmation_section.dart').readAsStringSync();
   final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
   final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
+  final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final purchaseRuntimeSource = '$source\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
@@ -95,9 +96,21 @@ void main() {
       expect(pr05ConfirmationSectionSource, contains('SALVA MODIFICA E TERMINA'));
     });
 
-    test('PR-06 isola il contenitore della pagina senza spostare la logica di vendita', () {
-      expect(source, contains("part 'procedures/pr06_page_frame.dart';"));
+    test('PR-06 separa il runtime della vendita dalla pagina mantenendo i controlli transazionali', () {
+      expect(source, contains("part 'procedures/pr06_runtime_procedure.dart';"));
       expect(source, contains('Pr06NewSalePageFrame(children: ['));
+      expect(source, contains('void initState()'));
+      expect(pr06RuntimeProcedureSource, contains('extension _Pr06RuntimeProcedure on _NewSalePageState'));
+      expect(pr06RuntimeProcedureSource, contains("procedure('PR-06', 'preview'"));
+      expect(pr06RuntimeProcedureSource, contains("procedure('PR-06', 'save'"));
+      expect(pr06RuntimeProcedureSource, contains("procedure('PR-06-LOTTO', 'preview'"));
+      expect(pr06RuntimeProcedureSource, contains("procedure('PR-06-LOTTO', 'save'"));
+      expect(pr06RuntimeProcedureSource, contains("call('acquire_lock'"));
+      expect(pr06RuntimeProcedureSource, contains("call('release_lock'"));
+      expect(pr06RuntimeProcedureSource, contains("'SALVATO_E_VERIFICATO'"));
+      expect(pr06RuntimeProcedureSource, contains("'verifica_post_salvataggio'"));
+      expect(pr06RuntimeProcedureSource, contains('Future<void> _saveSale()'));
+      expect(pr06RuntimeProcedureSource, contains('Future<void> _saveLotSale()'));
       expect(pr06PageFrameSource, contains("AppBar(title: const Text('PR-06 · NUOVA VENDITA'))"));
       expect(pr06PageFrameSource, contains('maxWidth: 820'));
       expect(pr06PageFrameSource, contains('ListView('));
