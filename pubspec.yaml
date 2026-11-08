@@ -36,10 +36,12 @@ hooks:
   user_defines:
     sqlite3:
       source:
+        android: system
         linux: system
         windows: system
         default: sqlite3
       name:
+        android: sqlite
         windows: winsqlite3
         default: sqlite3
 

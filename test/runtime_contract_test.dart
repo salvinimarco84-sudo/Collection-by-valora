@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
   final pr04FormContentSource = File('lib/purchases/pr04_form_content.dart').readAsStringSync();
@@ -82,6 +83,14 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('SQLite Android usa la libreria di sistema senza alterare Windows', () {
+      expect(pubspecSource, contains('android: system'));
+      expect(pubspecSource, contains('android: sqlite'));
+      expect(pubspecSource, contains('windows: system'));
+      expect(pubspecSource, contains('windows: winsqlite3'));
+      expect(pubspecSource, contains('default: sqlite3'));
+    });
+
     test('PR-05 separa i dettagli modificabili conservando quadratura e sola lettura', () {
       expect(source, contains("part 'purchases/pr05_details_section.dart';"));
       expect(pr05FormContentSource, contains('Pr05PurchaseDetailsSection('));
