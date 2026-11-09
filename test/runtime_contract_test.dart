@@ -26,6 +26,7 @@ void main() {
   final pr06PageStateSource = File('lib/procedures/pr06_page_state.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
+  final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
@@ -89,6 +90,15 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('la schermata VALORA è estratta senza alterare il flusso di valutazione', () {
+      expect(source, contains("part 'procedures/valora_service_page.dart';"));
+      expect(source, isNot(contains('class ValoraServicePage extends StatefulWidget')));
+      expect(valoraServicePageSource, contains("class ValoraServicePage extends StatefulWidget"));
+      expect(valoraServicePageSource, contains("_ValoraRuntimeApi.call('consultation'"));
+      expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE'"));
+      expect(valoraServicePageSource, contains("'mercato_riferimento': _market"));
+      expect(valoraServicePageSource, contains("eq('destinazione', 'COLLEZIONE')"));
+    });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
       expect(source, contains("part 'procedures/write_procedure_action_panel.dart';"));
       expect(writeProcedureActionPanelSource, contains('class WriteProcedureActionPanel extends StatelessWidget'));
