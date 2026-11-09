@@ -1074,6 +1074,9 @@ void main() {
       expect(dashboardSectionContentSource, contains('Positioned.fill(child: background)'));
       expect(dashboardSectionContentSource, contains('DashboardSectionOverlay()'));
       expect(dashboardSectionContentSource, contains('...procedureCards'));
+      expect(dashboardSectionContentSource, contains('LayoutBuilder('));
+      expect(dashboardSectionContentSource, contains('constraints.maxHeight * 0.44'));
+      expect(dashboardSectionContentSource, contains('Expanded('));
       expect(dashboardSectionContentSource, contains('footer'));
       expect(source, contains("import 'dashboard/dashboard_section_content.dart';"));
       expect(dashboardRuntimeSource, contains('DashboardSectionContent('));
