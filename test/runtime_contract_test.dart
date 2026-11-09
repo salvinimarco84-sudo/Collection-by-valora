@@ -812,7 +812,7 @@ void main() {
 
     test('ACQUISTI usa il layout del CATALOGO senza duplicare il titolo incorporato nello sfondo', () {
       expect(dashboardHomeCoordinatorSource,
-        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE'].contains(section.title)"));
+        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE'].contains(section.title)"));
       expect(dashboardHomeCoordinatorSource,
         contains("'ACQUISTI': 'assets/menu_sections/02_ACQUISTI.jpg'"));
     });
@@ -837,6 +837,8 @@ void main() {
       }
       expect(dashboardBackgroundSource, contains('Image.asset('));
       expect(dashboardBackgroundSource, contains('backgroundAsset'));
+      expect(dashboardBackgroundSource, contains('BoxFit.contain'));
+      expect(dashboardBackgroundSource, contains('BoxFit.cover'));
       expect(dashboardBackgroundSource, contains('errorBuilder'));
       expect(dashboardHeaderSource, contains('        title,'));
       expect(dashboardHeaderSource, contains('        description,'));
