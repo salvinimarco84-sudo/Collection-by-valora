@@ -99,6 +99,8 @@ class Pr04ItemEditor extends StatelessWidget {
             decoration: const InputDecoration(labelText: 'Completezza'),
             items: const [
               DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')),
+              DropdownMenuItem(value: 'COMPLETO CON ISTRUZIONI', child: Text('COMPLETO CON ISTRUZIONI')),
+              DropdownMenuItem(value: 'COMPLETO CON SCATOLA E ISTRUZIONI', child: Text('COMPLETO CON SCATOLA E ISTRUZIONI')),
               DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')),
               DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI')),
             ],
