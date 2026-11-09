@@ -26,17 +26,34 @@ class DashboardSectionContent extends StatelessWidget {
         children: [
           Positioned.fill(child: background),
           const Positioned.fill(child: DashboardSectionOverlay()),
-          ListView(
-            padding: EdgeInsets.fromLTRB(16, showHeader ? 20 : 8, 16, 28),
-            children: [
-              if (showHeader) ...[
-                header,
-                const SizedBox(height: 20),
+          LayoutBuilder(
+            builder: (context, constraints) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Area superiore riservata al titolo/alle scritte dello sfondo.
+                // Resta ferma mentre l'elenco delle procedure scorre sotto.
+                SizedBox(
+                  height: constraints.maxHeight * 0.44,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: showHeader ? header : const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                    children: [
+                      ...procedureCards,
+                      const SizedBox(height: 12),
+                      footer,
+                    ],
+                  ),
+                ),
               ],
-              ...procedureCards,
-              const SizedBox(height: 12),
-              footer,
-            ],
+            ),
           ),
         ],
       );
