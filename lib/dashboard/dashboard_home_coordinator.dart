@@ -268,6 +268,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
+                  // Il livello di fondo riempie lo schermo; il livello nitido
+                  // mostra l'intera grafica senza tagli laterali.
                   Image.asset(
                     selectedSection == null
                         ? valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)
@@ -275,6 +277,14 @@ class _HomeDashboardState extends State<HomeDashboard> {
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
                     errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
+                  ),
+                  Image.asset(
+                    selectedSection == null
+                        ? valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)
+                        : _sectionBackgroundAsset(selectedSection!.title),
+                    fit: BoxFit.contain,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                   ),
                   ColoredBox(color: Colors.black.withValues(alpha: 0.24)),
                 ],
@@ -410,7 +420,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         accentColor: appearance.colorFor(section.title),
         secondaryTextColor: appearance.textSecondary,
       ),
-      showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE'].contains(section.title),
+      showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE'].contains(section.title),
       procedureCards: [
             ...procedures.map((procedure) => ProcedureCard(
             procedure: procedure,

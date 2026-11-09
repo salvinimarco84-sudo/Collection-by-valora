@@ -17,24 +17,42 @@ class DashboardSectionBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) => IgnorePointer(
     child: customImage != null && customImage!.isNotEmpty
-        ? Image.network(
-            imageUrlResolver(customImage!),
-            fit: BoxFit.cover,
+        ? Stack(
+            fit: StackFit.expand,
             alignment: Alignment.center,
-            errorBuilder: (_, __, ___) => backgroundAsset.isNotEmpty
-                ? Image.asset(
-                    backgroundAsset,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => ColoredBox(color: backgroundColor),
-                  )
-                : ColoredBox(color: backgroundColor),
-          )
-        : backgroundAsset.isNotEmpty
-            ? Image.asset(
-                backgroundAsset,
+            children: [
+              Image.network(
+                imageUrlResolver(customImage!),
                 fit: BoxFit.cover,
                 alignment: Alignment.center,
                 errorBuilder: (_, __, ___) => ColoredBox(color: backgroundColor),
+              ),
+              Image.network(
+                imageUrlResolver(customImage!),
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ],
+          )
+        : backgroundAsset.isNotEmpty
+            ? Stack(
+                fit: StackFit.expand,
+                alignment: Alignment.center,
+                children: [
+                  Image.asset(
+                    backgroundAsset,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => ColoredBox(color: backgroundColor),
+                  ),
+                  Image.asset(
+                    backgroundAsset,
+                    fit: BoxFit.contain,
+                    alignment: Alignment.center,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ],
               )
             : ColoredBox(color: backgroundColor),
   );
