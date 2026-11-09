@@ -78,7 +78,7 @@ class Pr04ItemEditor extends StatelessWidget {
               value: e['codice_categoria'].toString(),
               child: Text((e['descrizione'] ?? e['codice_categoria']).toString()),
             )).toList(),
-            onChanged: busy ? null : (v) { item.collectionCategoryCode = v; if (v == 'CAT-001') item.completeness = 'COMPLETO CON ISTRUZIONI'; onChanged(); },
+            onChanged: busy ? null : (v) { item.collectionCategoryCode = v; onChanged(); },
           ),
         ],
         const SizedBox(height: 8),
