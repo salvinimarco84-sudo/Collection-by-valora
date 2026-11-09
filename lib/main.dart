@@ -4017,7 +4017,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     value: _collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory) ? _selectedCollectionCategory : null,
     decoration: InputDecoration(labelText: 'Categoria COLLEZIONE *', helperText: _categoriesLoading ? 'Caricamento categorie…' : 'Seleziona la categoria principale.'),
     items: _collectionCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria'].toString(), child: Text((e['descrizione'] ?? e['codice_categoria']).toString()))).toList(),
-    onChanged: _categoriesLoading ? null : (v) => setState(() => _selectedCollectionCategory = v),
+    onChanged: _categoriesLoading ? null : (v) => setState(() { _selectedCollectionCategory = v; if (widget.apiCode == 'PR-01' && v == 'CAT-001') _completeness = 'COMPLETO CON ISTRUZIONI'; }),
   ));
 
   void _onPr11SearchFocusChanged() {
