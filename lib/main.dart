@@ -4591,7 +4591,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             _detailFieldCard('fonte_dati_prodotto', _metadataSourceUrl ?? object['fonte_dati_prodotto']),
             _detailFieldCard('stato_verifica_dati', object['stato_verifica_dati'] ?? 'DA_VERIFICARE'),
             _dropdown('Condizione', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-            _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+            _dropdown('Completezza', _completeness, const ['SIGILLATO','COMPLETO','COMPLETO CON ISTRUZIONI','COMPLETO CON SCATOLA E ISTRUZIONI','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
             _dropdown('Destinazione', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() => _destination = v!)),
             _field(_quantity, 'Quantità', type: TextInputType.number),
             _field(_value, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
@@ -5085,7 +5085,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       final c = txt(['condizione'], _condition);
       if (const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'].contains(c)) _condition = c;
       final cp = txt(['completezza'], _completeness);
-      if (const ['SIGILLATO','COMPLETO','INCOMPLETO'].contains(cp)) _completeness = cp;
+      if (const ['SIGILLATO','COMPLETO','COMPLETO CON ISTRUZIONI','COMPLETO CON SCATOLA E ISTRUZIONI','INCOMPLETO'].contains(cp)) _completeness = cp;
       final d = txt(['destinazione'], _destination);
       if (const ['COLLEZIONE','RIVENDITA','ALTRO'].contains(d)) _destination = d;
       _output = 'Scheda corrente caricata dal database. I campi sono in sola lettura fino alla conferma della procedura.';
@@ -6541,7 +6541,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             yearField: _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
             productCodeField: _field(_family, 'Codice prodotto (facoltativo)'),
             conditionField: _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-            completenessField: _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
+            completenessField: _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','COMPLETO CON ISTRUZIONI','COMPLETO CON SCATOLA E ISTRUZIONI','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
             destinationField: _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() { _destination = v!; if (_destination != 'COLLEZIONE') _selectedCollectionCategory = null; })),
             collectionCategoryField: _destination == 'COLLEZIONE' ? _collectionCategoryField() : null,
             quantityField: _field(_quantity, 'Quantità', type: TextInputType.number),
