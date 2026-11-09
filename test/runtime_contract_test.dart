@@ -821,7 +821,7 @@ void main() {
       expect(dashboardHomeCoordinatorSource,
         contains("'VENDITE': 'assets/menu_sections/01_VENDITE.jpg'"));
       expect(dashboardHomeCoordinatorSource,
-        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE'].contains(section.title)"));
+        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE'].contains(section.title)"));
     });
 
     test('le schermate delle sezioni ripristinano gli sfondi locali dedicati', () {
