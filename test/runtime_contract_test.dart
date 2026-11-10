@@ -48,6 +48,7 @@ void main() {
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final collectionValueHelpersSource = File('lib/procedures/collection_value_helpers.dart').readAsStringSync();
+  final collectionValueRuntimeSource = File('lib/procedures/collection_value_runtime.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
@@ -130,10 +131,14 @@ void main() {
       expect(collectionValueHelpersSource, contains('String _eur(double value)'));
       expect(collectionValueHelpersSource, contains('bool _excludedState(dynamic value)'));
       expect(collectionValuePageSource, isNot(contains('String _eur(double value)')));
-      expect(collectionValuePageSource, contains("_readAll('master_oggetti'"));
-      expect(collectionValuePageSource, contains("'collection-valuation-history'"));
-      expect(collectionValuePageSource, contains("'collection-patrimony-snapshot'"));
-      expect(collectionValuePageSource, contains('variazione_rivalutazioni'));
+      expect(source, contains("part 'procedures/collection_value_runtime.dart';"));
+      expect(collectionValueRuntimeSource, contains('extension _CollectionValueRuntime on _CollectionValuePageState'));
+      expect(collectionValueRuntimeSource, contains("_readAll('master_oggetti'"));
+      expect(collectionValueRuntimeSource, contains("'collection-valuation-history'"));
+      expect(collectionValueRuntimeSource, contains("'collection-patrimony-snapshot'"));
+      expect(collectionValueRuntimeSource, contains('variazione_rivalutazioni'));
+      expect(collectionValuePageSource, isNot(contains('Future<void> _load() async')));
+      expect(collectionValuePageSource, isNot(contains('Future<void> _capturePatrimonySnapshot() async')));
       final collectionValuePresentation = '$collectionValuePageSource\n$collectionValuePresentationSource';
       expect(collectionValuePresentation, contains('mixin _CollectionValuePresentation'));
       expect(collectionValuePresentation, contains('Widget _metricCard'));
