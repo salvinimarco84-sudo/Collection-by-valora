@@ -102,6 +102,15 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                 if (selectedUrl != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
+                    child: FilledButton.icon(
+                      onPressed: _analyzingPhotos ? null : () => _openUncataloguedCandidate(photoIndex),
+                      icon: const Icon(Icons.add_box_outlined),
+                      label: const Text('OGGETTO NON IN CATALOGO · APRI PR-04'),
+                    ),
+                  ),
+                if (selectedUrl != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
                     child: Text(_confirmedPhotoCandidates[photoIndex] != null
                       ? 'Candidato confermato per questa sessione. Nessun record è stato creato o modificato.'
                       : 'Candidato selezionato. Conferma la corrispondenza per proseguire. Nessun dato viene ancora salvato.'),
