@@ -1,6 +1,6 @@
 part of '../main.dart';
 
-mixin _ValoraValuationFlow on _ValoraServicePageState {
+mixin _ValoraValuationFlow on _ValoraServicePageStateBase {
   Future<void> _prepareValuation() async {
     final id = _selectedId;
     final object = _objects.where((row) => row['codice_oggetto'] == id).firstOrNull;
