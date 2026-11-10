@@ -33,6 +33,7 @@ void main() {
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
+  final valoraKnownObjectValuationSource = File('lib/procedures/valora_known_object_valuation_controller.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
@@ -120,9 +121,16 @@ void main() {
       expect(valoraServicePageSource, contains("class ValoraServicePage extends StatefulWidget"));
       expect(source, contains("_ValoraRuntimeApi.call('consultation'"));
       expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
-      expect(valoraServicePageSource, contains('_continueToPr06Valora'));
-      expect(valoraServicePageSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
-      expect(valoraServicePageSource, contains('_saveKnownObjectValuation'));
+      expect(source, contains("part 'procedures/valora_known_object_valuation_controller.dart';"));
+      expect(valoraServicePageSource, isNot(contains('Future<void> _prepareValuation()')));
+      expect(valoraKnownObjectValuationSource, contains('extension _ValoraKnownObjectValuationActions'));
+      expect(valoraKnownObjectValuationSource, contains('_prepareValuation'));
+      expect(valoraKnownObjectValuationSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
+      expect(valoraKnownObjectValuationSource, contains('_saveKnownObjectValuation'));
+      expect(valoraKnownObjectValuationSource, contains('_continueToPr06Valora'));
+      expect(valoraKnownObjectValuationSource, contains('SOLO VALUTAZIONE'));
+      expect(valoraKnownObjectValuationSource, contains('CONTINUA A PR06 VALORA'));
+
       expect(valoraServicePageSource, contains("pop('SOLO_VALUTAZIONE')"));
       expect(pr18EdgeFunctionSource, contains('SALVA_VALUTAZIONE'));
       expect(pr18EdgeFunctionSource, contains('storico_valori_mercato'));
@@ -1317,8 +1325,6 @@ void main() {
     expect(listingDraftMigration, contains('enable row level security'));
     expect(listingDraftMigration, contains('auth.uid()'));
     expect(listingDraftOwnerMigration, contains('unique (user_id, codice_vendita_aperta, codice_piattaforma)'));
-    expect(valoraServicePageSource, contains('SOLO VALUTAZIONE'));
-    expect(valoraServicePageSource, contains('CONTINUA A PR06 VALORA'));
   });
 
 }
