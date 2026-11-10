@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
 
       const { data: saved, error: saveError } = await service.schema("collection")
         .from("bozze_inserzioni_valora")
-        .upsert(drafts, { onConflict: "codice_vendita_aperta,codice_piattaforma" })
+        .upsert(drafts, { onConflict: "user_id,codice_vendita_aperta,codice_piattaforma" })
         .select("*");
       if (saveError) return json({ error: "Bozze non salvate: " + saveError.message }, 422);
       return json({ ambiente: "TEST", stato: "BOZZE_CREATE", codice_vendita_aperta: saleId, bozze: saved || [] });
