@@ -1203,4 +1203,18 @@ void main() {
         expect(dashboardHomeCoordinatorSource, contains('const ActiveSalesReportPage()'));
   });
 
+
+  test('VALORA apre PR-04 solo da metadati confermati e non confonde costo e valore di mercato', () {
+    expect(source, contains('this.initialMetadata'));
+    expect(source, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
+    expect(source, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
+    expect(pr04FormContentSource, contains('Inserisci il costo effettivamente sostenuto.'));
+    expect(pr04FormContentSource, contains('Non è il costo di acquisto.'));
+    expect(valoraServicePageSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
+    expect(valoraServicePageSource, contains('_confirmedPhotoCandidates[index]'));
+    expect(valoraServicePageSource, contains('NewPurchasePage(initialMetadata: metadata)'));
+    expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
+    expect(valoraServicePresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
+  });
+
 }
