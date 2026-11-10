@@ -9,7 +9,7 @@
 - **Fonte primaria del menu:** `lib/procedures/procedure_registry.dart`
 - **Fonte primaria dei collegamenti UI:** `lib/dashboard/dashboard_home_coordinator.dart`
 
- > Questo registro distingue ciò che è effettivamente presente nel codice, ciò che compare nel catalogo runtime e ciò che è soltanto progettato. La presenza di una voce UI o di un endpoint non equivale a collaudo funzionale end-to-end superato. Per PR-04 VALORA sono state verificate le run CI 663 (test/analyze/contract) e 1670 (build Android e Windows), entrambe concluse con esito SUCCESS; il test manuale end-to-end con salvataggio nel database TEST resta da eseguire.
+> Questo registro distingue ciò che è effettivamente presente nel codice, ciò che compare nel catalogo runtime e ciò che è soltanto progettato. La presenza di una voce UI o di un endpoint non equivale a collaudo funzionale end-to-end superato. Per PR-04 VALORA sono state verificate le run CI 663 (test/analyze/contract) e 1670 (build Android e Windows), entrambe concluse con esito SUCCESS; il test manuale end-to-end con salvataggio nel database TEST resta da eseguire.
 
 ## 1. Regole di lettura degli stati
 
