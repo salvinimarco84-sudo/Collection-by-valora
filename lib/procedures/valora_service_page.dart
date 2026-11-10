@@ -373,8 +373,8 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   Future<void> _openCatalogObjectForSale() async {
     final id = _selectedId;
     final object = _objects.where((row) => row['codice_oggetto'] == id).firstOrNull;
-    if (id == null || object == null || _prepared == null) {
-      setState(() => _error = 'Seleziona un oggetto e prepara prima la valutazione.');
+    if (id == null || object == null) {
+      setState(() => _error = 'Seleziona un oggetto della collezione.');
       return;
     }
     final state = (object['stato'] ?? '').toString().trim().toUpperCase();
@@ -382,11 +382,9 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       setState(() => _error = 'L’oggetto non è disponibile per la vendita (stato: ${state.isEmpty ? 'non indicato' : state}).');
       return;
     }
-    final price = _marketPriceFrom(_prepared);
-    if (price == null) {
-      setState(() => _error = 'La valutazione non contiene un valore di mercato utilizzabile. Non avvio PR-06 con un prezzo inventato.');
-      return;
-    }
+    // La vendita è indipendente dalla valutazione: usa il valore già registrato
+    // solo come prezzo iniziale facoltativo. Se manca, l'utente lo inserirà in PR-06.
+    final price = _marketPriceFrom(object['valore_mercato']);
     final session = _uuid.v4();
     var locked = false;
     var destinationChanged = false;
