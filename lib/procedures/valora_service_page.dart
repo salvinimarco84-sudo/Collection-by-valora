@@ -224,8 +224,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       while (true) {
         final page = await Supabase.instance.client.schema('collection')
             .from('master_oggetti')
-            .select('codice_oggetto,descrizione_oggetto,produttore,codice_prodotto,stato,condizione,completezza')
-            .eq('destinazione', 'COLLEZIONE')
+            .select('codice_oggetto,descrizione_oggetto,produttore,codice_prodotto,stato,destinazione,condizione,completezza,valore_mercato')
             .or('archiviato_test.is.null,archiviato_test.eq.false')
             .order('descrizione_oggetto')
             .order('codice_oggetto')
@@ -247,6 +246,89 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = 'Impossibile caricare gli oggetti della collezione: $e'; _loading = false; });
+    }
+  }
+
+
+  double? _marketPriceFrom(dynamic value) {
+    const keys = ['valore_mercato', 'valore_mercato_eur', 'valore_stimato', 'prezzo_suggerito'];
+    if (value is Map) {
+      for (final key in keys) {
+        final parsed = double.tryParse((value[key] ?? '').toString().replaceAll(',', '.'));
+        if (parsed != null && parsed.isFinite && parsed > 0) return parsed;
+      }
+      for (final nested in value.values) {
+        final found = _marketPriceFrom(nested);
+        if (found != null) return found;
+      }
+    } else if (value is List) {
+      for (final nested in value) {
+        final found = _marketPriceFrom(nested);
+        if (found != null) return found;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _openCatalogObjectForSale() async {
+    final id = _selectedId;
+    final object = _objects.where((row) => row['codice_oggetto'] == id).firstOrNull;
+    if (id == null || object == null || _prepared == null) {
+      setState(() => _error = 'Seleziona un oggetto e prepara prima la valutazione.');
+      return;
+    }
+    final state = (object['stato'] ?? '').toString().trim().toUpperCase();
+    if (state != 'DISPONIBILE') {
+      setState(() => _error = 'L’oggetto non è disponibile per la vendita (stato: ${state.isEmpty ? 'non indicato' : state}).');
+      return;
+    }
+    final price = _marketPriceFrom(_prepared);
+    if (price == null) {
+      setState(() => _error = 'La valutazione non contiene un valore di mercato utilizzabile. Non avvio PR-06 con un prezzo inventato.');
+      return;
+    }
+    final session = _uuid.v4();
+    var locked = false;
+    setState(() { _preparing = true; _error = null; });
+    try {
+      final destination = (object['destinazione'] ?? '').toString().trim().toUpperCase();
+      if (destination != 'RIVENDITA') {
+        final lock = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': session});
+        final lockData = lock['result'];
+        if (lockData is! Map || lockData['acquisito'] != true) {
+          throw StateError((lockData is Map ? lockData['messaggio'] : null)?.toString() ?? 'Blocco archivio non acquisito.');
+        }
+        locked = true;
+        final payload = <String, dynamic>{
+          'oggetti': [{'codice_oggetto': id, 'destinazione': 'RIVENDITA'}],
+          'dati_confermati': true,
+          'altra_operazione': false,
+          'conferma_finale': true,
+        };
+        final preview = await _ValoraRuntimeApi.procedure('PR-02', 'preview', payload, sessionId: session);
+        if (preview['errore'] != null || preview['scrittura_eseguita'] == true) {
+          throw StateError((preview['errore'] ?? 'Anteprima PR-02 non valida.').toString());
+        }
+        await _ValoraRuntimeApi.procedure('PR-02', 'review', payload, sessionId: session);
+        final saved = await _ValoraRuntimeApi.procedure('PR-02', 'save', payload,
+          sessionId: session, requestId: _uuid.v4());
+        if (saved['scrittura_eseguita'] != true || saved['blocco_rilasciato_automaticamente'] != true) {
+          throw StateError('Cambio destinazione non verificato dal runtime.');
+        }
+        locked = false;
+      }
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => NewSalePage(initialObjectCode: id, initialSalePrice: price),
+      ));
+      if (mounted) await _loadObjects();
+    } catch (e) {
+      if (locked) {
+        try { await _ValoraRuntimeApi.call('release_lock', {'session_id': session}); } catch (_) {}
+      }
+      if (mounted) setState(() => _error = 'Avvio PR-06 non completato: $e');
+    } finally {
+      if (mounted) setState(() => _preparing = false);
     }
   }
 
