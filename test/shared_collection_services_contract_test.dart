@@ -14,7 +14,8 @@ void main() {
       expect(imageProxy, contains("part of '../main.dart';"));
       expect(imageProxy, contains("uri.scheme != 'https'"));
       expect(imageProxy, contains("proxyHosts.contains(uri.host.toLowerCase())"));
-      expect(imageProxy, contains("collection-image-proxy?url=${Uri.encodeComponent(value)}"));
+      expect(imageProxy, contains("collection-image-proxy?url="));
+      expect(imageProxy, contains("Uri.encodeComponent(value)"));
       for (final host in [
         'bandai-a.akamaihd.net',
         'www.lego.com',
