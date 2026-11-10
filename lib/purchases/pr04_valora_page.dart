@@ -439,7 +439,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
                   'Valutazione PR18 da completare.'),
               if (_valuationError != null) Text(_valuationError!, style: const TextStyle(color: Colors.orangeAccent)),
               if (_valuationError != null)
-                const Text('La valutazione non è stata ripetuta automaticamente per evitare duplicati nello storico. Potrai rilanciare VALORA sull’oggetto appena creato.'),
+                const Text('La valutazione non è stata ripetuta automaticamente per evitare duplicati. Prima di rilanciare PR18, verifica lo storico valutazioni dell’oggetto.'),
               FilledButton(onPressed: _busy ? null : () => Navigator.of(context).pop(true), child: const Text('FINE')),
             ]),
           )),
