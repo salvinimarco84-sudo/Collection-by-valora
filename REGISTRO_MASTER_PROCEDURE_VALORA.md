@@ -1,15 +1,15 @@
 # Registro Master delle Procedure
 ## COLLECTION by VALORA
 
-- **Versione:** 1.1
+- **Versione:** 1.2
 - **Ultima verifica del codice:** 10 novembre 2026
 - **Repository:** `salvinimarco84-sudo/Collection-by-valora`
 - **Branch verificato:** `main`
-- **Commit di riferimento:** `81a0a8de1c660fc1b52e19c14c74745a33056c5e`
+- **Ultimo commit del codice verificato:** `c144603dc5631c754f5958a741e52eef3603cb2f`
 - **Fonte primaria del menu:** `lib/procedures/procedure_registry.dart`
 - **Fonte primaria dei collegamenti UI:** `lib/dashboard/dashboard_home_coordinator.dart`
 
-> Questo registro distingue ciò che è effettivamente presente nel codice, ciò che compare nel catalogo runtime e ciò che è soltanto progettato. La presenza di una voce UI o di un endpoint non equivale a collaudo funzionale superato. Nessun test CI è stato eseguito durante questa verifica.
+ > Questo registro distingue ciò che è effettivamente presente nel codice, ciò che compare nel catalogo runtime e ciò che è soltanto progettato. La presenza di una voce UI o di un endpoint non equivale a collaudo funzionale end-to-end superato. Per PR-04 VALORA sono state verificate le run CI 663 (test/analyze/contract) e 1670 (build Android e Windows), entrambe concluse con esito SUCCESS; il test manuale end-to-end con salvataggio nel database TEST resta da eseguire.
 
 ## 1. Regole di lettura degli stati
 
@@ -39,7 +39,7 @@ Funzioni aggiuntive di catalogo già presenti nel menu: Visualizza scheda, Elenc
 | Codice | Nome effettivo | Collegamento / implementazione rilevata | Stato rilevato |
 |---|---|---|---|
 | PR-04 | Nuovo acquisto ordinario | `WRITE-PR-04`, `NewPurchasePage` e moduli PR-04 | Presente nel menu; da collaudare |
-| PR-04 VALORA | Nuovo acquisto semplificato da identificazione VALORA | `Pr04ValoraPurchasePage` e `pr04_valora_page.dart`; ingresso interno a VALORA, con modalità dedicata e runtime PR-04 condiviso | Maschera semplificata implementata; test CI/end-to-end da completare |
+| PR-04 VALORA | Nuovo acquisto semplificato da identificazione VALORA | `Pr04ValoraPurchasePage` e `pr04_valora_page.dart`; ingresso interno a VALORA, con modalità dedicata e runtime PR-04 condiviso | Maschera semplificata collegata; CI e build Android/Windows verdi; test end-to-end TEST da eseguire |
 | PR-05 | Modifica acquisto | `WRITE-PR-05`, pagina modifica dedicata | Presente nel menu; da collaudare |
 
 Funzioni correlate: Acquisti comparati e Report acquisti.
@@ -58,7 +58,7 @@ Flusso previsto:
 
 **Confine obbligatorio:** PR-04 VALORA non modifica né sostituisce PR-04 ordinaria. Deve riutilizzare i contratti e le protezioni di salvataggio già esistenti, ma avere presentazione e percorso semplificati autonomi. Non duplicare la logica transazionale.
 
-**Stato codice aggiornato il 10/11/2026:** VALORA apre ora `Pr04ValoraPurchasePage` da `valora_service_page.dart`. La maschera dedicata mostra i metadati PR-12 confermati, mantiene distinto il valore di mercato PR-18 dal costo effettivo, richiede data/costo/destinazione e usa il riepilogo con conferma esplicita. La pagina riutilizza la modalità runtime PR-04 già esistente per lock, preview, save e rilettura post-salvataggio; la PR-04 ordinaria conserva la propria presentazione e il proprio percorso. La nuova copertura contrattuale è stata aggiunta a `test/runtime_contract_test.dart`. Stato: implementazione collegata, CI e prova end-to-end ancora da verificare.
+**Stato codice aggiornato il 10/11/2026:** VALORA apre ora `Pr04ValoraPurchasePage` da `valora_service_page.dart`. La maschera dedicata mostra i metadati PR-12 confermati, mantiene distinto il valore di mercato PR-18 dal costo effettivo, richiede data/costo/destinazione e usa il riepilogo con conferma esplicita. La pagina riutilizza la modalità runtime PR-04 già esistente per lock, preview, save e rilettura post-salvataggio; la PR-04 ordinaria conserva la propria presentazione e il proprio percorso. La nuova copertura contrattuale è stata aggiunta a `test/runtime_contract_test.dart`. Stato aggiornato: implementazione collegata; CI run 663 SUCCESS (analisi, test automatici e contratti); build run 1670 SUCCESS (APK Android e applicazione Windows). Audit del codice: confermati precompilazione metadati, distinzione costo/valore, anteprima senza scrittura, conferma esplicita, lock e rilascio, rilettura post-salvataggio. Rimane da eseguire il collaudo manuale end-to-end nell'app collegata all'ambiente TEST, verificando il record effettivamente creato. Non dichiarare la procedura definitivamente chiusa prima di tale prova.
 
 
 ### C. Vendite e inserzioni
@@ -176,7 +176,7 @@ Per ogni procedura mantenere questi campi:
 | PR-02 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-03 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-04 | Presente; da collaudare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
-| PR-04 VALORA | Ingresso esistente; pagina semplificata autonoma da realizzare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-04 VALORA | Pagina dedicata collegata da VALORA; runtime PR-04 condiviso | CI 663 SUCCESS | Manuale end-to-end TEST da eseguire | Regressione PR-04 ordinaria da provare nell'app | Build 1670 SUCCESS (Android/Windows) | Aperta, collaudo manuale pendente |
 | PR-05 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-06 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-07 | Mapping runtime; UI da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
