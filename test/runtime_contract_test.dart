@@ -114,7 +114,7 @@ void main() {
       expect(source, contains("part 'procedures/valora_service_page.dart';"));
       expect(source, isNot(contains('class ValoraServicePage extends StatefulWidget')));
       expect(valoraServicePageSource, contains("class ValoraServicePage extends StatefulWidget"));
-      expect(valoraServicePageSource, contains("_ValoraRuntimeApi.call('consultation'"));
+      expect(source, contains("_ValoraRuntimeApi.call('consultation'"));
       expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
       expect(valoraServicePageSource, contains('_continueToPr06Valora'));
       expect(valoraServicePageSource, contains('Pr06ValoraPage('));
@@ -1219,7 +1219,7 @@ void main() {
     expect(valoraServicePageSource, contains("'metadati': metadata"));
     expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
     expect(valoraServicePresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
-    expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE'"));
+    expect(valoraServicePageSource, isNot(contains("'MARKET_VALUATION_PREPARE'")));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
     expect(valoraServicePresentationSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
     final valuationMigration = File('supabase/migrations/20261110104500_prepare_valora_metadata_only_valuation.sql').readAsStringSync();
