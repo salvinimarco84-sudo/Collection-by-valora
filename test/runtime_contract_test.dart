@@ -19,6 +19,7 @@ void main() {
   final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
   final pr12BatchPageSource = File('lib/procedures/pr12_batch_page.dart').readAsStringSync();
   final pr12RuntimeSource = File('lib/procedures/valora_pr12_runtime.dart').readAsStringSync();
+  final pr12CatalogSource = File('lib/procedures/valora_pr12_catalog.dart').readAsStringSync();
   final pr12CandidateApplySource = File('lib/procedures/valora_pr12_candidate_apply.dart').readAsStringSync();
   final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
   final pr06FormContentSource = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
@@ -932,8 +933,9 @@ void main() {
 
     test('PR-12 separa runtime e presentazione mantenendo la ricerca multi-fonte a lotti', () {
       final pr12PresentationSource = File('lib/procedures/pr12_runtime_presentation.dart').readAsStringSync();
-      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource\n$pr12CandidateApplySource\n$pr12PresentationSource';
+      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource\n$pr12CatalogSource\n$pr12CandidateApplySource\n$pr12PresentationSource';
       expect(source, contains("part 'procedures/valora_pr12_runtime.dart';"));
+      expect(source, contains("part 'procedures/valora_pr12_catalog.dart';"));
       expect(source, contains("part 'procedures/valora_pr12_candidate_apply.dart';"));
       expect(pr12CandidateApplySource, contains('extension _ObjectRuntimePagePr12CandidateApply'));
       expect(pr12CandidateApplySource, contains('Future<void> _pr12ApplySelectedCandidate('));
@@ -944,6 +946,9 @@ void main() {
       expect(source, isNot(contains('Future<void> _loadIncompleteMetadataCatalog()')));
       expect(source, isNot(contains('Future<void> _runPr12AiBatch(')));
       expect(pr12RuntimeSource, contains('extension _ObjectRuntimePagePr12Runtime'));
+      expect(pr12CatalogSource, contains('extension _ObjectRuntimePagePr12Catalog'));
+      expect(pr12CatalogSource, contains('Future<void> _loadIncompleteMetadataCatalog()'));
+      expect(pr12RuntimeSource, isNot(contains('Future<void> _loadIncompleteMetadataCatalog()')));
       expect(pr12PresentationSource, contains('extension _ObjectRuntimePagePr12Presentation'));
       expect(pr12PresentationSource, contains('Widget _buildPr12Screen()'));
       expect(pr12PresentationSource, contains('RICERCA MULTI-FONTE'));
