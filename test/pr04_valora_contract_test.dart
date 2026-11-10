@@ -9,6 +9,7 @@ void main() {
   final form = File('lib/purchases/pr04_form_content.dart').readAsStringSync();
   final frame = File('lib/purchases/pr04_page_frame.dart').readAsStringSync();
   final valora = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final valoraPhoto = File('lib/procedures/valora_photo_search.dart').readAsStringSync();
   final edge = File('supabase/functions/pr-04-valora-test/index.ts').readAsStringSync();
   final baseMigration = File('supabase/migrations/20261110151505_pr04_valora_independent_purchase.sql').readAsStringSync();
   final migration = File('supabase/migrations/20261110151749_pr04_valora_validate_purchase_payload.sql').readAsStringSync();
@@ -28,9 +29,26 @@ void main() {
     });
 
     test('il candidato confermato apre solo PR-04 VALORA', () {
-      expect(valora, contains('Pr04ValoraPage('));
-      expect(valora, isNot(contains('builder: (_) => NewPurchasePage(')));
+      expect(valoraPhoto, contains('Pr04ValoraPage('));
+      expect(valoraPhoto, isNot(contains('builder: (_) => NewPurchasePage(')));
       expect(mainSource, contains("part 'purchases/pr04_valora_page.dart';"));
+    });
+
+    test('VALORA è scomposta in moduli senza duplicare lo stato operativo', () {
+      final photo = File('lib/procedures/valora_photo_search.dart').readAsStringSync();
+      final catalog = File('lib/procedures/valora_catalog_objects.dart').readAsStringSync();
+      final valuation = File('lib/procedures/valora_valuation_flow.dart').readAsStringSync();
+      expect(mainSource, contains("part 'procedures/valora_photo_search.dart';"));
+      expect(mainSource, contains("part 'procedures/valora_catalog_objects.dart';"));
+      expect(mainSource, contains("part 'procedures/valora_valuation_flow.dart';"));
+      expect(valora, contains('abstract class _ValoraServicePageStateBase'));
+      expect(valora, contains('with _ValoraPhotoSearch, _ValoraCatalogObjects, _ValoraValuationFlow'));
+      expect(photo, contains('mixin _ValoraPhotoSearch on _ValoraServicePageStateBase'));
+      expect(catalog, contains('mixin _ValoraCatalogObjects on _ValoraServicePageStateBase'));
+      expect(valuation, contains('mixin _ValoraValuationFlow on _ValoraServicePageStateBase'));
+      expect(valora, isNot(contains('Future<void> _analyzeSelectedPhotos()')));
+      expect(valora, isNot(contains('Future<void> _loadObjects()')));
+      expect(valora, isNot(contains('Future<void> _prepareValuation()')));
     });
 
     test('nessuna scrittura prima della doppia conferma', () {
