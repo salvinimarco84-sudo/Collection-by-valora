@@ -2,9 +2,10 @@ part of '../main.dart';
 
 /// PR-06: pagina e stato della nuova vendita.
 class NewSalePage extends StatefulWidget {
-  const NewSalePage({super.key, this.initialObjectCode, this.initialSalePrice});
+  const NewSalePage({super.key, this.initialObjectCode, this.initialSalePrice, this.valoraMode = false});
   final int? initialObjectCode;
   final double? initialSalePrice;
+  final bool valoraMode;
 
   @override
   State<NewSalePage> createState() => _NewSalePageState();
