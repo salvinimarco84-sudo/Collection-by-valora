@@ -30,6 +30,7 @@ void main() {
   final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
+  final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
@@ -132,6 +133,15 @@ void main() {
       expect(valoraServicePageSource, contains("_openCatalogObjectForSale"));
       expect(valoraServicePageSource, isNot(contains(".eq('destinazione', 'COLLEZIONE')")));
       expect(valoraServicePageSource, contains('buildPage(context)'));
+      expect(source, contains("part 'procedures/valora_photo_input_presentation.dart';"));
+      expect(valoraServicePageSource, isNot(contains('Future<void> _pickImage(ImageSource source)')));
+      expect(valoraServicePageSource, isNot(contains('Future<void> _pickFiles()')));
+      expect(valoraPhotoInputSource, contains('extension _ValoraPhotoInputActions'));
+      expect(valoraPhotoInputSource, contains('ImageSource.camera'));
+      expect(valoraPhotoInputSource, contains('ImageSource.gallery'));
+      expect(valoraPhotoInputSource, contains('FilePicker.platform.pickFiles'));
+      expect(valoraPhotoInputSource, contains('extension _ValoraPhotoInputPresentation'));
+      expect(valoraServicePresentationSource, contains('buildPhotoInputSection(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
       expect(valoraServicePresentationSource, contains("'PREPARA VALUTAZIONE'"));
