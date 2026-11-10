@@ -21,7 +21,7 @@ extension _ObjectRuntimePagePr12Presentation on _ObjectRuntimePageState {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: _loading ? null : () => _run(_ObjectRuntimePagePr12Runtime(this)._loadIncompleteMetadataCatalog),
+                        onPressed: _loading ? null : () => _run(_ObjectRuntimePagePr12Catalog(this)._loadIncompleteMetadataCatalog),
                         icon: _loading
                             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                             : const Icon(Icons.manage_search),
