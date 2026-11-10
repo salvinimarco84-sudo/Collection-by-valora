@@ -42,6 +42,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
   bool _purchaseSaved = false;
   bool _saveAttempted = false;
   bool _valuationSaved = false;
+  bool _valuationSaving = false;
   int? _objectId;
   int? _purchaseId;
   String? _status;
@@ -196,7 +197,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
         ],
       ),
     );
-    if (confirm != true || !mounted) return;
+    if (confirm != true || !mounted || _busy || _purchaseSaved) return;
     setState(() { _busy = true; _saveAttempted = true; _status = 'Registrazione PR-04 VALORA in TEST…'; });
     try {
       final response = await Supabase.instance.client.functions.invoke(
@@ -242,7 +243,8 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
   Future<void> _saveValuation() async {
     final objectId = _objectId;
     final valuation = widget.valuation;
-    if (objectId == null || valuation == null || _valuationSaved) return;
+    if (objectId == null || valuation == null || _valuationSaved || _valuationSaving) return;
+    setState(() => _valuationSaving = true);
     try {
       final response = await Supabase.instance.client.functions.invoke(
         'pr-18-valuation-test',
@@ -276,6 +278,8 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
         _valuationError = 'Acquisto e oggetto sono già salvati. Salvataggio PR18 non riuscito: ' + e.toString();
         _status = _valuationError;
       });
+    } finally {
+      if (mounted) setState(() => _valuationSaving = false);
     }
   }
 
