@@ -8,6 +8,7 @@ void main() {
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
   final pr04FormContentSource = File('lib/purchases/pr04_form_content.dart').readAsStringSync();
+  final pr04ValoraPageSource = File('lib/purchases/pr04_valora_page.dart').readAsStringSync();
   final pr05FormContentSource = File('lib/purchases/pr05_form_content.dart').readAsStringSync();
   final pr04StepContentSource = File('lib/purchases/pr04_step_content.dart').readAsStringSync();
   final pr04RecognitionDialogSource = File('lib/purchases/pr04_recognition_dialog.dart').readAsStringSync();
@@ -1223,7 +1224,9 @@ void main() {
     expect(valoraServicePageSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
     expect(valoraServicePageSource, contains('_confirmedPhotoCandidates[index]'));
     expect(valoraServicePageSource, contains('initialMetadata: metadata'));
-    expect(valoraServicePageSource, contains('valoraMode: true'));
+    expect(valoraServicePageSource, contains('Pr04ValoraPage('));
+    expect(pr04ValoraPageSource, contains('class Pr04ValoraPage extends StatelessWidget'));
+    expect(pr04ValoraPageSource, contains('valoraMode: true'));
     expect(source, contains('this.valoraMode = false'));
     expect(source, contains('if (widget.valoraMode) _step = 2;'));
     expect(source, contains('Pr04ValoraPurchaseContent('));
@@ -1233,6 +1236,11 @@ void main() {
     expect(pr04RuntimeProcedureSource, contains(".eq('codice_acquisto', purchaseCode)"));
     expect(pr04RuntimeProcedureSource, contains(".from('master_oggetti')"));
     expect(pr04RuntimeProcedureSource, contains('collegamento univoco tra acquisto e oggetto non verificato'));
+    expect(pr04RuntimeProcedureSource, contains('widget.initialValuation'));
+    expect(pr04RuntimeProcedureSource, contains("'SALVA_VALUTAZIONE'"));
+    expect(pr04RuntimeProcedureSource, contains(".from('acquisti_oggetti')"));
+    expect(pr04FormContentSource, contains("DropdownMenuItem(value: 'SIGILLATO'"));
+    expect(pr04FormContentSource, contains("DropdownMenuItem(value: 'DA RESTAURARE'"));
     expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
     expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
