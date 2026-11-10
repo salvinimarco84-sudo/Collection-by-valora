@@ -42,6 +42,7 @@ void main() {
       expect(mainSource, contains("part 'procedures/valora_catalog_objects.dart';"));
       expect(mainSource, contains("part 'procedures/valora_valuation_flow.dart';"));
       expect(valora, contains('abstract class _ValoraServicePageStateBase'));
+      expect(valora, contains('Future<void> _loadObjects();'));
       expect(valora, contains('with _ValoraPhotoSearch, _ValoraCatalogObjects, _ValoraValuationFlow'));
       expect(photo, contains('mixin _ValoraPhotoSearch on _ValoraServicePageStateBase'));
       expect(catalog, contains('mixin _ValoraCatalogObjects on _ValoraServicePageStateBase'));
