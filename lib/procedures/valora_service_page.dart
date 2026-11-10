@@ -267,27 +267,15 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       ),
     );
     if (addObject != true || !mounted) return;
-    final purchaseResult = await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => Pr04ValoraPage(
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => NewPurchasePage(
         initialMetadata: metadata,
-        valuation: valuation,
-        marketReference: _market,
         suggestedMarketValue: valuation?['valore_mercato'] is num
             ? (valuation!['valore_mercato'] as num).toDouble()
             : null,
       ),
     ));
     if (mounted) {
-      if (purchaseResult is Map && purchaseResult['purchase_saved'] == true) {
-        final objectCode = purchaseResult['object_code']?.toString() ?? 'n.d.';
-        final valuationSaved = purchaseResult['valuation_saved'] == true;
-        final valuationMessage = purchaseResult['valuation_message'] ?? 'da riprovare';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-          valuationSaved
-              ? 'PR-04 VALORA completata. Oggetto $objectCode, acquisto e valutazione verificati.'
-              : 'Acquisto e oggetto $objectCode salvati. Valutazione non registrata: $valuationMessage.',
-        )));
-      }
       setState(() {
         _descriptionQuery.text = title;
         _selectedId = null;
