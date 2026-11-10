@@ -1218,6 +1218,13 @@ void main() {
     expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE_METADATA'"));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
     expect(valoraServicePresentationSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
+    final valuationMigration = File('supabase/migrations/20261110104500_prepare_valora_metadata_only_valuation.sql').readAsStringSync();
+    expect(valuationMigration, contains('MARKET_VALUATION_PREPARE_METADATA'));
+    expect(valuationMigration, contains('LANGUAGE plpgsql\nSTABLE'));
+    expect(valuationMigration, contains('valutazione_numerica_disponibile'));
+    expect(valuationMigration, contains('REVOKE ALL ON FUNCTION collection.pr_valuta_prepara_richiesta_metadati'));
+    expect(valuationMigration, isNot(contains('INSERT INTO collection.master_oggetti')));
+    expect(valuationMigration, isNot(contains('UPDATE collection.master_oggetti')));
   });
 
 }
