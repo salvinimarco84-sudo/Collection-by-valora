@@ -115,7 +115,9 @@ void main() {
       expect(source, isNot(contains('class ValoraServicePage extends StatefulWidget')));
       expect(valoraServicePageSource, contains("class ValoraServicePage extends StatefulWidget"));
       expect(valoraServicePageSource, contains("_ValoraRuntimeApi.call('consultation'"));
-      expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE'"));
+      expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
+      expect(valoraServicePageSource, contains('_continueToPr06Valora'));
+      expect(valoraServicePageSource, contains('Pr06ValoraPage('));
       expect(valoraServicePageSource, contains("'mercato_riferimento': _market"));
       expect(valoraServicePageSource, contains("'destinazione'"));
       expect(valoraServicePageSource, contains("'valore_mercato'"));
@@ -1227,6 +1229,20 @@ void main() {
     expect(valuationMigration, contains('REVOKE ALL ON FUNCTION collection.pr_valuta_prepara_richiesta_metadati'));
     expect(valuationMigration, isNot(contains('INSERT INTO collection.master_oggetti')));
     expect(valuationMigration, isNot(contains('UPDATE collection.master_oggetti')));
+  });
+
+  test('PR06 VALORA è separata da PR06 ordinaria e richiede conferma prima del salvataggio', () {
+    final page = File('lib/procedures/pr06_valora_page.dart').readAsStringSync();
+    expect(source, contains("part 'procedures/pr06_valora_page.dart';"));
+    expect(page, contains('class Pr06ValoraPage extends StatefulWidget'));
+    expect(page, contains("procedure(\n        'PR-06', 'preview'"));
+    expect(page, contains("procedure(\n        'PR-06', 'save'"));
+    expect(page, contains('CONFERMA E REGISTRA VENDITA'));
+    expect(page, contains('SALVATO_E_VERIFICATO'));
+    expect(page, contains('initialObjectCode'));
+    expect(pr06RuntimeProcedureSource, contains("procedure('PR-06', 'save'"));
+    expect(valoraServicePageSource, contains('SOLO VALUTAZIONE'));
+    expect(valoraServicePageSource, contains('CONTINUA A PR06 VALORA'));
   });
 
 }
