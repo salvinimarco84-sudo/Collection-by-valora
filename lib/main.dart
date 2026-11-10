@@ -6566,6 +6566,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     categoriesLoading: _categoriesLoading,
     onChanged: () => setState(_invalidate),
     onPhoto: () => _photoAndRecognize(_items[n]),
+    suggestedMarketValue: widget.suggestedMarketValue,
   );
 
   Widget _line(String label, String value, {bool bold = false}) => Padding(
