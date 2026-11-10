@@ -40,6 +40,11 @@ Deno.serve(async (req: Request) => {
   const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\\/$/, "");
   if (!base) return reply({ ok: false, error: "SUPABASE_URL non configurato." }, 500);
 
+  const metadata = (body.metadati && typeof body.metadati === "object" ? body.metadati : body) as Record<string, unknown>;
+  const descrizione = String(metadata.descrizione ?? metadata.title ?? body.descrizione ?? "").trim().slice(0, 240);
+  if (!descrizione || descrizione.length < 2) return reply({ ok: false, error: "Inserire una descrizione di almeno 2 caratteri." }, 400);
+  const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
+  if (!base) return reply({ ok: false, error: "SUPABASE_URL non configurato." }, 500);
   // Il salvataggio della sola valutazione aggiorna esclusivamente il valore di mercato
   // e lo storico. Stato e destinazione dell'oggetto non vengono mai modificati.
   if (String(body.azione ?? "").toUpperCase() === "SALVA_VALUTAZIONE") {
@@ -158,11 +163,6 @@ Deno.serve(async (req: Request) => {
         : "Storico valutazione salvato senza sovrascrivere l'ultimo valore: non è disponibile una stima numerica affidabile.",
     });
   }
-  const metadata = (body.metadati && typeof body.metadati === "object" ? body.metadati : body) as Record<string, unknown>;
-  const descrizione = String(metadata.descrizione ?? metadata.title ?? body.descrizione ?? "").trim().slice(0, 240);
-  if (descrizione.length < 2) return reply({ ok: false, error: "Inserire una descrizione di almeno 2 caratteri." }, 400);
-  const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
-  if (!base) return reply({ ok: false, error: "SUPABASE_URL non configurato." }, 500);
   try {
     const response = await fetch(base + "/functions/v1/pr-12-web-search-corrected-test", {
       method: "POST",
