@@ -21,7 +21,7 @@ create table if not exists collection.bozze_inserzioni_valora (
     check (stato in ('BOZZA','REVISIONATA','APPROVATA','ESPORTATA')),
   creato_il timestamptz not null default now(),
   aggiornato_il timestamptz not null default now(),
-  constraint uq_bozza_valora_vendita_piattaforma unique (codice_vendita_aperta, codice_piattaforma)
+  constraint uq_bozza_user_vendita_piattaforma unique (user_id, codice_vendita_aperta, codice_piattaforma)
 );
 
 create index if not exists ix_bozze_valora_user_created
