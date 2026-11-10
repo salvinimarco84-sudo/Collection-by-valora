@@ -99,7 +99,7 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                     ),
                   );
                 }),
-                if (selectedUrl != null)
+                if (selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: FilledButton.icon(
