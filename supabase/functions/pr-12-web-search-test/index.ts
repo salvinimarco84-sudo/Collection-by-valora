@@ -940,8 +940,11 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
     const extendedSearch = body.ricerca_estesa === true;
     const excludedUrls = new Set(
       (Array.isArray(body.escludi_url) ? body.escludi_url : [])
-        .map((value: unknown) => String(value ?? "").trim().replace(/\\/$/, "").toLowerCase())
-        .filter((value: string) => /^https?:\\/\\//i.test(value))
+        .map((value: unknown) => {
+          const normalized = String(value ?? "").trim().toLowerCase();
+          return normalized.endsWith("/") ? normalized.slice(0, -1) : normalized;
+        })
+        .filter((value: string) => value.startsWith("http://") || value.startsWith("https://"))
         .slice(0, 100)
     );
     const excludedQueries = new Set(
@@ -1019,7 +1022,10 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
     let results = rankRelevantResults(dopoCodice, category, description, theme);
     const conteggioDopoPertinenza = results.length;
     const primaEsclusione = results.length;
-    results = results.filter((candidate) => !excludedUrls.has(String(candidate.url ?? "").replace(/\\/$/, "").toLowerCase()));
+    results = results.filter((candidate) => {
+      const url = String(candidate.url ?? "").toLowerCase();
+      return !excludedUrls.has(url.endsWith("/") ? url.slice(0, -1) : url);
+    });
     const candidatiEsclusiGiaValutati = primaEsclusione - results.length;
     results = enrichMetadata(results, category, description);
     if (/funko|pop!|pop vinyl/i.test(description + " " + category + " " + theme)) {
