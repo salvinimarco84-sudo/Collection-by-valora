@@ -92,7 +92,7 @@ class _Pr06ValoraListingDraftsPageState extends State<Pr06ValoraListingDraftsPag
       );
       if (!mounted) return;
       setState(() => _drafts[index] = saved);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Bozza \${saved['nome_piattaforma']} salvata.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Bozza ${saved['nome_piattaforma']} salvata.')));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Salvataggio bozza non riuscito: $e')));
     } finally {
@@ -102,9 +102,9 @@ class _Pr06ValoraListingDraftsPageState extends State<Pr06ValoraListingDraftsPag
 
   Future<void> _copy(int index) async {
     final price = _prices[index].text.trim();
-    final content = '\${_titles[index].text.trim()}\\n\\n\${_descriptions[index].text.trim()}\\n\\nPrezzo: €$price';
+    final content = '${_titles[index].text.trim()}\n\n${_descriptions[index].text.trim()}\n\nPrezzo: €$price';
     await Clipboard.setData(ClipboardData(text: content));
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Testo \${_drafts[index]['nome_piattaforma']} copiato.')));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Testo ${_drafts[index]['nome_piattaforma']} copiato.')));
   }
 
   @override
@@ -138,7 +138,7 @@ class _Pr06ValoraListingDraftsPageState extends State<Pr06ValoraListingDraftsPag
                     Text((draft['stato'] ?? 'BOZZA').toString(), style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                   ]),
                   const SizedBox(height: 8),
-                  Text('Oggetto #\${draft['codice_oggetto']} · Vendita #\${draft['codice_vendita_aperta']}'),
+                  Text('Oggetto #${draft['codice_oggetto']} · Vendita #${draft['codice_vendita_aperta']}'),
                   const SizedBox(height: 10),
                   TextField(controller: _titles[index], maxLines: 2,
                     decoration: const InputDecoration(labelText: 'Titolo inserzione')),
@@ -154,7 +154,7 @@ class _Pr06ValoraListingDraftsPageState extends State<Pr06ValoraListingDraftsPag
                     decoration: const InputDecoration(labelText: 'Descrizione inserzione', alignLabelWithHint: true)),
                   if (images.isNotEmpty) Padding(
                     padding: const EdgeInsets.only(top: 8),
-                    child: Text('\${images.length} foto confermate disponibili come riferimenti. Le immagini non vengono caricate sul marketplace.'),
+                    child: Text('${images.length} foto confermate disponibili come riferimenti. Le immagini non vengono caricate sul marketplace.'),
                   ),
                   if (warnings.isNotEmpty) ...[
                     const SizedBox(height: 10),
