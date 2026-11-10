@@ -154,7 +154,7 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
               );
             }),
           ],
-          if (selected != null) Card(child: Padding(
+          if (_descriptionQuery.text.trim().isNotEmpty && selected != null && matches.any((object) => object['codice_oggetto'] == _selectedId)) Card(child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(selected['descrizione_oggetto']?.toString() ?? 'Oggetto selezionato', style: const TextStyle(fontWeight: FontWeight.bold)),
