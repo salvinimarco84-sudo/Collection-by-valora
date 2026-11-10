@@ -918,16 +918,23 @@ void main() {
       expect(pr04RecognitionDialogSource, contains('La ricerca non salva dati nel database.'));
     });
 
-    test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
-      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource';
+    test('PR-12 separa runtime e presentazione mantenendo la ricerca multi-fonte a lotti', () {
+      final pr12PresentationSource = File('lib/procedures/pr12_runtime_presentation.dart').readAsStringSync();
+      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource\n$pr12PresentationSource';
       expect(source, contains("part 'procedures/valora_pr12_runtime.dart';"));
+      expect(source, contains("part 'procedures/pr12_runtime_presentation.dart';"));
+      expect(source, isNot(contains("if (code == 'PR-12') {")));
+      expect(source, contains("if (code == 'PR-12') return _buildPr12Screen();"));
       expect(source, isNot(contains('Future<void> _loadIncompleteMetadataCatalog()')));
       expect(source, isNot(contains('Future<void> _runPr12AiBatch(')));
       expect(pr12RuntimeSource, contains('extension _ObjectRuntimePagePr12Runtime'));
+      expect(pr12PresentationSource, contains('extension _ObjectRuntimePagePr12Presentation'));
+      expect(pr12PresentationSource, contains('Widget _buildPr12Screen()'));
       expect(pr12Source, contains('_loadIncompleteMetadataCatalog'));
       expect(pr12Source, contains('_runPr12AiBatch'));
-      expect(pr12Source, contains('LOTTO DA 10'));
-      expect(pr12Source, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
+      expect(pr12PresentationSource, contains('LOTTO DA 10'));
+      expect(pr12PresentationSource, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
+      expect(pr12PresentationSource, contains('APPLICA METADATI SE DISPONIBILI'));
     });
 
     test('PR-04 preserves every queued purchase until final save', () {
