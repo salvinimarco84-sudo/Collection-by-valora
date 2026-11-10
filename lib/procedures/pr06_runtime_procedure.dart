@@ -134,13 +134,16 @@ extension _Pr06RuntimeProcedure on _NewSalePageState {
       setState(() {
         _pendingSales.add(operation);
         _pendingDescriptions.add(chosenDescription);
-        _preview = null;
+        _preview = widget.valoraMode ? r : null;
         _confirmed = false;
         _status = 'Vendita aggiunta alla coda ('+_pendingSales.length.toString()+'). Nessuna vendita è ancora stata salvata.';
       });
       // Rilascia il blocco prima di attendere la risposta dell’utente; il salvataggio
       // finale riacquisirà il blocco per tutta la transazione del lotto.
       await _release();
+      // PR-06 VALORA gestisce un solo oggetto: mostra il riepilogo e lascia
+      // la conferma esplicita al pulsante CONFERMA E REGISTRA VENDITA.
+      if (widget.valoraMode) return;
       final another = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
@@ -268,6 +271,40 @@ extension _Pr06RuntimeProcedure on _NewSalePageState {
           : 'Esito non verificato completamente: non considerare concluso il lotto. Controlla il risultato runtime.';
       });
       if (verified) {
+        if (widget.valoraMode) {
+          List<Map<String, dynamic>> drafts = [];
+          String? draftError;
+          final firstVerified = Map<String, dynamic>.from(verifiedRows.first as Map);
+          final saleCode = int.tryParse((firstVerified['codice_vendita_aperta'] ?? '').toString());
+          try {
+            if (saleCode == null) throw StateError('Codice vendita aperta non restituito dal salvataggio.');
+            drafts = await _Pr06ValoraListingDraftApi.create(saleCode);
+          } catch (e) {
+            draftError = e.toString();
+          }
+          if (!mounted) return;
+          var openDrafts = false;
+          await showDialog<void>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
+            title: const Text('Vendita registrata e verificata'),
+            content: Text(draftError == null
+              ? 'La vendita è stata salvata in TEST. Sono state create '+drafts.length.toString()+' bozze, una per ciascuna piattaforma selezionata in PR-06 VALORA. Puoi modificarle senza pubblicare nulla.'
+              : 'La vendita è stata salvata e verificata in TEST, ma la generazione delle bozze non è riuscita: '+draftError),
+            actions: [
+              if (drafts.isNotEmpty) OutlinedButton(
+                onPressed: () { openDrafts = true; Navigator.of(ctx).pop(); },
+                child: const Text('APRI BOZZE'),
+              ),
+              FilledButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('FINE')),
+            ],
+          ));
+          if (openDrafts && mounted) {
+            await Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => Pr06ValoraListingDraftsPage(drafts: drafts),
+            ));
+          }
+          if (mounted) Navigator.of(context).pop(true);
+          return;
+        }
         await showDialog<void>(context: context, barrierDismissible: false, builder: (ctx) => AlertDialog(
           title: const Text('Lotto salvato e verificato'),
           content: Text(verifiedRows.length.toString()+' vendite sono state registrate e verificate nel database TEST.'),

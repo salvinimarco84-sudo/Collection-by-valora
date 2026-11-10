@@ -55,6 +55,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Annulla vendita', description: 'Annulla una vendita conclusa, compensa l’incasso in cassa e rimette l’oggetto in vendita oppure in collezione.', apiCode: 'WRITE-PR-09', readOnly: false),
     ProcedureEntry(title: 'Report vendite attive', description: 'Consulta le vendite ancora aperte e non concluse.', apiCode: 'REPORT-ACTIVE-LISTINGS'),
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
+    ProcedureEntry(title: 'Bozze inserzioni VALORA', description: 'Consulta e modifica le bozze create per le piattaforme selezionate nelle vendite VALORA.', apiCode: 'VALORA-LISTING-DRAFTS'),
   ],
   'VALUTAZIONI': [
     ProcedureEntry(title: 'PR-18 · VALORA', description: 'Valutazione specialistica del singolo oggetto dopo conferma PR-12, con comparabili e affidabilità.', apiCode: 'LAUNCH-VALORA'),
