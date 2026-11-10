@@ -124,7 +124,7 @@ void main() {
       expect(pr18EdgeFunctionSource, contains('SALVA_VALUTAZIONE'));
       expect(pr18EdgeFunctionSource, contains('storico_valori_mercato'));
       expect(pr18EdgeFunctionSource, contains('valore_master_aggiornato: masterUpdated'));
-      expect(pr18EdgeFunctionSource, contains('stato e destinazione dell\'oggetto invariati'));
+      expect(pr18EdgeFunctionSource, contains('Stato e destinazione dell\'oggetto non vengono mai modificati'));
       expect(valoraServicePageSource, contains('Pr06ValoraPage('));
       expect(valoraServicePageSource, contains("'mercato_riferimento': _market"));
       expect(valoraServicePageSource, contains("'destinazione'"));
