@@ -21,7 +21,7 @@ void main() {
       expect(assistant, contains("'valora-assistant'"));
       expect(assistant, contains("'modalita': 'TEST'"));
       expect(assistant, contains("'sola_lettura': true"));
-      expect(assistant, contains('nessuna modifica al database'));
+      expect(assistant, contains('Nessuna modifica al database è stata eseguita.'));
     });
   });
 }
