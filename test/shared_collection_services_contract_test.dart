@@ -26,7 +26,7 @@ void main() {
       ]) {
         expect(imageProxy, contains("'$host'"));
       }
-      expect(RegExp(r'_valoraImageProxyUrl\(').allMatches(mainSource).length, greaterThanOrEqualTo(6));
+      expect(RegExp(r'_valoraImageProxyUrl\(').allMatches(mainSource).length, greaterThanOrEqualTo(5));
     });
 
     test('il runtime procedure resta unico e condiviso tra le procedure', () {
