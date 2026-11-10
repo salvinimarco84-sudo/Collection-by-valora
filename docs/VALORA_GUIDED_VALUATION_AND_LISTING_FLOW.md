@@ -71,3 +71,14 @@ Draft creation is not publication. The user reviews and approves each draft. Do 
 - Selecting eBay and Vinted yields two independent, platform-adapted drafts.
 - No draft is published automatically.
 - No direct production or bypass writes are introduced.
+
+
+### PR-04 VALORA: simplified unknown-object acquisition
+
+The unknown-object path opens a dedicated **PR-04 VALORA** entry page derived from the original PR-04 purchase workflow. It is limited to one object and removes the multi-purchase queue and lot-selection steps, while retaining the original PR-04 preview, lock, final confirmation, transactional save, and post-save verification.
+
+VALORA pre-fills the confirmed identification fields and selected catalog image. The user must complete or confirm the actual purchase date, purchase cost, category when the destination is COLLEZIONE, destination, condition, and completeness. The market estimate is shown only as context and is never copied into the purchase-cost field.
+
+The dedicated page calls the same PR-04 runtime and does not write purchase or object records itself. After PR-04 confirms the purchase, VALORA verifies that exactly one purchase-object link exists and that the linked master object can be reread. Only then, if PR18 returned a valuation result, VALORA invokes the existing PR18 valuation-save action against the newly created object code. A missing or failed valuation save must not cause the already verified purchase to be repeated or reported as unsaved.
+
+The standard PR-04 entry page and its multi-object purchase flow remain unchanged.
