@@ -78,7 +78,7 @@ void main() {
       expect(purchaseVerified, greaterThanOrEqualTo(0));
       expect(valuationCall, greaterThan(purchaseVerified));
       expect(page, contains("'codice_oggetto': objectId"));
-      expect(page, contains("if (objectId == null || valuation == null || _valuationSaved) return;"));
+      expect(page, contains("if (objectId == null || valuation == null || _valuationSaved || _valuationSaving) return;"));
     });
   });
 }
