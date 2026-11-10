@@ -267,7 +267,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       ),
     );
     if (addObject != true || !mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute(
+    final purchaseResult = await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => Pr04ValoraPage(
         initialMetadata: metadata,
         valuation: valuation,
@@ -278,6 +278,16 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       ),
     ));
     if (mounted) {
+      if (purchaseResult is Map && purchaseResult['purchase_saved'] == true) {
+        final objectCode = purchaseResult['object_code']?.toString() ?? 'n.d.';
+        final valuationSaved = purchaseResult['valuation_saved'] == true;
+        final valuationMessage = purchaseResult['valuation_message'] ?? 'da riprovare';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+          valuationSaved
+              ? 'PR-04 VALORA completata. Oggetto $objectCode, acquisto e valutazione verificati.'
+              : 'Acquisto e oggetto $objectCode salvati. Valutazione non registrata: $valuationMessage.',
+        )));
+      }
       setState(() {
         _descriptionQuery.text = title;
         _selectedId = null;
