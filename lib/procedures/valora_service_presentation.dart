@@ -54,6 +54,7 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                 : const Icon(Icons.travel_explore),
               label: Text(_analyzingPhotos ? 'RICERCA FOTO IN CORSO…' : 'USA LE FOTO PER LA RICERCA PR-12'),
             ),
+          ],
           if (_selectedImages.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text('Immagini selezionate: ${_selectedImages.length}'),
