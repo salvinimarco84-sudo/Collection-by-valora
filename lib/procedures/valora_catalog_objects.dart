@@ -1,6 +1,6 @@
 part of '../main.dart';
 
-mixin _ValoraCatalogObjects on _ValoraServicePageState {
+mixin _ValoraCatalogObjects on _ValoraServicePageStateBase {
   Future<void> _loadObjects() async {
     setState(() { _loading = true; _error = null; });
     try {
