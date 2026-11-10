@@ -12,6 +12,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   bool _analyzingPhotos = false;
   final List<Map<String, dynamic>> _photoSearchResults = [];
   final Map<int, String> _selectedPhotoCandidates = {};
+  final Map<int, Map<String, dynamic>> _confirmedPhotoCandidates = {};
   final Set<String> _reviewedCandidateUrls = {};
   String? _error;
   final TextEditingController _descriptionQuery = TextEditingController();
@@ -47,7 +48,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       final result = await FilePicker.platform.pickFiles(
         allowMultiple: true,
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
         withData: true,
       );
       if (!mounted || result == null) return;
@@ -67,32 +68,40 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   void _removeFile(PlatformFile file) => setState(() => _selectedFiles.remove(file));
 
 
+  Future<Map<String, dynamic>> _analyzeImageBytes(Uint8List bytes, String fileName) async {
+    if (bytes.isEmpty) throw Exception('Il file $fileName è vuoto o non leggibile.');
+    if (bytes.length > 10 * 1024 * 1024) throw Exception('Il file $fileName supera il limite di 10 MB.');
+    final name = fileName.toLowerCase();
+    final mime = name.endsWith('.png') ? 'image/png' : name.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+    final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
+      'azione': 'ANALIZZA_FOTO',
+      'modalita_ia': 'TEST',
+      'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}',
+      'mercato': _market,
+    });
+    final data = response.data;
+    if (data is! Map || data['ok'] != true) {
+      throw Exception(data is Map ? (data['error'] ?? 'Ricerca foto non riuscita').toString() : 'Risposta PR-12 non valida.');
+    }
+    return Map<String, dynamic>.from(data);
+  }
+
   Future<void> _analyzeSelectedPhotos() async {
-    if (_selectedImages.isEmpty) {
-      setState(() => _error = 'Seleziona almeno una foto da usare nella ricerca.');
+    if (_selectedImages.isEmpty && _selectedFiles.isEmpty) {
+      setState(() => _error = 'Seleziona almeno una foto o un file immagine da usare nella ricerca.');
       return;
     }
     setState(() { _analyzingPhotos = true; _error = null; _photoSearchResults.clear(); });
     try {
-      for (final image in List<XFile>.from(_selectedImages)) {
-        final bytes = await image.readAsBytes();
-        if (bytes.isEmpty) throw Exception('La foto ${image.name} è vuota o non leggibile.');
-        if (bytes.length > 10 * 1024 * 1024) throw Exception('La foto ${image.name} supera il limite di 10 MB.');
-        final name = image.name.toLowerCase();
-        final mime = name.endsWith('.png') ? 'image/png' : name.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
-        final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
-          'azione': 'ANALIZZA_FOTO',
-          'modalita_ia': 'TEST',
-          'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}',
-          'mercato': _market,
-        });
-        final data = response.data;
-        if (data is! Map || data['ok'] != true) {
-          throw Exception(data is Map ? (data['error'] ?? 'Ricerca foto non riuscita').toString() : 'Risposta PR-12 non valida.');
-        }
+      final inputs = <({String name, Future<Uint8List> bytes})>[
+        ..._selectedImages.map((image) => (name: image.name, bytes: image.readAsBytes())),
+        ..._selectedFiles.map((file) => (name: file.name, bytes: Future.value(file.bytes ?? Uint8List(0)))),
+      ];
+      for (final input in inputs) {
+        final data = await _analyzeImageBytes(await input.bytes, input.name);
         if (!mounted) return;
         setState(() => _photoSearchResults.add({
-          'nome_foto': image.name,
+          'nome_foto': input.name,
           'identificazione': data['identificazione'] is Map ? Map<String, dynamic>.from(data['identificazione']) : <String, dynamic>{},
           'risultati': data['risultati'] is List ? List<dynamic>.from(data['risultati']) : <dynamic>[],
           'diagnostica': data['diagnostica_ricerca'],
@@ -108,6 +117,23 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     } finally {
       if (mounted) setState(() => _analyzingPhotos = false);
     }
+  }
+
+  void _confirmPhotoCandidate(int index) {
+    final url = _selectedPhotoCandidates[index];
+    if (url == null || index < 0 || index >= _photoSearchResults.length) return;
+    final result = _photoSearchResults[index];
+    final candidate = (result['risultati'] as List? ?? []).whereType<Map>()
+        .cast<Map<String, dynamic>>().where((item) => (item['url'] ?? '').toString() == url).firstOrNull;
+    if (candidate == null) {
+      setState(() => _error = 'Il candidato selezionato non è più disponibile. Ripeti la ricerca.');
+      return;
+    }
+    setState(() {
+      _confirmedPhotoCandidates[index] = Map<String, dynamic>.from(candidate);
+      _reviewedCandidateUrls.add(url);
+      _error = null;
+    });
   }
 
   Future<void> _retryPhotoSearch(int index) async {
