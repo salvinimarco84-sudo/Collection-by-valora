@@ -36,6 +36,8 @@ void main() {
   final valoraServicePageSource = '$valoraServicePageCoreSource\\n$valoraPhotoSearchSource\\n$valoraCatalogObjectsSource\\n$valoraValuationFlowSource';
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
+  final valoraPhotoPresentationSource = File('lib/procedures/valora_photo_search_presentation.dart').readAsStringSync();
+  final valoraCombinedPresentationSource = '$valoraServicePresentationSource\n$valoraPhotoPresentationSource';
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
@@ -140,6 +142,11 @@ void main() {
       expect(valoraServicePageSource, contains('buildPage(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
+      expect(source, contains("part 'procedures/valora_photo_search_presentation.dart';"));
+      expect(valoraPhotoPresentationSource, contains('extension _ValoraPhotoSearchPresentation'));
+      expect(valoraPhotoPresentationSource, contains('Widget _buildPhotoSearchResultsSection()'));
+      expect(valoraServicePresentationSource, isNot(contains('_photoSearchResults.isNotEmpty')));
+      expect(valoraCombinedPresentationSource, contains('CONFERMA QUESTO CANDIDATO'));
       expect(valoraServicePresentationSource, contains("'PREPARA VALUTAZIONE'"));
     });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
