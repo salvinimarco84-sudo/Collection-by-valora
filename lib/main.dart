@@ -103,6 +103,7 @@ part 'reports/active_sale_report_card.dart';
 part 'reports/sales_report_page.dart';
 part 'reports/sales_report_card.dart';
 part 'procedures/valora_service_page.dart';
+part 'procedures/valora_service_presentation.dart';
 part 'procedures/collection_value_page.dart';
 part 'procedures/collection_value_presentation.dart';
 part 'procedures/pr12_batch_page.dart';

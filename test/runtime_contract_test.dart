@@ -28,6 +28,7 @@ void main() {
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
@@ -117,6 +118,10 @@ void main() {
       expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE'"));
       expect(valoraServicePageSource, contains("'mercato_riferimento': _market"));
       expect(valoraServicePageSource, contains("eq('destinazione', 'COLLEZIONE')"));
+      expect(valoraServicePageSource, contains('buildPage(context)'));
+      expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
+      expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
+      expect(valoraServicePresentationSource, contains("'PREPARA VALUTAZIONE'"));
     });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
       expect(source, contains("part 'procedures/write_procedure_action_panel.dart';"));
