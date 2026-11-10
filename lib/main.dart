@@ -66,6 +66,7 @@ part 'procedures/pr01_runtime_procedure.dart';
 part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
 part 'purchases/pr04_runtime_procedure.dart';
+part 'purchases/pr04_valora_page.dart';
 part 'purchases/pr05_runtime_procedure.dart';
 part 'purchases/pr04_form_content.dart';
 part 'purchases/pr04_photo_field.dart';
