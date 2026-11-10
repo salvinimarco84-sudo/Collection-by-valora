@@ -10,7 +10,8 @@ void main() {
   final frame = File('lib/purchases/pr04_page_frame.dart').readAsStringSync();
   final valora = File('lib/procedures/valora_service_page.dart').readAsStringSync();
   final edge = File('supabase/functions/pr-04-valora-test/index.ts').readAsStringSync();
-  final migration = File('supabase/migrations/20261110150000_pr04_valora_independent_purchase.sql').readAsStringSync();
+  final baseMigration = File('supabase/migrations/20261110151505_pr04_valora_independent_purchase.sql').readAsStringSync();
+  final migration = File('supabase/migrations/20261110151749_pr04_valora_validate_purchase_payload.sql').readAsStringSync();
 
   group('Contratto PR-04 VALORA indipendente', () {
     test('PR-04 originale mantiene runtime, form e frame separati', () {
@@ -49,6 +50,7 @@ void main() {
 
     test('backend crea sempre un nuovo oggetto e rende idempotente la richiesta', () {
       expect(edge, contains('pr_04_valora_nuovo_acquisto'));
+      expect(baseMigration, contains('pr04_valora_requests'));
       expect(migration, contains('pg_advisory_xact_lock'));
       expect(migration, contains('insert into collection.master_oggetti'));
       expect(migration, contains('insert into collection.acquisti_oggetti'));
