@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
       if (!metadata || !["VERIFICATO", "CONFERMATO"].includes(text(metadata.stato_verifica).toUpperCase())) {
         warnings.push("Metadati catalogo assenti o non confermati: controllare i dati prima della pubblicazione.");
       }
-      if (!category) warnings.push("Categoria marketplace da selezionare manualmente.");
+      warnings.push("Categoria specifica di questo marketplace da selezionare o verificare manualmente.");
       if (!confirmedImages.length) warnings.push("Nessuna fotografia confermata associata all'oggetto.");
       const drafts = [];
       for (const platformId of platformIds) {
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
           nome_piattaforma: platformName,
           titolo: titleFor(platformName, facts),
           descrizione: descriptionFor(platformName, facts),
-          categoria: category,
+          categoria: null,
           prezzo: sale.prezzo_di_vendita,
           valuta: sale.valuta || "EUR",
           condizione: object.condizione,
