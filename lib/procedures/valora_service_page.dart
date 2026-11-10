@@ -9,6 +9,8 @@ class ValoraServicePage extends StatefulWidget {
 class _ValoraServicePageState extends State<ValoraServicePage> {
   bool _loading = true;
   bool _preparing = false;
+  bool _analyzingPhotos = false;
+  final List<Map<String, dynamic>> _photoSearchResults = [];
   String? _error;
   final TextEditingController _descriptionQuery = TextEditingController();
   List<Map<String, dynamic>> _objects = [];
@@ -61,6 +63,46 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
 
   void _removeImage(XFile image) => setState(() => _selectedImages.remove(image));
   void _removeFile(PlatformFile file) => setState(() => _selectedFiles.remove(file));
+
+
+  Future<void> _analyzeSelectedPhotos() async {
+    if (_selectedImages.isEmpty) {
+      setState(() => _error = 'Seleziona almeno una foto da usare nella ricerca.');
+      return;
+    }
+    setState(() { _analyzingPhotos = true; _error = null; _photoSearchResults.clear(); });
+    try {
+      for (final image in List<XFile>.from(_selectedImages)) {
+        final bytes = await image.readAsBytes();
+        if (bytes.isEmpty) throw Exception('La foto ${image.name} è vuota o non leggibile.');
+        if (bytes.length > 10 * 1024 * 1024) throw Exception('La foto ${image.name} supera il limite di 10 MB.');
+        final name = image.name.toLowerCase();
+        final mime = name.endsWith('.png') ? 'image/png' : name.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+        final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
+          'azione': 'ANALIZZA_FOTO',
+          'modalita_ia': 'TEST',
+          'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}',
+          'mercato': _market,
+        });
+        final data = response.data;
+        if (data is! Map || data['ok'] != true) {
+          throw Exception(data is Map ? (data['error'] ?? 'Ricerca foto non riuscita').toString() : 'Risposta PR-12 non valida.');
+        }
+        if (!mounted) return;
+        setState(() => _photoSearchResults.add({
+          'nome_foto': image.name,
+          'identificazione': data['identificazione'] is Map ? Map<String, dynamic>.from(data['identificazione']) : <String, dynamic>{},
+          'risultati': data['risultati'] is List ? List<dynamic>.from(data['risultati']) : <dynamic>[],
+          'diagnostica': data['diagnostica_ricerca'],
+          'scrittura_database': false,
+        }));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Ricerca da foto non completata: $e');
+    } finally {
+      if (mounted) setState(() => _analyzingPhotos = false);
+    }
+  }
 
   List<Map<String, dynamic>> get _matchingObjects {
     final query = _descriptionQuery.text.trim().toLowerCase();
