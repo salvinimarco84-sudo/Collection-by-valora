@@ -105,7 +105,7 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                     child: FilledButton.icon(
                       onPressed: _analyzingPhotos ? null : () => _openUncataloguedCandidate(photoIndex),
                       icon: const Icon(Icons.add_box_outlined),
-                      label: const Text('OGGETTO NON IN CATALOGO · APRI PR-04'),
+                      label: const Text('OGGETTO NON IN CATALOGO · APRI PR-04 VALORA'),
                     ),
                   ),
                 if (selectedUrl != null)
