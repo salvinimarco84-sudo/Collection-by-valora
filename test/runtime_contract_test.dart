@@ -969,7 +969,7 @@ void main() {
       expect(pr12Source, contains('_runPr12AiBatch'));
       expect(pr12PresentationSource, contains('LOTTO DA 10'));
       expect(pr12PresentationSource, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
-      expect(pr12PresentationSource, contains('APPLICA METADATI SE DISPONIBILI'));
+      expect(pr12CandidateCardSource, contains('APPLICA METADATI SE DISPONIBILI'));
     });
 
     test('PR-04 preserves every queued purchase until final save', () {
