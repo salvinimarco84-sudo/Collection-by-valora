@@ -1239,6 +1239,7 @@ void main() {
     final listingDrafts = File('lib/procedures/pr06_valora_listing_drafts.dart').readAsStringSync();
     final listingDraftFunction = File('supabase/functions/valora-listing-drafts-test/index.ts').readAsStringSync();
     final listingDraftMigration = File('supabase/migrations/20261110134302_pr06_valora_platform_listing_drafts_test.sql').readAsStringSync();
+    final listingDraftOwnerMigration = File('supabase/migrations/20261110135000_pr06_valora_listing_drafts_user_scope_test.sql').readAsStringSync();
     expect(source, contains("part 'procedures/pr06_valora_page.dart';"));
     expect(source, contains("part 'procedures/pr06_valora_listing_drafts.dart';"));
     expect(page, contains('class Pr06ValoraPage extends StatelessWidget'));
@@ -1265,6 +1266,7 @@ void main() {
     expect(listingDraftFunction, contains('action === "update"'));
     expect(listingDraftMigration, contains('enable row level security'));
     expect(listingDraftMigration, contains('auth.uid()'));
+    expect(listingDraftOwnerMigration, contains('unique (user_id, codice_vendita_aperta, codice_piattaforma)'));
     expect(valoraServicePageSource, contains('SOLO VALUTAZIONE'));
     expect(valoraServicePageSource, contains('CONTINUA A PR06 VALORA'));
   });
