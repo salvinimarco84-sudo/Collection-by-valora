@@ -6,8 +6,7 @@ class ValoraServicePage extends StatefulWidget {
   State<ValoraServicePage> createState() => _ValoraServicePageState();
 }
 
-class _ValoraServicePageState extends State<ValoraServicePage>
-    with _ValoraPhotoSearch, _ValoraCatalogObjects, _ValoraValuationFlow {
+abstract class _ValoraServicePageStateBase extends State<ValoraServicePage> {
   bool _loading = true;
   bool _preparing = false;
   bool _analyzingPhotos = false;
@@ -21,7 +20,9 @@ class _ValoraServicePageState extends State<ValoraServicePage>
   List<Map<String, dynamic>> _objects = [];
   final List<XFile> _selectedImages = [];
   final List<PlatformFile> _selectedFiles = [];
-
+  int? _selectedId;
+  String _market = 'ITALIA';
+  Map<String, dynamic>? _prepared;
   List<Map<String, dynamic>> get _matchingObjects {
     final query = _descriptionQuery.text.trim().toLowerCase();
     if (query.isEmpty) return _objects;
@@ -29,15 +30,15 @@ class _ValoraServicePageState extends State<ValoraServicePage>
       (object['descrizione_oggetto'] ?? '').toString().toLowerCase().contains(query)
     ).toList();
   }
+}
 
+class _ValoraServicePageState extends _ValoraServicePageStateBase
+    with _ValoraPhotoSearch, _ValoraCatalogObjects, _ValoraValuationFlow {
   @override
   void dispose() {
     _descriptionQuery.dispose();
     super.dispose();
   }
-  int? _selectedId;
-  String _market = 'ITALIA';
-  Map<String, dynamic>? _prepared;
 
   @override
   void initState() {
