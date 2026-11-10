@@ -506,6 +506,48 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     }
   }
 
+  Future<void> _saveKnownObjectValuation(
+    int objectId,
+    Map<String, dynamic> object,
+    Map<String, dynamic> valuation,
+  ) async {
+    setState(() { _preparing = true; _error = null; });
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'pr-18-valuation-test',
+        body: {
+          'azione': 'SALVA_VALUTAZIONE',
+          'codice_oggetto': objectId,
+          'metadati': {
+            'descrizione': (object['descrizione_oggetto'] ?? '').toString(),
+            'produttore': (object['produttore'] ?? '').toString(),
+            'codice_prodotto': (object['codice_prodotto'] ?? '').toString(),
+          },
+          'mercato_riferimento': _market,
+          'valutazione': valuation,
+        },
+      );
+      final data = response.data;
+      if (data is! Map || data['ok'] != true) {
+        throw StateError(data is Map
+            ? (data['error'] ?? 'Salvataggio della valutazione non riuscito.').toString()
+            : 'Risposta di salvataggio PR18 non valida.');
+      }
+      await _loadObjects();
+      if (!mounted) return;
+      final updated = data['valore_master_aggiornato'] == true;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        updated
+            ? 'Valutazione salvata: valore di mercato aggiornato. Oggetto ancora ${data['stato_oggetto']}.'
+            : 'Valutazione e storico salvati. Nessun nuovo prezzo verificabile: il valore precedente è stato mantenuto.',
+      )));
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Salvataggio valutazione non riuscito: $e');
+    } finally {
+      if (mounted) setState(() => _preparing = false);
+    }
+  }
+
   Future<void> _continueToPr06Valora() async {
     final id = _selectedId;
     final object = _objects.where((row) => row['codice_oggetto'] == id).firstOrNull;
@@ -518,18 +560,23 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       setState(() => _error = 'PR06 VALORA richiede un oggetto DISPONIBILE. Stato attuale: $state.');
       return;
     }
-    final confirmed = await showDialog<bool>(
+    final decision = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Proseguire verso la vendita?'),
-        content: const Text('La valutazione è terminata. Vuoi avviare PR06 VALORA? Se annulli senza salvare, la destinazione originaria dell’oggetto verrà ripristinata. Nessuna vendita viene registrata senza la conferma finale in PR06.'),
+        title: const Text('Valutazione completata'),
+        content: const Text('Vuoi conservare la valutazione senza mettere in vendita l’oggetto, oppure proseguire con PR06 VALORA?'),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('SOLO VALUTAZIONE')),
-          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('CONTINUA A PR06 VALORA')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop('SOLO_VALUTAZIONE'), child: const Text('SOLO VALUTAZIONE')),
+          FilledButton(onPressed: () => Navigator.of(dialogContext).pop('CONTINUA'), child: const Text('CONTINUA A PR06 VALORA')),
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (!mounted || decision == null) return;
+    if (decision == 'SOLO_VALUTAZIONE') {
+      await _saveKnownObjectValuation(id, object, Map<String, dynamic>.from(_prepared!));
+      return;
+    }
+    if (decision != 'CONTINUA') return;
     final rawValue = _prepared?['valore_mercato'] ?? _prepared?['valore_stimato'];
     final rawPrice = rawValue is num ? rawValue.toDouble() : double.tryParse((rawValue ?? '').toString());
     final originalDestination = (object['destinazione'] ?? '').toString().trim().toUpperCase();

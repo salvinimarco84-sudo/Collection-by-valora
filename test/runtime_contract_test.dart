@@ -28,6 +28,7 @@ void main() {
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
@@ -117,6 +118,13 @@ void main() {
       expect(source, contains("_ValoraRuntimeApi.call('consultation'"));
       expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
       expect(valoraServicePageSource, contains('_continueToPr06Valora'));
+      expect(valoraServicePageSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
+      expect(valoraServicePageSource, contains('_saveKnownObjectValuation'));
+      expect(valoraServicePageSource, contains("pop('SOLO_VALUTAZIONE')"));
+      expect(pr18EdgeFunctionSource, contains('SALVA_VALUTAZIONE'));
+      expect(pr18EdgeFunctionSource, contains('storico_valori_mercato'));
+      expect(pr18EdgeFunctionSource, contains('valore_master_aggiornato: masterUpdated'));
+      expect(pr18EdgeFunctionSource, contains('Stato e destinazione dell\'oggetto non vengono mai modificati'));
       expect(valoraServicePageSource, contains('Pr06ValoraPage('));
       expect(valoraServicePageSource, contains("'mercato_riferimento': _market"));
       expect(valoraServicePageSource, contains("'destinazione'"));
