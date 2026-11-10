@@ -930,6 +930,7 @@ void main() {
       expect(pr12RuntimeSource, contains('extension _ObjectRuntimePagePr12Runtime'));
       expect(pr12PresentationSource, contains('extension _ObjectRuntimePagePr12Presentation'));
       expect(pr12PresentationSource, contains('Widget _buildPr12Screen()'));
+      expect(pr12PresentationSource, contains('RICERCA MULTI-FONTE'));
       expect(pr12Source, contains('_loadIncompleteMetadataCatalog'));
       expect(pr12Source, contains('_runPr12AiBatch'));
       expect(pr12PresentationSource, contains('LOTTO DA 10'));
