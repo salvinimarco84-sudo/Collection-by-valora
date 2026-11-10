@@ -114,96 +114,12 @@ part 'procedures/valora_service_presentation.dart';
 part 'procedures/collection_value_page.dart';
 part 'procedures/collection_value_presentation.dart';
 part 'procedures/pr12_batch_page.dart';
+part 'services/collection_image_proxy.dart';
+part 'services/collection_procedure_runtime_api.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
-String _valoraImageProxyUrl(String rawUrl) {
-  final value = rawUrl.trim();
-  final uri = Uri.tryParse(value);
-  if (uri == null || uri.scheme != 'https') return value;
-  const proxyHosts = {
-    'bandai-a.akamaihd.net',
-    'www.gunpla-italia.com',
-    'cdn.media.amplience.net',
-    'www.hasbropulse.com',
-    'tf.takaratomy.co.jp',
-    'www.hasbro.com',
-    'www.fantamagus.com',
-    'www.gamelife.it',
-    'kurogami.com',
-    'www.kurogami.com',
-    'www.vendiloshop.it',
-    'cdn.rebrickable.com',
-    'bits-and-blocks.co.uk',
-    'www.brickeconomy.com',
-    'i5.walmartimages.com',
-    'shopdeinerd.com',
-    'm3toys.com',
-    'eshop.czechrepubrick.cz',
-    'www.lego.com',
-    'images.pristineauction.com',
-    'super-briques.fr',
-    'instructions.hasbro.com',
-    'bwtf.com',
-    'www.bwtf.com',
-    'media.entertainmentearth.com',
-    'collecticontoys.com',
-    'images.brickset.com',
-    'funko.com',
-    'www.funko.com',
-    'tamashiiweb.com',
-    'www.ibs.it',
-    'www.thechosenprime.com',
-    'transforverse.eu',
-    'cdn11.bigcommerce.com',
-    'www.lafeltrinelli.it',
-    'www.tfsafari.com',
-    'i.tformers.com',
-    'i.ebayimg.com',
-    's3.amazonaws.com',
-    'toynado.ca',
-    'www.1999.co.jp',
-    'images.bigbadtoystore.com',
-    'pops.today',
-    'images-na.ssl-images-amazon.com',
-    'www.previewsworld.com',
-    'cdn.awsli.com.br',
-    'image.shopcraft.co.kr',
-    'b2c.magicpressedizioni.it',
-    'media.karousell.com',
-    'comicsbox.it',
-    'www.bibelotmania.com',
-    'thelittlebrickmarket.com',
-    'www.comicsbox.it',
-    'books.google.com',
-    'down-id.img.susercontent.com',
-    'giuntialpunto.it',
-    'www.hlj.com',
-    'cdn.ecommercedns.uk',
-    'media.gamestop.com',
-    'i0.wp.com',
-    'www.comix21.it',
-    'edicolaonline.store',
-    'smoothsales.com.au',
-    'resources.claroshop.com',
-    'toyarena.com',
-    'cmdstore.com',
-    'rihappy.vtexassets.com',
-    'transformers.pe',
-    'media.okini.land',
-    'www.toynk.com',
-    'www.fanboycollectibles.com',
-    'imgmarketplace.lojasrenner.com.br',
-    'kaostech.net',
-    'indemandtoys.co.uk',
-    'brickheads.co',
-    'atlbrick.com',
-    'www.transformerland.com',
-    'cdn.shopify.com',
-  };
-  if (!proxyHosts.contains(uri.host.toLowerCase())) return value;
-  return '${supabaseUrl}/functions/v1/collection-image-proxy?url=${Uri.encodeComponent(value)}';
-}
+
 
 const Color backgroundColor = Color(0xFF101010);
 const Color cardColor = Color(0xFF1C1C1C);
@@ -1678,44 +1594,7 @@ class _ValoraAssistantPageState extends State<ValoraAssistantPage> {
 
 const _uuid = Uuid();
 
-class _ValoraRuntimeApi {
-  static final _client = Supabase.instance.client;
 
-  static Future<Map<String, dynamic>> call(String action, Map<String, dynamic> body) async {
-    final response = await _client.functions.invoke(
-      'collection-procedure-runtime-test',
-      body: {'action': action, ...body},
-    );
-    final data = response.data;
-    if (data is! Map) throw Exception('Risposta runtime non valida (HTTP ${response.status}).');
-    final map = Map<String, dynamic>.from(data);
-    if (response.status >= 400 || map['error'] != null) {
-      throw Exception(map['error'] ?? 'HTTP ${response.status}');
-    }
-    return map;
-  }
-
-  static Future<Map<String, dynamic>> procedure(
-    String code, String step, Map<String, dynamic> payload, {
-    required String sessionId, String? requestId,
-  }) async {
-    final response = await _client.functions.invoke(
-      'collection-procedure-runtime-test',
-      body: {
-        'procedure': code, 'step': step, 'payload': payload,
-        'session_id': sessionId, 'request_id': requestId,
-      },
-    );
-    final data = response.data;
-    if (data is! Map) throw Exception('Risposta runtime non valida.');
-    final map = Map<String, dynamic>.from(data);
-    if (response.status >= 400 || map['error'] != null) {
-      throw Exception(map['error'] ?? 'HTTP ${response.status}');
-    }
-    if (map['result'] is Map) return Map<String, dynamic>.from(map['result']);
-    throw Exception('Il runtime non ha restituito un risultato strutturato.');
-  }
-}
 
 class CategoryObjectSearchPage extends StatefulWidget {
   const CategoryObjectSearchPage({super.key, this.initialQuery, this.initialCategoryCode});
