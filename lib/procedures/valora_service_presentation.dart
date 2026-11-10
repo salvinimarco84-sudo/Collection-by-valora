@@ -115,6 +115,15 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                       ? 'Candidato confermato per questa sessione. Nessun record è stato creato o modificato.'
                       : 'Candidato selezionato. Conferma la corrispondenza per proseguire. Nessun dato viene ancora salvato.'),
                   ),
+                if (_metadataValuationStatus.containsKey(photoIndex))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      _metadataValuationStatus[photoIndex]!.startsWith('PREPARAZIONE_NON_RIUSCITA')
+                        ? 'Preparazione valutazione non riuscita: ${_metadataValuationStatus[photoIndex]!.replaceFirst('PREPARAZIONE_NON_RIUSCITA: ', '')}'
+                        : 'Richiesta di valutazione mercato preparata per $_market. La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.',
+                    ),
+                  ),
                 if (selectedUrl != null && _confirmedPhotoCandidates[photoIndex] == null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
