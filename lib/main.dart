@@ -6401,7 +6401,7 @@ class _PurchaseItemDraft {
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
 
 class NewPurchasePage extends StatefulWidget {
-  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.initialValuation, this.marketReference, this.valoraMode = false});
+  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.initialValuation, this.marketReference = 'ITALIA', this.valoraMode = false});
   final Map<String, dynamic>? initialMetadata;
   final double? suggestedMarketValue;
   final Map<String, dynamic>? initialValuation;
