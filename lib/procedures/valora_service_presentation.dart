@@ -32,7 +32,7 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
             OutlinedButton.icon(onPressed: _analyzingPhotos ? null : () => _pickImage(ImageSource.gallery), icon: const Icon(Icons.photo_library_outlined), label: const Text('Galleria')),
             OutlinedButton.icon(onPressed: _pickFiles, icon: const Icon(Icons.attach_file), label: const Text('Scegli file')),
           ]),
-          if (_selectedImages.isNotEmpty) ...[
+          if (_selectedImages.isNotEmpty || _selectedFiles.isNotEmpty) ...[
             const SizedBox(height: 8),
             FilledButton.icon(
               onPressed: _analyzingPhotos ? null : _analyzeSelectedPhotos,
@@ -100,9 +100,20 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                   );
                 }),
                 if (selectedUrl != null)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text('Candidato selezionato. La scelta resta in attesa di conferma e non salva ancora nulla nel database.'),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(_confirmedPhotoCandidates[photoIndex] != null
+                      ? 'Candidato confermato per questa sessione. Nessun record è stato creato o modificato.'
+                      : 'Candidato selezionato. Conferma la corrispondenza per proseguire. Nessun dato viene ancora salvato.'),
+                  ),
+                if (selectedUrl != null && _confirmedPhotoCandidates[photoIndex] == null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: FilledButton.icon(
+                      onPressed: _analyzingPhotos ? null : () => _confirmPhotoCandidate(photoIndex),
+                      icon: const Icon(Icons.verified_outlined),
+                      label: const Text('CONFERMA QUESTO CANDIDATO'),
+                    ),
                   ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
