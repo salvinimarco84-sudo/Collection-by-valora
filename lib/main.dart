@@ -4722,7 +4722,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
-                        onPressed: _loading ? null : () => _run(_loadIncompleteMetadataCatalog),
+                        onPressed: _loading ? null : () => _run(_ObjectRuntimePagePr12Runtime(this)._loadIncompleteMetadataCatalog),
                         icon: _loading
                             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                             : const Icon(Icons.manage_search),
@@ -4733,7 +4733,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     Text('Record incompleti: ${_pr12IncompleteRecords.length}', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
                     const SizedBox(height: 12),
                     SizedBox(width: double.infinity, child: FilledButton.icon(
-                      onPressed: _loading || _pr12AiBatchRunning ? null : _runPr12AiBatch,
+                      onPressed: _loading || _pr12AiBatchRunning ? null : _ObjectRuntimePagePr12Runtime(this)._runPr12AiBatch,
                       icon: _pr12AiBatchRunning ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
                       label: Text(_pr12AiBatchRunning ? 'RICERCA IN CORSO…' : 'AVVIA RICERCA MULTI-FONTE · LOTTO DA 10'),
                     )),
@@ -4743,7 +4743,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       const SizedBox(height: 10),
                       Text('DA RIPROVARE: ${_pr12UnresolvedRecords.length}', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
                       SizedBox(width: double.infinity, child: OutlinedButton.icon(
-                        onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(retryUnresolved: true),
+                        onPressed: _pr12AiBatchRunning ? null : () => _ObjectRuntimePagePr12Runtime(this)._runPr12AiBatch(retryUnresolved: true),
                         icon: const Icon(Icons.refresh),
                         label: Text(_pr12AiBatchRunning ? 'RICERCA IN CORSO…' : 'RIPROVA I PROSSIMI 10 IRRISOLTI'),
                       )),
@@ -4751,7 +4751,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                     if (_pr12NextBatchOffset < _pr12IncompleteRecords.length) ...[
                       const SizedBox(height: 8),
                       SizedBox(width: double.infinity, child: OutlinedButton.icon(
-                        onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(),
+                        onPressed: _pr12AiBatchRunning ? null : () => _ObjectRuntimePagePr12Runtime(this)._runPr12AiBatch(),
                         icon: const Icon(Icons.skip_next),
                         label: Text('ELABORA PROSSIMO LOTTO · ${(_pr12IncompleteRecords.length - _pr12NextBatchOffset).clamp(0, 10)} DI ${_pr12IncompleteRecords.length - _pr12NextBatchOffset} RECORD'),
                       )),
@@ -4835,7 +4835,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                                 ]),
                                 if (snippet.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(snippet, maxLines: 5, overflow: TextOverflow.ellipsis)),
                                 if (url.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: SelectableText(url, style: TextStyle(color: sectionColor, fontSize: 12))),
-                                if (selected) Padding(padding: const EdgeInsets.only(top: 8), child: SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => _pr12ApplySelectedCandidate(result, item), icon: const Icon(Icons.check_circle_outline), label: const Text('APPLICA METADATI SE DISPONIBILI')))),
+                                if (selected) Padding(padding: const EdgeInsets.only(top: 8), child: SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => _ObjectRuntimePagePr12Runtime(this)._pr12ApplySelectedCandidate(result, item), icon: const Icon(Icons.check_circle_outline), label: const Text('APPLICA METADATI SE DISPONIBILI')))),
                                 const SizedBox(height: 4),
                                 Text('Candidato da verificare: selezionalo per applicare eventuali metadati strutturati.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
                               ]),
@@ -4870,7 +4870,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                       SizedBox(width: double.infinity, child: FilledButton.icon(
                         onPressed: _pr12AiBatchRunning || _pr12SelectedRecordIds.isEmpty ? null : () {
                           final selected = _pr12IncompleteRecords.where((row) => _pr12SelectedRecordIds.contains((row['codice_oggetto'] ?? '').toString())).take(10).toList();
-                          _runPr12AiBatch(selectedRecords: selected);
+                          _ObjectRuntimePagePr12Runtime(this)._runPr12AiBatch(selectedRecords: selected);
                         },
                         icon: const Icon(Icons.travel_explore),
                         label: Text('VERIFICA ${_pr12SelectedRecordIds.length} SELEZIONATI'),
@@ -4915,7 +4915,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
                               )),
                               IconButton(
                                 tooltip: ValoraI18n.tr('Verifica solo questo record'),
-                                onPressed: _pr12AiBatchRunning ? null : () => _runPr12AiBatch(singleRecord: row),
+                                onPressed: _pr12AiBatchRunning ? null : () => _ObjectRuntimePagePr12Runtime(this)._runPr12AiBatch(singleRecord: row),
                                 icon: const Icon(Icons.search),
                               ),
                             ]),
