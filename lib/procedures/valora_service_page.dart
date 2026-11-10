@@ -200,7 +200,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
             .from('master_oggetti')
             .select('codice_oggetto,descrizione_oggetto,produttore,codice_prodotto,stato,condizione,completezza')
             .eq('destinazione', 'COLLEZIONE')
-            .neq('archiviato_test', true)
+            .or('archiviato_test.is.null,archiviato_test.eq.false')
             .order('descrizione_oggetto')
             .order('codice_oggetto')
             .range(offset, offset + pageSize - 1);
