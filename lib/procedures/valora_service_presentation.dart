@@ -211,6 +211,14 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
               ],
             )),
           ),
+          if (_prepared != null && _selectedId != null) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _preparing ? null : _openCatalogObjectForSale,
+              icon: const Icon(Icons.sell_outlined),
+              label: const Text('AVVIA PR-06 · PREZZO GIÀ COMPILATO'),
+            ),
+          ],
           const SizedBox(height: 12),
           OutlinedButton.icon(onPressed: _loadObjects, icon: const Icon(Icons.refresh), label: Text(ValoraI18n.tr('AGGIORNA OGGETTI'))),
         ]),
