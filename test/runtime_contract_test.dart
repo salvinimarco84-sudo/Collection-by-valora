@@ -1250,8 +1250,8 @@ void main() {
     expect(valoraServicePageSource, contains('initialMetadata: metadata'));
     expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
-    expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
-    expect(valoraServicePresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
+    expect(valoraCombinedPresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
+    expect(valoraCombinedPresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
     expect(valoraServicePageSource, isNot(contains("'MARKET_VALUATION_PREPARE'")));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
     expect(valoraServicePresentationSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
