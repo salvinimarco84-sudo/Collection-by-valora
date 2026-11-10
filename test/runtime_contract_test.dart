@@ -42,6 +42,7 @@ void main() {
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final valoraPhotoPresentationSource = File('lib/procedures/valora_photo_search_presentation.dart').readAsStringSync();
   final valoraCollectionLookupPresentationSource = File('lib/procedures/valora_collection_lookup_presentation.dart').readAsStringSync();
+  final valoraPhotoInputPresentationSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraCombinedPresentationSource = '$valoraServicePresentationSource\n$valoraPhotoPresentationSource';
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
@@ -157,6 +158,15 @@ void main() {
       expect(valoraServicePageSource, contains('buildPage(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
+      expect(source, contains("part 'procedures/valora_photo_input_presentation.dart';"));
+      expect(valoraPhotoInputPresentationSource, contains('extension _ValoraPhotoInputPresentation'));
+      expect(valoraPhotoInputPresentationSource, contains('Widget _buildValoraPhotoInputSection()'));
+      expect(valoraPhotoInputPresentationSource, contains("Text('FOTO E FILE'"));
+      expect(valoraPhotoInputPresentationSource, contains('_pickImage(ImageSource.camera)'));
+      expect(valoraPhotoInputPresentationSource, contains('_pickImage(ImageSource.gallery)'));
+      expect(valoraPhotoInputPresentationSource, contains('_pickFiles'));
+      expect(valoraServicePresentationSource, contains('_buildValoraPhotoInputSection()'));
+      expect(valoraServicePresentationSource, isNot(contains("Text('FOTO E FILE'")));
       expect(source, contains("part 'procedures/valora_collection_lookup_presentation.dart';"));
       expect(valoraCollectionLookupPresentationSource, contains('extension _ValoraCollectionLookupPresentation'));
       expect(valoraCollectionLookupPresentationSource, contains('Widget _buildValoraCollectionLookupSection('));
