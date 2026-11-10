@@ -117,7 +117,10 @@ void main() {
       expect(valoraServicePageSource, contains("_ValoraRuntimeApi.call('consultation'"));
       expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE'"));
       expect(valoraServicePageSource, contains("'mercato_riferimento': _market"));
-      expect(valoraServicePageSource, contains("eq('destinazione', 'COLLEZIONE')"));
+      expect(valoraServicePageSource, contains("'destinazione'"));
+      expect(valoraServicePageSource, contains("'valore_mercato'"));
+      expect(valoraServicePageSource, contains("_openCatalogObjectForSale"));
+      expect(valoraServicePageSource, isNot(contains(".eq('destinazione', 'COLLEZIONE')")));
       expect(valoraServicePageSource, contains('buildPage(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
