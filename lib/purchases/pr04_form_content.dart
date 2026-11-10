@@ -10,6 +10,7 @@ class Pr04ItemEditor extends StatelessWidget {
     required this.categoriesLoading,
     required this.onChanged,
     required this.onPhoto,
+    this.suggestedMarketValue,
   });
 
   final int index;
@@ -19,6 +20,7 @@ class Pr04ItemEditor extends StatelessWidget {
   final bool categoriesLoading;
   final VoidCallback onChanged;
   final VoidCallback onPhoto;
+  final double? suggestedMarketValue;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -48,7 +50,13 @@ class Pr04ItemEditor extends StatelessWidget {
         TextField(
           controller: item.price,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Prezzo di acquisto (€) *', hintText: 'Es. 25,00'),
+          decoration: InputDecoration(
+            labelText: 'Prezzo di acquisto (€) *',
+            hintText: 'Es. 25,00',
+            helperText: suggestedMarketValue != null && suggestedMarketValue! > 0
+                ? 'Valore di mercato indicativo: € ${suggestedMarketValue!.toStringAsFixed(2)}. Non è il costo di acquisto.'
+                : 'Inserisci il costo effettivamente sostenuto. Il valore di mercato è un dato distinto.',
+          ),
           onChanged: (_) => onChanged(),
         ),
         const SizedBox(height: 8),
