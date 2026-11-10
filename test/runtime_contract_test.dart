@@ -231,7 +231,7 @@ void main() {
 
     test('PR-06 separa il runtime della vendita dalla pagina mantenendo i controlli transazionali', () {
       expect(source, contains("part 'procedures/pr06_runtime_procedure.dart';"));
-      expect(pr06FormContentSource, contains('Pr06NewSalePageFrame(children: ['));
+      expect(pr06FormContentSource, contains('return Pr06NewSalePageFrame('));
       expect(source, contains('void initState()'));
       expect(pr06RuntimeProcedureSource, contains('extension _Pr06RuntimeProcedure on _NewSalePageState'));
       expect(pr06RuntimeProcedureSource, contains("procedure('PR-06', 'preview'"));
@@ -244,7 +244,7 @@ void main() {
       expect(pr06RuntimeProcedureSource, contains("'verifica_post_salvataggio'"));
       expect(pr06RuntimeProcedureSource, contains('Future<void> _saveSale()'));
       expect(pr06RuntimeProcedureSource, contains('Future<void> _saveLotSale()'));
-      expect(pr06PageFrameSource, contains("AppBar(title: const Text('PR-06 · NUOVA VENDITA'))"));
+      expect(pr06PageFrameSource, contains('appBar: AppBar(title: Text(title))'));
       expect(pr06PageFrameSource, contains('maxWidth: 820'));
       expect(pr06PageFrameSource, contains('ListView('));
     });
@@ -286,7 +286,7 @@ void main() {
       expect(pr06StatusSectionSource, contains('Expanded(child: Text(_status))'));
       expect(pr06FormContentSource, isNot(contains('SelectableText(const JsonEncoder.withIndent')));
       expect(pr06StatusSectionSource, isNot(contains('JsonEncoder')));
-      expect(pr06FormContentSource, contains('Pr06NewSalePageFrame(children: ['));
+      expect(pr06FormContentSource, contains('return Pr06NewSalePageFrame('));
     });
 
     test('PR-05 isola il contenitore della pagina senza spostare la logica delle sezioni', () {
@@ -1231,15 +1231,23 @@ void main() {
     expect(valuationMigration, isNot(contains('UPDATE collection.master_oggetti')));
   });
 
-  test('PR06 VALORA è separata da PR06 ordinaria e richiede conferma prima del salvataggio', () {
+  test('PR06 VALORA riutilizza la PR06 standard con campi precompilati e conferma esplicita', () {
     final page = File('lib/procedures/pr06_valora_page.dart').readAsStringSync();
+    final state = File('lib/procedures/pr06_page_state.dart').readAsStringSync();
+    final form = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
+    final preview = File('lib/procedures/pr06_preview_confirmation_section.dart').readAsStringSync();
     expect(source, contains("part 'procedures/pr06_valora_page.dart';"));
-    expect(page, contains('class Pr06ValoraPage extends StatefulWidget'));
-    expect(page, contains("procedure(\n        'PR-06', 'preview'"));
-    expect(page, contains("procedure(\n        'PR-06', 'save'"));
-    expect(page, contains('CONFERMA E REGISTRA VENDITA'));
-    expect(page, contains('SALVATO_E_VERIFICATO'));
-    expect(page, contains('initialObjectCode'));
+    expect(page, contains('class Pr06ValoraPage extends StatelessWidget'));
+    expect(page, contains('initialObjectCode: initialObjectCode'));
+    expect(page, contains('initialSalePrice: marketValue'));
+    expect(page, contains('valoraMode: true'));
+    expect(state, contains('this.initialObjectCode, this.initialSalePrice, this.valoraMode = false'));
+    expect(state, contains('if (suggested != null && suggested.isFinite && suggested > 0)'));
+    expect(form, contains('_buildPr06SaleDetailsSection(sectionColor)'));
+    expect(form, contains('_buildPr06ObjectSelectionSection(filtered, sectionColor)'));
+    expect(form, contains('if (!widget.valoraMode)'));
+    expect(form, contains('OGGETTO CONFERMATO DA VALORA'));
+    expect(preview, contains('CONFERMA E REGISTRA VENDITA'));
     expect(pr06RuntimeProcedureSource, contains("procedure('PR-06', 'save'"));
     expect(valoraServicePageSource, contains('SOLO VALUTAZIONE'));
     expect(valoraServicePageSource, contains('CONTINUA A PR06 VALORA'));

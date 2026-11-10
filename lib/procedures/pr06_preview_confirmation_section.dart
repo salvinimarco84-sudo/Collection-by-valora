@@ -36,7 +36,7 @@ extension _Pr06PreviewConfirmationSection on _NewSalePageState {
               FilledButton.icon(
                 onPressed: _busy || !_confirmed ? null : _saveSale,
                 icon: const Icon(Icons.save_outlined),
-                label: const Text('SALVA LOTTO'),
+                label: Text(widget.valoraMode && !_lotMode ? 'CONFERMA E REGISTRA VENDITA' : 'SALVA LOTTO'),
               ),
             ],
           ),
