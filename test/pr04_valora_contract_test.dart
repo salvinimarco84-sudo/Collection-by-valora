@@ -44,6 +44,8 @@ void main() {
       expect(page, contains('bool _saveAttempted = false;'));
       expect(page, contains('_saveAttempted = true'));
       expect(page, contains('RIPROVA LA STESSA REGISTRAZIONE'));
+      expect(page, contains('_busy || _purchaseSaved) return;'));
+      expect(page, contains('_valuationSaving) return;'));
       expect(page, contains("'conferma_finale': true"));
     });
 
