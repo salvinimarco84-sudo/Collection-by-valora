@@ -18,6 +18,7 @@ void main() {
   final pr05ConfirmationSectionSource = File('lib/purchases/pr05_confirmation_section.dart').readAsStringSync();
   final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
   final pr12BatchPageSource = File('lib/procedures/pr12_batch_page.dart').readAsStringSync();
+  final pr12RuntimeSource = File('lib/procedures/valora_pr12_runtime.dart').readAsStringSync();
   final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
   final pr06FormContentSource = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
   final pr06PendingSalesSectionSource = File('lib/procedures/pr06_pending_sales_section.dart').readAsStringSync();
@@ -918,7 +919,11 @@ void main() {
     });
 
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
-      final pr12Source = '$source\n$pr12BatchPageSource';
+      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource';
+      expect(source, contains(\"part 'procedures/valora_pr12_runtime.dart';\"));
+      expect(source, isNot(contains('Future<void> _loadIncompleteMetadataCatalog()')));
+      expect(source, isNot(contains('Future<void> _runPr12AiBatch(')));
+      expect(pr12RuntimeSource, contains('extension _ObjectRuntimePagePr12Runtime'));
       expect(pr12Source, contains('_loadIncompleteMetadataCatalog'));
       expect(pr12Source, contains('_runPr12AiBatch'));
       expect(pr12Source, contains('LOTTO DA 10'));
