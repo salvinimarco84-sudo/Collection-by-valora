@@ -30,6 +30,7 @@ checks = {
     "PR-12 catalog scan exists": "_loadIncompleteMetadataCatalog" in pr12_runtime,
     "PR-12 batch engine exists": "_runPr12AiBatch" in pr12_runtime and "LOTTO DA 10" in (root / "lib" / "procedures" / "pr12_runtime_presentation.dart").read_text(encoding="utf-8"),
     "PR-12 presentation is extracted": "part 'procedures/pr12_runtime_presentation.dart';" in main and "Widget _buildPr12Screen()" in (root / "lib" / "procedures" / "pr12_runtime_presentation.dart").read_text(encoding="utf-8") and "if (code == 'PR-12') return _buildPr12Screen();" in main,
+    "VALORA photo search presentation is extracted": "part 'procedures/valora_photo_search_presentation.dart';" in main and "Widget _buildPhotoSearchResultsSection()" in (root / "lib" / "procedures" / "valora_photo_search_presentation.dart").read_text(encoding="utf-8") and "_buildPhotoSearchResultsSection()" in (root / "lib" / "procedures" / "valora_service_presentation.dart").read_text(encoding="utf-8"),
     "active listings report code exists": "REPORT-ACTIVE-LISTINGS" in main,
     "runtime lock methods exist": "Future<void> _acquireLock()" in main and "Future<void> _releaseLock()" in main,
     "write response checks persistence confirmation": "result['scrittura_eseguita'] != true" in main,
