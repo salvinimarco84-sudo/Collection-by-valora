@@ -1223,6 +1223,16 @@ void main() {
     expect(valoraServicePageSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
     expect(valoraServicePageSource, contains('_confirmedPhotoCandidates[index]'));
     expect(valoraServicePageSource, contains('initialMetadata: metadata'));
+    expect(valoraServicePageSource, contains('valoraMode: true'));
+    expect(source, contains('this.valoraMode = false'));
+    expect(source, contains('if (widget.valoraMode) _step = 2;'));
+    expect(source, contains('Pr04ValoraPurchaseContent('));
+    expect(source, contains("title: widget.valoraMode ? 'PR-04 VALORA · NUOVO ACQUISTO'"));
+    expect(pr04FormContentSource, contains('CONFERMA E REGISTRA ACQUISTO'));
+    expect(pr04RuntimeProcedureSource, contains("if (saved && widget.valoraMode)"));
+    expect(pr04RuntimeProcedureSource, contains(".eq('codice_acquisto', purchaseCode)"));
+    expect(pr04RuntimeProcedureSource, contains(".from('master_oggetti')"));
+    expect(pr04RuntimeProcedureSource, contains('collegamento univoco tra acquisto e oggetto non verificato'));
     expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
     expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
