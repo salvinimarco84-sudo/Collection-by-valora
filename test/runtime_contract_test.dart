@@ -41,6 +41,7 @@ void main() {
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final valoraPhotoPresentationSource = File('lib/procedures/valora_photo_search_presentation.dart').readAsStringSync();
+  final valoraCollectionLookupPresentationSource = File('lib/procedures/valora_collection_lookup_presentation.dart').readAsStringSync();
   final valoraCombinedPresentationSource = '$valoraServicePresentationSource\n$valoraPhotoPresentationSource';
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
@@ -156,6 +157,12 @@ void main() {
       expect(valoraServicePageSource, contains('buildPage(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
+      expect(source, contains("part 'procedures/valora_collection_lookup_presentation.dart';"));
+      expect(valoraCollectionLookupPresentationSource, contains('extension _ValoraCollectionLookupPresentation'));
+      expect(valoraCollectionLookupPresentationSource, contains('Widget _buildValoraCollectionLookupSection('));
+      expect(valoraCollectionLookupPresentationSource, contains("Text('CERCA NELLA COLLEZIONE'"));
+      expect(valoraServicePresentationSource, contains('_buildValoraCollectionLookupSection(selected: selected, matches: matches)'));
+      expect(valoraServicePresentationSource, isNot(contains("Text('CERCA NELLA COLLEZIONE'")));
       expect(source, contains("part 'procedures/valora_photo_candidate_flow.dart';"));
       expect(valoraPhotoCandidateFlowSource, contains('mixin _ValoraPhotoCandidateFlow'));
       expect(valoraPhotoCandidateFlowSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
