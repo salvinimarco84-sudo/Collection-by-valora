@@ -308,6 +308,7 @@ Deno.serve(async (req: Request) => {
         },
         risultati: Array.isArray(searchPayload?.risultati) ? searchPayload.risultati : [],
         diagnostica_ricerca: searchPayload?.diagnostica ?? null,
+        query_eseguite: Array.isArray(searchPayload?.query_eseguite) ? searchPayload.query_eseguite : [],
         fonti_specializzate: searchPayload?.fonti_specializzate ?? [],
         conferma_utente_richiesta: true,
         scrittura_database: false

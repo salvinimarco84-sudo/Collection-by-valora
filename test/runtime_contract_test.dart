@@ -114,10 +114,15 @@ void main() {
       expect(source, contains("part 'procedures/valora_service_page.dart';"));
       expect(source, isNot(contains('class ValoraServicePage extends StatefulWidget')));
       expect(valoraServicePageSource, contains("class ValoraServicePage extends StatefulWidget"));
-      expect(valoraServicePageSource, contains("_ValoraRuntimeApi.call('consultation'"));
-      expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE'"));
+      expect(source, contains("_ValoraRuntimeApi.call('consultation'"));
+      expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
+      expect(valoraServicePageSource, contains('_continueToPr06Valora'));
+      expect(valoraServicePageSource, contains('Pr06ValoraPage('));
       expect(valoraServicePageSource, contains("'mercato_riferimento': _market"));
-      expect(valoraServicePageSource, contains("eq('destinazione', 'COLLEZIONE')"));
+      expect(valoraServicePageSource, contains("'destinazione'"));
+      expect(valoraServicePageSource, contains("'valore_mercato'"));
+      expect(valoraServicePageSource, contains("_openCatalogObjectForSale"));
+      expect(valoraServicePageSource, isNot(contains(".eq('destinazione', 'COLLEZIONE')")));
       expect(valoraServicePageSource, contains('buildPage(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
@@ -1198,6 +1203,46 @@ void main() {
         expect(card, contains('class ActiveSaleReportCard extends StatelessWidget'));
         expect(dashboardHomeCoordinatorSource, contains("procedure.apiCode == 'REPORT-ACTIVE-LISTINGS'"));
         expect(dashboardHomeCoordinatorSource, contains('const ActiveSalesReportPage()'));
+  });
+
+
+  test('VALORA apre PR-04 solo da metadati confermati e non confonde costo e valore di mercato', () {
+    expect(source, contains('this.initialMetadata'));
+    expect(source, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
+    expect(source, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
+    expect(pr04FormContentSource, contains('Inserisci il costo effettivamente sostenuto.'));
+    expect(pr04FormContentSource, contains('Non è il costo di acquisto.'));
+    expect(valoraServicePageSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
+    expect(valoraServicePageSource, contains('_confirmedPhotoCandidates[index]'));
+    expect(valoraServicePageSource, contains('initialMetadata: metadata'));
+    expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
+    expect(valoraServicePageSource, contains("'metadati': metadata"));
+    expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
+    expect(valoraServicePresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
+    expect(valoraServicePageSource, isNot(contains("'MARKET_VALUATION_PREPARE'")));
+    expect(valoraServicePageSource, contains("'metadati': metadata"));
+    expect(valoraServicePresentationSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
+    final valuationMigration = File('supabase/migrations/20261110104500_prepare_valora_metadata_only_valuation.sql').readAsStringSync();
+    expect(valuationMigration, contains('MARKET_VALUATION_PREPARE_METADATA'));
+    expect(valuationMigration, contains('LANGUAGE plpgsql\nSTABLE'));
+    expect(valuationMigration, contains('valutazione_numerica_disponibile'));
+    expect(valuationMigration, contains('REVOKE ALL ON FUNCTION collection.pr_valuta_prepara_richiesta_metadati'));
+    expect(valuationMigration, isNot(contains('INSERT INTO collection.master_oggetti')));
+    expect(valuationMigration, isNot(contains('UPDATE collection.master_oggetti')));
+  });
+
+  test('PR06 VALORA è separata da PR06 ordinaria e richiede conferma prima del salvataggio', () {
+    final page = File('lib/procedures/pr06_valora_page.dart').readAsStringSync();
+    expect(source, contains("part 'procedures/pr06_valora_page.dart';"));
+    expect(page, contains('class Pr06ValoraPage extends StatefulWidget'));
+    expect(page, contains("procedure(\n        'PR-06', 'preview'"));
+    expect(page, contains("procedure(\n        'PR-06', 'save'"));
+    expect(page, contains('CONFERMA E REGISTRA VENDITA'));
+    expect(page, contains('SALVATO_E_VERIFICATO'));
+    expect(page, contains('initialObjectCode'));
+    expect(pr06RuntimeProcedureSource, contains("procedure('PR-06', 'save'"));
+    expect(valoraServicePageSource, contains('SOLO VALUTAZIONE'));
+    expect(valoraServicePageSource, contains('CONTINUA A PR06 VALORA'));
   });
 
 }

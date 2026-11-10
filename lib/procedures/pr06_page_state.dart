@@ -2,8 +2,9 @@ part of '../main.dart';
 
 /// PR-06: pagina e stato della nuova vendita.
 class NewSalePage extends StatefulWidget {
-  const NewSalePage({super.key, this.initialObjectCode});
+  const NewSalePage({super.key, this.initialObjectCode, this.initialSalePrice});
   final int? initialObjectCode;
+  final double? initialSalePrice;
 
   @override
   State<NewSalePage> createState() => _NewSalePageState();
@@ -30,6 +31,10 @@ class _NewSalePageState extends State<NewSalePage> {
   @override
   void initState() {
     super.initState();
+    final suggested = widget.initialSalePrice;
+    if (suggested != null && suggested.isFinite && suggested > 0) {
+      _price.text = suggested.toStringAsFixed(2);
+    }
     _load();
   }
 
