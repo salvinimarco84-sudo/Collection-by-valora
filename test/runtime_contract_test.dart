@@ -27,7 +27,11 @@ void main() {
   final pr06PageStateSource = File('lib/procedures/pr06_page_state.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
-  final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final valoraServicePageCoreSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search.dart').readAsStringSync();
+  final valoraCatalogObjectsSource = File('lib/procedures/valora_catalog_objects.dart').readAsStringSync();
+  final valoraValuationFlowSource = File('lib/procedures/valora_valuation_flow.dart').readAsStringSync();
+  final valoraServicePageSource = '$valoraServicePageCoreSource\\n$valoraPhotoSearchSource\\n$valoraCatalogObjectsSource\\n$valoraValuationFlowSource';
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
