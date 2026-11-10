@@ -63,6 +63,8 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
             ..._photoSearchResults.map((result) {
               final clues = Map<String, dynamic>.from(result['identificazione'] as Map);
               final candidates = (result['risultati'] as List).whereType<Map>().toList();
+              final photoIndex = _photoSearchResults.indexOf(result);
+              final selectedUrl = _selectedPhotoCandidates[photoIndex];
               return Card(child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Identificazione: ${clues['descrizione_provvisoria'] ?? 'Non determinata'}'),
                 if ((clues['marchio'] ?? '').toString().isNotEmpty) Text('Marchio: ${clues['marchio']}'),
@@ -74,7 +76,6 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                   ),
                 ...candidates.map((candidate) {
                   final url = (candidate['url'] ?? '').toString();
-                  final selectedUrl = _selectedPhotoCandidates[_photoSearchResults.indexOf(result)];
                   final isSelected = selectedUrl != null && selectedUrl == url;
                   return Card(
                     margin: const EdgeInsets.only(top: 6),
@@ -93,7 +94,7 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                         color: isSelected ? const Color(0xFFD9B45B) : null),
                       selected: isSelected,
                       onTap: url.isEmpty ? null : () => setState(() {
-                        _selectedPhotoCandidates[_photoSearchResults.indexOf(result)] = url;
+                        _selectedPhotoCandidates[photoIndex] = url;
                       }),
                     ),
                   );
@@ -105,7 +106,7 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                   ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
-                  onPressed: _analyzingPhotos ? null : () => _retryPhotoSearch(_photoSearchResults.indexOf(result)),
+                  onPressed: _analyzingPhotos ? null : () => _retryPhotoSearch(photoIndex),
                   icon: const Icon(Icons.manage_search),
                   label: const Text('NESSUNO CORRISPONDE: NUOVA RICERCA'),
                 ),
