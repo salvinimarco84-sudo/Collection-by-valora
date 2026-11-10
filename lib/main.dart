@@ -6426,6 +6426,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   @override
   void initState() {
     super.initState();
+    if (widget.valoraMode) _step = 2;
     final metadata = widget.initialMetadata;
     if (metadata != null) {
       final item = _items.first;
@@ -6584,6 +6585,11 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       return Pr04ValoraPurchaseContent(
         dateLabel: _dateLabel(_date),
         description: _items.first.description.text.trim(),
+        detailsSummary: _items.first.destination + ' · ' + _items.first.condition +
+            ' · ' + _items.first.completeness +
+            (_items.first.destination == 'COLLEZIONE' && _items.first.collectionCategoryCode != null
+                ? ' · Categoria ' + _items.first.collectionCategoryCode!
+                : ''),
         total: _total,
         busy: _busy,
         previewReady: _preview != null,
