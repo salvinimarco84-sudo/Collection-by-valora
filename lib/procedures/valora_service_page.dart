@@ -289,6 +289,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     }
     final session = _uuid.v4();
     var locked = false;
+    var destinationChanged = false;
     setState(() { _preparing = true; _error = null; });
     try {
       final destination = (object['destinazione'] ?? '').toString().trim().toUpperCase();
@@ -316,11 +317,42 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
           throw StateError('Cambio destinazione non verificato dal runtime.');
         }
         locked = false;
+        destinationChanged = true;
       }
       if (!mounted) return;
-      await Navigator.of(context).push(MaterialPageRoute(
+      final saleSaved = await Navigator.of(context).push<bool>(MaterialPageRoute(
         builder: (_) => NewSalePage(initialObjectCode: id, initialSalePrice: price),
       ));
+      if (destinationChanged && saleSaved != true) {
+        final rollbackSession = _uuid.v4();
+        final rollbackLock = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': rollbackSession});
+        final rollbackLockData = rollbackLock['result'];
+        if (rollbackLockData is Map && rollbackLockData['acquisito'] == true) {
+          try {
+            final rollbackPayload = <String, dynamic>{
+              'oggetti': [{'codice_oggetto': id, 'destinazione': destination}],
+              'dati_confermati': true,
+              'altra_operazione': false,
+              'conferma_finale': true,
+            };
+            final rollbackPreview = await _ValoraRuntimeApi.procedure('PR-02', 'preview', rollbackPayload, sessionId: rollbackSession);
+            if (rollbackPreview['errore'] == null && rollbackPreview['scrittura_eseguita'] != true) {
+              await _ValoraRuntimeApi.procedure('PR-02', 'review', rollbackPayload, sessionId: rollbackSession);
+              final rollback = await _ValoraRuntimeApi.procedure('PR-02', 'save', rollbackPayload,
+                sessionId: rollbackSession, requestId: _uuid.v4());
+              if (rollback['scrittura_eseguita'] != true || rollback['blocco_rilasciato_automaticamente'] != true) {
+                throw StateError('Ripristino destinazione non verificato.');
+              }
+            } else {
+              throw StateError('Anteprima ripristino non valida.');
+            }
+          } finally {
+            try { await _ValoraRuntimeApi.call('release_lock', {'session_id': rollbackSession}); } catch (_) {}
+          }
+        } else {
+          throw StateError('Impossibile acquisire il blocco per ripristinare la destinazione originaria.');
+        }
+      }
       if (mounted) await _loadObjects();
     } catch (e) {
       if (locked) {
