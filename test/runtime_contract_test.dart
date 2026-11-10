@@ -944,10 +944,12 @@ void main() {
 
     test('PR-12 separa runtime e presentazione mantenendo la ricerca multi-fonte a lotti', () {
       final pr12PresentationSource = File('lib/procedures/pr12_runtime_presentation.dart').readAsStringSync();
-      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource\n$pr12CatalogSource\n$pr12CandidateApplySource\n$pr12PresentationSource';
+      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource\n$pr12CatalogSource\n$pr12CandidateApplySource\n$pr12CandidateCardSource\n$pr12PresentationSource';
       expect(source, contains("part 'procedures/valora_pr12_runtime.dart';"));
       expect(source, contains("part 'procedures/valora_pr12_catalog.dart';"));
       expect(source, contains("part 'procedures/valora_pr12_candidate_apply.dart';"));
+      expect(source, contains("part 'procedures/valora_pr12_candidate_card.dart';"));
+      expect(pr12CandidateCardSource, contains('APPLICA METADATI SE DISPONIBILI'));
       expect(pr12CandidateApplySource, contains('extension _ObjectRuntimePagePr12CandidateApply'));
       expect(pr12CandidateApplySource, contains('Future<void> _pr12ApplySelectedCandidate('));
       expect(pr12CandidateApplySource, contains('String _pr12CategoryFromDescription(String description)'));
