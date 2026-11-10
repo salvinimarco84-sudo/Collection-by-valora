@@ -992,7 +992,9 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
       cleanDescription + " scheda tecnica collezione",
       ...(theme ? [theme + " " + cleanDescription + " catalogo"] : []),
     ] : [];
-    const allQueries = [...new Set([...prioritizedQueries, ...expandedQueries])];
+    const allQueries = extendedSearch
+      ? [...new Set([...expandedQueries, ...prioritizedQueries])]
+      : [...new Set(prioritizedQueries)];
     const queries = allQueries
       .filter((query) => !excludedQueries.has(query.trim().toLowerCase()))
       .slice(0, extendedSearch ? 25 : 20);
