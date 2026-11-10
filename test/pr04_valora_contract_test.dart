@@ -39,6 +39,8 @@ void main() {
       expect(confirmDialog, greaterThanOrEqualTo(0));
       expect(saveCall, greaterThan(confirmDialog));
       expect(page, contains('_reviewed'));
+      expect(page, contains('bool _dateConfirmed = false;'));
+      expect(page, contains('Seleziona destinazione, condizione e completezza.'));
       expect(page, contains("'conferma_finale': true"));
     });
 
