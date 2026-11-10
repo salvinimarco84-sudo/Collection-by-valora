@@ -34,9 +34,10 @@ extension _Pr06RuntimeProcedure on _NewSalePageState {
       setState(() {
         _objects = rows;
         _platforms = platforms;
-        _selectedObject = widget.initialObjectCode != null &&
-            rows.any((row) => int.tryParse((row['codice_oggetto'] ?? '').toString()) == widget.initialObjectCode)
-          ? widget.initialObjectCode
+        final initialObjectExists = widget.initialObjectCode != null &&
+            rows.any((row) => int.tryParse((row['codice_oggetto'] ?? '').toString()) == widget.initialObjectCode);
+        _selectedObject = widget.initialObjectCode != null
+          ? (initialObjectExists ? widget.initialObjectCode : (widget.valoraMode || rows.isEmpty ? null : int.tryParse((rows.first['codice_oggetto'] ?? '').toString())))
           : (rows.isNotEmpty ? int.tryParse((rows.first['codice_oggetto'] ?? '').toString()) : null);
         _selectedPlatforms.clear();
         if (platforms.isNotEmpty) {
