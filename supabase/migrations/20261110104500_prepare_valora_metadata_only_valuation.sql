@@ -73,8 +73,8 @@ BEGIN
       'anno_uscita', nullif(v_anno, ''),
       'linea_serie', nullif(v_linea, ''),
       'categoria', nullif(v_famiglia, ''),
-      'fonte_metadati_confermati', nullif(v_metadata->>'fonte_dati_prodotto', v_metadata->>'url'),
-      'url_immagine_catalogo', nullif(v_metadata->>'url_immagine_catalogo', v_metadata->>'image_url')
+      'fonte_metadati_confermati', coalesce(nullif(v_metadata->>'fonte_dati_prodotto',''), nullif(v_metadata->>'url','')),
+      'url_immagine_catalogo', coalesce(nullif(v_metadata->>'url_immagine_catalogo',''), nullif(v_metadata->>'image_url',''))
     ),
     'richiesta', jsonb_build_object(
       'mercato_riferimento', v_mercato,
