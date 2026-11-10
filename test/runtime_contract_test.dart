@@ -117,6 +117,9 @@ void main() {
       expect(source, contains("_ValoraRuntimeApi.call('consultation'"));
       expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
       expect(valoraServicePageSource, contains('_continueToPr06Valora'));
+      expect(valoraServicePageSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
+      expect(valoraServicePageSource, contains('_saveKnownObjectValuation'));
+      expect(valoraServicePageSource, contains("pop('SOLO_VALUTAZIONE')"));
       expect(valoraServicePageSource, contains('Pr06ValoraPage('));
       expect(valoraServicePageSource, contains("'mercato_riferimento': _market"));
       expect(valoraServicePageSource, contains("'destinazione'"));
