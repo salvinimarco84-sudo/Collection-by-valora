@@ -185,16 +185,37 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   Future<void> _loadObjects() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await Supabase.instance.client.schema('collection')
-          .from('master_oggetti')
-          .select('codice_oggetto,descrizione_oggetto,produttore,codice_prodotto,stato,condizione,completezza')
-          .eq('destinazione', 'COLLEZIONE')
-          .neq('archiviato_test', true)
-          .order('descrizione_oggetto')
-          .limit(500);
-      final rows = (data as List).map((e) => Map<String, dynamic>.from(e as Map))
-          .where((r) => !['VENDUTO','PERSO','DISTRUTTO','USCITO','ACCORPATO']
-              .contains((r['stato'] ?? '').toString().toUpperCase())).toList();
+      const pageSize = 500;
+      var offset = 0;
+      final rows = <Map<String, dynamic>>[];
+      const excludedStatuses = {
+        'VENDUTO', 'SOLD', 'PERSO', 'LOST', 'DISTRUTTO', 'DESTROYED',
+        'USCITO', 'EXITED', 'ACCORPATO', 'MERGED',
+      };
+
+      // Legge tutte le pagine: il limite di una singola richiesta non deve
+      // nascondere oggetti validi che si trovano oltre i primi 500 record.
+      while (true) {
+        final page = await Supabase.instance.client.schema('collection')
+            .from('master_oggetti')
+            .select('codice_oggetto,descrizione_oggetto,produttore,codice_prodotto,stato,condizione,completezza')
+            .eq('destinazione', 'COLLEZIONE')
+            .neq('archiviato_test', true)
+            .order('descrizione_oggetto')
+            .order('codice_oggetto')
+            .range(offset, offset + pageSize - 1);
+
+        final pageRows = (page as List)
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .where((row) => !excludedStatuses.contains(
+                (row['stato'] ?? '').toString().trim().toUpperCase()))
+            .toList();
+        rows.addAll(pageRows);
+
+        if (page.length < pageSize) break;
+        offset += pageSize;
+      }
+
       if (!mounted) return;
       setState(() { _objects = rows; _loading = false; });
     } catch (e) {
