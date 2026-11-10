@@ -109,6 +109,7 @@ part 'reports/sales_report_card.dart';
 part 'procedures/valora_service_page.dart';
 part 'procedures/valora_assistant_page.dart';
 part 'procedures/valora_photo_search.dart';
+part 'procedures/valora_photo_candidate_flow.dart';
 part 'procedures/valora_catalog_objects.dart';
 part 'procedures/valora_valuation_flow.dart';
 part 'procedures/valora_service_presentation.dart';
