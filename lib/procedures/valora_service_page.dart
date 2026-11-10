@@ -7,6 +7,9 @@ class ValoraServicePage extends StatefulWidget {
 }
 
 abstract class _ValoraServicePageStateBase extends State<ValoraServicePage> {
+  // Contratto condiviso: i moduli fotografici e di valutazione possono ricaricare il catalogo.
+  Future<void> _loadObjects();
+
   bool _loading = true;
   bool _preparing = false;
   bool _analyzingPhotos = false;
