@@ -1215,6 +1215,16 @@ void main() {
 
 
   test('VALORA apre PR-04 solo da metadati confermati e non confonde costo e valore di mercato', () {
+    final pr04ValoraPageSource = File('lib/purchases/pr04_valora_page.dart').readAsStringSync();
+    expect(source, contains("part 'purchases/pr04_valora_page.dart';"));
+    expect(pr04ValoraPageSource, contains('class Pr04ValoraPurchasePage extends StatelessWidget'));
+    expect(pr04ValoraPageSource, contains('valoraMode: true'));
+    expect(pr04ValoraPageSource, contains('class Pr04ValoraPurchaseForm extends StatelessWidget'));
+    expect(pr04ValoraPageSource, contains('class Pr04ValoraPurchaseReview extends StatelessWidget'));
+    expect(pr04ValoraPageSource, contains('CONFERMA E REGISTRA ACQUISTO'));
+    expect(pr04ValoraPageSource, contains('Il valore di mercato PR-18 è solo un riferimento'));
+    expect(valoraServicePageSource, contains('Pr04ValoraPurchasePage('));
+    expect(valoraServicePageSource, isNot(contains('builder: (_) => NewPurchasePage(')));
     expect(source, contains('this.initialMetadata'));
     expect(source, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
     expect(source, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
