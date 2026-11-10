@@ -41,6 +41,97 @@ class _Pr06ValoraListingDraftApi {
   }
 }
 
+  static Future<List<Map<String, dynamic>>> list() async {
+    final response = await Supabase.instance.client.functions.invoke(
+      'valora-listing-drafts-test',
+      body: {'action': 'list'},
+    );
+    final data = response.data;
+    if (response.status >= 400 || data is! Map || data['error'] != null) {
+      throw Exception(data is Map ? (data['error'] ?? 'Impossibile caricare le bozze') : 'Risposta non valida dal servizio bozze.');
+    }
+    final rows = data['bozze'];
+    if (rows is! List) throw Exception('Il servizio non ha restituito l’elenco delle bozze.');
+    return rows.whereType<Map>().map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+}
+
+class Pr06ValoraListingDraftLibraryPage extends StatefulWidget {
+  const Pr06ValoraListingDraftLibraryPage({super.key});
+
+  @override
+  State<Pr06ValoraListingDraftLibraryPage> createState() => _Pr06ValoraListingDraftLibraryPageState();
+}
+
+class _Pr06ValoraListingDraftLibraryPageState extends State<Pr06ValoraListingDraftLibraryPage> {
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _drafts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final drafts = await _Pr06ValoraListingDraftApi.list();
+      if (!mounted) return;
+      setState(() { _drafts = drafts; _loading = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  Future<void> _open(Map<String, dynamic> draft) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => Pr06ValoraListingDraftsPage(drafts: [draft]),
+    ));
+    if (mounted) await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final a = ValoraAppearance.instance;
+    return Scaffold(
+      appBar: AppBar(title: const Text('ARCHIVIO BOZZE INSERZIONI')),
+      body: _loading
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+          ? ListView(padding: const EdgeInsets.all(16), children: [
+              Text('Caricamento non riuscito: $_error'),
+              OutlinedButton.icon(onPressed: _load, icon: const Icon(Icons.refresh), label: const Text('RIPROVA')),
+            ])
+          : _drafts.isEmpty
+            ? Center(child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('Non ci sono ancora bozze. Verranno create dopo una vendita confermata in PR-06 VALORA.', textAlign: TextAlign.center, style: TextStyle(color: a.textSecondary)),
+              ))
+            : RefreshIndicator(
+                onRefresh: _load,
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: _drafts.length,
+                  itemBuilder: (context, index) {
+                    final draft = _drafts[index];
+                    return Card(child: ListTile(
+                      leading: Icon(Icons.description_outlined, color: a.colorFor('VENDITE')),
+                      title: Text((draft['nome_piattaforma'] ?? 'Marketplace').toString()),
+                      subtitle: Text('Oggetto #${draft['codice_oggetto']} · Vendita #${draft['codice_vendita_aperta']}\n${draft['titolo'] ?? ''}\nPrezzo: €${draft['prezzo']} · ${draft['stato']}'),
+                      isThreeLine: true,
+                      trailing: const Icon(Icons.edit_outlined),
+                      onTap: () => _open(draft),
+                    ));
+                  },
+                ),
+              ),
+    );
+  }
+}
+
 class Pr06ValoraListingDraftsPage extends StatefulWidget {
   const Pr06ValoraListingDraftsPage({super.key, required this.drafts});
   final List<Map<String, dynamic>> drafts;
