@@ -1237,6 +1237,8 @@ void main() {
     final form = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
     final preview = File('lib/procedures/pr06_preview_confirmation_section.dart').readAsStringSync();
     final listingDrafts = File('lib/procedures/pr06_valora_listing_drafts.dart').readAsStringSync();
+    final listingDraftRegistry = File('lib/procedures/procedure_registry.dart').readAsStringSync();
+    final listingDraftCoordinator = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
     final listingDraftFunction = File('supabase/functions/valora-listing-drafts-test/index.ts').readAsStringSync();
     final listingDraftMigration = File('supabase/migrations/20261110134302_pr06_valora_platform_listing_drafts_test.sql').readAsStringSync();
     final listingDraftOwnerMigration = File('supabase/migrations/20261110134743_pr06_valora_listing_drafts_user_scope_test.sql').readAsStringSync();
@@ -1260,6 +1262,9 @@ void main() {
     expect(listingDrafts, contains("'valora-listing-drafts-test'"));
     expect(listingDrafts, contains('COPIA TESTO'));
     expect(listingDrafts, contains('SALVA BOZZA'));
+    expect(listingDrafts, contains("body: {'action': 'list'}"));
+    expect(listingDraftRegistry, contains("apiCode: 'VALORA-LISTING-DRAFTS'"));
+    expect(listingDraftCoordinator, contains('Pr06ValoraListingDraftLibraryPage'));
     expect(listingDraftFunction, contains('oggetti_in_vendita_piattaforme'));
     expect(listingDraftFunction, contains('bozze_inserzioni_valora'));
     expect(listingDraftFunction, contains('action === "create"'));
