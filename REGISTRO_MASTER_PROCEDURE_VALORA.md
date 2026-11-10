@@ -1,11 +1,11 @@
 # Registro Master delle Procedure
 ## COLLECTION by VALORA
 
-- **Versione:** 1.2
+- **Versione:** 1.3
 - **Ultima verifica del codice:** 10 novembre 2026
 - **Repository:** `salvinimarco84-sudo/Collection-by-valora`
 - **Branch verificato:** `main`
-- **Ultimo commit del codice verificato:** `c144603dc5631c754f5958a741e52eef3603cb2f`
+- **Ultimo commit del codice aggiornato:** `dff5366d46a1166abeb6c194b6fe65f99ecffa85` (CI e build della scomposizione VALORA in corso)
 - **Fonte primaria del menu:** `lib/procedures/procedure_registry.dart`
 - **Fonte primaria dei collegamenti UI:** `lib/dashboard/dashboard_home_coordinator.dart`
 
@@ -192,3 +192,39 @@ Per ogni procedura mantenere questi campi:
 ## 8. Regola di aggiornamento del registro
 
 Ogni modifica al codice che aggiunge, rimuove, rinomina, divide, accorpa o collega una procedura deve aggiornare questo documento nello stesso intervento. Prima di iniziare un nuovo blocco di sviluppo, verificare il registro e indicare chiaramente la procedura interessata e le sue dipendenze.
+
+
+## 9. Scomposizione tecnica progressiva di VALORA
+
+La scomposizione è in corso. I moduli seguenti sono stati estratti dal precedente blocco monolitico di `ValoraServicePage`; la pagina conserva il coordinamento dello stato e i collegamenti, mentre le responsabilità specifiche sono delegate alle estensioni dedicate.
+
+| Modulo | Responsabilità estratta | Stato |
+|---|---|---|
+| `valora_photo_input_presentation.dart` | Fotocamera, galleria, selezione multipla, allegati immagine, rimozione e presentazione della sezione foto/file | Estratto; callback originali mantenuti |
+| `valora_photo_search_controller.dart` | Analisi bytes immagine tramite PR-12, avvio ricerca, conferma candidato e ricerca estesa con esclusione di URL/query già esaminati | Estratto |
+| `valora_catalog_intake_controller.dart` | Ingresso da candidato confermato, preparazione metadati, richiesta PR-18 e passaggio alla maschera PR-04 VALORA | Estratto |
+| `valora_known_object_valuation_controller.dart` | Valutazione PR-18 di oggetti già presenti, salvataggio valutazione/storico e scelta tra sola valutazione e passaggio a PR-06 VALORA | Estratto |
+| `valora_service_page.dart` | Coordinamento pagina, stato, caricamento oggetti e avvio vendita | Ancora da scomporre |
+| `valora_service_presentation.dart` | Presentazione generale dell'assistente VALORA e ricerca nella collezione | Separazione UI già presente; ulteriori componenti da valutare |
+
+### Regole di separazione mantenute
+
+- PR-04 ordinaria e PR-06 ordinaria non vengono sostituite o riscritte.
+- PR-04 VALORA e PR-06 VALORA restano ingressi dedicati che riutilizzano i rispettivi runtime standard.
+- La fotocamera, la galleria, i file allegati e i callback esistenti restano disponibili.
+- PR-12 identifica e propone candidati; PR-18 valuta; la creazione passa soltanto dalla conferma esplicita in PR-04 VALORA.
+- La vendita di un oggetto già in collezione resta un flusso distinto dalla valutazione.
+- Non vengono introdotte scritture nel database di produzione.
+
+### Verifiche della scomposizione
+
+Sono stati aggiunti contratti automatici per verificare la registrazione dei nuovi moduli, il mantenimento dei callback e la collocazione delle responsabilità estratte. Le prime run hanno segnalato riferimenti di test rimasti nei file precedenti dopo lo spostamento dei metodi; tali riferimenti sono stati riallineati ai nuovi moduli nel commit `dff5366d46a1166abeb6c194b6fe65f99ecffa85`.
+
+**Stato CI/build:** run CI 684 e build 1691, riferite al commit `dff5366d46a1166abeb6c194b6fe65f99ecffa85`, in attesa di esecuzione al momento dell'aggiornamento. Non dichiarare verdi né chiudere questa fase finché le run non terminano con successo.
+
+### Prossimi blocchi della scomposizione
+
+1. Separare il caricamento e la lettura degli oggetti dal coordinatore della pagina.
+2. Separare il flusso di avvio vendita degli oggetti già presenti, senza toccare PR-06 standard.
+3. Ridurre `valora_service_page.dart` al coordinamento e allo stato essenziale.
+4. Verificare i collegamenti UI e i test di regressione di PR-04 VALORA, PR-06 VALORA, PR-12 e PR-18.
