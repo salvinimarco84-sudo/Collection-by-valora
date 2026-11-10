@@ -32,6 +32,7 @@ void main() {
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
+  final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
@@ -149,6 +150,13 @@ void main() {
       expect(valoraPhotoSearchSource, contains("'ANALIZZA_FOTO'"));
       expect(valoraPhotoSearchSource, contains("'ricerca_estesa': true"));
       expect(valoraPhotoSearchSource, contains('_confirmedPhotoCandidates[index]'));
+      expect(source, contains("part 'procedures/valora_catalog_intake_controller.dart';"));
+      expect(valoraServicePageSource, isNot(contains('Future<void> _openUncataloguedCandidate')));
+      expect(valoraCatalogIntakeSource, contains('extension _ValoraCatalogIntakeActions'));
+      expect(valoraCatalogIntakeSource, contains("'pr-18-valuation-test'"));
+      expect(valoraCatalogIntakeSource, contains('Pr04ValoraPurchasePage('));
+      expect(valoraCatalogIntakeSource, contains("if (addObject != true || !mounted) return;"));
+
 
       expect(valoraServicePresentationSource, contains('buildPhotoInputSection(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
