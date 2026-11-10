@@ -320,17 +320,17 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
           const SizedBox(height: 8),
           TextField(controller: _description, enabled: !_purchaseSaved && !_saveAttempted, decoration: const InputDecoration(labelText: 'Descrizione oggetto *'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 8),
-          TextField(controller: _producer, enabled: !_purchaseSaved, decoration: const InputDecoration(labelText: 'Produttore'), onChanged: (_) => _invalidate()),
+          TextField(controller: _producer, enabled: !_purchaseSaved && !_saveAttempted, decoration: const InputDecoration(labelText: 'Produttore'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: TextField(controller: _productCode, enabled: !_purchaseSaved, decoration: const InputDecoration(labelText: 'Codice prodotto'), onChanged: (_) => _invalidate())),
+            Expanded(child: TextField(controller: _productCode, enabled: !_purchaseSaved && !_saveAttempted, decoration: const InputDecoration(labelText: 'Codice prodotto'), onChanged: (_) => _invalidate())),
             const SizedBox(width: 8),
-            Expanded(child: TextField(controller: _year, enabled: !_purchaseSaved, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Anno uscita'), onChanged: (_) => _invalidate())),
+            Expanded(child: TextField(controller: _year, enabled: !_purchaseSaved && !_saveAttempted, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Anno uscita'), onChanged: (_) => _invalidate())),
           ]),
           const SizedBox(height: 8),
-          TextField(controller: _source, enabled: !_purchaseSaved, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Fonte metadati'), onChanged: (_) => _invalidate()),
+          TextField(controller: _source, enabled: !_purchaseSaved && !_saveAttempted, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Fonte metadati'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 8),
-          TextField(controller: _image, enabled: !_purchaseSaved, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'URL immagine catalogo'), onChanged: (_) => _invalidate()),
+          TextField(controller: _image, enabled: !_purchaseSaved && !_saveAttempted, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'URL immagine catalogo'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 14),
           Text('DATI ACQUISTO', style: TextStyle(color: accent, fontWeight: FontWeight.bold)),
           OutlinedButton.icon(
@@ -340,7 +340,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
                 _date.month.toString().padLeft(2, '0') + '/' + _date.year.toString()),
           ),
           TextField(
-            controller: _cost, enabled: !_purchaseSaved,
+            controller: _cost, enabled: !_purchaseSaved && !_saveAttempted,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: const InputDecoration(
               labelText: 'Costo effettivo di acquisto (€) *',
@@ -349,7 +349,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
             onChanged: (_) => _invalidate(),
           ),
           const SizedBox(height: 8),
-          TextField(controller: _purchaseRef, enabled: !_purchaseSaved, decoration: const InputDecoration(labelText: 'Negozio / provenienza (facoltativo)'), onChanged: (_) => _invalidate()),
+          TextField(controller: _purchaseRef, enabled: !_purchaseSaved && !_saveAttempted, decoration: const InputDecoration(labelText: 'Negozio / provenienza (facoltativo)'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 14),
           Text('CLASSIFICAZIONE', style: TextStyle(color: accent, fontWeight: FontWeight.bold)),
           DropdownButtonFormField<String>(
@@ -386,18 +386,18 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
               value: _condition,
               decoration: const InputDecoration(labelText: 'Condizione'),
               items: _conditions.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-              onChanged: _purchaseSaved ? null : (v) => setState(() { _condition = v; _reviewed = false; }),
+              onChanged: _purchaseSaved || _saveAttempted ? null : (v) => setState(() { _condition = v; _reviewed = false; }),
             )),
             const SizedBox(width: 8),
             Expanded(child: DropdownButtonFormField<String>(
               value: _completeness,
               decoration: const InputDecoration(labelText: 'Completezza'),
               items: _completenessValues.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-              onChanged: _purchaseSaved ? null : (v) => setState(() { _completeness = v; _reviewed = false; }),
+              onChanged: _purchaseSaved || _saveAttempted ? null : (v) => setState(() { _completeness = v; _reviewed = false; }),
             )),
           ]),
           const SizedBox(height: 8),
-          TextField(controller: _notes, enabled: !_purchaseSaved, minLines: 2, maxLines: 3, decoration: const InputDecoration(labelText: 'Note e difetti (facoltativi)'), onChanged: (_) => _invalidate()),
+          TextField(controller: _notes, enabled: !_purchaseSaved && !_saveAttempted, minLines: 2, maxLines: 3, decoration: const InputDecoration(labelText: 'Note e difetti (facoltativi)'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 14),
           if (!_purchaseSaved && !_saveAttempted) OutlinedButton.icon(
             onPressed: _busy ? null : () {
