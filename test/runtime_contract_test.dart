@@ -16,6 +16,7 @@ void main() {
   final pr05DetailsSectionSource = File('lib/purchases/pr05_details_section.dart').readAsStringSync();
   final pr05ConfirmationSectionSource = File('lib/purchases/pr05_confirmation_section.dart').readAsStringSync();
   final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
+  final pr12BatchPageSource = File('lib/procedures/pr12_batch_page.dart').readAsStringSync();
   final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
   final pr06FormContentSource = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
   final pr06PendingSalesSectionSource = File('lib/procedures/pr06_pending_sales_section.dart').readAsStringSync();
@@ -637,7 +638,7 @@ void main() {
 
     test('PR-05 rispetta i campi modificabili e la risposta verificata del runtime', () {
       final start = source.indexOf('class _EditPurchasePageState');
-      final end = source.indexOf('class Pr12BatchPage', start);
+      final end = source.length;
       expect(start, isNonNegative);
       expect(end, greaterThan(start));
       final edit = '$source\\n$pr05RuntimeProcedureSource\\n$pr05FormContentSource\\n$pr05DetailsSectionSource';
@@ -886,10 +887,11 @@ void main() {
     });
 
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
-      expect(source, contains('_loadIncompleteMetadataCatalog'));
-      expect(source, contains('_runPr12AiBatch'));
-      expect(source, contains('LOTTO DA 10'));
-      expect(source, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
+      final pr12Source = '$source\n$pr12BatchPageSource';
+      expect(pr12Source, contains('_loadIncompleteMetadataCatalog'));
+      expect(pr12Source, contains('_runPr12AiBatch'));
+      expect(pr12Source, contains('LOTTO DA 10'));
+      expect(pr12Source, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
     });
 
     test('PR-04 preserves every queued purchase until final save', () {
