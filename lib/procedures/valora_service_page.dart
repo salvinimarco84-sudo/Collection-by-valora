@@ -202,7 +202,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     final maker = (candidate['produttore'] ?? candidate['editore'] ?? clues['marchio'] ?? '').toString().trim();
     final code = (candidate['codice_prodotto'] ?? candidate['isbn'] ?? clues['codice_prodotto'] ?? '').toString().trim();
     final yearValue = candidate['anno_uscita'] ?? candidate['anno_pubblicazione'] ?? candidate['year'];
-    final yearMatch = RegExp(r'(19\\d{2}|20\\d{2})').firstMatch(yearValue?.toString() ?? '');
+    final yearMatch = RegExp(r'(19\d{2}|20\d{2})').firstMatch(yearValue?.toString() ?? '');
     final sourceUrl = (candidate['url'] ?? '').toString().trim();
     final imageUrl = (candidate['image_url'] ?? candidate['immagine_url'] ?? candidate['url_immagine'] ?? '').toString().trim();
     final metadata = <String, dynamic>{
