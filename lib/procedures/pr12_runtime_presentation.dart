@@ -67,78 +67,19 @@ extension _ObjectRuntimePagePr12Presentation on _ObjectRuntimePageState {
                           Text('#${result['oggetto_id'] ?? ''} · ${result['descrizione'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
                           Text(result['ok'] != true ? 'Errore tecnico: ${result['error'] ?? 'ricerca non riuscita'}' : (((result['numero_risultati'] as num?) ?? candidateList.length) == 0 ? 'Nessuna corrispondenza pertinente trovata' : '${result['numero_risultati'] ?? candidateList.length} candidati da verificare')),
                           ...candidateList.take(5).toList().asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final item = entry.value is Map ? Map<String, dynamic>.from(entry.value as Map) : <String, dynamic>{};
-                            final imageUrl = (item['image_url'] ?? item['immagine'] ?? '').toString().trim();
-                            final title = (item['title'] ?? 'Titolo non disponibile').toString().trim();
-                            final snippet = (item['snippet'] ?? '').toString().trim();
-                            final url = (item['url'] ?? '').toString().trim();
-                            final maker = (item['produttore'] ?? item['editore'] ?? '').toString().trim();
-                            final year = (item['anno_uscita'] ?? item['anno'] ?? '').toString().trim();
-                            final productCode = (item['codice_prodotto'] ?? item['codice'] ?? item['isbn'] ?? '').toString().trim();
-                            final source = Uri.tryParse(url)?.host.replaceFirst(RegExp(r'^www\\.'), '') ?? '';
-                            final selected = selectedIndex == index;
-                            return InkWell(onTap: () => setState(() => _pr12SelectedCandidates[objectId] = index), child: Container(
-                              margin: const EdgeInsets.only(top: 10), padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(border: Border.all(color: selected ? sectionColor : ValoraAppearance.instance.neutralOverlayStrong, width: selected ? 2 : 1), borderRadius: BorderRadius.circular(12), color: selected ? ValoraAppearance.instance.neutralOverlay : null),
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                  if (imageUrl.isNotEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Image.network(
-                                          _valoraImageProxyUrl(imageUrl),
-                                          width: 92,
-                                          height: 112,
-                                          fit: BoxFit.contain,
-                                          errorBuilder: (context, error, stack) => Container(
-                                            width: 92,
-                                            height: 112,
-                                            alignment: Alignment.center,
-                                            color: ValoraAppearance.instance.neutralOverlay,
-                                            child: const Icon(Icons.image_not_supported_outlined, size: 28),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  else
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 12),
-                                      child: Container(
-                                        width: 92,
-                                        height: 112,
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          color: ValoraAppearance.instance.neutralOverlay,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: const Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.image_search_outlined, size: 30),
-                                            SizedBox(height: 5),
-                                            Text('Nessuna immagine', textAlign: TextAlign.center, style: TextStyle(fontSize: 11)),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                    Row(children: [Icon(selected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: selected ? sectionColor : null), const SizedBox(width: 5), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)))]),
-                                    if (maker.isNotEmpty) Text('Produttore / editore: $maker'),
-                                    if (year.isNotEmpty) Text('Anno: $year'),
-                                    if (productCode.isNotEmpty) Text('Codice / ISBN: $productCode'),
-                                    Text('Fonte: ${source.isEmpty ? 'sito non identificato' : source}', style: TextStyle(color: sectionColor, fontSize: 12)),
-                                  ])),
-                                ]),
-                                if (snippet.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(snippet, maxLines: 5, overflow: TextOverflow.ellipsis)),
-                                if (url.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: SelectableText(url, style: TextStyle(color: sectionColor, fontSize: 12))),
-                                if (selected) Padding(padding: const EdgeInsets.only(top: 8), child: SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => _ObjectRuntimePagePr12CandidateApply(this)._pr12ApplySelectedCandidate(result, item), icon: const Icon(Icons.check_circle_outline), label: const Text('APPLICA METADATI SE DISPONIBILI')))),
-                                const SizedBox(height: 4),
-                                Text('Candidato da verificare: selezionalo per applicare eventuali metadati strutturati.', style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12)),
-                              ]),
-                            ));
+                            final item = entry.value is Map
+                                ? Map<String, dynamic>.from(entry.value as Map)
+                                : <String, dynamic>{};
+                            return Pr12CandidateCard(
+                              result: result,
+                              item: item,
+                              index: entry.key,
+                              selected: selectedIndex == entry.key,
+                              accentColor: sectionColor,
+                              onSelect: () => setState(() => _pr12SelectedCandidates[objectId] = entry.key),
+                              onApply: () => _ObjectRuntimePagePr12CandidateApply(this)
+                                  ._pr12ApplySelectedCandidate(result, item),
+                            );
                           }),
                         ])));
                       }),
