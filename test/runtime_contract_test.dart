@@ -29,6 +29,7 @@ void main() {
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
+  final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
@@ -100,6 +101,13 @@ void main() {
       expect(collectionValuePageSource, contains("'collection-valuation-history'"));
       expect(collectionValuePageSource, contains("'collection-patrimony-snapshot'"));
       expect(collectionValuePageSource, contains('variazione_rivalutazioni'));
+      final collectionValuePresentation = '$collectionValuePageSource\n$collectionValuePresentationSource';
+      expect(collectionValuePresentation, contains('mixin _CollectionValuePresentation'));
+      expect(collectionValuePresentation, contains('Widget _metricCard'));
+      expect(collectionValuePresentation, contains('Widget _sectionImageHeader'));
+      expect(collectionValuePresentation, contains('Widget _sectionHeading'));
+      expect(collectionValuePresentation, contains('Widget _panel'));
+      expect(collectionValuePresentation, contains('Widget _detailLine'));
     });
     test('la schermata VALORA è estratta senza alterare il flusso di valutazione', () {
       expect(source, contains("part 'procedures/valora_service_page.dart';"));
