@@ -36,7 +36,7 @@ abstract class _ValoraServicePageStateBase extends State<ValoraServicePage> {
 }
 
 class _ValoraServicePageState extends _ValoraServicePageStateBase
-    with _ValoraPhotoSearch, _ValoraCatalogObjects, _ValoraValuationFlow {
+    with _ValoraPhotoSearch, _ValoraPhotoCandidateFlow, _ValoraCatalogObjects, _ValoraValuationFlow {
   @override
   void dispose() {
     _descriptionQuery.dispose();
