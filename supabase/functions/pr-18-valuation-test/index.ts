@@ -37,9 +37,6 @@ Deno.serve(async (req: Request) => {
   if (!authorization.startsWith("Bearer ") || !apikey) return reply({ ok: false, error: "Sessione autenticata richiesta." }, 401);
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return reply({ ok: false, error: "JSON non valido." }, 400); }
-  const base = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\\/$/, "");
-  if (!base) return reply({ ok: false, error: "SUPABASE_URL non configurato." }, 500);
-
   const metadata = (body.metadati && typeof body.metadati === "object" ? body.metadati : body) as Record<string, unknown>;
   const descrizione = String(metadata.descrizione ?? metadata.title ?? body.descrizione ?? "").trim().slice(0, 240);
   if (!descrizione || descrizione.length < 2) return reply({ ok: false, error: "Inserire una descrizione di almeno 2 caratteri." }, 400);
