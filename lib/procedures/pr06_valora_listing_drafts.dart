@@ -39,7 +39,6 @@ class _Pr06ValoraListingDraftApi {
     }
     return Map<String, dynamic>.from(data['bozza'] as Map);
   }
-}
 
   static Future<List<Map<String, dynamic>>> list() async {
     final response = await Supabase.instance.client.functions.invoke(
