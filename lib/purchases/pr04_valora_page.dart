@@ -65,6 +65,7 @@ class Pr04ValoraPurchaseForm extends StatelessWidget {
   const Pr04ValoraPurchaseForm({
     super.key,
     required this.itemEditor,
+    required this.metadataDetails,
     required this.dateLabel,
     required this.busy,
     required this.status,
@@ -73,6 +74,7 @@ class Pr04ValoraPurchaseForm extends StatelessWidget {
   });
 
   final Widget itemEditor;
+  final List<String> metadataDetails;
   final String dateLabel;
   final bool busy;
   final String status;
@@ -93,6 +95,24 @@ class Pr04ValoraPurchaseForm extends StatelessWidget {
         'Il valore di mercato PR-18 è solo un riferimento e non viene usato come costo.',
       ),
       const SizedBox(height: 12),
+      if (metadataDetails.isNotEmpty)
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('METADATI CONFERMATI DA PR-12', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                for (final detail in metadataDetails)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(detail),
+                  ),
+              ],
+            ),
+          ),
+        ),
       Card(
         child: ListTile(
           leading: const Icon(Icons.calendar_month_outlined),
