@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final collectionImageProxySource = File('lib/services/collection_image_proxy.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
@@ -612,10 +613,10 @@ void main() {
     });
 
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
-      expect(source, contains("'cdn.rebrickable.com'"));
-      expect(source, contains("'bits-and-blocks.co.uk'"));
-      expect(source, contains("'www.brickeconomy.com'"));
-      expect(source, contains("functions/v1/collection-image-proxy"));
+      expect(collectionImageProxySource, contains("'cdn.rebrickable.com'"));
+      expect(collectionImageProxySource, contains("'bits-and-blocks.co.uk'"));
+      expect(collectionImageProxySource, contains("'www.brickeconomy.com'"));
+      expect(collectionImageProxySource, contains("functions/v1/collection-image-proxy"));
     });
 
     test('le cartelle degli sfondi e dei temi restano incluse nel bundle', () {
