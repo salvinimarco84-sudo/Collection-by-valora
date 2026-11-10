@@ -4,18 +4,14 @@ part of '../main.dart';
 class Pr12CandidateCard extends StatelessWidget {
   const Pr12CandidateCard({
     super.key,
-    required this.result,
     required this.item,
-    required this.index,
     required this.selected,
     required this.accentColor,
     required this.onSelect,
     required this.onApply,
   });
 
-  final Map<String, dynamic> result;
   final Map<String, dynamic> item;
-  final int index;
   final bool selected;
   final Color accentColor;
   final VoidCallback onSelect;
