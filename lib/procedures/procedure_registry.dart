@@ -57,8 +57,8 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report vendite', description: 'Riepilogo delle vendite registrate in VALORA.', apiCode: 'REPORT-SALES'),
   ],
   'VALUTAZIONI': [
-    ProcedureEntry(title: 'VALORA', description: 'Valutazione completa di un singolo oggetto, preparazione delle inserzioni e report.', apiCode: 'LAUNCH-VALORA'),
-    ProcedureEntry(title: 'VALORE COLLEZIONE', description: 'Consulta il valore complessivo della collezione e i relativi riepiloghi.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
+    ProcedureEntry(title: 'PR-18 · VALORA', description: 'Valutazione specialistica del singolo oggetto dopo conferma PR-12, con comparabili e affidabilità.', apiCode: 'LAUNCH-VALORA'),
+    ProcedureEntry(title: 'PR-21 · VALUTAZIONE COMPLESSIVA COLLEZIONE', description: 'Valuta il patrimonio complessivo a lotti e registra lo storico dei valori.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
     ProcedureEntry(title: 'VALUTA ACQUISTO', description: 'Analisi rapida di un acquisto prima di concluderlo. Motore in preparazione.', enabled: false),
   ],
   'FLUSSI DI CASSA': [
