@@ -120,6 +120,7 @@ part 'procedures/pr12_batch_page.dart';
 part 'procedures/valora_pr12_runtime.dart';
 part 'procedures/valora_pr12_catalog.dart';
 part 'procedures/valora_pr12_candidate_apply.dart';
+part 'procedures/valora_pr12_candidate_card.dart';
 part 'procedures/pr12_runtime_presentation.dart';
 part 'services/collection_image_proxy.dart';
 part 'services/collection_procedure_runtime_api.dart';
