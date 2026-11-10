@@ -920,7 +920,7 @@ void main() {
 
     test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
       final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource';
-      expect(source, contains(\"part 'procedures/valora_pr12_runtime.dart';\"));
+      expect(source, contains("part 'procedures/valora_pr12_runtime.dart';"));
       expect(source, isNot(contains('Future<void> _loadIncompleteMetadataCatalog()')));
       expect(source, isNot(contains('Future<void> _runPr12AiBatch(')));
       expect(pr12RuntimeSource, contains('extension _ObjectRuntimePagePr12Runtime'));
