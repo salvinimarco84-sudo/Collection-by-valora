@@ -67,7 +67,48 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                 Text('Identificazione: ${clues['descrizione_provvisoria'] ?? 'Non determinata'}'),
                 if ((clues['marchio'] ?? '').toString().isNotEmpty) Text('Marchio: ${clues['marchio']}'),
                 Text('Candidati trovati: ${candidates.length}'),
-                ...candidates.take(5).map((candidate) => Text((candidate['title'] ?? '').toString())),
+                if (candidates.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text('Nessuna corrispondenza verificabile in questo tentativo. Puoi ampliare la ricerca senza ripetere i risultati già esaminati.'),
+                  ),
+                ...candidates.map((candidate) {
+                  final url = (candidate['url'] ?? '').toString();
+                  final selectedUrl = _selectedPhotoCandidates[_photoSearchResults.indexOf(result)];
+                  final isSelected = selectedUrl != null && selectedUrl == url;
+                  return Card(
+                    margin: const EdgeInsets.only(top: 6),
+                    child: ListTile(
+                      leading: candidate['image_url'] is String && (candidate['image_url'] as String).startsWith('http')
+                        ? Image.network(candidate['image_url'], width: 48, height: 58, fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.inventory_2_outlined))
+                        : const Icon(Icons.inventory_2_outlined),
+                      title: Text((candidate['title'] ?? 'Candidato senza titolo').toString()),
+                      subtitle: Text([
+                        if ((candidate['editore'] ?? candidate['produttore'] ?? '').toString().isNotEmpty) (candidate['editore'] ?? candidate['produttore']).toString(),
+                        if ((candidate['anno_uscita'] ?? '').toString().isNotEmpty) 'Anno: ${candidate['anno_uscita']}',
+                        if (url.isNotEmpty) Uri.tryParse(url)?.host ?? url,
+                      ].join(' • '), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      trailing: Icon(isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                        color: isSelected ? const Color(0xFFD9B45B) : null),
+                      selected: isSelected,
+                      onTap: url.isEmpty ? null : () => setState(() {
+                        _selectedPhotoCandidates[_photoSearchResults.indexOf(result)] = url;
+                      }),
+                    ),
+                  );
+                }),
+                if (selectedUrl != null)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text('Candidato selezionato. La scelta resta in attesa di conferma e non salva ancora nulla nel database.'),
+                  ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _analyzingPhotos ? null : () => _retryPhotoSearch(_photoSearchResults.indexOf(result)),
+                  icon: const Icon(Icons.manage_search),
+                  label: const Text('NESSUNO CORRISPONDE: NUOVA RICERCA'),
+                ),
               ])));
             }),
           ],
