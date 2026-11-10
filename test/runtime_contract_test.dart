@@ -43,6 +43,7 @@ void main() {
   final valoraPhotoPresentationSource = File('lib/procedures/valora_photo_search_presentation.dart').readAsStringSync();
   final valoraCollectionLookupPresentationSource = File('lib/procedures/valora_collection_lookup_presentation.dart').readAsStringSync();
   final valoraPhotoInputPresentationSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
+  final valoraValuationPreparationPresentationSource = File('lib/procedures/valora_valuation_preparation_presentation.dart').readAsStringSync();
   final valoraCombinedPresentationSource = '$valoraServicePresentationSource\n$valoraPhotoPresentationSource';
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
@@ -181,7 +182,13 @@ void main() {
       expect(valoraPhotoPresentationSource, contains('Widget _buildPhotoSearchResultsSection()'));
       expect(valoraServicePresentationSource, isNot(contains('_photoSearchResults.isNotEmpty')));
       expect(valoraCombinedPresentationSource, contains('CONFERMA QUESTO CANDIDATO'));
-      expect(valoraServicePresentationSource, contains("'PREPARA VALUTAZIONE'"));
+      expect(source, contains("part 'procedures/valora_valuation_preparation_presentation.dart';"));
+      expect(valoraValuationPreparationPresentationSource, contains('extension _ValoraValuationPreparationPresentation'));
+      expect(valoraValuationPreparationPresentationSource, contains('Widget _buildValoraValuationPreparationSection()'));
+      expect(valoraServicePresentationSource, contains('_buildValoraValuationPreparationSection()'));
+      expect(valoraValuationPreparationPresentationSource, contains("'PREPARA VALUTAZIONE'"));
+      expect(valoraValuationPreparationPresentationSource, contains('_prepareValuation'));
+      expect(valoraValuationPreparationPresentationSource, contains('_continueToPr06Valora'));
     });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
       expect(source, contains("part 'procedures/write_procedure_action_panel.dart';"));
