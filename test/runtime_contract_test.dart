@@ -231,7 +231,7 @@ void main() {
 
     test('PR-06 separa il runtime della vendita dalla pagina mantenendo i controlli transazionali', () {
       expect(source, contains("part 'procedures/pr06_runtime_procedure.dart';"));
-      expect(pr06FormContentSource, contains('Pr06NewSalePageFrame(children: ['));
+      expect(pr06FormContentSource, contains('return Pr06NewSalePageFrame('));
       expect(source, contains('void initState()'));
       expect(pr06RuntimeProcedureSource, contains('extension _Pr06RuntimeProcedure on _NewSalePageState'));
       expect(pr06RuntimeProcedureSource, contains("procedure('PR-06', 'preview'"));
@@ -244,7 +244,7 @@ void main() {
       expect(pr06RuntimeProcedureSource, contains("'verifica_post_salvataggio'"));
       expect(pr06RuntimeProcedureSource, contains('Future<void> _saveSale()'));
       expect(pr06RuntimeProcedureSource, contains('Future<void> _saveLotSale()'));
-      expect(pr06PageFrameSource, contains("AppBar(title: const Text('PR-06 · NUOVA VENDITA'))"));
+      expect(pr06PageFrameSource, contains('appBar: AppBar(title: Text(title))'));
       expect(pr06PageFrameSource, contains('maxWidth: 820'));
       expect(pr06PageFrameSource, contains('ListView('));
     });
@@ -286,7 +286,7 @@ void main() {
       expect(pr06StatusSectionSource, contains('Expanded(child: Text(_status))'));
       expect(pr06FormContentSource, isNot(contains('SelectableText(const JsonEncoder.withIndent')));
       expect(pr06StatusSectionSource, isNot(contains('JsonEncoder')));
-      expect(pr06FormContentSource, contains('Pr06NewSalePageFrame(children: ['));
+      expect(pr06FormContentSource, contains('return Pr06NewSalePageFrame('));
     });
 
     test('PR-05 isola il contenitore della pagina senza spostare la logica delle sezioni', () {
