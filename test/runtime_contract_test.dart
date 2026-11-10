@@ -1212,10 +1212,12 @@ void main() {
     expect(pr04FormContentSource, contains('Non è il costo di acquisto.'));
     expect(valoraServicePageSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
     expect(valoraServicePageSource, contains('_confirmedPhotoCandidates[index]'));
-    expect(valoraServicePageSource, contains('NewPurchasePage(initialMetadata: metadata)'));
+    expect(valoraServicePageSource, contains('initialMetadata: metadata'));
+    expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
+    expect(valoraServicePageSource, contains("'metadati': metadata"));
     expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
     expect(valoraServicePresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
-    expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE_METADATA'"));
+    expect(valoraServicePageSource, contains("'MARKET_VALUATION_PREPARE'"));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
     expect(valoraServicePresentationSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
     final valuationMigration = File('supabase/migrations/20261110104500_prepare_valora_metadata_only_valuation.sql').readAsStringSync();
