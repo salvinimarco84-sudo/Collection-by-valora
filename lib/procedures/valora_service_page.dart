@@ -13,6 +13,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   final List<Map<String, dynamic>> _photoSearchResults = [];
   final Map<int, String> _selectedPhotoCandidates = {};
   final Map<int, Map<String, dynamic>> _confirmedPhotoCandidates = {};
+  final Map<int, String> _metadataValuationStatus = {};
   final Set<String> _reviewedCandidateUrls = {};
   String? _error;
   final TextEditingController _descriptionQuery = TextEditingController();
@@ -214,7 +215,29 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       if (imageUrl.startsWith('https://') || imageUrl.startsWith('http://')) 'url_immagine_catalogo': imageUrl,
     };
     if (!mounted) return;
-    setState(() => _error = null);
+    setState(() { _error = null; _analyzingPhotos = true; });
+    try {
+      final response = await _ValoraRuntimeApi.call('consultation', {
+        'session_id': null,
+        'consultation_code': 'MARKET_VALUATION_PREPARE_METADATA',
+        'arguments': {'metadati': metadata, 'mercato_riferimento': _market},
+      });
+      final result = response['result'];
+      final prepared = result is Map
+          ? Map<String, dynamic>.from(result['risultato'] is Map ? result['risultato'] : result)
+          : <String, dynamic>{};
+      if (mounted) {
+        setState(() => _metadataValuationStatus[index] =
+            (prepared['stato_integrazione'] ?? 'RICHIESTA_PREPARATA').toString());
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _metadataValuationStatus[index] = 'PREPARAZIONE_NON_RIUSCITA: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _analyzingPhotos = false);
+    }
+    if (!mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => NewPurchasePage(initialMetadata: metadata),
     ));
