@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final collectionImageProxySource = File('lib/services/collection_image_proxy.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
@@ -17,6 +18,10 @@ void main() {
   final pr05ConfirmationSectionSource = File('lib/purchases/pr05_confirmation_section.dart').readAsStringSync();
   final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
   final pr12BatchPageSource = File('lib/procedures/pr12_batch_page.dart').readAsStringSync();
+  final pr12RuntimeSource = File('lib/procedures/valora_pr12_runtime.dart').readAsStringSync();
+  final pr12CatalogSource = File('lib/procedures/valora_pr12_catalog.dart').readAsStringSync();
+  final pr12CandidateApplySource = File('lib/procedures/valora_pr12_candidate_apply.dart').readAsStringSync();
+  final pr12CandidateCardSource = File('lib/procedures/valora_pr12_candidate_card.dart').readAsStringSync();
   final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
   final pr06FormContentSource = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
   final pr06PendingSalesSectionSource = File('lib/procedures/pr06_pending_sales_section.dart').readAsStringSync();
@@ -27,9 +32,19 @@ void main() {
   final pr06PageStateSource = File('lib/procedures/pr06_page_state.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
-  final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final valoraServicePageCoreSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search.dart').readAsStringSync();
+  final valoraPhotoCandidateFlowSource = File('lib/procedures/valora_photo_candidate_flow.dart').readAsStringSync();
+  final valoraCatalogObjectsSource = File('lib/procedures/valora_catalog_objects.dart').readAsStringSync();
+  final valoraValuationFlowSource = File('lib/procedures/valora_valuation_flow.dart').readAsStringSync();
+  final valoraServicePageSource = '$valoraServicePageCoreSource\\n$valoraPhotoSearchSource\\n$valoraPhotoCandidateFlowSource\\n$valoraCatalogObjectsSource\\n$valoraValuationFlowSource';
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
+  final valoraPhotoPresentationSource = File('lib/procedures/valora_photo_search_presentation.dart').readAsStringSync();
+  final valoraCollectionLookupPresentationSource = File('lib/procedures/valora_collection_lookup_presentation.dart').readAsStringSync();
+  final valoraPhotoInputPresentationSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
+  final valoraValuationPreparationPresentationSource = File('lib/procedures/valora_valuation_preparation_presentation.dart').readAsStringSync();
+  final valoraCombinedPresentationSource = '$valoraServicePresentationSource\n$valoraPhotoPresentationSource';
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
@@ -95,10 +110,22 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('PR-12 presenta i candidati in una scheda autonoma senza spostare la logica di conferma', () {
+      expect(source, contains("part 'procedures/valora_pr12_candidate_card.dart';"));
+      expect(pr12CandidateCardSource, contains('class Pr12CandidateCard extends StatelessWidget'));
+      expect(pr12CandidateCardSource, contains('required this.onSelect'));
+      expect(pr12CandidateCardSource, contains('required this.onApply'));
+      expect(pr12CandidateCardSource, contains('_valoraImageProxyUrl(imageUrl)'));
+      expect(pr12CandidateApplySource, contains('Future<void> _pr12ApplySelectedCandidate('));
+      expect(File('lib/procedures/pr12_runtime_presentation.dart').readAsStringSync(), contains('Pr12CandidateCard('));
+    });
+
     test('la schermata VALORE COLLEZIONE è estratta mantenendo calcoli e snapshot', () {
       expect(source, contains("part 'procedures/collection_value_page.dart';"));
       expect(source, isNot(contains('class CollectionValuePage extends StatefulWidget')));
       expect(collectionValuePageSource, contains('class CollectionValuePage extends StatefulWidget'));
+      expect(collectionValuePageSource, contains('String _eur(double value)'));
+      expect(collectionValuePageSource, contains('bool _excludedState(dynamic value)'));
       expect(collectionValuePageSource, contains("_readAll('master_oggetti'"));
       expect(collectionValuePageSource, contains("'collection-valuation-history'"));
       expect(collectionValuePageSource, contains("'collection-patrimony-snapshot'"));
@@ -134,7 +161,36 @@ void main() {
       expect(valoraServicePageSource, contains('buildPage(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
-      expect(valoraServicePresentationSource, contains("'PREPARA VALUTAZIONE'"));
+      expect(source, contains("part 'procedures/valora_photo_input_presentation.dart';"));
+      expect(valoraPhotoInputPresentationSource, contains('extension _ValoraPhotoInputPresentation'));
+      expect(valoraPhotoInputPresentationSource, contains('Widget _buildValoraPhotoInputSection()'));
+      expect(valoraPhotoInputPresentationSource, contains("Text('FOTO E FILE'"));
+      expect(valoraPhotoInputPresentationSource, contains('_pickImage(ImageSource.camera)'));
+      expect(valoraPhotoInputPresentationSource, contains('_pickImage(ImageSource.gallery)'));
+      expect(valoraPhotoInputPresentationSource, contains('_pickFiles'));
+      expect(valoraServicePresentationSource, contains('_buildValoraPhotoInputSection()'));
+      expect(valoraServicePresentationSource, isNot(contains("Text('FOTO E FILE'")));
+      expect(source, contains("part 'procedures/valora_collection_lookup_presentation.dart';"));
+      expect(valoraCollectionLookupPresentationSource, contains('extension _ValoraCollectionLookupPresentation'));
+      expect(valoraCollectionLookupPresentationSource, contains('Widget _buildValoraCollectionLookupSection('));
+      expect(valoraCollectionLookupPresentationSource, contains("Text('CERCA NELLA COLLEZIONE'"));
+      expect(valoraServicePresentationSource, contains('_buildValoraCollectionLookupSection(selected: selected, matches: matches)'));
+      expect(valoraServicePresentationSource, isNot(contains("Text('CERCA NELLA COLLEZIONE'")));
+      expect(source, contains("part 'procedures/valora_photo_candidate_flow.dart';"));
+      expect(valoraPhotoCandidateFlowSource, contains('mixin _ValoraPhotoCandidateFlow'));
+      expect(valoraPhotoCandidateFlowSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
+      expect(source, contains("part 'procedures/valora_photo_search_presentation.dart';"));
+      expect(valoraPhotoPresentationSource, contains('extension _ValoraPhotoSearchPresentation'));
+      expect(valoraPhotoPresentationSource, contains('Widget _buildPhotoSearchResultsSection()'));
+      expect(valoraServicePresentationSource, isNot(contains('_photoSearchResults.isNotEmpty')));
+      expect(valoraCombinedPresentationSource, contains('CONFERMA QUESTO CANDIDATO'));
+      expect(source, contains("part 'procedures/valora_valuation_preparation_presentation.dart';"));
+      expect(valoraValuationPreparationPresentationSource, contains('extension _ValoraValuationPreparationPresentation'));
+      expect(valoraValuationPreparationPresentationSource, contains('Widget _buildValoraValuationPreparationSection()'));
+      expect(valoraServicePresentationSource, contains('_buildValoraValuationPreparationSection()'));
+      expect(valoraValuationPreparationPresentationSource, contains("'PREPARA VALUTAZIONE'"));
+      expect(valoraValuationPreparationPresentationSource, contains('_prepareValuation'));
+      expect(valoraValuationPreparationPresentationSource, contains('_continueToPr06Valora'));
     });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
       expect(source, contains("part 'procedures/write_procedure_action_panel.dart';"));
@@ -608,10 +664,10 @@ void main() {
     });
 
     test('le immagini Rebrickable e Bits and Blocks passano dal proxy', () {
-      expect(source, contains("'cdn.rebrickable.com'"));
-      expect(source, contains("'bits-and-blocks.co.uk'"));
-      expect(source, contains("'www.brickeconomy.com'"));
-      expect(source, contains("functions/v1/collection-image-proxy"));
+      expect(collectionImageProxySource, contains("'cdn.rebrickable.com'"));
+      expect(collectionImageProxySource, contains("'bits-and-blocks.co.uk'"));
+      expect(collectionImageProxySource, contains("'www.brickeconomy.com'"));
+      expect(collectionImageProxySource, contains("functions/v1/collection-image-proxy"));
     });
 
     test('le cartelle degli sfondi e dei temi restano incluse nel bundle', () {
@@ -912,12 +968,34 @@ void main() {
       expect(pr04RecognitionDialogSource, contains('La ricerca non salva dati nel database.'));
     });
 
-    test('PR-12 mantiene la ricerca multi-fonte a lotti', () {
-      final pr12Source = '$source\n$pr12BatchPageSource';
+    test('PR-12 separa runtime e presentazione mantenendo la ricerca multi-fonte a lotti', () {
+      final pr12PresentationSource = File('lib/procedures/pr12_runtime_presentation.dart').readAsStringSync();
+      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource\n$pr12CatalogSource\n$pr12CandidateApplySource\n$pr12CandidateCardSource\n$pr12PresentationSource';
+      expect(source, contains("part 'procedures/valora_pr12_runtime.dart';"));
+      expect(source, contains("part 'procedures/valora_pr12_catalog.dart';"));
+      expect(source, contains("part 'procedures/valora_pr12_candidate_apply.dart';"));
+      expect(source, contains("part 'procedures/valora_pr12_candidate_card.dart';"));
+      expect(pr12CandidateCardSource, contains('APPLICA METADATI SE DISPONIBILI'));
+      expect(pr12CandidateApplySource, contains('extension _ObjectRuntimePagePr12CandidateApply'));
+      expect(pr12CandidateApplySource, contains('Future<void> _pr12ApplySelectedCandidate('));
+      expect(pr12CandidateApplySource, contains('String _pr12CategoryFromDescription(String description)'));
+      expect(source, contains("part 'procedures/pr12_runtime_presentation.dart';"));
+      expect(source, isNot(contains("if (code == 'PR-12') {")));
+      expect(source, contains("if (code == 'PR-12') return _buildPr12Screen();"));
+      expect(source, isNot(contains('Future<void> _loadIncompleteMetadataCatalog()')));
+      expect(source, isNot(contains('Future<void> _runPr12AiBatch(')));
+      expect(pr12RuntimeSource, contains('extension _ObjectRuntimePagePr12Runtime'));
+      expect(pr12CatalogSource, contains('extension _ObjectRuntimePagePr12Catalog'));
+      expect(pr12CatalogSource, contains('Future<void> _loadIncompleteMetadataCatalog()'));
+      expect(pr12RuntimeSource, isNot(contains('Future<void> _loadIncompleteMetadataCatalog()')));
+      expect(pr12PresentationSource, contains('extension _ObjectRuntimePagePr12Presentation'));
+      expect(pr12PresentationSource, contains('Widget _buildPr12Screen()'));
+      expect(pr12PresentationSource, contains('RICERCA MULTI-FONTE'));
       expect(pr12Source, contains('_loadIncompleteMetadataCatalog'));
       expect(pr12Source, contains('_runPr12AiBatch'));
-      expect(pr12Source, contains('LOTTO DA 10'));
-      expect(pr12Source, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
+      expect(pr12PresentationSource, contains('LOTTO DA 10'));
+      expect(pr12PresentationSource, contains('RIPROVA I PROSSIMI 10 IRRISOLTI'));
+      expect(pr12CandidateCardSource, contains('APPLICA METADATI SE DISPONIBILI'));
     });
 
     test('PR-04 preserves every queued purchase until final save', () {
@@ -1225,11 +1303,11 @@ void main() {
     expect(valoraServicePageSource, contains('initialMetadata: metadata'));
     expect(valoraServicePageSource, contains("'pr-18-valuation-test'"));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
-    expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
-    expect(valoraServicePresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
+    expect(valoraCombinedPresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
+    expect(valoraCombinedPresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
     expect(valoraServicePageSource, isNot(contains("'MARKET_VALUATION_PREPARE'")));
     expect(valoraServicePageSource, contains("'metadati': metadata"));
-    expect(valoraServicePresentationSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
+    expect(valoraCombinedPresentationSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
     final valuationMigration = File('supabase/migrations/20261110104500_prepare_valora_metadata_only_valuation.sql').readAsStringSync();
     expect(valuationMigration, contains('MARKET_VALUATION_PREPARE_METADATA'));
     expect(valuationMigration, contains('LANGUAGE plpgsql\nSTABLE'));

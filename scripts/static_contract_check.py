@@ -11,6 +11,14 @@ root = Path(__file__).resolve().parents[1]
 main = (root / "lib" / "main.dart").read_text(encoding="utf-8")
 pr06_page_state = (root / "lib" / "procedures" / "pr06_page_state.dart").read_text(encoding="utf-8")
 pr02_runtime = (root / "lib" / "procedures" / "pr02_runtime_procedure.dart").read_text(encoding="utf-8")
+pr12_runtime = (root / "lib" / "procedures" / "valora_pr12_runtime.dart").read_text(encoding="utf-8")
+pr12_catalog = (root / "lib" / "procedures" / "valora_pr12_catalog.dart").read_text(encoding="utf-8")
+pr12_candidate_apply = (root / "lib" / "procedures" / "valora_pr12_candidate_apply.dart").read_text(encoding="utf-8")
+pr12_candidate_card = (root / "lib" / "procedures" / "valora_pr12_candidate_card.dart").read_text(encoding="utf-8")
+pr12_batch_page = (root / "lib" / "procedures" / "pr12_batch_page.dart").read_text(encoding="utf-8")
+valora_collection_lookup_presentation = (root / "lib" / "procedures" / "valora_collection_lookup_presentation.dart").read_text(encoding="utf-8")
+valora_photo_input_presentation = (root / "lib" / "procedures" / "valora_photo_input_presentation.dart").read_text(encoding="utf-8")
+valora_valuation_preparation_presentation = (root / "lib" / "procedures" / "valora_valuation_preparation_presentation.dart").read_text(encoding="utf-8")
 pubspec = (root / "pubspec.yaml").read_text(encoding="utf-8")
 workflow_path = root / ".github" / "workflows" / "collection-valora-ci.yml"
 workflow = workflow_path.read_text(encoding="utf-8") if workflow_path.exists() else ""
@@ -24,8 +32,17 @@ checks = {
     "PR-02 collection category is selected": "_selectedCollectionCategory" in main and "categoria_collezione_selezionata" in main,
     "PR-02 removes technical category from object payload": "oggetto_collezione_categoria" in pr02_runtime and "_savePr02PendingChanges" in pr02_runtime,
     "PR-01 validates collection category": "Seleziona una categoria COLLEZIONE valida." in main,
-    "PR-12 catalog scan exists": "_loadIncompleteMetadataCatalog" in main,
-    "PR-12 batch engine exists": "_runPr12AiBatch" in main and "LOTTO DA 10" in main,
+    "PR-12 runtime is extracted": "part 'procedures/valora_pr12_runtime.dart';" in main and "extension _ObjectRuntimePagePr12Runtime" in pr12_runtime,
+    "PR-12 candidate card is extracted": "part 'procedures/valora_pr12_candidate_card.dart';" in main and "class Pr12CandidateCard extends StatelessWidget" in pr12_candidate_card and "Pr12CandidateCard(" in (root / "lib" / "procedures" / "pr12_runtime_presentation.dart").read_text(encoding="utf-8"),
+    "PR-12 candidate application is extracted": "part 'procedures/valora_pr12_candidate_apply.dart';" in main and "extension _ObjectRuntimePagePr12CandidateApply" in pr12_candidate_apply and "Future<void> _pr12ApplySelectedCandidate(" in pr12_candidate_apply,
+    "PR-12 catalog scan is extracted": "part 'procedures/valora_pr12_catalog.dart';" in main and "extension _ObjectRuntimePagePr12Catalog" in pr12_catalog and "Future<void> _loadIncompleteMetadataCatalog()" in pr12_catalog and "_loadIncompleteMetadataCatalog" not in pr12_runtime,
+    "PR-12 batch engine exists": "_runPr12AiBatch" in pr12_runtime and "LOTTO DA 10" in (root / "lib" / "procedures" / "pr12_runtime_presentation.dart").read_text(encoding="utf-8"),
+    "PR-12 presentation is extracted": "part 'procedures/pr12_runtime_presentation.dart';" in main and "Widget _buildPr12Screen()" in (root / "lib" / "procedures" / "pr12_runtime_presentation.dart").read_text(encoding="utf-8") and "if (code == 'PR-12') return _buildPr12Screen();" in main,
+    "VALORA photo search presentation is extracted": "part 'procedures/valora_photo_search_presentation.dart';" in main and "Widget _buildPhotoSearchResultsSection()" in (root / "lib" / "procedures" / "valora_photo_search_presentation.dart").read_text(encoding="utf-8") and "_buildPhotoSearchResultsSection()" in (root / "lib" / "procedures" / "valora_service_presentation.dart").read_text(encoding="utf-8"),
+    "VALORA valuation preparation presentation is extracted": "part 'procedures/valora_valuation_preparation_presentation.dart';" in main and "extension _ValoraValuationPreparationPresentation" in valora_valuation_preparation_presentation and "Widget _buildValoraValuationPreparationSection()" in valora_valuation_preparation_presentation and "_buildValoraValuationPreparationSection()" in (root / "lib" / "procedures" / "valora_service_presentation.dart").read_text(encoding="utf-8") and "_prepareValuation" in valora_valuation_preparation_presentation and "_continueToPr06Valora" in valora_valuation_preparation_presentation,
+    "VALORA photo input presentation is extracted": "part 'procedures/valora_photo_input_presentation.dart';" in main and "extension _ValoraPhotoInputPresentation" in valora_photo_input_presentation and "Widget _buildValoraPhotoInputSection()" in valora_photo_input_presentation and "_buildValoraPhotoInputSection()" in (root / "lib" / "procedures" / "valora_service_presentation.dart").read_text(encoding="utf-8") and "Text('FOTO E FILE'" not in (root / "lib" / "procedures" / "valora_service_presentation.dart").read_text(encoding="utf-8"),
+    "VALORA collection lookup presentation is extracted": "part 'procedures/valora_collection_lookup_presentation.dart';" in main and "extension _ValoraCollectionLookupPresentation" in valora_collection_lookup_presentation and "Widget _buildValoraCollectionLookupSection(" in valora_collection_lookup_presentation and "_buildValoraCollectionLookupSection(selected: selected, matches: matches)" in (root / "lib" / "procedures" / "valora_service_presentation.dart").read_text(encoding="utf-8") and "Text('CERCA NELLA COLLEZIONE'" not in (root / "lib" / "procedures" / "valora_service_presentation.dart").read_text(encoding="utf-8"),
+    "VALORA confirmed photo candidate flow is extracted": "part 'procedures/valora_photo_candidate_flow.dart';" in main and "mixin _ValoraPhotoCandidateFlow" in (root / "lib" / "procedures" / "valora_photo_candidate_flow.dart").read_text(encoding="utf-8") and "Future<void> _openUncataloguedCandidate(int index) async" in (root / "lib" / "procedures" / "valora_photo_candidate_flow.dart").read_text(encoding="utf-8"),
     "active listings report code exists": "REPORT-ACTIVE-LISTINGS" in main,
     "runtime lock methods exist": "Future<void> _acquireLock()" in main and "Future<void> _releaseLock()" in main,
     "write response checks persistence confirmation": "result['scrittura_eseguita'] != true" in main,
