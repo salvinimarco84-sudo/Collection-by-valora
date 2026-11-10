@@ -19,6 +19,7 @@ void main() {
   final pr05PageFrameSource = File('lib/purchases/pr05_page_frame.dart').readAsStringSync();
   final pr12BatchPageSource = File('lib/procedures/pr12_batch_page.dart').readAsStringSync();
   final pr12RuntimeSource = File('lib/procedures/valora_pr12_runtime.dart').readAsStringSync();
+  final pr12CandidateApplySource = File('lib/procedures/valora_pr12_candidate_apply.dart').readAsStringSync();
   final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
   final pr06FormContentSource = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
   final pr06PendingSalesSectionSource = File('lib/procedures/pr06_pending_sales_section.dart').readAsStringSync();
@@ -931,8 +932,12 @@ void main() {
 
     test('PR-12 separa runtime e presentazione mantenendo la ricerca multi-fonte a lotti', () {
       final pr12PresentationSource = File('lib/procedures/pr12_runtime_presentation.dart').readAsStringSync();
-      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource\n$pr12PresentationSource';
+      final pr12Source = '$source\n$pr12BatchPageSource\n$pr12RuntimeSource\n$pr12CandidateApplySource\n$pr12PresentationSource';
       expect(source, contains("part 'procedures/valora_pr12_runtime.dart';"));
+      expect(source, contains("part 'procedures/valora_pr12_candidate_apply.dart';"));
+      expect(pr12CandidateApplySource, contains('extension _ObjectRuntimePagePr12CandidateApply'));
+      expect(pr12CandidateApplySource, contains('Future<void> _pr12ApplySelectedCandidate('));
+      expect(pr12CandidateApplySource, contains('String _pr12CategoryFromDescription(String description)'));
       expect(source, contains("part 'procedures/pr12_runtime_presentation.dart';"));
       expect(source, isNot(contains("if (code == 'PR-12') {")));
       expect(source, contains("if (code == 'PR-12') return _buildPr12Screen();"));
