@@ -11,7 +11,6 @@ class Pr04ItemEditor extends StatelessWidget {
     required this.onChanged,
     required this.onPhoto,
     this.suggestedMarketValue,
-    this.valoraMode = false,
   });
 
   final int index;
@@ -22,7 +21,6 @@ class Pr04ItemEditor extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback onPhoto;
   final double? suggestedMarketValue;
-  final bool valoraMode;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -96,42 +94,24 @@ class Pr04ItemEditor extends StatelessWidget {
           Expanded(child: DropdownButtonFormField<String>(
             value: item.condition,
             decoration: const InputDecoration(labelText: 'Condizione'),
-            items: valoraMode
-              ? const [
-                  DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')),
-                  DropdownMenuItem(value: 'COME NUOVO', child: Text('COME NUOVO')),
-                  DropdownMenuItem(value: 'OTTIMO', child: Text('OTTIMO')),
-                  DropdownMenuItem(value: 'BUONO', child: Text('BUONO')),
-                  DropdownMenuItem(value: 'DISCRETO', child: Text('DISCRETO')),
-                  DropdownMenuItem(value: 'USATO', child: Text('USATO')),
-                  DropdownMenuItem(value: 'USATO CON SEGNI', child: Text('USATO CON SEGNI')),
-                  DropdownMenuItem(value: 'DA RESTAURARE', child: Text('DA RESTAURARE')),
-                  DropdownMenuItem(value: 'DANNEGGIATO', child: Text('DANNEGGIATO')),
-                ]
-              : const [
-                  DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')),
-                  DropdownMenuItem(value: 'USATO', child: Text('USATO')),
-                  DropdownMenuItem(value: 'DA RIPARARE', child: Text('DA RIPARARE')),
-                ],
+            items: const [
+              DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')),
+              DropdownMenuItem(value: 'USATO', child: Text('USATO')),
+              DropdownMenuItem(value: 'DA RIPARARE', child: Text('DA RIPARARE')),
+            ],
             onChanged: busy ? null : (v) { item.condition = v ?? item.condition; onChanged(); },
           )),
           const SizedBox(width: 8),
           Expanded(child: DropdownButtonFormField<String>(
             value: item.completeness,
             decoration: const InputDecoration(labelText: 'Completezza'),
-            items: valoraMode
-              ? const [
-                  DropdownMenuItem(value: 'SIGILLATO', child: Text('SIGILLATO')),
-                  DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')),
-                  DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')),
-                ]
-              : const [
-                  DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')),
-                  DropdownMenuItem(value: 'COMPLETO CON ISTRUZIONI', child: Text('COMPLETO CON ISTRUZIONI')),
-                  DropdownMenuItem(value: 'COMPLETO CON SCATOLA E ISTRUZIONI', child: Text('COMPLETO CON SCATOLA E ISTRUZIONI')),
-                  DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')),
-                  DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI')),
-                ],
+            items: const [
+              DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')),
+              DropdownMenuItem(value: 'COMPLETO CON ISTRUZIONI', child: Text('COMPLETO CON ISTRUZIONI')),
+              DropdownMenuItem(value: 'COMPLETO CON SCATOLA E ISTRUZIONI', child: Text('COMPLETO CON SCATOLA E ISTRUZIONI')),
+              DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')),
+              DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI')),
+            ],
             onChanged: busy ? null : (v) { item.completeness = v ?? item.completeness; onChanged(); },
           )),
         ]),
@@ -148,106 +128,5 @@ class Pr04ItemEditor extends StatelessWidget {
         ),
       ]),
     ),
-  );
-}
-
-
-class Pr04ValoraPurchaseContent extends StatelessWidget {
-  const Pr04ValoraPurchaseContent({
-    super.key,
-    required this.dateLabel,
-    required this.description,
-    required this.detailsSummary,
-    required this.total,
-    required this.busy,
-    required this.previewReady,
-    required this.itemEditor,
-    required this.onPickDate,
-    required this.onPreview,
-    required this.onSave,
-    required this.onEdit,
-  });
-
-  final String dateLabel;
-  final String description;
-  final String detailsSummary;
-  final double total;
-  final bool busy;
-  final bool previewReady;
-  final Widget itemEditor;
-  final VoidCallback onPickDate;
-  final VoidCallback onPreview;
-  final VoidCallback onSave;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Text(
-        previewReady ? 'CONFERMA ACQUISTO VALORA' : 'NUOVO ACQUISTO DA VALORA',
-        style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800),
-      ),
-      const SizedBox(height: 5),
-      Text(
-        previewReady
-          ? 'Controlla il riepilogo verificato. Il salvataggio avviene solo dopo la conferma.'
-          : 'I dati identificativi trovati da VALORA sono già compilati. Completa solo i dati dell’acquisto.',
-        style: TextStyle(color: ValoraAppearance.instance.textSecondary),
-      ),
-      const SizedBox(height: 12),
-      if (!previewReady) ...[
-        Card(child: ListTile(
-          leading: const Icon(Icons.calendar_month_outlined),
-          title: const Text('Data acquisto'),
-          subtitle: Text(dateLabel),
-          trailing: const Icon(Icons.edit_calendar_outlined),
-          onTap: busy ? null : onPickDate,
-        )),
-        const SizedBox(height: 10),
-        itemEditor,
-        Card(child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(children: [
-            const Expanded(child: Text('TOTALE ACQUISTO', style: TextStyle(fontWeight: FontWeight.bold))),
-            Text('€ ' + total.toStringAsFixed(2).replaceAll('.', ','),
-              style: const TextStyle(fontWeight: FontWeight.w900)),
-          ]),
-        )),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: busy ? null : onPreview,
-          icon: const Icon(Icons.fact_check_outlined),
-          label: const Text('CONTROLLA E MOSTRA RIEPILOGO'),
-        ),
-      ] else ...[
-        Card(child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('ACQUISTO SINGOLO', style: TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            Text('Data acquisto: $dateLabel'),
-            Text('Oggetto: $description'),
-            const SizedBox(height: 4),
-            Text(detailsSummary),
-            const SizedBox(height: 8),
-            Text('Totale: € ' + total.toStringAsFixed(2).replaceAll('.', ','),
-              style: const TextStyle(fontWeight: FontWeight.w900)),
-            const SizedBox(height: 8),
-            const Text('Anteprima completata. Nessuna scrittura è stata eseguita.'),
-          ]),
-        )),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: busy ? null : onSave,
-          icon: const Icon(Icons.save_outlined),
-          label: const Text('CONFERMA E REGISTRA ACQUISTO'),
-        ),
-        OutlinedButton(
-          onPressed: busy ? null : onEdit,
-          child: const Text('MODIFICA DATI'),
-        ),
-      ],
-    ],
   );
 }
