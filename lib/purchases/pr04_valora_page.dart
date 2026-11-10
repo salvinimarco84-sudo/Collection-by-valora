@@ -117,6 +117,12 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
         _message('Anno di uscita non valido.'); return false;
       }
     }
+    final hasProductMetadata = _producer.text.trim().isNotEmpty ||
+        _year.text.trim().isNotEmpty || _productCode.text.trim().isNotEmpty;
+    if (hasProductMetadata && _source.text.trim().isEmpty) {
+      _message('I metadati identificativi richiedono la fonte effettiva. Inserisci il link della fonte oppure rimuovi i metadati non verificabili.');
+      return false;
+    }
     for (final raw in [_source.text.trim(), _image.text.trim()]) {
       if (raw.isNotEmpty && !(raw.startsWith('https://') || raw.startsWith('http://'))) {
         _message('Gli URL devono iniziare con http:// o https://.'); return false;
@@ -156,7 +162,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
         if (year != null) 'anno_uscita': year,
         if (_productCode.text.trim().isNotEmpty) 'codice_prodotto': _productCode.text.trim(),
         if (_source.text.trim().isNotEmpty) 'fonte_dati_prodotto': _source.text.trim(),
-        if (_producer.text.trim().isNotEmpty || year != null || _productCode.text.trim().isNotEmpty)
+        if (_producer.text.trim().isNotEmpty || year != null || _productCode.text.trim().isNotEmpty || _source.text.trim().isNotEmpty)
           'stato_verifica_dati': 'DA_VERIFICARE',
         if (_image.text.trim().isNotEmpty) 'url_immagine_catalogo': _image.text.trim(),
       },
