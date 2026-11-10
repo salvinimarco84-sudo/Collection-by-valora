@@ -21,54 +21,6 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   final List<XFile> _selectedImages = [];
   final List<PlatformFile> _selectedFiles = [];
 
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final picker = ImagePicker();
-      if (source == ImageSource.gallery) {
-        final images = await picker.pickMultiImage(imageQuality: 92);
-        if (!mounted || images.isEmpty) return;
-        setState(() {
-          for (final image in images) {
-            if (_selectedImages.every((item) => item.path != image.path)) {
-              _selectedImages.add(image);
-            }
-          }
-        });
-      } else {
-        final image = await picker.pickImage(source: source, imageQuality: 92);
-        if (!mounted || image == null) return;
-        setState(() => _selectedImages.add(image));
-      }
-    } catch (e) {
-      if (mounted) setState(() => _error = 'Selezione immagine non riuscita: $e');
-    }
-  }
-
-  Future<void> _pickFiles() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        allowMultiple: true,
-        type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
-        withData: true,
-      );
-      if (!mounted || result == null) return;
-      setState(() {
-        for (final file in result.files) {
-          if (_selectedFiles.every((item) => item.name != file.name || item.size != file.size)) {
-            _selectedFiles.add(file);
-          }
-        }
-      });
-    } catch (e) {
-      if (mounted) setState(() => _error = 'Selezione file non riuscita: $e');
-    }
-  }
-
-  void _removeImage(XFile image) => setState(() => _selectedImages.remove(image));
-  void _removeFile(PlatformFile file) => setState(() => _selectedFiles.remove(file));
-
-
   Future<Map<String, dynamic>> _analyzeImageBytes(Uint8List bytes, String fileName) async {
     if (bytes.isEmpty) throw Exception('Il file $fileName è vuoto o non leggibile.');
     if (bytes.length > 10 * 1024 * 1024) throw Exception('Il file $fileName supera il limite di 10 MB.');
