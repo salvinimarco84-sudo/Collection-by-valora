@@ -27,6 +27,7 @@ void main() {
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
@@ -90,6 +91,15 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('la schermata VALORE COLLEZIONE è estratta mantenendo calcoli e snapshot', () {
+      expect(source, contains("part 'procedures/collection_value_page.dart';"));
+      expect(source, isNot(contains('class CollectionValuePage extends StatefulWidget')));
+      expect(collectionValuePageSource, contains('class CollectionValuePage extends StatefulWidget'));
+      expect(collectionValuePageSource, contains("_readAll('master_oggetti'"));
+      expect(collectionValuePageSource, contains("'collection-valuation-history'"));
+      expect(collectionValuePageSource, contains("'collection-patrimony-snapshot'"));
+      expect(collectionValuePageSource, contains('variazione_rivalutazioni'));
+    });
     test('la schermata VALORA è estratta senza alterare il flusso di valutazione', () {
       expect(source, contains("part 'procedures/valora_service_page.dart';"));
       expect(source, isNot(contains('class ValoraServicePage extends StatefulWidget')));
@@ -858,7 +868,7 @@ void main() {
       expect(dashboardFooterSource, contains('withValues(alpha: 0.55)'));
       expect(dashboardRuntimeSource, contains('DashboardSectionFooter('));
       expect(procedureCardSource, contains('Colors.black.withValues(alpha: 0.20)'));
-      expect(source, contains('Colors.black.withValues(alpha: 0.22)'));
+      expect(dashboardOverlaySource, contains('Color.fromRGBO(0, 0, 0, 0.22)'));
       expect(themeSource, contains("'VALUTAZIONI': Color(0xFFD6A83F)"));
       expect(themeSource, contains("'RICERCHE': Color(0xFF38BDF8)"));
       expect(dashboardMenuCardSource, contains('color: color.withValues(alpha: 0.20)'));
