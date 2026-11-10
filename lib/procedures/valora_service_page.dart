@@ -464,27 +464,81 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
 
   Future<void> _prepareValuation() async {
     final id = _selectedId;
-    if (id == null) {
-      setState(() => _error = 'Seleziona prima un oggetto.');
+    final object = _objects.where((row) => row['codice_oggetto'] == id).firstOrNull;
+    if (id == null || object == null) {
+      setState(() => _error = 'Seleziona prima un oggetto della collezione.');
       return;
     }
+    final state = (object['stato'] ?? '').toString().trim().toUpperCase();
+    if (state.isEmpty || {'VENDUTO','SOLD','PERSO','LOST','DISTRUTTO','DESTROYED','USCITO','EXITED','ACCORPATO','MERGED'}.contains(state)) {
+      setState(() => _error = 'L’oggetto non è idoneo alla valutazione VALORA.');
+      return;
+    }
+    final metadata = <String, dynamic>{
+      'descrizione': (object['descrizione_oggetto'] ?? '').toString(),
+      'produttore': (object['produttore'] ?? '').toString(),
+      'codice_prodotto': (object['codice_prodotto'] ?? '').toString(),
+      'categoria': (object['categoria'] ?? '').toString(),
+    };
     setState(() { _preparing = true; _error = null; _prepared = null; });
     try {
-      final response = await _ValoraRuntimeApi.call('consultation', {
-        'session_id': null,
-        'consultation_code': 'MARKET_VALUATION_PREPARE',
-        'arguments': {'codice_oggetto': id, 'mercato_riferimento': _market},
-      });
+      final response = await Supabase.instance.client.functions.invoke(
+        'pr-18-valuation-test',
+        body: {
+          'codice_oggetto': id,
+          'metadati': metadata,
+          'mercato_riferimento': _market,
+        },
+      );
+      final data = response.data;
+      if (data is! Map || data['ok'] != true) {
+        throw StateError(data is Map
+          ? (data['error'] ?? 'PR18 non ha completato la valutazione.').toString()
+          : 'Risposta PR18 non valida.');
+      }
       if (!mounted) return;
-      final result = response['result'];
-      setState(() {
-        _prepared = result is Map ? Map<String, dynamic>.from(result) : {'risultato': result};
-        _preparing = false;
-      });
+      setState(() => _prepared = Map<String, dynamic>.from(data));
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = 'Preparazione non riuscita: $e'; _preparing = false; });
+      setState(() => _error = 'Valutazione PR18 non riuscita: $e');
+    } finally {
+      if (mounted) setState(() => _preparing = false);
     }
+  }
+
+  Future<void> _continueToPr06Valora() async {
+    final id = _selectedId;
+    final object = _objects.where((row) => row['codice_oggetto'] == id).firstOrNull;
+    if (id == null || object == null || _prepared == null) {
+      setState(() => _error = 'Completa prima la valutazione VALORA dell’oggetto selezionato.');
+      return;
+    }
+    final state = (object['stato'] ?? '').toString().trim().toUpperCase();
+    if (state != 'DISPONIBILE') {
+      setState(() => _error = 'PR06 VALORA richiede un oggetto DISPONIBILE. Stato attuale: $state.');
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Proseguire verso la vendita?'),
+        content: const Text('La valutazione è terminata. Vuoi avviare PR06 VALORA? Nessuna vendita verrà registrata fino alla conferma finale nella procedura successiva.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('SOLO VALUTAZIONE')),
+          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('CONTINUA A PR06 VALORA')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final rawValue = _prepared?['valore_mercato'] ?? _prepared?['valore_stimato'];
+    final price = rawValue is num ? rawValue.toDouble() : double.tryParse((rawValue ?? '').toString());
+    await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => Pr06ValoraPage(
+        initialObjectCode: id,
+        marketValue: price != null && price > 0 ? price : null,
+      ),
+    ));
+    if (mounted) await _loadObjects();
   }
 
   @override
