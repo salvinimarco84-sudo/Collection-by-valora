@@ -268,8 +268,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     );
     if (addObject != true || !mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => NewPurchasePage(
-        valoraMode: true,
+      builder: (_) => Pr04ValoraPage(
         initialMetadata: metadata,
         suggestedMarketValue: valuation?['valore_mercato'] is num
             ? (valuation!['valore_mercato'] as num).toDouble()
