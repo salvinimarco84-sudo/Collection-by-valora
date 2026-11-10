@@ -45,6 +45,16 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
             ),
           ]),
           if (_selectedImages.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            const Text('Le foto sono usate solo per riconoscimento e ricerca PR-12. Non vengono salvate nella scheda. L’immagine del record resta quella verificata dai metadati.'),
+            FilledButton.icon(
+              onPressed: _analyzingPhotos ? null : _analyzeSelectedPhotos,
+              icon: _analyzingPhotos
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.travel_explore),
+              label: Text(_analyzingPhotos ? 'RICERCA FOTO IN CORSO…' : 'USA LE FOTO PER LA RICERCA PR-12'),
+            ),
+          if (_selectedImages.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text('Immagini selezionate: ${_selectedImages.length}'),
             SizedBox(
@@ -91,6 +101,34 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
                 icon: const Icon(Icons.close),
               ),
             )),
+          ],
+          if (_photoSearchResults.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text('RISULTATI RICERCA DA FOTO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+            ..._photoSearchResults.map((result) {
+              final clues = Map<String, dynamic>.from(result['identificazione'] as Map);
+              final candidates = (result['risultati'] as List).whereType<Map>().toList();
+              return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(result['nome_foto'].toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text('Identificazione: ${clues['descrizione_provvisoria'] ?? 'Non determinata'}'),
+                  if ((clues['marchio'] ?? '').toString().isNotEmpty) Text('Marchio: ${clues['marchio']}'),
+                  if ((clues['codice_prodotto'] ?? '').toString().isNotEmpty) Text('Codice: ${clues['codice_prodotto']}'),
+                  if (clues['incertezze'] is List && (clues['incertezze'] as List).isNotEmpty)
+                    Text('Da verificare: ${(clues['incertezze'] as List).join(' · ')}'),
+                  const Divider(),
+                  Text('Candidati trovati: ${candidates.length}'),
+                  ...candidates.take(8).map((candidate) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text((candidate['title'] ?? 'Risultato senza titolo').toString()),
+                    subtitle: Text((candidate['url'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  )),
+                  const Text('Solo ricerca: nessuna immagine o metadato è stato salvato nel record.'),
+                ],
+              )));
+            }),
           ],
           const SizedBox(height: 18),
           Text(ValoraI18n.tr('1. SELEZIONA L’OGGETTO'), style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
