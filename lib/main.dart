@@ -119,7 +119,6 @@ part 'procedures/valora_collection_lookup_presentation.dart';
 part 'procedures/valora_photo_search_presentation.dart';
 part 'procedures/collection_value_page.dart';
 part 'procedures/collection_value_presentation.dart';
-part 'procedures/collection_value_helpers.dart';
 part 'procedures/pr12_batch_page.dart';
 part 'procedures/valora_pr12_runtime.dart';
 part 'procedures/valora_pr12_catalog.dart';
