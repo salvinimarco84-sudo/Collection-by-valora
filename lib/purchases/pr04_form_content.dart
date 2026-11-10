@@ -137,6 +137,7 @@ class Pr04ValoraPurchaseContent extends StatelessWidget {
     super.key,
     required this.dateLabel,
     required this.description,
+    required this.detailsSummary,
     required this.total,
     required this.busy,
     required this.previewReady,
@@ -149,6 +150,7 @@ class Pr04ValoraPurchaseContent extends StatelessWidget {
 
   final String dateLabel;
   final String description;
+  final String detailsSummary;
   final double total;
   final bool busy;
   final bool previewReady;
@@ -206,6 +208,8 @@ class Pr04ValoraPurchaseContent extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Data acquisto: $dateLabel'),
             Text('Oggetto: $description'),
+            const SizedBox(height: 4),
+            Text(detailsSummary),
             const SizedBox(height: 8),
             Text('Totale: € ' + total.toStringAsFixed(2).replaceAll('.', ','),
               style: const TextStyle(fontWeight: FontWeight.w900)),
