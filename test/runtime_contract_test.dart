@@ -31,9 +31,10 @@ void main() {
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final valoraServicePageCoreSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search.dart').readAsStringSync();
+  final valoraPhotoCandidateFlowSource = File('lib/procedures/valora_photo_candidate_flow.dart').readAsStringSync();
   final valoraCatalogObjectsSource = File('lib/procedures/valora_catalog_objects.dart').readAsStringSync();
   final valoraValuationFlowSource = File('lib/procedures/valora_valuation_flow.dart').readAsStringSync();
-  final valoraServicePageSource = '$valoraServicePageCoreSource\\n$valoraPhotoSearchSource\\n$valoraCatalogObjectsSource\\n$valoraValuationFlowSource';
+  final valoraServicePageSource = '$valoraServicePageCoreSource\\n$valoraPhotoSearchSource\\n$valoraPhotoCandidateFlowSource\\n$valoraCatalogObjectsSource\\n$valoraValuationFlowSource';
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final valoraPhotoPresentationSource = File('lib/procedures/valora_photo_search_presentation.dart').readAsStringSync();
@@ -142,6 +143,9 @@ void main() {
       expect(valoraServicePageSource, contains('buildPage(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
+      expect(source, contains("part 'procedures/valora_photo_candidate_flow.dart';"));
+      expect(valoraPhotoCandidateFlowSource, contains('mixin _ValoraPhotoCandidateFlow'));
+      expect(valoraPhotoCandidateFlowSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
       expect(source, contains("part 'procedures/valora_photo_search_presentation.dart';"));
       expect(valoraPhotoPresentationSource, contains('extension _ValoraPhotoSearchPresentation'));
       expect(valoraPhotoPresentationSource, contains('Widget _buildPhotoSearchResultsSection()'));
