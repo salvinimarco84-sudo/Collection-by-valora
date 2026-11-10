@@ -4,13 +4,15 @@ class Pr06NewSalePageFrame extends StatelessWidget {
   const Pr06NewSalePageFrame({
     super.key,
     required this.children,
+    this.title = 'PR-06 · NUOVA VENDITA',
   });
 
   final List<Widget> children;
+  final String title;
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('PR-06 · NUOVA VENDITA')),
+    appBar: AppBar(title: Text(title)),
     body: SafeArea(
       child: Center(
         child: ConstrainedBox(
