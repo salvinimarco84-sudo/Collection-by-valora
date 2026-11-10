@@ -30,9 +30,10 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
   final String _requestId = _uuid.v4();
 
   DateTime _date = DateTime.now();
-  String _condition = 'USATO';
-  String _completeness = 'COMPLETO';
-  String _destination = 'COLLEZIONE';
+  String? _condition;
+  String? _completeness;
+  String? _destination;
+  bool _dateConfirmed = false;
   String? _category;
   List<Map<String, dynamic>> _categories = [];
   bool _loadingCategories = true;
@@ -99,6 +100,12 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
   }
 
   bool _validate() {
+    if (!_dateConfirmed) {
+      _message('Conferma la data di acquisto selezionandola nel calendario.'); return false;
+    }
+    if (_destination == null || _condition == null || _completeness == null) {
+      _message('Seleziona destinazione, condizione e completezza.'); return false;
+    }
     if (_description.text.trim().length < 2) {
       _message('Inserisci una descrizione valida.'); return false;
     }
@@ -136,7 +143,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
       context: context, initialDate: _date,
       firstDate: DateTime(2000), lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (value != null && mounted) setState(() { _date = value; _reviewed = false; });
+    if (value != null && mounted) setState(() { _date = value; _dateConfirmed = true; _reviewed = false; });
   }
 
   Map<String, dynamic> _payload() {
@@ -151,9 +158,9 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
       'oggetto': {
         'descrizione': _description.text.trim(),
         'valore_acquisto': double.parse(amount.toStringAsFixed(2)),
-        'condizione': _condition,
-        'completezza': _completeness,
-        'destinazione': _destination,
+        'condizione': _condition!,
+        'completezza': _completeness!,
+        'destinazione': _destination!,
         'quantita': 1,
         if (_notes.text.trim().isNotEmpty) 'note': _notes.text.trim(),
         if (_destination == 'COLLEZIONE' && _category != null)
@@ -353,7 +360,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
               DropdownMenuItem(value: 'ALTRO', child: Text('ALTRO')),
             ],
             onChanged: _purchaseSaved ? null : (v) => setState(() {
-              _destination = v ?? _destination;
+              _destination = v;
               if (_destination != 'COLLEZIONE') _category = null;
               _reviewed = false;
             }),
@@ -378,14 +385,14 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
               value: _condition,
               decoration: const InputDecoration(labelText: 'Condizione'),
               items: _conditions.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-              onChanged: _purchaseSaved ? null : (v) => setState(() { _condition = v ?? _condition; _reviewed = false; }),
+              onChanged: _purchaseSaved ? null : (v) => setState(() { _condition = v; _reviewed = false; }),
             )),
             const SizedBox(width: 8),
             Expanded(child: DropdownButtonFormField<String>(
               value: _completeness,
               decoration: const InputDecoration(labelText: 'Completezza'),
               items: _completenessValues.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-              onChanged: _purchaseSaved ? null : (v) => setState(() { _completeness = v ?? _completeness; _reviewed = false; }),
+              onChanged: _purchaseSaved ? null : (v) => setState(() { _completeness = v; _reviewed = false; }),
             )),
           ]),
           const SizedBox(height: 8),
@@ -405,9 +412,9 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
               Text('Oggetto: ' + _description.text.trim()),
               Text('Data: ' + _date.toIso8601String().substring(0, 10)),
               Text('Costo effettivo: € ' + _amount!.toStringAsFixed(2)),
-              Text('Destinazione: ' + _destination),
+              Text('Destinazione: ' + _destination!),
               if (_destination == 'COLLEZIONE') Text('Categoria: ' + selectedCategory),
-              Text('Condizione: ' + _condition + ' · Completezza: ' + _completeness),
+              Text('Condizione: ' + _condition! + ' · Completezza: ' + _completeness!),
               const SizedBox(height: 8),
               FilledButton.icon(
                 onPressed: _busy ? null : _savePurchase,
