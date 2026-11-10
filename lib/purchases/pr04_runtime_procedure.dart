@@ -140,6 +140,53 @@ extension _Pr04RuntimeProcedure on _NewPurchasePageState {
         if (object == null || object['codice_oggetto'].toString() != objectCode) {
           throw StateError('PR-04 VALORA: il record oggetto collegato all’acquisto non è stato ritrovato.');
         }
+        bool valuationSaved = false;
+        String? valuationMessage;
+        if (widget.initialValuation != null) {
+          try {
+            final valuationResponse = await Supabase.instance.client.functions.invoke(
+              'pr-18-valuation-test',
+              body: {
+                'azione': 'SALVA_VALUTAZIONE',
+                'codice_oggetto': int.tryParse(objectCode) ?? objectCode,
+                'metadati': {
+                  'descrizione': (widget.initialMetadata?['descrizione'] ?? '').toString(),
+                  'produttore': (widget.initialMetadata?['produttore'] ?? '').toString(),
+                  'codice_prodotto': (widget.initialMetadata?['codice_prodotto'] ?? '').toString(),
+                },
+                'mercato_riferimento': widget.marketReference,
+                'valutazione': widget.initialValuation,
+              },
+            );
+            final valuationData = valuationResponse.data;
+            valuationSaved = valuationData is Map && valuationData['ok'] == true;
+            if (!valuationSaved) {
+              valuationMessage = valuationData is Map
+                  ? (valuationData['error'] ?? 'Valutazione non registrata.').toString()
+                  : 'Risposta PR18 non valida.';
+            }
+          } catch (error) {
+            valuationMessage = error.toString();
+          }
+        } else {
+          valuationMessage = 'PR18 non ha prodotto una valutazione salvabile: oggetto registrato senza valore di mercato.';
+        }
+        if (!mounted) return;
+        setState(() {
+          _pendingPurchases.clear();
+          _preview = r;
+          _status = valuationSaved
+              ? 'Acquisto, oggetto collegato e valutazione PR18 salvati e verificati.'
+              : 'Acquisto e collegamento oggetto verificati. Valutazione non registrata: $valuationMessage';
+        });
+        Navigator.of(context).pop({
+          'purchase_saved': true,
+          'purchase_code': purchaseCode,
+          'object_code': objectCode,
+          'valuation_saved': valuationSaved,
+          'valuation_message': valuationMessage,
+        });
+        return;
       }
       if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
       if (!mounted) return;
