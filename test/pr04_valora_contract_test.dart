@@ -48,7 +48,7 @@ void main() {
       expect(catalog, contains('mixin _ValoraCatalogObjects on _ValoraServicePageStateBase'));
       expect(valuation, contains('mixin _ValoraValuationFlow on _ValoraServicePageStateBase'));
       expect(valora, isNot(contains('Future<void> _analyzeSelectedPhotos()')));
-      expect(valora, isNot(contains('Future<void> _loadObjects()')));
+      expect(catalog, contains('Future<void> _loadObjects() async'));
       expect(valora, isNot(contains('Future<void> _prepareValuation()')));
     });
 
