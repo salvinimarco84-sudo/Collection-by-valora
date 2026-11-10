@@ -6589,6 +6589,9 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
             ' · ' + _items.first.completeness +
             (_items.first.destination == 'COLLEZIONE' && _items.first.collectionCategoryCode != null
                 ? ' · Categoria ' + _items.first.collectionCategoryCode!
+                : '') +
+            (widget.suggestedMarketValue != null && widget.suggestedMarketValue! > 0
+                ? ' · Valore mercato indicativo € ' + widget.suggestedMarketValue!.toStringAsFixed(2) + ' (non costo)'
                 : ''),
         total: _total,
         busy: _busy,
@@ -6651,6 +6654,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     color: ValoraAppearance.instance.colorFor('ACQUISTI'),
     status: _status,
     title: widget.valoraMode ? 'PR-04 VALORA · NUOVO ACQUISTO' : 'PR-04 · NUOVO ACQUISTO',
+    valoraMode: widget.valoraMode,
     content: _content(),
   );}
 
