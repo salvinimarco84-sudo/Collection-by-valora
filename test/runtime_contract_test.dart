@@ -21,6 +21,7 @@ void main() {
   final pr12RuntimeSource = File('lib/procedures/valora_pr12_runtime.dart').readAsStringSync();
   final pr12CatalogSource = File('lib/procedures/valora_pr12_catalog.dart').readAsStringSync();
   final pr12CandidateApplySource = File('lib/procedures/valora_pr12_candidate_apply.dart').readAsStringSync();
+  final pr12CandidateCardSource = File('lib/procedures/valora_pr12_candidate_card.dart').readAsStringSync();
   final pr06PageFrameSource = File('lib/procedures/pr06_page_frame.dart').readAsStringSync();
   final pr06FormContentSource = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
   final pr06PendingSalesSectionSource = File('lib/procedures/pr06_pending_sales_section.dart').readAsStringSync();
@@ -106,6 +107,16 @@ void main() {
   final objectInfoChipSource = File('lib/objects/object_info_chip.dart').readAsStringSync();
 
   group('Contratti di regressione COLLECTION by VALORA', () {
+    test('PR-12 presenta i candidati in una scheda autonoma senza spostare la logica di conferma', () {
+      expect(source, contains("part 'procedures/valora_pr12_candidate_card.dart';"));
+      expect(pr12CandidateCardSource, contains('class Pr12CandidateCard extends StatelessWidget'));
+      expect(pr12CandidateCardSource, contains('required this.onSelect'));
+      expect(pr12CandidateCardSource, contains('required this.onApply'));
+      expect(pr12CandidateCardSource, contains('_valoraImageProxyUrl(imageUrl)'));
+      expect(pr12CandidateApplySource, contains('Future<void> _pr12ApplySelectedCandidate('));
+      expect(File('lib/procedures/pr12_runtime_presentation.dart').readAsStringSync(), contains('Pr12CandidateCard('));
+    });
+
     test('la schermata VALORE COLLEZIONE è estratta mantenendo calcoli e snapshot', () {
       expect(source, contains("part 'procedures/collection_value_page.dart';"));
       expect(source, isNot(contains('class CollectionValuePage extends StatefulWidget')));
