@@ -6600,6 +6600,12 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     }
     return Pr04ValoraPurchaseForm(
       itemEditor: _itemEditor(0),
+      metadataDetails: [
+        if ((item.metadataProducer ?? '').trim().isNotEmpty) 'Produttore/Editore: ${item.metadataProducer}',
+        if ((item.metadataCode ?? '').trim().isNotEmpty) 'Codice prodotto: ${item.metadataCode}',
+        if (item.metadataYear != null) 'Anno: ${item.metadataYear}',
+        if ((item.metadataSourceUrl ?? '').trim().isNotEmpty) 'Fonte metadati: ${item.metadataSourceUrl}',
+      ],
       dateLabel: _dateLabel(_date),
       busy: _busy,
       status: _status,
