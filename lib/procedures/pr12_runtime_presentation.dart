@@ -71,9 +71,7 @@ extension _ObjectRuntimePagePr12Presentation on _ObjectRuntimePageState {
                                 ? Map<String, dynamic>.from(entry.value as Map)
                                 : <String, dynamic>{};
                             return Pr12CandidateCard(
-                              result: result,
                               item: item,
-                              index: entry.key,
                               selected: selectedIndex == entry.key,
                               accentColor: sectionColor,
                               onSelect: () => setState(() => _pr12SelectedCandidates[objectId] = entry.key),
