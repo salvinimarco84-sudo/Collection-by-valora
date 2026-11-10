@@ -522,7 +522,7 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Proseguire verso la vendita?'),
-        content: const Text('La valutazione è terminata. Vuoi avviare PR06 VALORA? Nessuna vendita verrà registrata fino alla conferma finale nella procedura successiva.'),
+        content: const Text('La valutazione è terminata. Vuoi avviare PR06 VALORA? Se annulli senza salvare, la destinazione originaria dell’oggetto verrà ripristinata. Nessuna vendita viene registrata senza la conferma finale in PR06.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('SOLO VALUTAZIONE')),
           FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('CONTINUA A PR06 VALORA')),
@@ -531,14 +531,77 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     );
     if (confirmed != true || !mounted) return;
     final rawValue = _prepared?['valore_mercato'] ?? _prepared?['valore_stimato'];
-    final price = rawValue is num ? rawValue.toDouble() : double.tryParse((rawValue ?? '').toString());
-    await Navigator.of(context).push<bool>(MaterialPageRoute(
-      builder: (_) => Pr06ValoraPage(
-        initialObjectCode: id,
-        marketValue: price != null && price > 0 ? price : null,
-      ),
-    ));
-    if (mounted) await _loadObjects();
+    final rawPrice = rawValue is num ? rawValue.toDouble() : double.tryParse((rawValue ?? '').toString());
+    final originalDestination = (object['destinazione'] ?? '').toString().trim().toUpperCase();
+    final session = _uuid.v4();
+    var locked = false;
+    var destinationChanged = false;
+    setState(() { _preparing = true; _error = null; });
+    try {
+      if (originalDestination != 'RIVENDITA') {
+        final lock = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': session});
+        final lockData = lock['result'];
+        if (lockData is! Map || lockData['acquisito'] != true) {
+          throw StateError((lockData is Map ? lockData['messaggio'] : null)?.toString() ?? 'Blocco archivio non acquisito.');
+        }
+        locked = true;
+        final payload = <String, dynamic>{
+          'oggetti': [{'codice_oggetto': id, 'destinazione': 'RIVENDITA'}],
+          'dati_confermati': true, 'altra_operazione': false, 'conferma_finale': true,
+        };
+        final preview = await _ValoraRuntimeApi.procedure('PR-02', 'preview', payload, sessionId: session);
+        if (preview['errore'] != null || preview['scrittura_eseguita'] == true) {
+          throw StateError((preview['errore'] ?? 'Anteprima PR-02 non valida.').toString());
+        }
+        await _ValoraRuntimeApi.procedure('PR-02', 'review', payload, sessionId: session);
+        final saved = await _ValoraRuntimeApi.procedure('PR-02', 'save', payload, sessionId: session, requestId: _uuid.v4());
+        if (saved['scrittura_eseguita'] != true || saved['blocco_rilasciato_automaticamente'] != true) {
+          throw StateError('Cambio destinazione non verificato dal runtime.');
+        }
+        locked = false;
+        destinationChanged = true;
+      }
+      if (!mounted) return;
+      final saleSaved = await Navigator.of(context).push<bool>(MaterialPageRoute(
+        builder: (_) => Pr06ValoraPage(
+          initialObjectCode: id,
+          marketValue: rawPrice != null && rawPrice > 0 ? rawPrice : null,
+        ),
+      ));
+      if (destinationChanged && saleSaved != true) {
+        final rollbackSession = _uuid.v4();
+        final rollbackLock = await _ValoraRuntimeApi.call('acquire_lock', {'session_id': rollbackSession});
+        final rollbackData = rollbackLock['result'];
+        if (rollbackData is! Map || rollbackData['acquisito'] != true) {
+          throw StateError('Impossibile acquisire il blocco per ripristinare la destinazione originaria.');
+        }
+        try {
+          final rollbackPayload = <String, dynamic>{
+            'oggetti': [{'codice_oggetto': id, 'destinazione': originalDestination}],
+            'dati_confermati': true, 'altra_operazione': false, 'conferma_finale': true,
+          };
+          final rollbackPreview = await _ValoraRuntimeApi.procedure('PR-02', 'preview', rollbackPayload, sessionId: rollbackSession);
+          if (rollbackPreview['errore'] != null || rollbackPreview['scrittura_eseguita'] == true) {
+            throw StateError('Anteprima ripristino destinazione non valida.');
+          }
+          await _ValoraRuntimeApi.procedure('PR-02', 'review', rollbackPayload, sessionId: rollbackSession);
+          final rollback = await _ValoraRuntimeApi.procedure('PR-02', 'save', rollbackPayload, sessionId: rollbackSession, requestId: _uuid.v4());
+          if (rollback['scrittura_eseguita'] != true || rollback['blocco_rilasciato_automaticamente'] != true) {
+            throw StateError('Ripristino destinazione non verificato.');
+          }
+        } finally {
+          try { await _ValoraRuntimeApi.call('release_lock', {'session_id': rollbackSession}); } catch (_) {}
+        }
+      }
+      if (mounted) await _loadObjects();
+    } catch (e) {
+      if (locked) {
+        try { await _ValoraRuntimeApi.call('release_lock', {'session_id': session}); } catch (_) {}
+      }
+      if (mounted) setState(() => _error = 'Avvio PR06 VALORA non completato: $e');
+    } finally {
+      if (mounted) setState(() => _preparing = false);
+    }
   }
 
   @override
