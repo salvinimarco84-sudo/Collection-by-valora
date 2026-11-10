@@ -109,9 +109,38 @@ extension _Pr04RuntimeProcedure on _NewPurchasePageState {
       final rereadCount = reread is List ? reread.length : 0;
       final verified = reread is List && reread.length == expectedPurchases &&
         reread.every((e) => e is Map && e['verificato'] == true && e['codice_acquisto'] != null);
-      final saved = r['scrittura_eseguita'] == true &&
+      var saved = r['scrittura_eseguita'] == true &&
         r['stato'] == 'SALVATO_E_VERIFICATO' &&
         r['numero_acquisti'] == expectedPurchases && verified && rereadCount == expectedPurchases;
+      if (saved && widget.valoraMode) {
+        final results = r['risultati'];
+        final firstResult = results is List && results.isNotEmpty && results.first is Map
+            ? Map<String, dynamic>.from(results.first as Map)
+            : <String, dynamic>{};
+        final rawPurchaseCode = firstResult['codice_acquisto'];
+        if (rawPurchaseCode == null) {
+          throw StateError('PR-04 VALORA: codice acquisto non restituito dal runtime.');
+        }
+        final purchaseCode = rawPurchaseCode.toString();
+        final links = await Supabase.instance.client.schema('collection')
+            .from('acquisti_oggetti')
+            .select('codice_acquisto,codice_oggetto,descrizione_oggetto')
+            .eq('codice_acquisto', purchaseCode)
+            .eq('incluso_nella_quadratura', true);
+        if (links is! List || links.length != 1 || links.first is! Map ||
+            (links.first as Map)['codice_oggetto'] == null) {
+          throw StateError('PR-04 VALORA: collegamento univoco tra acquisto e oggetto non verificato.');
+        }
+        final objectCode = (links.first as Map)['codice_oggetto'].toString();
+        final object = await Supabase.instance.client.schema('collection')
+            .from('master_oggetti')
+            .select('codice_oggetto,descrizione_oggetto,stato,destinazione')
+            .eq('codice_oggetto', objectCode)
+            .maybeSingle();
+        if (object == null || object['codice_oggetto'].toString() != objectCode) {
+          throw StateError('PR-04 VALORA: il record oggetto collegato all’acquisto non è stato ritrovato.');
+        }
+      }
       if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
       if (!mounted) return;
       setState(() {
