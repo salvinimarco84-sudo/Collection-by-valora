@@ -10,6 +10,7 @@ void main() {
   final frame = File('lib/purchases/pr04_page_frame.dart').readAsStringSync();
   final valora = File('lib/procedures/valora_service_page.dart').readAsStringSync();
   final valoraPhoto = File('lib/procedures/valora_photo_search.dart').readAsStringSync();
+  final valoraPhotoCandidate = File('lib/procedures/valora_photo_candidate_flow.dart').readAsStringSync();
   final edge = File('supabase/functions/pr-04-valora-test/index.ts').readAsStringSync();
   final baseMigration = File('supabase/migrations/20261110151505_pr04_valora_independent_purchase.sql').readAsStringSync();
   final migration = File('supabase/migrations/20261110151749_pr04_valora_validate_purchase_payload.sql').readAsStringSync();
@@ -29,7 +30,8 @@ void main() {
     });
 
     test('il candidato confermato apre solo PR-04 VALORA', () {
-      expect(valoraPhoto, contains('Pr04ValoraPage('));
+      expect(valoraPhotoCandidate, contains('Pr04ValoraPage('));
+      expect(valoraPhotoCandidate, contains('Future<void> _openUncataloguedCandidate(int index) async'));
       expect(valoraPhoto, isNot(contains('builder: (_) => NewPurchasePage(')));
       expect(mainSource, contains("part 'purchases/pr04_valora_page.dart';"));
     });
@@ -43,7 +45,9 @@ void main() {
       expect(mainSource, contains("part 'procedures/valora_valuation_flow.dart';"));
       expect(valora, contains('abstract class _ValoraServicePageStateBase'));
       expect(valora, contains('Future<void> _loadObjects();'));
-      expect(valora, contains('with _ValoraPhotoSearch, _ValoraCatalogObjects, _ValoraValuationFlow'));
+      expect(valora, contains('with _ValoraPhotoSearch, _ValoraPhotoCandidateFlow, _ValoraCatalogObjects, _ValoraValuationFlow'));
+      expect(mainSource, contains("part 'procedures/valora_photo_candidate_flow.dart';"));
+      expect(valoraPhotoCandidate, contains('mixin _ValoraPhotoCandidateFlow on _ValoraServicePageStateBase'));
       expect(photo, contains('mixin _ValoraPhotoSearch on _ValoraServicePageStateBase'));
       expect(catalog, contains('mixin _ValoraCatalogObjects on _ValoraServicePageStateBase'));
       expect(valuation, contains('mixin _ValoraValuationFlow on _ValoraServicePageStateBase'));
