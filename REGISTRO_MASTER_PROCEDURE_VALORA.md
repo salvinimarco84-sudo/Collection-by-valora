@@ -38,10 +38,28 @@ Funzioni aggiuntive di catalogo già presenti nel menu: Visualizza scheda, Elenc
 
 | Codice | Nome effettivo | Collegamento / implementazione rilevata | Stato rilevato |
 |---|---|---|---|
-| PR-04 | Nuovo acquisto | `WRITE-PR-04`, pagina acquisto dedicata | Presente nel menu; da collaudare |
+| PR-04 | Nuovo acquisto ordinario | `WRITE-PR-04`, `NewPurchasePage` e moduli PR-04 | Presente nel menu; da collaudare |
+| PR-04 VALORA | Nuovo acquisto semplificato da identificazione VALORA | Attualmente richiama `NewPurchasePage(initialMetadata, suggestedMarketValue)`; pagina dedicata non ancora separata | Flusso avviabile da VALORA, variante semplificata autonoma ancora da implementare |
 | PR-05 | Modifica acquisto | `WRITE-PR-05`, pagina modifica dedicata | Presente nel menu; da collaudare |
 
 Funzioni correlate: Acquisti comparati e Report acquisti.
+
+#### PR-04 VALORA · Nuovo acquisto da identificazione VALORA
+
+PR-04 VALORA è una variante dedicata, avviata dal flusso VALORA e non come voce autonoma del menu principale. Serve a registrare l'acquisto di un oggetto non ancora presente nel catalogo, usando i dati identificativi confermati tramite PR-12 e l'eventuale valutazione ottenuta tramite PR-18.
+
+Flusso previsto:
+1. L'utente parte dall'assistente VALORA e fornisce foto, file o descrizione.
+2. PR-12 identifica l'oggetto e cerca i metadati; l'utente seleziona e conferma il candidato.
+3. PR-18 può stimare il valore di mercato, mostrando anche l'affidabilità e l'eventuale assenza di comparabili attendibili.
+4. PR-04 VALORA apre una maschera di acquisto semplificata e separata, precompilata con i metadati confermati e gli eventuali dati di valutazione.
+5. L'utente completa i soli dati di acquisto mancanti, controlla il riepilogo e conferma esplicitamente.
+6. Il salvataggio passa attraverso le protezioni transazionali della procedura acquisti runtime; nessuna creazione automatica o scrittura diretta da PR-12/PR-18.
+
+**Confine obbligatorio:** PR-04 VALORA non modifica né sostituisce PR-04 ordinaria. Deve riutilizzare i contratti e le protezioni di salvataggio già esistenti, ma avere presentazione e percorso semplificati autonomi. Non duplicare la logica transazionale.
+
+**Stato codice verificato il 10/11/2026:** il flusso VALORA attualmente apre `NewPurchasePage(initialMetadata: ..., suggestedMarketValue: ...)`. Quindi il passaggio dei metadati è già collegato, ma la maschera dedicata semplificata PR-04 VALORA non risulta ancora separata in una pagina autonoma. È una lacuna di implementazione da mantenere aperta, non una procedura da segnare come completata.
+
 
 ### C. Vendite e inserzioni
 
@@ -157,7 +175,8 @@ Per ogni procedura mantenere questi campi:
 | PR-01 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-02 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-03 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
-| PR-04 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-04 | Presente; da collaudare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-04 VALORA | Ingresso esistente; pagina semplificata autonoma da realizzare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-05 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-06 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-07 | Mapping runtime; UI da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
