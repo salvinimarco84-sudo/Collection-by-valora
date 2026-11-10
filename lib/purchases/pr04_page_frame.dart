@@ -8,8 +8,6 @@ class Pr04PurchasePageFrame extends StatelessWidget {
     required this.color,
     required this.status,
     required this.content,
-    this.title = 'PR-04 · NUOVO ACQUISTO',
-    this.valoraMode = false,
   });
 
   final int step;
@@ -17,12 +15,10 @@ class Pr04PurchasePageFrame extends StatelessWidget {
   final Color color;
   final String status;
   final Widget content;
-  final String title;
-  final bool valoraMode;
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(title)),
+    appBar: AppBar(title: const Text('PR-04 · NUOVO ACQUISTO')),
     body: SafeArea(child: Center(child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 820),
       child: ListView(padding: const EdgeInsets.all(16), children: [
@@ -33,10 +29,10 @@ class Pr04PurchasePageFrame extends StatelessWidget {
         const SizedBox(height: 12),
         ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(value: valoraMode ? (step >= 4 ? 1.0 : 0.5) : (step + 1) / 5, minHeight: 5, color: color),
+          child: LinearProgressIndicator(value: (step + 1) / 5, minHeight: 5, color: color),
         ),
         const SizedBox(height: 8),
-        Text(valoraMode ? (step >= 4 ? 'PASSAGGIO 2 DI 2' : 'PASSAGGIO 1 DI 2') : 'PASSAGGIO ' + (step + 1).toString() + ' DI 5',
+        Text('PASSAGGIO ' + (step + 1).toString() + ' DI 5',
           style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1)),
         const SizedBox(height: 14),
         if (busy) const LinearProgressIndicator(),
