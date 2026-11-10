@@ -868,7 +868,7 @@ void main() {
       expect(dashboardFooterSource, contains('withValues(alpha: 0.55)'));
       expect(dashboardRuntimeSource, contains('DashboardSectionFooter('));
       expect(procedureCardSource, contains('Colors.black.withValues(alpha: 0.20)'));
-      expect(source, contains('Colors.black.withValues(alpha: 0.22)'));
+      expect(dashboardOverlaySource, contains('Color.fromRGBO(0, 0, 0, 0.22)'));
       expect(themeSource, contains("'VALUTAZIONI': Color(0xFFD6A83F)"));
       expect(themeSource, contains("'RICERCHE': Color(0xFF38BDF8)"));
       expect(dashboardMenuCardSource, contains('color: color.withValues(alpha: 0.20)'));
