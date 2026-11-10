@@ -4701,13 +4701,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
     final availablePageCount = (_rows.length / _availablePageSize).ceil();
     final useStandardReportPaging = _usesStandardReportPresentation;
-    final isHistory = code == 'EXPLORE_RECORDS    if (code == 'PR-12') return _buildPr12Screen();
+    final isHistory = code == 'EXPLORE_RECORDS';
+    final isMaster = code == 'OBJECT_MASTER';
 
-       ),
-          ],
-        ),
-      );
-    }
+    if (code == 'PR-12') return _buildPr12Screen();
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.title)),
