@@ -26,7 +26,7 @@ class Pr12CandidateCard extends StatelessWidget {
     final maker = (item['produttore'] ?? item['editore'] ?? '').toString().trim();
     final year = (item['anno_uscita'] ?? item['anno'] ?? '').toString().trim();
     final productCode = (item['codice_prodotto'] ?? item['codice'] ?? item['isbn'] ?? '').toString().trim();
-    final source = Uri.tryParse(url)?.host.replaceFirst(RegExp(r'^www\.'), '');
+    final source = Uri.tryParse(url)?.host.replaceFirst(RegExp(r'^www\.'), '') ?? '';
 
     return InkWell(
       onTap: onSelect,
