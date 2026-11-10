@@ -87,7 +87,6 @@ extension _ValoraPhotoSearchPresentation on _ValoraServicePageState {
                       ),
                     ])));
                   }),
-                ],
     ]);
   }
 }
