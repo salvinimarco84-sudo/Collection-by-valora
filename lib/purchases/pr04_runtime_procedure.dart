@@ -109,85 +109,9 @@ extension _Pr04RuntimeProcedure on _NewPurchasePageState {
       final rereadCount = reread is List ? reread.length : 0;
       final verified = reread is List && reread.length == expectedPurchases &&
         reread.every((e) => e is Map && e['verificato'] == true && e['codice_acquisto'] != null);
-      var saved = r['scrittura_eseguita'] == true &&
+      final saved = r['scrittura_eseguita'] == true &&
         r['stato'] == 'SALVATO_E_VERIFICATO' &&
         r['numero_acquisti'] == expectedPurchases && verified && rereadCount == expectedPurchases;
-      if (saved && widget.valoraMode) {
-        final results = r['risultati'];
-        final firstResult = results is List && results.isNotEmpty && results.first is Map
-            ? Map<String, dynamic>.from(results.first as Map)
-            : <String, dynamic>{};
-        final rawPurchaseCode = firstResult['codice_acquisto'];
-        if (rawPurchaseCode == null) {
-          throw StateError('PR-04 VALORA: codice acquisto non restituito dal runtime.');
-        }
-        final purchaseCode = rawPurchaseCode.toString();
-        final links = await Supabase.instance.client.schema('collection')
-            .from('acquisti_oggetti')
-            .select('codice_acquisto,codice_oggetto,descrizione_oggetto')
-            .eq('codice_acquisto', purchaseCode)
-            .eq('incluso_nella_quadratura', true);
-        if (links is! List || links.length != 1 || links.first is! Map ||
-            (links.first as Map)['codice_oggetto'] == null) {
-          throw StateError('PR-04 VALORA: collegamento univoco tra acquisto e oggetto non verificato.');
-        }
-        final objectCode = (links.first as Map)['codice_oggetto'].toString();
-        final object = await Supabase.instance.client.schema('collection')
-            .from('master_oggetti')
-            .select('codice_oggetto,descrizione_oggetto,stato,destinazione')
-            .eq('codice_oggetto', objectCode)
-            .maybeSingle();
-        if (object == null || object['codice_oggetto'].toString() != objectCode) {
-          throw StateError('PR-04 VALORA: il record oggetto collegato all’acquisto non è stato ritrovato.');
-        }
-        bool valuationSaved = false;
-        String? valuationMessage;
-        if (widget.initialValuation != null) {
-          try {
-            final valuationResponse = await Supabase.instance.client.functions.invoke(
-              'pr-18-valuation-test',
-              body: {
-                'azione': 'SALVA_VALUTAZIONE',
-                'codice_oggetto': int.tryParse(objectCode) ?? objectCode,
-                'metadati': {
-                  'descrizione': (widget.initialMetadata?['descrizione'] ?? '').toString(),
-                  'produttore': (widget.initialMetadata?['produttore'] ?? '').toString(),
-                  'codice_prodotto': (widget.initialMetadata?['codice_prodotto'] ?? '').toString(),
-                },
-                'mercato_riferimento': widget.marketReference,
-                'valutazione': widget.initialValuation,
-              },
-            );
-            final valuationData = valuationResponse.data;
-            valuationSaved = valuationData is Map && valuationData['ok'] == true;
-            if (!valuationSaved) {
-              valuationMessage = valuationData is Map
-                  ? (valuationData['error'] ?? 'Valutazione non registrata.').toString()
-                  : 'Risposta PR18 non valida.';
-            }
-          } catch (error) {
-            valuationMessage = error.toString();
-          }
-        } else {
-          valuationMessage = 'PR18 non ha prodotto una valutazione salvabile: oggetto registrato senza valore di mercato.';
-        }
-        if (!mounted) return;
-        setState(() {
-          _pendingPurchases.clear();
-          _preview = r;
-          _status = valuationSaved
-              ? 'Acquisto, oggetto collegato e valutazione PR18 salvati e verificati.'
-              : 'Acquisto e collegamento oggetto verificati. Valutazione non registrata: $valuationMessage';
-        });
-        Navigator.of(context).pop({
-          'purchase_saved': true,
-          'purchase_code': purchaseCode,
-          'object_code': objectCode,
-          'valuation_saved': valuationSaved,
-          'valuation_message': valuationMessage,
-        });
-        return;
-      }
       if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
       if (!mounted) return;
       setState(() {
