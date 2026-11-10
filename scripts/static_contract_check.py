@@ -14,6 +14,7 @@ pr02_runtime = (root / "lib" / "procedures" / "pr02_runtime_procedure.dart").rea
 pr12_runtime = (root / "lib" / "procedures" / "valora_pr12_runtime.dart").read_text(encoding="utf-8")
 pr12_catalog = (root / "lib" / "procedures" / "valora_pr12_catalog.dart").read_text(encoding="utf-8")
 pr12_candidate_apply = (root / "lib" / "procedures" / "valora_pr12_candidate_apply.dart").read_text(encoding="utf-8")
+pr12_candidate_card = (root / "lib" / "procedures" / "valora_pr12_candidate_card.dart").read_text(encoding="utf-8")
 pr12_batch_page = (root / "lib" / "procedures" / "pr12_batch_page.dart").read_text(encoding="utf-8")
 pubspec = (root / "pubspec.yaml").read_text(encoding="utf-8")
 workflow_path = root / ".github" / "workflows" / "collection-valora-ci.yml"
@@ -29,6 +30,7 @@ checks = {
     "PR-02 removes technical category from object payload": "oggetto_collezione_categoria" in pr02_runtime and "_savePr02PendingChanges" in pr02_runtime,
     "PR-01 validates collection category": "Seleziona una categoria COLLEZIONE valida." in main,
     "PR-12 runtime is extracted": "part 'procedures/valora_pr12_runtime.dart';" in main and "extension _ObjectRuntimePagePr12Runtime" in pr12_runtime,
+    "PR-12 candidate card is extracted": "part 'procedures/valora_pr12_candidate_card.dart';" in main and "class Pr12CandidateCard extends StatelessWidget" in pr12_candidate_card and "Pr12CandidateCard(" in (root / "lib" / "procedures" / "pr12_runtime_presentation.dart").read_text(encoding="utf-8"),
     "PR-12 candidate application is extracted": "part 'procedures/valora_pr12_candidate_apply.dart';" in main and "extension _ObjectRuntimePagePr12CandidateApply" in pr12_candidate_apply and "Future<void> _pr12ApplySelectedCandidate(" in pr12_candidate_apply,
     "PR-12 catalog scan is extracted": "part 'procedures/valora_pr12_catalog.dart';" in main and "extension _ObjectRuntimePagePr12Catalog" in pr12_catalog and "Future<void> _loadIncompleteMetadataCatalog()" in pr12_catalog and "_loadIncompleteMetadataCatalog" not in pr12_runtime,
     "PR-12 batch engine exists": "_runPr12AiBatch" in pr12_runtime and "LOTTO DA 10" in (root / "lib" / "procedures" / "pr12_runtime_presentation.dart").read_text(encoding="utf-8"),
