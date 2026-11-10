@@ -1269,11 +1269,11 @@ void main() {
     expect(valoraCatalogIntakeSource, contains('initialMetadata: metadata'));
     expect(valoraCatalogIntakeSource, contains("'pr-18-valuation-test'"));
     expect(valoraCatalogIntakeSource, contains("'metadati': metadata"));
-    expect(valoraServicePresentationSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
-    expect(valoraServicePresentationSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
+    expect(valoraPhotoInputSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
+    expect(valoraPhotoInputSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
     expect(valoraServicePageSource, isNot(contains("'MARKET_VALUATION_PREPARE'")));
     expect(valoraCatalogIntakeSource, contains("'metadati': metadata"));
-    expect(valoraServicePresentationSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
+    expect(valoraPhotoInputSource, contains('La ricerca dei comparabili e il calcolo del valore non sono ancora stati eseguiti.'));
     final valuationMigration = File('supabase/migrations/20261110104500_prepare_valora_metadata_only_valuation.sql').readAsStringSync();
     expect(valuationMigration, contains('MARKET_VALUATION_PREPARE_METADATA'));
     expect(valuationMigration, contains('LANGUAGE plpgsql\nSTABLE'));
