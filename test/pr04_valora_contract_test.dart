@@ -41,6 +41,9 @@ void main() {
       expect(page, contains('_reviewed'));
       expect(page, contains('bool _dateConfirmed = false;'));
       expect(page, contains('Seleziona destinazione, condizione e completezza.'));
+      expect(page, contains('bool _saveAttempted = false;'));
+      expect(page, contains('_saveAttempted = true'));
+      expect(page, contains('RIPROVA LA STESSA REGISTRAZIONE'));
       expect(page, contains("'conferma_finale': true"));
     });
 
