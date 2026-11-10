@@ -230,7 +230,7 @@ extension _Pr06RuntimeProcedure on _NewSalePageState {
           content: Text(ids.length.toString()+' oggetti collegati al lotto '+r['codice_lotto'].toString()+'. Prezzo complessivo: €'+total.toStringAsFixed(2)+'.'),
           actions: [FilledButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('FINE'))],
         ));
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) setState(() => _status = 'Lotto non salvato: $e. La transazione deve essere interamente annullata in caso di errore.');
