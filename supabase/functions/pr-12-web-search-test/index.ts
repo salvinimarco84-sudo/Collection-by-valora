@@ -937,6 +937,19 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
   try {
     const description = String(body.descrizione ?? body.query ?? "").trim().slice(0, 240);
     const category = String(body.categoria ?? "").trim().toUpperCase().slice(0, 40);
+    const extendedSearch = body.ricerca_estesa === true;
+    const excludedUrls = new Set(
+      (Array.isArray(body.escludi_url) ? body.escludi_url : [])
+        .map((value: unknown) => String(value ?? "").trim().replace(/\\/$/, "").toLowerCase())
+        .filter((value: string) => /^https?:\\/\\//i.test(value))
+        .slice(0, 100)
+    );
+    const excludedQueries = new Set(
+      (Array.isArray(body.escludi_query) ? body.escludi_query : [])
+        .map((value: unknown) => String(value ?? "").trim().toLowerCase())
+        .filter((value: string) => value.length > 2)
+        .slice(0, 100)
+    );
     const theme = String(body.tema ?? body.franchise ?? body.franchise_tema ?? "").trim().slice(0, 120);
     const market = String(body.mercato ?? body.market ?? "Italia").trim().slice(0, 40) || "Italia";
     if (description.length < 2) return json({ ok: false, error: "Inserire una descrizione di almeno 2 caratteri." }, 400);
@@ -968,7 +981,18 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
       ...franchiseQueries.slice(4),
       ...categoryQueries.slice(5),
     ];
-    const queries = [...new Set(prioritizedQueries)].slice(0, 20);
+    // Il secondo tentativo amplia le formulazioni senza ripetere le query già eseguite.
+    const expandedQueries = extendedSearch ? [
+      cleanDescription + " catalogo ufficiale",
+      cleanDescription + " codice prodotto edizione variante",
+      '"' + cleanDescription.replace(/"/g, " ") + '" collezionismo database',
+      cleanDescription + " scheda tecnica collezione",
+      ...(theme ? [theme + " " + cleanDescription + " catalogo"] : []),
+    ] : [];
+    const allQueries = [...new Set([...prioritizedQueries, ...expandedQueries])];
+    const queries = allQueries
+      .filter((query) => !excludedQueries.has(query.trim().toLowerCase()))
+      .slice(0, extendedSearch ? 25 : 20);
     let searchResults: SearchResult[] = [];
     const diagnosticaQuery: Array<{ query: string; risultati_grezzi: number; errore?: string }> = [];
     // Fonti specialistiche dal database TEST prima delle query generiche.
@@ -994,6 +1018,9 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
     const conteggioDopoCodice = dopoCodice.length;
     let results = rankRelevantResults(dopoCodice, category, description, theme);
     const conteggioDopoPertinenza = results.length;
+    const primaEsclusione = results.length;
+    results = results.filter((candidate) => !excludedUrls.has(String(candidate.url ?? "").replace(/\\/$/, "").toLowerCase()));
+    const candidatiEsclusiGiaValutati = primaEsclusione - results.length;
     results = enrichMetadata(results, category, description);
     if (/funko|pop!|pop vinyl/i.test(description + " " + category + " " + theme)) {
       results = await enrichFunkoImages(results);
@@ -1006,6 +1033,8 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
       descrizione: description, categoria: category || "NON_CLASSIFICATA", tema: theme || null,
       ...(comicAnchor ? { ricerca_serie: { titolo_serie_ipotizzato: comicAnchor.seriesTitle, numero_riferimento: 1, numero_albo_cercato: comicAnchor.issueNumber, funzione_numero_1: "identificazione_serie_non_valutazione_albo" } } : {}),
       risultati: [], numero_risultati: 0, ricerca_esterna_eseguita: true, metadati_confermati: false,
+      ricerca_estesa: extendedSearch, candidati_esclusi_gia_valutati: candidatiEsclusiGiaValutati,
+      query_escluse: excludedQueries.size, url_esclusi: excludedUrls.size,
       avviso: "Nessuna corrispondenza verificabile trovata per il codice esatto. Nessun risultato generico non pertinente è stato mostrato.",
       errori_fonti: errors, fonti_specializzate: targeted,
       fonti_database: configured.sources.map(s => ({ codice_fonte: s.codice_fonte, nome_fonte: s.nome_fonte, url: s.url_principale, tipo_fonte: s.tipo_fonte, stato_affidabilita: s.stato_affidabilita, priorita: s.priorita_metadati })),
@@ -1019,6 +1048,8 @@ async function handleSingleSearch(body: any, req: Request): Promise<Response> {
       ...(comicAnchor ? { ricerca_serie: { titolo_serie_ipotizzato: comicAnchor.seriesTitle, numero_riferimento: 1, numero_albo_cercato: comicAnchor.issueNumber, funzione_numero_1: "identificazione_serie_non_valutazione_albo" } } : {}),
       risultati: results.slice(0, 15), numero_risultati: Math.min(results.length, 15),
       ricerca_esterna_eseguita: true, metadati_confermati: false,
+      ricerca_estesa: extendedSearch, candidati_esclusi_gia_valutati: candidatiEsclusiGiaValutati,
+      query_escluse: excludedQueries.size, url_esclusi: excludedUrls.size,
       motori_utilizzati: [...new Set(results.map(r => r.motore))],
       avviso: "Risultati candidati da cataloghi/fonti pubbliche. Verificare la corrispondenza prima di compilare i metadati.",
       fonti_specializzate: targeted, errori_fonti: errors,
