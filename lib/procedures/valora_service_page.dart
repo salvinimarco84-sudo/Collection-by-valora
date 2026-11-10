@@ -216,30 +216,64 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     };
     if (!mounted) return;
     setState(() { _error = null; _analyzingPhotos = true; });
+    Map<String, dynamic>? valuation;
     try {
-      final response = await _ValoraRuntimeApi.call('consultation', {
-        'session_id': null,
-        'consultation_code': 'MARKET_VALUATION_PREPARE_METADATA',
-        'arguments': {'metadati': metadata, 'mercato_riferimento': _market},
-      });
-      final result = response['result'];
-      final prepared = result is Map
-          ? Map<String, dynamic>.from(result['risultato'] is Map ? result['risultato'] : result)
-          : <String, dynamic>{};
+      final response = await Supabase.instance.client.functions.invoke(
+        'pr-18-valuation-test',
+        body: {
+          'metadati': metadata,
+          'mercato_riferimento': _market,
+        },
+      );
+      final data = response.data;
+      if (data is! Map || data['ok'] != true) {
+        throw Exception(data is Map
+            ? (data['error'] ?? 'PR18 non ha completato la valutazione').toString()
+            : 'Risposta PR18 non valida.');
+      }
+      valuation = Map<String, dynamic>.from(data);
+      final marketValue = valuation['valore_mercato'];
+      final reliability = (valuation['affidabilita'] ?? 'NON DISPONIBILE').toString();
       if (mounted) {
-        setState(() => _metadataValuationStatus[index] =
-            (prepared['stato_integrazione'] ?? 'RICHIESTA_PREPARATA').toString());
+        setState(() => _metadataValuationStatus[index] = marketValue is num
+            ? 'PR18: € ${marketValue.toStringAsFixed(2)} · affidabilità $reliability'
+            : 'PR18: nessun prezzo verificabile · affidabilità $reliability');
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _metadataValuationStatus[index] = 'PREPARAZIONE_NON_RIUSCITA: $e');
+        setState(() => _metadataValuationStatus[index] = 'PR18_NON_COMPLETATA: $e');
       }
     } finally {
       if (mounted) setState(() => _analyzingPhotos = false);
     }
     if (!mounted) return;
+    final valuationText = valuation == null
+        ? 'PR18 non ha restituito una valutazione. Puoi comunque inserire l’oggetto, ma il valore di mercato resterà da determinare.'
+        : (valuation['valore_mercato'] is num
+            ? 'Valore indicativo: € ${(valuation['valore_mercato'] as num).toStringAsFixed(2)}\\n'
+                'Fascia: € ${valuation['fascia_minima'] ?? 'n.d.'} - € ${valuation['fascia_massima'] ?? 'n.d.'}\\n'
+                'Affidabilità: ${valuation['affidabilita'] ?? 'NON DISPONIBILE'}\\n'
+                'Comparabili con prezzo: ${valuation['numero_comparabili_con_prezzo_estratto'] ?? 0}. I prezzi estratti vanno verificati.'
+            : 'PR18 ha completato la ricerca, ma non ha trovato prezzi verificabili. Non verrà inventato un valore.');
+    final addObject = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Valutazione PR18'),
+        content: Text('$valuationText\\n\\nVuoi procedere con PR-04 Nuovo Acquisto?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('PROCEDI A PR-04')),
+        ],
+      ),
+    );
+    if (addObject != true || !mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => NewPurchasePage(initialMetadata: metadata),
+      builder: (_) => NewPurchasePage(
+        initialMetadata: metadata,
+        suggestedMarketValue: valuation?['valore_mercato'] is num
+            ? (valuation!['valore_mercato'] as num).toDouble()
+            : null,
+      ),
     ));
     if (mounted) {
       setState(() {
