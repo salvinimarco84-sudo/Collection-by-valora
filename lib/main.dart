@@ -70,7 +70,6 @@ part 'purchases/pr05_runtime_procedure.dart';
 part 'purchases/pr04_form_content.dart';
 part 'purchases/pr04_photo_field.dart';
 part 'purchases/pr04_page_frame.dart';
-part 'purchases/pr04_valora_page.dart';
 part 'purchases/pr04_step_content.dart';
 part 'purchases/pr04_recognition_dialog.dart';
 part 'purchases/pr05_form_content.dart';
@@ -6401,12 +6400,9 @@ class _PurchaseItemDraft {
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
 
 class NewPurchasePage extends StatefulWidget {
-  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.initialValuation, this.marketReference = 'ITALIA', this.valoraMode = false});
+  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue});
   final Map<String, dynamic>? initialMetadata;
   final double? suggestedMarketValue;
-  final Map<String, dynamic>? initialValuation;
-  final String marketReference;
-  final bool valoraMode;
   @override
   State<NewPurchasePage> createState() => _NewPurchasePageState();
 }
@@ -6429,7 +6425,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   @override
   void initState() {
     super.initState();
-    if (widget.valoraMode) _step = 2;
     final metadata = widget.initialMetadata;
     if (metadata != null) {
       final item = _items.first;
@@ -6575,7 +6570,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     onChanged: () => setState(_invalidate),
     onPhoto: () => _photoAndRecognize(_items[n]),
     suggestedMarketValue: widget.suggestedMarketValue,
-    valoraMode: widget.valoraMode,
   );
 
   Widget _line(String label, String value, {bool bold = false}) => Padding(
@@ -6584,81 +6578,52 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       const SizedBox(width: 8), Flexible(child: Text(value, textAlign: TextAlign.end, style: TextStyle(fontWeight: bold ? FontWeight.w900 : FontWeight.w600, color: bold ? goldColor : null))),
     ]));
 
-  Widget _content() {
-    if (widget.valoraMode) {
-      return Pr04ValoraPurchaseContent(
-        dateLabel: _dateLabel(_date),
-        description: _items.first.description.text.trim(),
-        detailsSummary: _items.first.destination + ' · ' + _items.first.condition +
-            ' · ' + _items.first.completeness +
-            (_items.first.destination == 'COLLEZIONE' && _items.first.collectionCategoryCode != null
-                ? ' · Categoria ' + _items.first.collectionCategoryCode!
-                : '') +
-            (widget.suggestedMarketValue != null && widget.suggestedMarketValue! > 0
-                ? ' · Valore mercato indicativo € ' + widget.suggestedMarketValue!.toStringAsFixed(2) + ' (non costo)'
-                : ''),
-        total: _total,
-        busy: _busy,
-        previewReady: _preview != null,
-        itemEditor: _itemEditor(0),
-        onPickDate: _pickDate,
-        onPreview: _runPreview,
-        onSave: () {
-          setState(() { _dataConfirmed = true; });
-          _save();
-        },
-        onEdit: () => setState(() { _preview = null; _invalidate(); }),
-      );
-    }
-    return Pr04PurchaseStepContent(
-      step: _step,
-      type: _type,
-      dateLabel: _dateLabel(_date),
-      countController: _count,
-      items: _items,
-      total: _total,
-      pendingPurchaseCount: _pendingPurchases.length,
-      pendingTotal: _pendingTotal,
-      busy: _busy,
-      itemEditor: _itemEditor,
-      onSelectSingle: () => setState(() { _type = 'SINGOLO'; _resize(1); _count.text = '1'; }),
-      onSelectLot: () => setState(() { _type = 'LOTTO'; if (_items.length < 2) _resize(2); _count.text = _items.length.toString(); }),
-      onContinue: () => setState(() => _step = 1),
-      onBackToType: () => setState(() => _step = 0),
-      onBackToDetails: () => setState(() => _step = 1),
-      onPickDate: _pickDate,
-      onContinueToItems: () {
-        if (_type == 'LOTTO') {
-          final n = int.tryParse(_count.text.trim());
-          if (n == null || n < 2 || n > 500) { _notice('Inserisci un numero compreso fra 2 e 500.'); return; }
-          _resize(n);
-        } else {
-          _resize(1);
-        }
-        setState(() => _step = 2);
-      },
-      onContinueToSummary: () {
-        if (!_valid()) return;
-        setState(() => _step = 3);
-      },
-      onRunPreview: _runPreview,
-      onQueueAnother: _queueCurrentAndStartNext,
-      onSaveAndExit: () {
-        setState(() { _dataConfirmed = true; });
-        _save();
-      },
-      onEditObjects: () => setState(() => _step = 2),
-      onEditData: () => setState(() { _step = 2; _invalidate(); }),
-    );
-  }
+  Widget _content() => Pr04PurchaseStepContent(
+    step: _step,
+    type: _type,
+    dateLabel: _dateLabel(_date),
+    countController: _count,
+    items: _items,
+    total: _total,
+    pendingPurchaseCount: _pendingPurchases.length,
+    pendingTotal: _pendingTotal,
+    busy: _busy,
+    itemEditor: _itemEditor,
+    onSelectSingle: () => setState(() { _type = 'SINGOLO'; _resize(1); _count.text = '1'; }),
+    onSelectLot: () => setState(() { _type = 'LOTTO'; if (_items.length < 2) _resize(2); _count.text = _items.length.toString(); }),
+    onContinue: () => setState(() => _step = 1),
+    onBackToType: () => setState(() => _step = 0),
+    onBackToDetails: () => setState(() => _step = 1),
+    onPickDate: _pickDate,
+    onContinueToItems: () {
+      if (_type == 'LOTTO') {
+        final n = int.tryParse(_count.text.trim());
+        if (n == null || n < 2 || n > 500) { _notice('Inserisci un numero compreso fra 2 e 500.'); return; }
+        _resize(n);
+      } else {
+        _resize(1);
+      }
+      setState(() => _step = 2);
+    },
+    onContinueToSummary: () {
+      if (!_valid()) return;
+      setState(() => _step = 3);
+    },
+    onRunPreview: _runPreview,
+    onQueueAnother: _queueCurrentAndStartNext,
+    onSaveAndExit: () {
+      setState(() { _dataConfirmed = true; });
+      _save();
+    },
+    onEditObjects: () => setState(() => _step = 2),
+    onEditData: () => setState(() { _step = 2; _invalidate(); }),
+  );
   @override
   Widget build(BuildContext context) => Pr04PurchasePageFrame(
     step: _step,
     busy: _busy,
     color: ValoraAppearance.instance.colorFor('ACQUISTI'),
     status: _status,
-    title: widget.valoraMode ? 'PR-04 VALORA · NUOVO ACQUISTO' : 'PR-04 · NUOVO ACQUISTO',
-    valoraMode: widget.valoraMode,
     content: _content(),
   );}
 
