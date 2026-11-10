@@ -47,7 +47,6 @@ void main() {
   final valoraCombinedPresentationSource = '$valoraServicePresentationSource\n$valoraPhotoPresentationSource';
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
-  final collectionValueHelpersSource = File('lib/procedures/collection_value_helpers.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
@@ -125,11 +124,8 @@ void main() {
       expect(source, contains("part 'procedures/collection_value_page.dart';"));
       expect(source, isNot(contains('class CollectionValuePage extends StatefulWidget')));
       expect(collectionValuePageSource, contains('class CollectionValuePage extends StatefulWidget'));
-      expect(source, contains("part 'procedures/collection_value_helpers.dart';"));
-      expect(collectionValueHelpersSource, contains('extension _CollectionValueHelpers on _CollectionValuePageState'));
-      expect(collectionValueHelpersSource, contains('String _eur(double value)'));
-      expect(collectionValueHelpersSource, contains('bool _excludedState(dynamic value)'));
-      expect(collectionValuePageSource, isNot(contains('String _eur(double value)')));
+      expect(collectionValuePageSource, contains('String _eur(double value)'));
+      expect(collectionValuePageSource, contains('bool _excludedState(dynamic value)'));
       expect(collectionValuePageSource, contains("_readAll('master_oggetti'"));
       expect(collectionValuePageSource, contains("'collection-valuation-history'"));
       expect(collectionValuePageSource, contains("'collection-patrimony-snapshot'"));
