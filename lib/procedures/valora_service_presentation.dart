@@ -3,6 +3,7 @@ part of '../main.dart';
 extension _ValoraServicePagePresentation on _ValoraServicePageState {
   Widget buildPage(BuildContext context) {
     final selected = _objects.where((o) => o['codice_oggetto'] == _selectedId).firstOrNull;
+    final matches = _matchingObjects;
     return Scaffold(
       appBar: AppBar(title: Text(ValoraI18n.tr('VALORA'))),
       body: _loading
@@ -26,20 +27,44 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
           const SizedBox(height: 18),
           Text(ValoraI18n.tr('1. SELEZIONA L’OGGETTO'), style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
-          DropdownButtonFormField<int>(
-            value: _selectedId,
-            isExpanded: true,
-            decoration: InputDecoration(border: const OutlineInputBorder(), labelText: ValoraI18n.tr('Oggetto da valutare')),
-            items: _objects.map((o) => DropdownMenuItem<int>(
-              value: (o['codice_oggetto'] as num).toInt(),
-              child: Text('#${o['codice_oggetto']} · ${o['descrizione_oggetto'] ?? 'Senza descrizione'}', overflow: TextOverflow.ellipsis),
-            )).toList(),
-            onChanged: (value) => setState(() { _selectedId = value; _prepared = null; }),
+          TextField(
+            controller: _descriptionQuery,
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: ValoraI18n.tr('Cerca per descrizione'),
+              hintText: ValoraI18n.tr('Inserisci una parte della descrizione'),
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _descriptionQuery.text.isEmpty ? null : IconButton(
+                tooltip: ValoraI18n.tr('Cancella ricerca'),
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() => _descriptionQuery.clear()),
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
           ),
+          const SizedBox(height: 8),
+          Text('${matches.length} risultati', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
           if (_objects.isEmpty) Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(ValoraI18n.tr('Non risultano oggetti disponibili nella destinazione COLLEZIONE.')), 
-          ),
+            child: Text(ValoraI18n.tr('Non risultano oggetti disponibili nella destinazione COLLEZIONE.')),
+          ) else if (matches.isEmpty) Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(ValoraI18n.tr('Nessun oggetto trovato con questa descrizione.')),
+          ) else ...matches.map((object) {
+            final id = (object['codice_oggetto'] as num).toInt();
+            final isSelected = id == _selectedId;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 6),
+              child: ListTile(
+                selected: isSelected,
+                leading: Icon(isSelected ? Icons.check_circle : Icons.inventory_2_outlined),
+                title: Text((object['descrizione_oggetto'] ?? 'Senza descrizione').toString()),
+                subtitle: Text('#$id'),
+                trailing: isSelected ? const Icon(Icons.chevron_right) : null,
+                onTap: () => setState(() { _selectedId = id; _prepared = null; }),
+              ),
+            );
+          }),
           if (selected != null) Card(child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
