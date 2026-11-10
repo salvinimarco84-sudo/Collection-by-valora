@@ -420,12 +420,8 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
                   widget.valuation == null ? 'Valutazione PR18 non disponibile: nessun valore inventato.' :
                   'Valutazione PR18 da completare.'),
               if (_valuationError != null) Text(_valuationError!, style: const TextStyle(color: Colors.orangeAccent)),
-              if (widget.valuation != null && !_valuationSaved)
-                OutlinedButton.icon(
-                  onPressed: _busy ? null : _saveValuation,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('RIPROVA SALVATAGGIO VALUTAZIONE PR18'),
-                ),
+              if (_valuationError != null)
+                const Text('La valutazione non è stata ripetuta automaticamente per evitare duplicati nello storico. Potrai rilanciare VALORA sull’oggetto appena creato.'),
               FilledButton(onPressed: _busy ? null : () => Navigator.of(context).pop(true), child: const Text('FINE')),
             ]),
           )),
