@@ -70,6 +70,7 @@ part 'purchases/pr05_runtime_procedure.dart';
 part 'purchases/pr04_form_content.dart';
 part 'purchases/pr04_photo_field.dart';
 part 'purchases/pr04_page_frame.dart';
+part 'purchases/pr04_valora_page.dart';
 part 'purchases/pr04_step_content.dart';
 part 'purchases/pr04_recognition_dialog.dart';
 part 'purchases/pr05_form_content.dart';
