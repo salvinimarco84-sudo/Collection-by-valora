@@ -74,7 +74,8 @@ Deno.serve(async (req: Request) => {
         ? "VENDITA_CONCLUSA" : "PREZZO_RICHIESTO_O_CATALOGO";
       return [{ titolo: title || "Comparabile senza titolo", url, snippet: snippet.slice(0, 500), prezzo_eur: value, tipo_prezzo: tipoPrezzo }];
     });
-    const prices = comparables.map((x) => x.prezzo_eur);
+    const realizedSales = comparables.filter((x) => x.tipo_prezzo === "VENDITA_CONCLUSA");
+    const prices = realizedSales.map((x) => x.prezzo_eur);
     const estimate = prices.length ? Math.round(median(prices) * 100) / 100 : null;
     const low = prices.length ? Math.min(...prices) : null;
     const high = prices.length ? Math.max(...prices) : null;
@@ -89,11 +90,13 @@ Deno.serve(async (req: Request) => {
       fascia_minima: low,
       fascia_massima: high,
       numero_comparabili_con_prezzo_estratto: comparables.length,
+      numero_vendite_concluse: realizedSales.length,
       valuta: "EUR",
       valore_stimato: estimate,
       intervallo_min: low,
       intervallo_max: high,
       numero_comparabili: comparables.length,
+      numero_comparabili_usati_per_stima: realizedSales.length,
       affidabilita: reliability,
       comparabili,
       stato_stima: prices.length >= 5 ? "PROVVISORIA" : prices.length > 0 ? "INDICATIVA" : "DATI_INSUFFICIENTI",
