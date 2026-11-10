@@ -11,6 +11,7 @@ class Pr04ItemEditor extends StatelessWidget {
     required this.onChanged,
     required this.onPhoto,
     this.suggestedMarketValue,
+    this.valoraMode = false,
   });
 
   final int index;
@@ -21,6 +22,7 @@ class Pr04ItemEditor extends StatelessWidget {
   final VoidCallback onChanged;
   final VoidCallback onPhoto;
   final double? suggestedMarketValue;
+  final bool valoraMode;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -94,24 +96,42 @@ class Pr04ItemEditor extends StatelessWidget {
           Expanded(child: DropdownButtonFormField<String>(
             value: item.condition,
             decoration: const InputDecoration(labelText: 'Condizione'),
-            items: const [
-              DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')),
-              DropdownMenuItem(value: 'USATO', child: Text('USATO')),
-              DropdownMenuItem(value: 'DA RIPARARE', child: Text('DA RIPARARE')),
-            ],
+            items: valoraMode
+              ? const [
+                  DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')),
+                  DropdownMenuItem(value: 'COME NUOVO', child: Text('COME NUOVO')),
+                  DropdownMenuItem(value: 'OTTIMO', child: Text('OTTIMO')),
+                  DropdownMenuItem(value: 'BUONO', child: Text('BUONO')),
+                  DropdownMenuItem(value: 'DISCRETO', child: Text('DISCRETO')),
+                  DropdownMenuItem(value: 'USATO', child: Text('USATO')),
+                  DropdownMenuItem(value: 'USATO CON SEGNI', child: Text('USATO CON SEGNI')),
+                  DropdownMenuItem(value: 'DA RESTAURARE', child: Text('DA RESTAURARE')),
+                  DropdownMenuItem(value: 'DANNEGGIATO', child: Text('DANNEGGIATO')),
+                ]
+              : const [
+                  DropdownMenuItem(value: 'NUOVO', child: Text('NUOVO')),
+                  DropdownMenuItem(value: 'USATO', child: Text('USATO')),
+                  DropdownMenuItem(value: 'DA RIPARARE', child: Text('DA RIPARARE')),
+                ],
             onChanged: busy ? null : (v) { item.condition = v ?? item.condition; onChanged(); },
           )),
           const SizedBox(width: 8),
           Expanded(child: DropdownButtonFormField<String>(
             value: item.completeness,
             decoration: const InputDecoration(labelText: 'Completezza'),
-            items: const [
-              DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')),
-              DropdownMenuItem(value: 'COMPLETO CON ISTRUZIONI', child: Text('COMPLETO CON ISTRUZIONI')),
-              DropdownMenuItem(value: 'COMPLETO CON SCATOLA E ISTRUZIONI', child: Text('COMPLETO CON SCATOLA E ISTRUZIONI')),
-              DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')),
-              DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI')),
-            ],
+            items: valoraMode
+              ? const [
+                  DropdownMenuItem(value: 'SIGILLATO', child: Text('SIGILLATO')),
+                  DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')),
+                  DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')),
+                ]
+              : const [
+                  DropdownMenuItem(value: 'COMPLETO', child: Text('COMPLETO')),
+                  DropdownMenuItem(value: 'COMPLETO CON ISTRUZIONI', child: Text('COMPLETO CON ISTRUZIONI')),
+                  DropdownMenuItem(value: 'COMPLETO CON SCATOLA E ISTRUZIONI', child: Text('COMPLETO CON SCATOLA E ISTRUZIONI')),
+                  DropdownMenuItem(value: 'INCOMPLETO', child: Text('INCOMPLETO')),
+                  DropdownMenuItem(value: 'SOLO PARTI', child: Text('SOLO PARTI')),
+                ],
             onChanged: busy ? null : (v) { item.completeness = v ?? item.completeness; onChanged(); },
           )),
         ]),
