@@ -229,12 +229,19 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
               ],
             )),
           ),
-          if (_prepared != null && _selectedId != null) ...[
+          if (_selectedId != null && selected != null) ...[
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: _preparing ? null : _openCatalogObjectForSale,
+              onPressed: _preparing || (selected['stato'] ?? '').toString().trim().toUpperCase() != 'DISPONIBILE'
+                  ? null
+                  : _openCatalogObjectForSale,
               icon: const Icon(Icons.sell_outlined),
-              label: const Text('AVVIA PR-06 · PREZZO GIÀ COMPILATO'),
+              label: const Text('AVVIA PROCEDURA DI VENDITA'),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'La vendita è indipendente dalla valutazione. Se esiste già un valore di mercato, verrà proposto come prezzo iniziale; altrimenti potrai inserirlo nella procedura di vendita.',
+              style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 12),
             ),
           ],
           const SizedBox(height: 12),
