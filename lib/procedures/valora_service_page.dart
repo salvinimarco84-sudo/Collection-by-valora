@@ -10,7 +10,22 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
   bool _loading = true;
   bool _preparing = false;
   String? _error;
+  final TextEditingController _descriptionQuery = TextEditingController();
   List<Map<String, dynamic>> _objects = [];
+
+  List<Map<String, dynamic>> get _matchingObjects {
+    final query = _descriptionQuery.text.trim().toLowerCase();
+    if (query.isEmpty) return _objects;
+    return _objects.where((object) =>
+      (object['descrizione_oggetto'] ?? '').toString().toLowerCase().contains(query)
+    ).toList();
+  }
+
+  @override
+  void dispose() {
+    _descriptionQuery.dispose();
+    super.dispose();
+  }
   int? _selectedId;
   String _market = 'ITALIA';
   Map<String, dynamic>? _prepared;
