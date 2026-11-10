@@ -1239,7 +1239,7 @@ void main() {
     final listingDrafts = File('lib/procedures/pr06_valora_listing_drafts.dart').readAsStringSync();
     final listingDraftFunction = File('supabase/functions/valora-listing-drafts-test/index.ts').readAsStringSync();
     final listingDraftMigration = File('supabase/migrations/20261110134302_pr06_valora_platform_listing_drafts_test.sql').readAsStringSync();
-    final listingDraftOwnerMigration = File('supabase/migrations/20261110135000_pr06_valora_listing_drafts_user_scope_test.sql').readAsStringSync();
+    final listingDraftOwnerMigration = File('supabase/migrations/20261110134743_pr06_valora_listing_drafts_user_scope_test.sql').readAsStringSync();
     expect(source, contains("part 'procedures/pr06_valora_page.dart';"));
     expect(source, contains("part 'procedures/pr06_valora_listing_drafts.dart';"));
     expect(page, contains('class Pr06ValoraPage extends StatelessWidget'));
