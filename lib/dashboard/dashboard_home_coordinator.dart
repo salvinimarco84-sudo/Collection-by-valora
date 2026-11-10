@@ -447,7 +447,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                 ? () async { await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectibleCategoryRegistryPage())); await _loadDashboardCatalog(); }
                                 : procedure.apiCode == 'USER-SALES-PLATFORMS'
                                     ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const UserSalesPlatformsPage()))
-                                    : procedure.apiCode == 'LAUNCH-VALORA'
+                                    : procedure.apiCode == 'VALORA-LISTING-DRAFTS'
+                                        ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr06ValoraListingDraftLibraryPage()))
+                                        : procedure.apiCode == 'LAUNCH-VALORA'
                                         ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
                                         : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
                                             ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
