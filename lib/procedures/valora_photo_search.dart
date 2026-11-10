@@ -1,6 +1,6 @@
 part of '../main.dart';
 
-mixin _ValoraPhotoSearch on _ValoraServicePageState {
+mixin _ValoraPhotoSearch on _ValoraServicePageStateBase {
   Future<void> _pickImage(ImageSource source) async {
     try {
       final picker = ImagePicker();
