@@ -12,6 +12,7 @@ void main() {
   final edge = File('supabase/functions/pr-04-valora-test/index.ts').readAsStringSync();
   final baseMigration = File('supabase/migrations/20261110151505_pr04_valora_independent_purchase.sql').readAsStringSync();
   final migration = File('supabase/migrations/20261110151749_pr04_valora_validate_purchase_payload.sql').readAsStringSync();
+  final historyMigration = File('supabase/migrations/20261110152422_pr04_valora_align_history_origin.sql').readAsStringSync();
 
   group('Contratto PR-04 VALORA indipendente', () {
     test('PR-04 originale mantiene runtime, form e frame separati', () {
@@ -55,6 +56,8 @@ void main() {
       expect(migration, contains('insert into collection.master_oggetti'));
       expect(migration, contains('insert into collection.acquisti_oggetti'));
       expect(migration, contains('collection.verifica_quadratura_acquisto'));
+      expect(historyMigration, contains("'NUOVO ACQUISTO'"));
+      expect(historyMigration, isNot(contains("'CREAZIONE','PR-04 VALORA'")));
       expect(migration, contains('oggetto_nuovo_creato'));
       expect(migration, isNot(contains('select mo.codice_oggetto')));
       expect(edge, contains('app_authorized_users'));
