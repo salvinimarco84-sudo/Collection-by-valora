@@ -8,6 +8,7 @@ class Pr04PurchasePageFrame extends StatelessWidget {
     required this.color,
     required this.status,
     required this.content,
+    this.title = 'PR-04 · NUOVO ACQUISTO',
   });
 
   final int step;
@@ -15,10 +16,11 @@ class Pr04PurchasePageFrame extends StatelessWidget {
   final Color color;
   final String status;
   final Widget content;
+  final String title;
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('PR-04 · NUOVO ACQUISTO')),
+    appBar: AppBar(title: Text(title)),
     body: SafeArea(child: Center(child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 820),
       child: ListView(padding: const EdgeInsets.all(16), children: [
