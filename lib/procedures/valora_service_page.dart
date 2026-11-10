@@ -270,6 +270,8 @@ class _ValoraServicePageState extends State<ValoraServicePage> {
     await Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => Pr04ValoraPage(
         initialMetadata: metadata,
+        valuation: valuation,
+        marketReference: _market,
         suggestedMarketValue: valuation?['valore_mercato'] is num
             ? (valuation!['valore_mercato'] as num).toDouble()
             : null,
