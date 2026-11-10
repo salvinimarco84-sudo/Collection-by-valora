@@ -25,6 +25,74 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
             ]),
           ),
           const SizedBox(height: 18),
+          Text('FOTO E FILE', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(
+              onPressed: () => _pickImage(ImageSource.camera),
+              icon: const Icon(Icons.photo_camera_outlined),
+              label: const Text('Fotocamera'),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => _pickImage(ImageSource.gallery),
+              icon: const Icon(Icons.photo_library_outlined),
+              label: const Text('Galleria'),
+            ),
+            OutlinedButton.icon(
+              onPressed: _pickFiles,
+              icon: const Icon(Icons.attach_file),
+              label: const Text('Scegli file'),
+            ),
+          ]),
+          if (_selectedImages.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('Immagini selezionate: ${_selectedImages.length}'),
+            SizedBox(
+              height: 116,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _selectedImages.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final image = _selectedImages[index];
+                  return Stack(children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 104,
+                        height: 104,
+                        color: Colors.black12,
+                        child: Image.file(File(image.path), fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined)),
+                      ),
+                    ),
+                    Positioned(right: 0, top: 0, child: IconButton.filledTonal(
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'Rimuovi immagine',
+                      onPressed: () => _removeImage(image),
+                      icon: const Icon(Icons.close, size: 16),
+                    )),
+                  ]);
+                },
+              ),
+            ),
+          ],
+          if (_selectedFiles.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ..._selectedFiles.map((file) => ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(file.extension?.toLowerCase() == 'pdf' ? Icons.picture_as_pdf : Icons.image_outlined),
+              title: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text('${(file.size / 1024).toStringAsFixed(0)} KB'),
+              trailing: IconButton(
+                tooltip: 'Rimuovi file',
+                onPressed: () => _removeFile(file),
+                icon: const Icon(Icons.close),
+              ),
+            )),
+          ],
+          const SizedBox(height: 18),
           Text(ValoraI18n.tr('1. SELEZIONA L’OGGETTO'), style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
           TextField(
