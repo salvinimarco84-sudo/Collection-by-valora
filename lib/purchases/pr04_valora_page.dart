@@ -40,6 +40,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
   bool _busy = false;
   bool _reviewed = false;
   bool _purchaseSaved = false;
+  bool _saveAttempted = false;
   bool _valuationSaved = false;
   int? _objectId;
   int? _purchaseId;
@@ -196,7 +197,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
       ),
     );
     if (confirm != true || !mounted) return;
-    setState(() { _busy = true; _status = 'Registrazione PR-04 VALORA in TEST…'; });
+    setState(() { _busy = true; _saveAttempted = true; _status = 'Registrazione PR-04 VALORA in TEST…'; });
     try {
       final response = await Supabase.instance.client.functions.invoke(
         'pr-04-valora-test',
@@ -317,7 +318,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
           )),
           Text('DATI OGGETTO', style: TextStyle(color: accent, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          TextField(controller: _description, enabled: !_purchaseSaved, decoration: const InputDecoration(labelText: 'Descrizione oggetto *'), onChanged: (_) => _invalidate()),
+          TextField(controller: _description, enabled: !_purchaseSaved && !_saveAttempted, decoration: const InputDecoration(labelText: 'Descrizione oggetto *'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 8),
           TextField(controller: _producer, enabled: !_purchaseSaved, decoration: const InputDecoration(labelText: 'Produttore'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 8),
@@ -333,7 +334,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
           const SizedBox(height: 14),
           Text('DATI ACQUISTO', style: TextStyle(color: accent, fontWeight: FontWeight.bold)),
           OutlinedButton.icon(
-            onPressed: _purchaseSaved || _busy ? null : _pickDate,
+            onPressed: _purchaseSaved || _saveAttempted || _busy ? null : _pickDate,
             icon: const Icon(Icons.calendar_today),
             label: Text('Data acquisto: ' + _date.day.toString().padLeft(2, '0') + '/' +
                 _date.month.toString().padLeft(2, '0') + '/' + _date.year.toString()),
@@ -359,7 +360,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
               DropdownMenuItem(value: 'RIVENDITA', child: Text('RIVENDITA')),
               DropdownMenuItem(value: 'ALTRO', child: Text('ALTRO')),
             ],
-            onChanged: _purchaseSaved ? null : (v) => setState(() {
+            onChanged: _purchaseSaved || _saveAttempted ? null : (v) => setState(() {
               _destination = v;
               if (_destination != 'COLLEZIONE') _category = null;
               _reviewed = false;
@@ -375,7 +376,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
               value: e['codice_categoria'].toString(),
               child: Text((e['descrizione'] ?? e['codice_categoria']).toString()),
             )).toList(),
-            onChanged: _purchaseSaved || _loadingCategories ? null : (v) => setState(() {
+            onChanged: _purchaseSaved || _saveAttempted || _loadingCategories ? null : (v) => setState(() {
               _category = v; _reviewed = false;
             }),
           ),
@@ -398,7 +399,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
           const SizedBox(height: 8),
           TextField(controller: _notes, enabled: !_purchaseSaved, minLines: 2, maxLines: 3, decoration: const InputDecoration(labelText: 'Note e difetti (facoltativi)'), onChanged: (_) => _invalidate()),
           const SizedBox(height: 14),
-          if (!_purchaseSaved) OutlinedButton.icon(
+          if (!_purchaseSaved && !_saveAttempted) OutlinedButton.icon(
             onPressed: _busy ? null : () {
               if (_validate()) setState(() => _reviewed = true);
             },
@@ -419,7 +420,7 @@ class _Pr04ValoraPageState extends State<Pr04ValoraPage> {
               FilledButton.icon(
                 onPressed: _busy ? null : _savePurchase,
                 icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save_outlined),
-                label: const Text('CONFERMA E REGISTRA ACQUISTO'),
+                label: Text(_saveAttempted ? 'RIPROVA LA STESSA REGISTRAZIONE' : 'CONFERMA E REGISTRA ACQUISTO'),
               ),
             ]),
           )),
