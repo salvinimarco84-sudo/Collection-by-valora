@@ -9,7 +9,70 @@ extension _ValoraServicePagePresentation on _ValoraServicePageState {
       body: _loading
         ? const Center(child: CircularProgressIndicator())
         : ListView(padding: const EdgeInsets.all(18), children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFD9B45B).withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFD9B45B)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Icon(Icons.auto_awesome, color: Color(0xFFD9B45B), size: 34),
+              const SizedBox(height: 8),
+              const Text('ASSISTENTE VALORA', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Color(0xFFD9B45B))),
+              const SizedBox(height: 6),
+              const Text('Cerca un oggetto già presente nella tua collezione oppure inserisci foto dalla fotocamera, dalla galleria o file di riferimento. Le foto vengono utilizzate per il riconoscimento e la ricerca PR-12, non vengono salvate nella scheda. L’immagine definitiva dell’oggetto proviene dai metadati verificati.'),
+            ]),
+          ),
+          const SizedBox(height: 16),
+          Text('FOTO E FILE', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            OutlinedButton.icon(onPressed: _analyzingPhotos ? null : () => _pickImage(ImageSource.camera), icon: const Icon(Icons.photo_camera_outlined), label: const Text('Fotocamera')),
+            OutlinedButton.icon(onPressed: _analyzingPhotos ? null : () => _pickImage(ImageSource.gallery), icon: const Icon(Icons.photo_library_outlined), label: const Text('Galleria')),
+            OutlinedButton.icon(onPressed: _pickFiles, icon: const Icon(Icons.attach_file), label: const Text('Scegli file')),
+          ]),
+          if (_selectedImages.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            FilledButton.icon(
+              onPressed: _analyzingPhotos ? null : _analyzeSelectedPhotos,
+              icon: _analyzingPhotos ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
+              label: Text(_analyzingPhotos ? 'RICERCA FOTO IN CORSO…' : 'USA LE FOTO PER LA RICERCA PR-12'),
+            ),
+            SizedBox(height: 112, child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _selectedImages.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final image = _selectedImages[index];
+                return Stack(children: [
+                  ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.file(File(image.path), width: 100, height: 100, fit: BoxFit.contain)),
+                  Positioned(right: 0, top: 0, child: IconButton.filledTonal(onPressed: () => _removeImage(image), icon: const Icon(Icons.close, size: 16))),
+                ]);
+              },
+            )),
+          ],
+          if (_selectedFiles.isNotEmpty) ..._selectedFiles.map((file) => ListTile(
+            dense: true, contentPadding: EdgeInsets.zero, leading: const Icon(Icons.attach_file),
+            title: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: IconButton(onPressed: () => _removeFile(file), icon: const Icon(Icons.close)),
+          )),
+          if (_photoSearchResults.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text('RISULTATI RICERCA DA FOTO', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
+            ..._photoSearchResults.map((result) {
+              final clues = Map<String, dynamic>.from(result['identificazione'] as Map);
+              final candidates = (result['risultati'] as List).whereType<Map>().toList();
+              return Card(child: Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Identificazione: ${clues['descrizione_provvisoria'] ?? 'Non determinata'}'),
+                if ((clues['marchio'] ?? '').toString().isNotEmpty) Text('Marchio: ${clues['marchio']}'),
+                Text('Candidati trovati: ${candidates.length}'),
+                ...candidates.take(5).map((candidate) => Text((candidate['title'] ?? '').toString())),
+              ])));
+            }),
+          ],
           const SizedBox(height: 18),
+          Text('CERCA NELLA COLLEZIONE', style: TextStyle(fontWeight: FontWeight.bold, color: ValoraAppearance.instance.textPrimary)),
           const SizedBox(height: 8),
           TextField(
             controller: _descriptionQuery,
