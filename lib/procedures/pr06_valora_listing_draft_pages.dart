@@ -159,59 +159,15 @@ class _Pr06ValoraListingDraftsPageState extends State<Pr06ValoraListingDraftsPag
           )),
           const SizedBox(height: 8),
           ...List.generate(_drafts.length, (index) {
-            final draft = _drafts[index];
-            final warnings = draft['avvisi'] is List ? (draft['avvisi'] as List).map((v) => v.toString()).toList() : <String>[];
-            final images = draft['immagini'] is List ? draft['immagini'] as List : const [];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 14),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Expanded(child: Text((draft['nome_piattaforma'] ?? 'Marketplace').toString(),
-                      style: TextStyle(color: accent, fontWeight: FontWeight.bold, fontSize: 17))),
-                    Text((draft['stato'] ?? 'BOZZA').toString(), style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                  ]),
-                  const SizedBox(height: 8),
-                  Text('Oggetto #${draft['codice_oggetto']} · Vendita #${draft['codice_vendita_aperta']}'),
-                  const SizedBox(height: 10),
-                  TextField(controller: _titles[index], maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Titolo inserzione')),
-                  const SizedBox(height: 10),
-                  TextField(controller: _categories[index],
-                    decoration: const InputDecoration(labelText: 'Categoria sulla piattaforma')),
-                  const SizedBox(height: 10),
-                  TextField(controller: _prices[index],
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Prezzo (€)', prefixIcon: Icon(Icons.euro))),
-                  const SizedBox(height: 10),
-                  TextField(controller: _descriptions[index], minLines: 5, maxLines: 12,
-                    decoration: const InputDecoration(labelText: 'Descrizione inserzione', alignLabelWithHint: true)),
-                  if (images.isNotEmpty) Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text('${images.length} foto confermate disponibili come riferimenti. Le immagini non vengono caricate sul marketplace.'),
-                  ),
-                  if (warnings.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text('DA VERIFICARE', style: TextStyle(color: Colors.orange.shade300, fontWeight: FontWeight.bold)),
-                    ...warnings.map((warning) => Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text('• $warning', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                    )),
-                  ],
-                  const SizedBox(height: 12),
-                  Row(children: [
-                    Expanded(child: OutlinedButton.icon(
-                      onPressed: _saving.contains(index) ? null : () => _copy(index),
-                      icon: const Icon(Icons.copy_outlined), label: const Text('COPIA TESTO'))),
-                    const SizedBox(width: 8),
-                    Expanded(child: FilledButton.icon(
-                      onPressed: _saving.contains(index) ? null : () => _save(index),
-                      icon: const Icon(Icons.save_outlined),
-                      label: Text(_saving.contains(index) ? 'SALVATAGGIO…' : 'SALVA BOZZA'))),
-                  ]),
-                ]),
-              ),
+            return Pr06ValoraListingDraftCard(
+              draft: _drafts[index],
+              titleController: _titles[index],
+              descriptionController: _descriptions[index],
+              categoryController: _categories[index],
+              priceController: _prices[index],
+              saving: _saving.contains(index),
+              onCopy: () => _copy(index),
+              onSave: () => _save(index),
             );
           }),
           const SizedBox(height: 8),
