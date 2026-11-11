@@ -1457,6 +1457,17 @@ void main() {
     expect(valoraCatalogObjectsControllerSource, contains('_error ='));
   });
 
+  test('VALORA separa la chiamata PR-18 per candidati dal controller di intake', () {
+    final intake = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
+    final service = File('lib/procedures/valora_catalog_intake_valuation_service.dart').readAsStringSync();
+    expect(source, contains("part 'procedures/valora_catalog_intake_valuation_service.dart';"));
+    expect(intake, contains('_requestValoraCatalogIntakeValuation(metadata)'));
+    expect(intake, isNot(contains("functions.invoke('pr-18-valuation-test'")));
+    expect(service, contains('Future<Map<String, dynamic>> _requestValoraCatalogIntakeValuation('));
+    expect(service, contains("'mercato_riferimento': _market"));
+    expect(service, contains("data['ok'] != true"));
+    expect(service, contains('Risposta PR18 non valida.'));
+  });
   test('VALORA separa il riepilogo PR-18 dalla procedura di intake', () {
     final intake = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
     final summary = File('lib/procedures/valora_catalog_intake_valuation_summary.dart').readAsStringSync();
