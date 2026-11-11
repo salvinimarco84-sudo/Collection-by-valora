@@ -15,7 +15,7 @@ La numerazione è allineata: PR-18 è il motore del singolo oggetto, PR-13 diven
 - **PR-12 - motore di ricerca centrale:** identifica oggetti, ricerca fonti e corrispondenze, raccoglie metadati e restituisce evidenze con URL e diagnostica. È condiviso e non duplicato; non è di per sé una funzione premium.
 - **PR-18 - VALORA:** si avvia esclusivamente dopo la conferma esplicita del candidato identificato da PR-12. Usa PR-12 per recuperare comparabili di mercato, distingue vendite concluse da prezzi richiesti e restituisce valore, fascia e affidabilità. Non scrive direttamente oggetti, acquisti o vendite.
 - **PR-11 - VALUTAZIONE COMPLESSIVA COLLEZIONE:** usa PR-12 per valutare il patrimonio complessivo dell'utente a lotti di 10, registrare le rilevazioni periodiche e produrre il report di variazione. Non genera annunci di vendita.
-- **PR-20 - VALUTA ACQUISTO:** aiuta a decidere se una proposta d'acquisto è conveniente. Non è una valutazione specialistica dell'oggetto e non richiede che l'oggetto sia già registrato nella collezione.
+- **PR-13 - RICERCA OFFERTA:** aiuta a decidere se una proposta d'acquisto è conveniente. Non è una valutazione specialistica dell'oggetto e non richiede che l'oggetto sia già registrato nella collezione.
 
 ## Flusso PR-18 - VALORA
 
@@ -66,11 +66,11 @@ Flusso:
 Requisito UI da implementare nella schermata/form di registrazione identificata come RM9:
 - Inserire in fondo al modulo un pulsante sempre visibile, con etichetta chiara come **ABBONAMENTO E FUNZIONI PREMIUM**.
 - Il pulsante apre una pagina o finestra informativa completa, non una dicitura abbreviata, che spiega che **VALORA (PR-18) e VALUTAZIONE COMPLESSIVA COLLEZIONE (PR-11) sono servizi premium soggetti a un abbonamento a pagamento**.
-- Chiarire che PR-12 ricerca metadati non è soggetto a questo abbonamento e che VALUTA ACQUISTO (PR-20) è una funzione distinta che non richiama il motore premium VALORA.
+- Chiarire che PR-12 ricerca metadati non è soggetto a questo abbonamento e che RICERCA OFFERTA (PR-13) è una funzione distinta che non richiama il motore premium VALORA.
 - L'informativa deve essere raggiungibile dal modulo senza completare la registrazione e rimanere facilmente accessibile.
 - Non confondere l'informativa con l'accettazione contrattuale: eventuali checkbox/consensi e condizioni legali devono essere definiti separatamente.
 - Il componente riutilizzabile `lib/widgets/subscription_info.dart` è stato creato sul branch TEST. Offre il pulsante e la finestra informativa completa, ma non è ancora integrato nel form RM9 perché nel codice Flutter esaminato non è stata trovata la schermata di registrazione: è presente `LoginPage`, che non va confusa con RM9. L'integrazione finale resta da fare quando il form corretto viene individuato.
 
 ## Stato
 
-Questo documento fissa l'architettura desiderata e la numerazione delle procedure; non dichiara i motori completi. L'endpoint TEST `pr-18-valuation-test` è il motore specialistico del singolo oggetto e dipende da PR-12 dopo conferma utente. `collection-market-value-test` è riallineato a PR-11 per la valutazione complessiva in lotti. PR-20 resta dedicata alla convenienza d'acquisto.
+Questo documento fissa l'architettura desiderata e la numerazione delle procedure; non dichiara i motori completi. L'endpoint TEST `pr-18-valuation-test` è il motore specialistico del singolo oggetto e dipende da PR-12 dopo conferma utente. `collection-market-value-test` è riallineato a PR-11 per la valutazione complessiva in lotti. PR-13 resta dedicata alla convenienza d'acquisto.
