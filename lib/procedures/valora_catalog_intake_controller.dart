@@ -65,14 +65,7 @@ extension _ValoraCatalogIntakeActions on _ValoraServicePageState {
               : 'PR18 ha completato la ricerca, ma non ha trovato prezzi verificabili. Non verrà inventato un valore.');
       final addObject = await showDialog<bool>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Valutazione PR18'),
-          content: Text('$valuationText\\n\\nVuoi procedere con PR-04 Nuovo Acquisto?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('ANNULLA')),
-            FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('PROCEDI A PR-04')),
-          ],
-        ),
+        builder: (dialogContext) => _buildValoraCatalogIntakeReviewDialog(dialogContext, valuationText),
       );
       if (addObject != true || !mounted) return;
       await Navigator.of(context).push(MaterialPageRoute(
