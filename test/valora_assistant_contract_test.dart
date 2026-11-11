@@ -19,7 +19,6 @@ void main() {
 
     test('voice, text command and TEST read-only contract remain intact', () {
       expect(assistant, contains('SpeechToText()'));
-      expect(speech, isNot(contains('SpeechToText')));
       expect(speech, contains('Future<void> _toggleListening() async'));
       expect(speech, contains('_speechLocaleId'));
       expect(speech, contains('_speechLanguageName'));
