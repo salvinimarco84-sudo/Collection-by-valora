@@ -1579,6 +1579,7 @@ void main() {
     final coordinator = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
     final newDesire = File('lib/wanted_list/wanted_new_desire_page.dart').readAsStringSync();
     final activeDesires = File('lib/wanted_list/wanted_active_desires_page.dart').readAsStringSync();
+    final purchaseGoals = File('lib/wanted_list/wanted_purchase_objectives_page.dart').readAsStringSync();
 
     expect(source, contains("part 'wanted_list/wanted_new_desire_page.dart';"));
     expect(source, contains("part 'wanted_list/wanted_active_desires_page.dart';"));
@@ -1587,12 +1588,20 @@ void main() {
     expect(registry, contains("apiCode: 'WANTED-ACTIVE'"));
     expect(coordinator, contains('const WantedNewDesirePage()'));
     expect(coordinator, contains('const WantedActiveDesiresPage()'));
+    expect(coordinator, contains('const WantedPurchaseObjectivesPage()'));
     expect(newDesire, contains("from('wanted_desideri')"));
     expect(newDesire, contains("'stato': 'ATTIVO'"));
     expect(newDesire, contains('Il desiderio non ha superato la verifica'));
     expect(newDesire, isNot(contains("from('master_oggetti')")));
     expect(activeDesires, contains(".eq('stato', 'ATTIVO')"));
     expect(activeDesires, contains("order('data_creazione', ascending: false)"));
+    expect(purchaseGoals, contains("from('wanted_obiettivi')"));
+    expect(purchaseGoals, contains("'priorita': priority"));
+    expect(purchaseGoals, contains("'categoria_tema': category.text.trim()"));
+    expect(purchaseGoals, contains(".delete()"));
+    expect(purchaseGoals, contains(".update("));
+    expect(purchaseGoals, isNot(contains('prezzo')));
+    expect(purchaseGoals, isNot(contains('budget')));
   });
 
 }
