@@ -1423,7 +1423,7 @@ void main() {
     expect(valoraMarketValuationSource, contains('PREPARA VALUTAZIONE'));
     expect(valoraMarketValuationSource, contains('_prepareValuation'));
     expect(source, contains("part 'procedures/valora_market_valuation_result.dart';"));
-    expect(valoraMarketValuationSource, contains('buildMarketValuationResultSection()'));
+    expect(valoraMarketValuationSource, contains('_buildValoraMarketValuationResult(this)'));
     expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
     expect(valoraMarketValuationResultSource, contains('_continueToPr06Valora'));
     expect(valoraMarketValuationResultSource, contains('ESITO PREPARAZIONE'));
