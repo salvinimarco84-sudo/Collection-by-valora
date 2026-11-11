@@ -145,6 +145,7 @@ part 'wanted_list/wanted_active_desires_page.dart';
 part 'wanted_list/wanted_purchase_page.dart';
 part 'wanted_list/wanted_purchase_objectives_page.dart';
 part 'wanted_list/wanted_offers_page.dart';
+part 'wanted_list/wanted_history_page.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
