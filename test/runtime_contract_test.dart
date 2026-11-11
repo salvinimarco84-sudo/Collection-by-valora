@@ -741,7 +741,7 @@ void main() {
       final presentation = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
       expect(state, contains('class _PurchaseItemDraft'));
       expect(state, contains('mixin _Pr04PageState'));
-      expect(data, contains('Future<void> _loadCollectionCategories()'));
+      expect(state, contains('Future<void> _loadCollectionCategories()'));
       expect(photo, contains("functions.invoke('pr-12-engine-test'"));
       expect(presentation, contains('Widget _content()'));
       expect(presentation, contains('Widget _buildPr04PurchasePage(BuildContext context)'));
