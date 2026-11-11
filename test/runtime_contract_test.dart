@@ -39,6 +39,7 @@ void main() {
   final valoraIntroSectionSource = File('lib/procedures/valora_intro_section.dart').readAsStringSync();
   final valoraCatalogActionsSectionSource = File('lib/procedures/valora_catalog_actions_section.dart').readAsStringSync();
   final valoraCatalogObjectsControllerSource = File('lib/procedures/valora_catalog_objects_controller.dart').readAsStringSync();
+  final valoraCatalogObjectsServiceSource = File('lib/procedures/valora_catalog_objects_service.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoInputControllerSource = File('lib/procedures/valora_photo_input_controller.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
@@ -1442,20 +1443,24 @@ void main() {
 
   test('VALORA separa caricamento e filtraggio del catalogo dal controller pagina', () {
     expect(source, contains("part 'procedures/valora_catalog_objects_controller.dart';"));
+    expect(source, contains("part 'procedures/valora_catalog_objects_service.dart';"));
     expect(valoraServicePageSource, isNot(contains('Future<void> _loadObjects()')));
     expect(valoraServicePageSource, isNot(contains('get _matchingObjects')));
     expect(valoraServicePageSource, contains('_loadObjects();'));
     expect(valoraCatalogObjectsControllerSource, contains('extension _ValoraCatalogObjectsController'));
     expect(valoraCatalogObjectsControllerSource, contains('get _matchingObjects'));
     expect(valoraCatalogObjectsControllerSource, contains('Future<void> _loadObjects()'));
-    expect(valoraCatalogObjectsControllerSource, contains("from('master_oggetti')"));
-    expect(valoraCatalogObjectsControllerSource, contains('.range(offset, offset + pageSize - 1)'));
-    expect(valoraCatalogObjectsControllerSource, contains("'USCITO', 'EXITED'"));
-    expect(valoraCatalogObjectsControllerSource, contains("'ACCORPATO', 'MERGED'"));
-    expect(valoraCatalogObjectsControllerSource, contains("order('descrizione_oggetto')"));
-    expect(valoraCatalogObjectsControllerSource, contains("order('codice_oggetto')"));
+    expect(valoraCatalogObjectsControllerSource, contains('_fetchValoraCatalogObjects()'));
+    expect(valoraCatalogObjectsControllerSource, isNot(contains("from('master_oggetti')")));
     expect(valoraCatalogObjectsControllerSource, contains('if (!mounted) return;'));
     expect(valoraCatalogObjectsControllerSource, contains('_error ='));
+    expect(valoraCatalogObjectsServiceSource, contains('Future<List<Map<String, dynamic>>> _fetchValoraCatalogObjects()'));
+    expect(valoraCatalogObjectsServiceSource, contains("from('master_oggetti')"));
+    expect(valoraCatalogObjectsServiceSource, contains('.range(offset, offset + pageSize - 1)'));
+    expect(valoraCatalogObjectsServiceSource, contains("'USCITO', 'EXITED'"));
+    expect(valoraCatalogObjectsServiceSource, contains("'ACCORPATO', 'MERGED'"));
+    expect(valoraCatalogObjectsServiceSource, contains("order('descrizione_oggetto')"));
+    expect(valoraCatalogObjectsServiceSource, contains("order('codice_oggetto')"));
   });
 
   test('VALORA separa la chiamata PR-18 per candidati dal controller di intake', () {
