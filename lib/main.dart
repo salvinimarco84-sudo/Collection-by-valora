@@ -3110,7 +3110,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           .select('codice_categoria, descrizione, ordine_menu, visibile').eq('visibile', true)
           .order('ordine_menu').order('descrizione');
       if (!mounted) return;
-      setState(() => _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
+      setState(() {
+        _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        if (widget.preorderConversion && _items.first.collectionCategoryCode == null) {
+          final wanted = (widget.initialMetadata?['categoria_preorder'] ?? '').toString().trim().toLowerCase();
+          final match = _collectionCategories.where((e) => (e['descrizione'] ?? '').toString().trim().toLowerCase() == wanted);
+          if (match.isNotEmpty) _items.first.collectionCategoryCode = match.first['codice_categoria']?.toString();
+        }
+      });
     } catch (e) { if (mounted) setState(() => _output = 'Errore caricamento categorie COLLEZIONE: $e'); }
     finally { _categoriesLoading = false; }
   }
@@ -6429,10 +6436,11 @@ class _PurchaseItemDraft {
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
 
 class NewPurchasePage extends StatefulWidget {
-  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.valoraMode = false});
+  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.valoraMode = false, this.preorderConversion = false});
   final Map<String, dynamic>? initialMetadata;
   final double? suggestedMarketValue;
   final bool valoraMode;
+  final bool preorderConversion;
   @override
   State<NewPurchasePage> createState() => _NewPurchasePageState();
 }
@@ -6459,6 +6467,10 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     if (metadata != null) {
       final item = _items.first;
       item.description.text = (metadata['descrizione'] ?? '').toString();
+      if (widget.preorderConversion && metadata['prezzo_acquisto_preorder'] is num) {
+        item.price.text = (metadata['prezzo_acquisto_preorder'] as num).toStringAsFixed(2);
+        item.notes.text = 'Conversione da PR-15 PREORDER #${metadata['codice_preordine']}';
+      }
       item.metadataProducer = _nonEmptyMetadata(metadata['produttore']);
       item.metadataCode = _nonEmptyMetadata(metadata['codice_prodotto']);
       item.metadataYear = metadata['anno_uscita'] is num
