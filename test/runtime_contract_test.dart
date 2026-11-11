@@ -45,6 +45,7 @@ void main() {
   final valoraPhotoCandidateSource = File('lib/procedures/valora_photo_candidate_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
   final valoraKnownObjectValuationSource = File('lib/procedures/valora_known_object_valuation_controller.dart').readAsStringSync();
+  final valoraPr18ValuationControllerSource = File('lib/procedures/valora_pr18_valuation_controller.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final procedureRegistrySource = File('lib/procedures/procedure_registry.dart').readAsStringSync();
   final collectionValueEdgeFunctionSource = File('supabase/functions/collection-market-value-test/index.ts').readAsStringSync();
@@ -1373,6 +1374,19 @@ void main() {
     expect(valoraCatalogSaleControllerSource, contains('rollbackSession'));
     expect(valoraCatalogSaleControllerSource, contains("release_lock"));
     expect(valoraCatalogSaleControllerSource, contains("state != 'DISPONIBILE'"));
+  });
+
+  test('VALORA separa la preparazione PR18 dal passaggio a PR06', () {
+    expect(source, contains("part 'procedures/valora_pr18_valuation_controller.dart';"));
+    expect(valoraPr18ValuationControllerSource, contains('extension _ValoraKnownObjectPr18Controller'));
+    expect(valoraPr18ValuationControllerSource, contains('Future<void> _prepareValuation()'));
+    expect(valoraPr18ValuationControllerSource, contains('Future<void> _saveKnownObjectValuation('));
+    expect(valoraKnownObjectValuationSource, contains('extension _ValoraKnownObjectValuationActions'));
+    expect(valoraKnownObjectValuationSource, contains('Future<void> _continueToPr06Valora()'));
+    expect(valoraKnownObjectValuationSource, isNot(contains('Future<void> _prepareValuation()')));
+    expect(valoraKnownObjectValuationSource, isNot(contains('Future<void> _saveKnownObjectValuation(')));
+    expect(valoraKnownObjectValuationSource, contains("procedure('PR-02', 'preview'"));
+    expect(valoraKnownObjectValuationSource, contains('rollbackSession'));
   });
 
   test('VALORA separa la sezione mercato e preparazione PR18 dalla pagina', () {
