@@ -1223,17 +1223,18 @@ void main() {
 
   test('report vendite usa una pagina autonoma e una scheda dedicata', () {
     final page = File('lib/reports/sales_report_page.dart').readAsStringSync();
+    final data = File('lib/reports/sales_report_data_mixin.dart').readAsStringSync();
     final card = File('lib/reports/sales_report_card.dart').readAsStringSync();
     final dashboard = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
     expect(source, contains("part 'reports/sales_report_page.dart';"));
     expect(source, contains("part 'reports/sales_report_card.dart';"));
-    expect(page, contains("'report_code': 'SALES_REPORT'"));
-    expect(page, contains("'data_da'"));
-    expect(page, contains("'data_a'"));
+    expect(data, contains("'report_code': 'SALES_REPORT'"));
+    expect(data, contains("'data_da'"));
+    expect(data, contains("'data_a'"));
     expect(page, contains('ReportPaginationControls('));
     expect(page, contains('CREA FILE'));
-    expect(page, contains('master_metadati'));
-    expect(page, contains('collection-object-images-test'));
+    expect(data, contains('master_metadati'));
+    expect(data, contains('collection-object-images-test'));
     expect(page, contains('ReportSummaryPanel('));
     expect(page, isNot(contains("from('master_oggetti')")));
     expect(card, contains('class SalesReportCard extends StatelessWidget'));

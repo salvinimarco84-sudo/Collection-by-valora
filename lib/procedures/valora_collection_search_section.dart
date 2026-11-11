@@ -44,8 +44,8 @@ extension _ValoraCollectionSearchPresentation on _ValoraServicePageState {
                   'Nessun oggetto trovato nella collezione con questa descrizione.',
                 ),
               ),
-            )
-          else
+            ),
+          if (matches.isNotEmpty)
             ...matches.map((object) {
               final id = (object['codice_oggetto'] as num).toInt();
               final isSelected = id == _selectedId;

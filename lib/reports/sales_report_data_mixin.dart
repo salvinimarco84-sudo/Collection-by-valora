@@ -1,7 +1,7 @@
 part of '../main.dart';
 
 mixin SalesReportDataMixin on State<SalesReportPage> {
-  static const int _pageSize = 50;
+  int get _pageSize => 50;
   static const int _batchSize = 100;
   final String _sessionId = _uuid.v4();
   bool _loading = false;
