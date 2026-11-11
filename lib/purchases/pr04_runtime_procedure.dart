@@ -11,6 +11,9 @@ extension _Pr04RuntimeProcedure on _NewPurchasePageState {
 
   bool _valid() {
     if (_items.isEmpty) { _notice('Inserisci almeno un oggetto.'); return false; }
+    if (widget.wantedDesireId != null && (_pendingPurchases.isNotEmpty || _items.length != 1 || _type != 'SINGOLO')) {
+      _notice('Un desiderio WANTED LIST deve essere registrato come acquisto singolo di un solo oggetto.'); return false;
+    }
     for (var i = 0; i < _items.length; i++) {
       if (_items[i].description.text.trim().isEmpty) {
         _notice('Inserisci la descrizione dell’oggetto ' + (i + 1).toString() + '.'); return false;
@@ -95,7 +98,51 @@ extension _Pr04RuntimeProcedure on _NewPurchasePageState {
     } finally { await _release(); if (mounted) setState(() => _busy = false); }
   }
 
+  Future<void> _completeWantedPurchaseLink() async {
+    final wantedId = widget.wantedDesireId;
+    final purchaseCode = _wantedPurchaseCode;
+    if (wantedId == null || purchaseCode == null) return;
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) throw StateError('Sessione utente non valida per collegare il desiderio.');
+    final db = Supabase.instance.client.schema('collection');
+    final linkedRows = await db.from('acquisti_oggetti')
+        .select('codice_oggetto')
+        .eq('codice_acquisto', purchaseCode);
+    final rows = (linkedRows as List).whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row)).toList();
+    if (rows.length != 1) {
+      throw StateError('Acquisto $purchaseCode verificato, ma il collegamento restituisce ${rows.length} oggetti invece di uno. Il desiderio resta attivo.');
+    }
+    final objectCode = int.tryParse((rows.single['codice_oggetto'] ?? '').toString());
+    if (objectCode == null || objectCode <= 0) {
+      throw StateError('Codice oggetto non valido per l’acquisto $purchaseCode. Il desiderio resta attivo.');
+    }
+    final updated = await db.from('wanted_desideri').update({
+      'stato': 'ACQUISTATO',
+      'codice_oggetto_acquistato': objectCode,
+      'data_chiusura': DateTime.now().toUtc().toIso8601String(),
+      'data_aggiornamento': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', wantedId).eq('user_id', user.id).eq('stato', 'ATTIVO')
+      .select('id,stato,codice_oggetto_acquistato').maybeSingle();
+    if (updated == null ||
+        updated['stato'] != 'ACQUISTATO' ||
+        int.tryParse((updated['codice_oggetto_acquistato'] ?? '').toString()) != objectCode) {
+      throw StateError('Acquisto $purchaseCode salvato, ma il desiderio non è stato chiuso e verificato. Usa nuovamente CONFERMA COLLEGAMENTO, senza ripetere PR-04.');
+    }
+  }
+
   Future<void> _save() async {
+    if (_busy) return;
+    if (_wantedPurchaseCommitted) {
+      setState(() { _busy = true; _status = 'Ripristino del collegamento WANTED LIST, senza ripetere l’acquisto…'; });
+      try {
+        await _completeWantedPurchaseLink();
+        if (mounted) Navigator.of(context).pop(true);
+      } catch (e) {
+        if (mounted) setState(() => _status = 'Acquisto già salvato. Collegamento ancora da completare: $e');
+      } finally { if (mounted) setState(() => _busy = false); }
+      return;
+    }
     if (_preview == null || !_dataConfirmed) {
       _notice('Completa il riepilogo prima di salvare.'); return;
     }
@@ -114,16 +161,37 @@ extension _Pr04RuntimeProcedure on _NewPurchasePageState {
         r['numero_acquisti'] == expectedPurchases && verified && rereadCount == expectedPurchases;
       if (r['blocco_rilasciato_automaticamente'] == true) _locked = false;
       if (!mounted) return;
-      setState(() {
-        if (saved) _pendingPurchases.clear();
-        _preview = r;
-        _status = saved
-          ? 'Tutti i $expectedPurchases acquisti sono stati salvati e verificati singolarmente.'
-          : 'Salvataggio NON concluso: attesi $expectedPurchases acquisti, riletture ricevute $rereadCount. La coda e la bozza restano disponibili.';
-      });
-      if (saved && mounted) {
-        Navigator.of(context).pop();
+      if (!saved) {
+        setState(() {
+          _preview = r;
+          _status = 'Salvataggio NON concluso: attesi $expectedPurchases acquisti, riletture ricevute $rereadCount. La coda e la bozza restano disponibili.';
+        });
+        return;
       }
+      if (widget.wantedDesireId != null) {
+        final verifiedRow = (reread as List).single as Map;
+        _wantedPurchaseCode = int.tryParse((verifiedRow['codice_acquisto'] ?? '').toString());
+        if (_wantedPurchaseCode == null) {
+          throw StateError('PR-04 ha verificato il salvataggio ma non ha restituito il codice acquisto. Non ripetere l’acquisto: verifica manualmente il collegamento.');
+        }
+        _wantedPurchaseCommitted = true;
+        _pendingPurchases.clear();
+        try {
+          await _completeWantedPurchaseLink();
+        } catch (e) {
+          if (mounted) setState(() => _status = 'Acquisto salvato e verificato. Collegamento WANTED LIST da completare: $e. Premi nuovamente SALVA E ESCI per riprovare solo il collegamento, senza duplicare l’acquisto.');
+          return;
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        _pendingPurchases.clear();
+        _preview = r;
+        _status = widget.wantedDesireId == null
+          ? 'Tutti i $expectedPurchases acquisti sono stati salvati e verificati singolarmente.'
+          : 'Acquisto verificato e desiderio collegato allo stesso oggetto di catalogo.';
+      });
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) setState(() => _status = 'Salvataggio non confermato: ' + e.toString());
     } finally { await _release(); if (mounted) setState(() => _busy = false); }
