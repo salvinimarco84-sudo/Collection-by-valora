@@ -101,14 +101,16 @@ Caratteristiche rilevate nel codice:
 
 | Codice / voce | Nome effettivo | Collegamento / implementazione rilevata | Stato rilevato |
 |---|---|---|---|
-| PR-18 | VALORA | Voce menu `LAUNCH-VALORA`, `ValoraServicePage`; funzione di valutazione `pr-18-valuation-test` richiamata nel flusso di identificazione | Presente nel menu e collegata; collaudo end-to-end da verificare |
+| PR-14 | ASSISTENTE VALORA | Voce menu `LAUNCH-VALORA`, `ValoraServicePage`; coordina i due rami VALORA e richiama le procedure specialistiche | Presente nel menu e collegata; collaudo end-to-end da verificare |
+| PR-18 | Motore di valutazione specialistica VALORA | Funzione `pr-18-valuation-test`, richiamata internamente dal flusso PR-14 dopo conferma dell'oggetto | Motore collegato; collaudo end-to-end da verificare |
 | PR-19 | Nessuna procedura autonoma | Codice non utilizzato | Libero |
 | PR-13 | Ricerca offerta | Voce menu rinominata; nessun motore/runtime dedicato collegato | Presente nel menu ma disabilitata; sviluppo da completare |
 | PR-11 | Valutazione complessiva collezione | `LAUNCH-COLLECTION-VALUE`, `CollectionValuePage` e relativa presentazione | Presente nel menu e collegata; collaudo end-to-end da verificare |
 
 **Distinzione funzionale:**
 - PR-12 ricerca e restituisce metadati e candidati.
-- PR-18 è la procedura di valutazione specialistica del singolo oggetto.
+- PR-14 è l'assistente coordinatore del flusso VALORA.
+- PR-18 è il motore di valutazione specialistica del singolo oggetto, richiamato da PR-14.
 - PR-13 Ricerca offerta dovrà valutare la convenienza di una proposta d’acquisto e non va confusa con la valutazione patrimoniale.
 - PR-11 riguarda il valore complessivo della collezione e lo storico delle fotografie patrimoniali.
 
@@ -144,7 +146,7 @@ I report non vengono numerati come PR: sono consultazioni/report e usano codici 
 1. PR-03 è **Chiudi oggetto**, non Consultazione oggetti.
 2. PR-07 è **Modifica vendita** nel contratto runtime, ma non è una voce autonoma nell'attuale menu.
 3. PR-10 è **Scambio** nel contratto runtime, ma non è una voce autonoma nell'attuale menu.
-4. PR-18 è la voce menu **VALORA**.
+4. PR-14 è la voce menu **ASSISTENTE VALORA**; PR-18 resta il motore specialistico interno.
 5. PR-19 non risulta registrata come procedura autonoma nel menu attuale.
 6. PR-13 · RICERCA OFFERTA è registrata nel menu ma resta disabilitata finché il motore e il collegamento runtime non saranno implementati.
 7. PR-11 è **Valutazione complessiva collezione**.
@@ -195,7 +197,8 @@ Per ogni procedura mantenere questi campi:
 | PR-09 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-10 | Mapping runtime; UI da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-12 | Presente, sola lettura | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
-| PR-18 | Presente e collegata | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-14 | Assistente VALORA presente nel menu e collegato a `LAUNCH-VALORA` | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-18 | Motore specialistico richiamato internamente da PR-14 | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-19 | Non utilizzata | N/A | N/A | N/A | N/A | Libera |
 | PR-13 | Voce rinominata, disabilitata e non ancora collegata a un motore | Da eseguire | Da eseguire | Da eseguire | Da registrare | In sviluppo |
 | PR-11 | Presente e collegata | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
