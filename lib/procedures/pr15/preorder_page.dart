@@ -164,6 +164,7 @@ class _Pr15CreateDialogState extends State<_Pr15CreateDialog> {
   final _supplier = TextEditingController();
   final _category = TextEditingController();
   final _price = TextEditingController();
+  final _reference = TextEditingController();
   final _notes = TextEditingController();
   DateTime _orderDate = DateTime.now();
   DateTime? _expectedDate;
@@ -171,7 +172,7 @@ class _Pr15CreateDialogState extends State<_Pr15CreateDialog> {
   @override
   void dispose() {
     _description.dispose(); _supplier.dispose(); _category.dispose();
-    _price.dispose(); _notes.dispose();
+    _price.dispose(); _reference.dispose(); _notes.dispose();
     super.dispose();
   }
 
@@ -196,6 +197,7 @@ class _Pr15CreateDialogState extends State<_Pr15CreateDialog> {
       'supplier': _supplier.text.trim(),
       'category': _category.text.trim(),
       'priceCents': (amount * 100).round(),
+      'reference': _reference.text.trim(),
       'notes': _notes.text.trim(),
       'orderDate': _orderDate,
       'expectedDate': _expectedDate,
