@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final mainSource = File('lib/main.dart').readAsStringSync();
   final assistant = File('lib/procedures/valora_assistant_page.dart').readAsStringSync();
+  final session = File('lib/procedures/valora_assistant_session.dart').readAsStringSync();
   final presentation = File('lib/procedures/valora_assistant_presentation.dart').readAsStringSync();
   final speech = File('lib/procedures/valora_assistant_speech.dart').readAsStringSync();
   final command = File('lib/procedures/valora_assistant_command.dart').readAsStringSync();
@@ -21,7 +22,11 @@ void main() {
     });
 
     test('voice, text command and TEST read-only contract remain intact', () {
-      expect(assistant, contains('SpeechToText()'));
+      expect(assistant, contains('final _session = _ValoraAssistantSession();'));
+      expect(session, contains('final SpeechToText speech = SpeechToText();'));
+      expect(session, contains('final TextEditingController textController = TextEditingController();'));
+      expect(session, contains('void dispose()'));
+      expect(assistant, contains('StatefulWidget'));
       expect(speech, contains('Future<void> _toggleListening() async'));
       expect(speech, contains('_speechLocaleId'));
       expect(speech, contains('_speechLanguageName'));
