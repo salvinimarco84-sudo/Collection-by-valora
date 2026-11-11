@@ -12,12 +12,25 @@ void main() {
       expect(source, contains("color: Color(0xFFFFD54F)"));
       expect(source, contains("color: Color(0xFF35C7E8)"));
       expect(source, contains("for (final k in const ['RICERCHE', 'VALUTAZIONI'])"));
-      expect(source, contains('Image.asset(\n              _menuBackgroundAsset(),\n              fit: BoxFit.cover,'));
+      expect(source, contains('alignment: Alignment.center'));
       expect(source, isNot(contains('scale: 1.20')));
-      expect(source, contains('surfaceTintColor: Colors.transparent'));
-      expect(source, contains('Color(0x66070707)'));
-      expect(source, contains('visualDensity: const VisualDensity(horizontal: 0, vertical: -3)'));
-      expect(source, isNot(contains('Text(section.title, textAlign: TextAlign.center')));
+      expect(source, isNot(contains('Alignment(0, 0.18)')));
+      final sectionStart = source.indexOf('  Widget buildSection(DashboardSection section) {');
+      final sectionEnd = source.indexOf('  void showProcedureInfo(ProcedureEntry procedure) {', sectionStart);
+      expect(sectionStart, isNonNegative);
+      expect(sectionEnd, greaterThan(sectionStart));
+      final sectionLayout = source.substring(sectionStart, sectionEnd);
+      // Il titolo e la descrizione della sezione sono già incorporati negli asset:
+      // non devono essere duplicati sopra lo sfondo. Le icone restano sulle singole procedure.
+      expect(sectionLayout, contains('Colors.black.withValues(alpha: 0.16)'));
+      expect(sectionLayout, isNot(contains('ColoredBox(color: Color(0xFF101010))')));
+      expect(sectionLayout, isNot(contains('Image.network(')));
+      expect(sectionLayout, isNot(contains('Text(section.title')));
+      expect(sectionLayout, isNot(contains('ValoraI18n.tr(section.description)')));
+      expect(sectionLayout, contains('CircleAvatar('));
+      expect(sectionLayout, contains('sectionTint.withValues(alpha: 0.17)'));
+      expect(sectionLayout, contains('contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2)'));
+      expect(sectionLayout, contains('procedure.description'));
     });
 
     test('i sei menu usano esclusivamente i sei asset approvati', () {
@@ -63,6 +76,17 @@ void main() {
         expect(File(asset).existsSync(), isTrue, reason: 'Sfondo tema mancante: $asset');
         expect(source, contains(asset));
       }
+    });
+
+    test('la scheda patrimoniale conserva banner, copertura valutazioni e costi', () {
+      expect(source, contains('assets/patrimony_sections/banner_riepilogo_patrimoniale.jpg'));
+      expect(File('assets/patrimony_sections/banner_riepilogo_patrimoniale.jpg').existsSync(), isTrue);
+      expect(source, contains('Copertura delle valutazioni'));
+      expect(source, contains('collectionValuationCoverage'));
+      expect(source, contains('Copertura dei costi di acquisto'));
+      expect(source, contains('acquisitionCoverage'));
+      expect(source, contains('collectionCostCoverage + resaleCostCoverage'));
+      expect(source, contains('collectionMarket + resaleKnownCost'));
     });
 
     test('la scheda oggetto espone modifica e avvio vendita', () {
