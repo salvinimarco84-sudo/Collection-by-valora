@@ -121,6 +121,7 @@ part 'procedures/valora_photo_search_controller.dart';
 part 'procedures/valora_photo_candidate_controller.dart';
 part 'procedures/valora_catalog_intake_controller.dart';
 part 'procedures/valora_catalog_intake_review_dialog.dart';
+part 'procedures/valora_catalog_intake_valuation_summary.dart';
 part 'procedures/valora_catalog_metadata_builder.dart';
 part 'procedures/valora_pr18_valuation_controller.dart';
 part 'procedures/valora_known_object_valuation_controller.dart';
