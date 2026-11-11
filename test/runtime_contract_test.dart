@@ -1333,6 +1333,7 @@ void main() {
     final preview = File('lib/procedures/pr06_preview_confirmation_section.dart').readAsStringSync();
     final listingDrafts = File('lib/procedures/pr06_valora_listing_drafts.dart').readAsStringSync();
     final listingDraftPages = File('lib/procedures/pr06_valora_listing_draft_pages.dart').readAsStringSync();
+    final listingDraftCard = File('lib/procedures/pr06_valora_listing_draft_card.dart').readAsStringSync();
     final listingDraftRegistry = File('lib/procedures/procedure_registry.dart').readAsStringSync();
     final listingDraftCoordinator = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
     final listingDraftFunction = File('supabase/functions/valora-listing-drafts-test/index.ts').readAsStringSync();
@@ -1356,8 +1357,11 @@ void main() {
     expect(pr06RuntimeProcedureSource, contains('if (widget.valoraMode) return;'));
     expect(listingDrafts, contains("functions.invoke("));
     expect(listingDrafts, contains("'valora-listing-drafts-test'"));
-    expect(listingDraftPages, contains('COPIA TESTO'));
-    expect(listingDraftPages, contains('SALVA BOZZA'));
+    expect(source, contains("part 'procedures/pr06_valora_listing_draft_card.dart';"));
+    expect(listingDraftPages, contains('Pr06ValoraListingDraftCard('));
+    expect(listingDraftCard, contains('class Pr06ValoraListingDraftCard extends StatelessWidget'));
+    expect(listingDraftCard, contains('COPIA TESTO'));
+    expect(listingDraftCard, contains('SALVA BOZZA'));
     expect(listingDrafts, contains("body: {'action': 'list'}"));
     expect(listingDraftRegistry, contains("apiCode: 'VALORA-LISTING-DRAFTS'"));
     expect(listingDraftCoordinator, contains('Pr06ValoraListingDraftLibraryPage'));
