@@ -37,8 +37,8 @@ class SubscriptionInfoButton extends StatelessWidget {
                   SizedBox(height: 12),
                   Text(
                     'La ricerca metadati PR-12 è una funzione distinta e non '
-                    'è soggetta all’abbonamento VALORA. VALUTA ACQUISTO '
-                    '(PR-20) è una funzione autonoma di analisi della '
+                    'è soggetta all’abbonamento VALORA. RICERCA OFFERTA '
+                    '(PR-13) è una funzione autonoma di analisi della '
                     'convenienza di un’offerta e non richiama il motore '
                     'premium di VALORA.',
                   ),
