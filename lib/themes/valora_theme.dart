@@ -286,6 +286,7 @@ class ValoraAppearance extends ChangeNotifier {
   static final instance = ValoraAppearance._();
   static const Map<String, Color> defaults = {
     'CATALOGO': Color(0xFF3978C5),
+    'WANTED LIST': Color(0xFFB8BEC6),
     'ACQUISTI': Color(0xFFC74444),
     'VENDITE': Color(0xFF39875B),
     'VALUTAZIONI': Color(0xFFD6A83F),
