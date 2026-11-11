@@ -443,6 +443,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                         ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedPurchasePage()))
                     : procedure.apiCode == 'WANTED-OFFERS'
                         ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedOffersPage()))
+                    : procedure.apiCode == 'WANTED-HISTORY'
+                        ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedHistoryPage()))
                     : procedure.apiCode == 'PR-21-SEARCH'
                     ? () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const CategoryObjectSearchPage()))
