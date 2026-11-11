@@ -66,6 +66,9 @@ part 'procedures/pr01_runtime_procedure.dart';
 part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
 part 'purchases/pr04_runtime_procedure.dart';
+part 'purchases/pr04_data_controller.dart';
+part 'purchases/pr04_photo_controller.dart';
+part 'purchases/pr04_page_presentation.dart';
 part 'purchases/pr05_runtime_procedure.dart';
 part 'purchases/pr04_form_content.dart';
 part 'purchases/pr04_photo_field.dart';
@@ -6485,23 +6488,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     _loadCollectionCategories();
   }
 
-  String? _nonEmptyMetadata(dynamic value) {
-    final text = value?.toString().trim() ?? '';
-    return text.isEmpty ? null : text;
-  }
-
-  Future<void> _loadCollectionCategories() async {
-    _categoriesLoading = true;
-    try {
-      final rows = await Supabase.instance.client.schema('collection').from('master_categorie_collezione')
-          .select('codice_categoria, descrizione, ordine_menu, visibile').eq('visibile', true)
-          .order('ordine_menu').order('descrizione');
-      if (!mounted) return;
-      setState(() => _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
-    } catch (e) { if (mounted) setState(() => _status = 'Errore caricamento categorie: $e'); }
-    finally { _categoriesLoading = false; }
-  }
-
   @override
   void dispose() { _count.dispose(); for (final i in _items) { i.dispose(); } super.dispose(); }
 
@@ -6510,80 +6496,6 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
       d.month.toString().padLeft(2, '0') + '/' + d.year.toString();
   double get _total => _items.fold<double>(0, (sum, i) => sum + (i.amount ?? 0));
   void _notice(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
-
-  Future<void> _photoAndRecognize(_PurchaseItemDraft item) async {
-    try {
-      final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
-      if (picked == null) return;
-      final bytes = await picked.readAsBytes();
-      if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Foto vuota o superiore a 10 MB.');
-      setState(() {
-        item.photoBytes = bytes;
-        item.photoName = picked.name.isNotEmpty ? picked.name : 'foto_acquisto.jpg';
-        item.photoUrl = null;
-        item.photoStatus = 'Foto acquisita. Riconoscimento PR-12 in corso…';
-      });
-      final mime = (item.photoName ?? '').toLowerCase().endsWith('.png') ? 'image/png' : ((item.photoName ?? '').toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
-      final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
-        'azione': 'ANALIZZA_FOTO', 'modalita_ia': 'TEST',
-        'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}', 'mercato': 'Italia',
-      });
-      final data = response.data;
-      if (data is! Map || data['ok'] != true) throw Exception(data is Map ? (data['error'] ?? 'Riconoscimento non riuscito').toString() : 'Risposta PR-12 non valida');
-      final clues = data['identificazione'] is Map ? Map<String,dynamic>.from(data['identificazione']) : <String,dynamic>{};
-      final results = data['risultati'] is List ? (data['risultati'] as List).whereType<Map>().map((v)=>Map<String,dynamic>.from(v)).toList() : <Map<String,dynamic>>[];
-      if (!mounted) return;
-      final imageCandidates = results.where((r) {
-        final u = (r['image_url'] ?? r['immagine_url'] ?? r['url_immagine'] ?? '').toString().trim();
-        return u.startsWith('https://') || u.startsWith('http://');
-      }).toList();
-      final selection = await showDialog<Map<String, dynamic>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => Pr04RecognitionDialog(
-          photoBytes: bytes,
-          clues: clues,
-          results: results,
-          imageCandidates: imageCandidates,
-        ),
-      );
-      if (selection == null || selection['annulla'] == true) {
-        if (mounted) setState(() => item.photoStatus = 'Ricerca terminata. Foto originale conservata; nessuna proposta applicata.');
-        return;
-      }
-      final selectedCandidate = selection['candidate'] is Map
-          ? Map<String,dynamic>.from(selection['candidate'] as Map)
-          : (results.isNotEmpty ? results.first : <String,dynamic>{});
-      final description = (clues['descrizione_provvisoria'] ?? selectedCandidate['title'] ?? '').toString().trim();
-      final maker = (clues['marchio'] ?? selectedCandidate['produttore'] ?? selectedCandidate['editore'] ?? '').toString().trim();
-      final code = (clues['codice_prodotto'] ?? selectedCandidate['codice_prodotto'] ?? selectedCandidate['isbn'] ?? '').toString().trim();
-      final yearValue = selectedCandidate['anno_uscita'] ?? selectedCandidate['anno_pubblicazione'] ?? selectedCandidate['year'];
-      final yearText = yearValue?.toString() ?? '';
-      final yearMatch = RegExp(r'(19\d{2}|20\d{2})').firstMatch(yearText);
-      final selectedUrl = selection['use_original'] == true ? null
-          : (selectedCandidate['image_url'] ?? selectedCandidate['immagine_url'] ?? selectedCandidate['url_immagine'] ?? '').toString().trim();
-      if (mounted) setState(() {
-        if (description.isNotEmpty) item.description.text = description;
-        item.metadataProducer = maker.isEmpty ? null : maker;
-        item.metadataCode = code.isEmpty ? null : code;
-        item.metadataYear = yearMatch == null ? null : int.tryParse(yearMatch.group(1)!);
-        item.metadataSourceUrl = (selectedCandidate['url'] ?? '').toString().trim().isEmpty ? null : selectedCandidate['url'].toString();
-        item.photoUrl = selectedUrl != null && (selectedUrl.startsWith('https://') || selectedUrl.startsWith('http://')) ? selectedUrl : null;
-        item.photoStatus = item.photoUrl == null
-          ? 'Metadati PR-12 proposti. Foto originale selezionata; verifica i dati prima di salvare.'
-          : 'Metadati PR-12 proposti. Immagine online selezionata; verifica i dati prima di salvare.';
-        _invalidate();
-      });
-    } catch (e) {
-      if (mounted) setState(() => item.photoStatus = 'Riconoscimento non riuscito: $e');
-    }
-  }
-  Future<void> _pickDate() async {
-    final d = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime(1990),
-      lastDate: DateTime.now().add(const Duration(days: 1)), helpText: 'DATA DELL’ACQUISTO',
-      cancelText: 'ANNULLA', confirmText: 'CONFERMA DATA');
-    if (d != null && mounted) setState(() { _date = d; _invalidate(); });
-  }
 
   Widget _heading(String title, String subtitle) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -6695,18 +6607,7 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (widget.valoraMode) {
-      return Pr04ValoraPurchasePageFrame(busy: _busy, content: _content());
-    }
-    return Pr04PurchasePageFrame(
-      step: _step,
-      busy: _busy,
-      color: ValoraAppearance.instance.colorFor('ACQUISTI'),
-      status: _status,
-      content: _content(),
-    );
-  }
+  Widget build(BuildContext context) => _buildPr04PurchasePage(context);
 }
 
 
