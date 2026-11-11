@@ -41,6 +41,7 @@ void main() {
   final valoraCatalogObjectsControllerSource = File('lib/procedures/valora_catalog_objects_controller.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
+  final valoraPhotoCandidateSource = File('lib/procedures/valora_photo_candidate_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
   final valoraKnownObjectValuationSource = File('lib/procedures/valora_known_object_valuation_controller.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
@@ -1374,6 +1375,19 @@ void main() {
     expect(valoraMarketValuationSource, contains('_prepareValuation'));
     expect(valoraMarketValuationSource, contains('_continueToPr06Valora'));
     expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
+  });
+
+  test('VALORA separa conferma e ricerca estesa dei candidati fotografici', () {
+    expect(source, contains("part 'procedures/valora_photo_candidate_controller.dart';"));
+    expect(valoraPhotoSearchSource, isNot(contains('_confirmPhotoCandidate')));
+    expect(valoraPhotoSearchSource, isNot(contains('_retryPhotoSearch')));
+    expect(valoraPhotoCandidateSource, contains('extension _ValoraPhotoCandidateController'));
+    expect(valoraPhotoCandidateSource, contains('_confirmPhotoCandidate'));
+    expect(valoraPhotoCandidateSource, contains('_retryPhotoSearch'));
+    expect(valoraPhotoCandidateSource, contains('_confirmedPhotoCandidates[index]'));
+    expect(valoraPhotoCandidateSource, contains("'ricerca_estesa': true"));
+    expect(valoraPhotoCandidateSource, contains("'escludi_url': excludedUrls.toList()"));
+    expect(valoraPhotoCandidateSource, contains('if (url.isNotEmpty && known.add(url)) old.add(item)'));
   });
 
   test('VALORA separa caricamento e filtraggio del catalogo dal controller pagina', () {
