@@ -717,6 +717,32 @@ void main() {
       expect(Directory('assets/themes').existsSync(), isTrue);
     });
 
+    test('PR-04 mantiene la pagina sottile e separa stato, dati, foto e presentazione', () {
+      expect(source, contains("part 'purchases/pr04_page_state.dart';"));
+      expect(source, contains("part 'purchases/pr04_data_controller.dart';"));
+      expect(source, contains("part 'purchases/pr04_photo_controller.dart';"));
+      expect(source, contains("part 'purchases/pr04_page_presentation.dart';"));
+      final pageStart = source.indexOf('class _NewPurchasePageState');
+      final pageEnd = source.indexOf('class EditPurchasePage', pageStart);
+      expect(pageStart, isNonNegative);
+      expect(pageEnd, greaterThan(pageStart));
+      final page = source.substring(pageStart, pageEnd);
+      expect(page, contains('with _Pr04PageState'));
+      expect(page, contains('_buildPr04PurchasePage(context)'));
+      expect(page, isNot(contains('TextEditingController')));
+      expect(page, isNot(contains('Future<void> _photoAndRecognize')));
+      final state = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
+      final data = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
+      final photo = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
+      final presentation = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
+      expect(state, contains('class _PurchaseItemDraft'));
+      expect(state, contains('mixin _Pr04PageState'));
+      expect(data, contains('Future<void> _loadCollectionCategories()'));
+      expect(photo, contains("functions.invoke('pr-12-engine-test'"));
+      expect(presentation, contains('Widget _content()'));
+      expect(presentation, contains('Widget _buildPr04PurchasePage(BuildContext context)'));
+    });
+
     test('PR-04 consente di inserire e salvare le note del singolo oggetto', () {
       final draftStart = source.indexOf('class _PurchaseItemDraft');
       final draftEnd = source.indexOf('/// PR-04:', draftStart);
