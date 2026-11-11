@@ -38,6 +38,7 @@ void main() {
   final valoraMarketValuationSource = File('lib/procedures/valora_market_valuation_section.dart').readAsStringSync();
   final valoraIntroSectionSource = File('lib/procedures/valora_intro_section.dart').readAsStringSync();
   final valoraCatalogActionsSectionSource = File('lib/procedures/valora_catalog_actions_section.dart').readAsStringSync();
+  final valoraCatalogObjectsControllerSource = File('lib/procedures/valora_catalog_objects_controller.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
@@ -1367,6 +1368,24 @@ void main() {
     expect(valoraMarketValuationSource, contains('_prepareValuation'));
     expect(valoraMarketValuationSource, contains('_continueToPr06Valora'));
     expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
+  });
+
+  test('VALORA separa caricamento e filtraggio del catalogo dal controller pagina', () {
+    expect(source, contains("part 'procedures/valora_catalog_objects_controller.dart';"));
+    expect(valoraServicePageSource, isNot(contains('Future<void> _loadObjects()')));
+    expect(valoraServicePageSource, isNot(contains('get _matchingObjects')));
+    expect(valoraServicePageSource, contains('_loadObjects();'));
+    expect(valoraCatalogObjectsControllerSource, contains('extension _ValoraCatalogObjectsController'));
+    expect(valoraCatalogObjectsControllerSource, contains('get _matchingObjects'));
+    expect(valoraCatalogObjectsControllerSource, contains('Future<void> _loadObjects()'));
+    expect(valoraCatalogObjectsControllerSource, contains("from('master_oggetti')"));
+    expect(valoraCatalogObjectsControllerSource, contains('.range(offset, offset + pageSize - 1)'));
+    expect(valoraCatalogObjectsControllerSource, contains("'USCITO', 'EXITED'"));
+    expect(valoraCatalogObjectsControllerSource, contains("'ACCORPATO', 'MERGED'"));
+    expect(valoraCatalogObjectsControllerSource, contains("order('descrizione_oggetto')"));
+    expect(valoraCatalogObjectsControllerSource, contains("order('codice_oggetto')"));
+    expect(valoraCatalogObjectsControllerSource, contains('if (!mounted) return;'));
+    expect(valoraCatalogObjectsControllerSource, contains('_error ='));
   });
 
   test('VALORA separa introduzione assistente e azioni catalogo dalla presentazione', () {
