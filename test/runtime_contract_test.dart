@@ -31,6 +31,7 @@ void main() {
   final pr07DataSource = File('lib/procedures/pr07_edit_sales_data_mixin.dart').readAsStringSync();
   final pr07CardSource = File('lib/procedures/pr07_sale_edit_card.dart').readAsStringSync();
   final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final valoraUserMarketServiceSource = File('lib/procedures/valora_user_market_service.dart').readAsStringSync();
   final valoraCatalogSaleControllerSource = File('lib/procedures/valora_catalog_sale_controller.dart').readAsStringSync();
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
@@ -1438,7 +1439,12 @@ void main() {
     expect(source, contains("String _market = '';"));
     expect(source, contains('seleziona il tuo mercato principale prima di salvare.'));
     expect(source, isNot(contains("_market = _markets.first['nome_mercato']")));
-    expect(valoraServicePageSource, contains("select('mercato_nazionale_principale,mercati(nome_mercato)')"));
+    expect(source, contains("part 'procedures/valora_user_market_service.dart';"));
+    expect(valoraServicePageSource, contains('await _fetchValoraUserPrimaryMarket()'));
+    expect(valoraServicePageSource, isNot(contains("select('mercato_nazionale_principale,mercati(nome_mercato)')")));
+    expect(valoraUserMarketServiceSource, contains('Future<String> _fetchValoraUserPrimaryMarket()'));
+    expect(valoraUserMarketServiceSource, contains("select('mercato_nazionale_principale,mercati(nome_mercato)')"));
+    expect(valoraUserMarketServiceSource, contains('auth_user_id'));
     expect(valoraServicePageSource, contains("String _market = '';"));
     expect(pr18EdgeFunctionSource, contains('mercato: marketName'));
     expect(pr18EdgeFunctionSource, contains('profiles[0].mercati?.nome_mercato'));
