@@ -24,12 +24,12 @@ class SubscriptionInfoButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'VALORA (PR-19) e VALORE COLLEZIONE (PR-18) sono '
+                    'VALORA (motore PR-18) e VALORE COLLEZIONE (PR-11) sono '
                     'servizi premium soggetti a un abbonamento a pagamento.',
                   ),
                   SizedBox(height: 12),
                   Text(
-                    'VALORA permette la valutazione specialistica del singolo '
+                    'L’ASSISTENTE VALORA (PR-14) coordina il flusso; il motore PR-18 permette la valutazione specialistica del singolo '
                     'oggetto e la preparazione di bozze di inserzione. '
                     'VALORE COLLEZIONE riguarda la stima complessiva della '
                     'collezione e i relativi confronti e report.',
