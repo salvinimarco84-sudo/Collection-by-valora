@@ -158,7 +158,7 @@ void main() {
       expect(valoraCatalogIntakeSource, contains('Pr04ValoraPurchasePage('));
       expect(valoraKnownObjectValuationSource, contains('Pr06ValoraPage('));
       expect(valoraServicePresentationSource, contains('buildMarketValuationSection()'));
-      expect(valoraServicePageSource, contains('buildValoraCatalogActionsSection(selected)'));
+      expect(valoraServicePresentationSource, contains('buildValoraCatalogActionsSection(selected)'));
 
       expect(valoraKnownObjectValuationSource, contains("pop('SOLO_VALUTAZIONE')"));
       expect(pr18EdgeFunctionSource, contains('SALVA_VALUTAZIONE'));
