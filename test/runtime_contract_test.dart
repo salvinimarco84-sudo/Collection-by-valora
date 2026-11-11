@@ -1596,6 +1596,7 @@ void main() {
     expect(registry, contains("title: 'WANTED LIST'"));
     expect(registry, contains("apiCode: 'WANTED-NEW'"));
     expect(registry, contains("apiCode: 'WANTED-ACTIVE'"));
+    expect(registry, contains("apiCode: 'WANTED-GOALS'"));
     expect(coordinator, contains('const WantedNewDesirePage()'));
     expect(coordinator, contains('const WantedActiveDesiresPage()'));
     expect(coordinator, contains('const WantedPurchaseObjectivesPage()'));
