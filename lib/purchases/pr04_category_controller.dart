@@ -1,6 +1,6 @@
 part of '../main.dart';
 
-extension _Pr04CategoryController on _NewPurchasePageState {
+extension _Pr04CategoryController on _Pr04PageState {
   Future<void> _loadCollectionCategories() async {
     _categoriesLoading = true;
     try {
