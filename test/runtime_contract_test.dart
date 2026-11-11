@@ -175,7 +175,7 @@ void main() {
       expect(valoraServicePresentationSource, contains('buildCollectionSearchSection(selected: selected, matches: matches)'));
       expect(valoraCollectionSearchSource, contains('extension _ValoraCollectionSearchPresentation'));
       expect(valoraCollectionSearchSource, contains('CERCA NELLA COLLEZIONE'));
-      expect(valoraCollectionSearchSource, contains('_matchingObjects'));
+      expect(valoraCollectionSearchSource, contains('required List<Map<String, dynamic>> matches'));
       expect(valoraServicePresentationSource, contains("'PREPARA VALUTAZIONE'"));
     });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
