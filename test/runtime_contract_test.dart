@@ -45,6 +45,7 @@ void main() {
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoInputControllerSource = File('lib/procedures/valora_photo_input_controller.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
+  final valoraPhotoAnalysisServiceSource = File('lib/procedures/valora_photo_analysis_service.dart').readAsStringSync();
   final valoraPhotoCandidateSource = File('lib/procedures/valora_photo_candidate_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
   final valoraCatalogIntakeValuationServiceSource = File('lib/procedures/valora_catalog_intake_valuation_service.dart').readAsStringSync();
@@ -193,11 +194,11 @@ void main() {
       expect(valoraServicePageSource, isNot(contains('Future<Map<String, dynamic>> _analyzeImageBytes')));
       expect(valoraServicePageSource, isNot(contains('Future<void> _retryPhotoSearch')));
       expect(valoraPhotoSearchSource, contains('extension _ValoraPhotoSearchActions'));
-      expect(valoraPhotoSearchSource, contains('Future<Map<String, dynamic>> _analyzeImageBytes('));
-      expect(valoraPhotoSearchSource, contains("'pr-12-engine-test'"));
-      expect(valoraPhotoSearchSource, contains("'mercato': _market"));
-      expect(valoraPhotoSearchSource, contains('bytes.length > 10 * 1024 * 1024'));
-      expect(valoraPhotoSearchSource, contains("'ANALIZZA_FOTO'"));
+      expect(valoraPhotoAnalysisServiceSource, contains('Future<Map<String, dynamic>> _analyzeValoraImageBytes('));
+      expect(valoraPhotoAnalysisServiceSource, contains("'pr-12-engine-test'"));
+      expect(valoraPhotoAnalysisServiceSource, contains("'mercato': market"));
+      expect(valoraPhotoAnalysisServiceSource, contains('bytes.length > 10 * 1024 * 1024'));
+      expect(valoraPhotoAnalysisServiceSource, contains("'ANALIZZA_FOTO'"));
       expect(source, contains("part 'procedures/valora_photo_candidate_controller.dart';"));
       expect(valoraPhotoCandidateSource, contains("'ricerca_estesa': true"));
       expect(valoraPhotoCandidateSource, contains('_confirmedPhotoCandidates[index]'));
