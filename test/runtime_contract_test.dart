@@ -171,8 +171,9 @@ void main() {
       expect(valoraServicePageSource, isNot(contains('Future<void> _retryPhotoSearch')));
       expect(valoraPhotoSearchSource, contains('extension _ValoraPhotoSearchActions'));
       expect(valoraPhotoSearchSource, contains("'ANALIZZA_FOTO'"));
-      expect(valoraPhotoSearchSource, contains("'ricerca_estesa': true"));
-      expect(valoraPhotoSearchSource, contains('_confirmedPhotoCandidates[index]'));
+      expect(source, contains("part 'procedures/valora_photo_candidate_controller.dart';"));
+      expect(valoraPhotoCandidateSource, contains("'ricerca_estesa': true"));
+      expect(valoraPhotoCandidateSource, contains('_confirmedPhotoCandidates[index]'));
       expect(source, contains("part 'procedures/valora_catalog_intake_controller.dart';"));
       expect(source, contains("part 'procedures/valora_catalog_sale_controller.dart';"));
       expect(valoraServicePageSource, isNot(contains('Future<void> _openUncataloguedCandidate')));
