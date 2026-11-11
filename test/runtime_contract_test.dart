@@ -45,7 +45,6 @@ void main() {
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoInputControllerSource = File('lib/procedures/valora_photo_input_controller.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
-  final valoraPhotoAnalysisServiceSource = File('lib/procedures/valora_photo_analysis_service.dart').readAsStringSync();
   final valoraPhotoCandidateSource = File('lib/procedures/valora_photo_candidate_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
   final valoraCatalogIntakeValuationServiceSource = File('lib/procedures/valora_catalog_intake_valuation_service.dart').readAsStringSync();
