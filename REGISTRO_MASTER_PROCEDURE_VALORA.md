@@ -179,7 +179,7 @@ Per ogni procedura mantenere questi campi:
 | PR-04 VALORA | Pagina dedicata collegata da VALORA; runtime PR-04 condiviso | CI 663 SUCCESS | Manuale end-to-end TEST da eseguire | Regressione PR-04 ordinaria da provare nell'app | Build 1670 SUCCESS (Android/Windows) | Aperta, collaudo manuale pendente |
 | PR-05 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-06 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
-| PR-07 | Mapping runtime; UI da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-07 | Scomposta: pagina dedicata, mixin dati/runtime e scheda di presentazione; collegata al menu VENDITE | Contratti automatici aggiunti; CI da registrare | Da eseguire nell'app TEST | Regressioni PR-06, PR-08 e PR-09 da eseguire | In attesa CI/build | Aperta, collaudo funzionale pendente |
 | PR-08 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-09 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-10 | Mapping runtime; UI da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
@@ -228,3 +228,24 @@ Sono stati aggiunti contratti automatici per verificare la registrazione dei nuo
 2. Separare il flusso di avvio vendita degli oggetti già presenti, senza toccare PR-06 standard.
 3. Ridurre `valora_service_page.dart` al coordinamento e allo stato essenziale.
 4. Verificare i collegamenti UI e i test di regressione di PR-04 VALORA, PR-06 VALORA, PR-12 e PR-18.
+
+
+## 10. Scomposizione tecnica PR-07 · MODIFICA VENDITA
+
+**Perimetro:** modifica esclusivamente cicli di vendita ancora APERTI. Non chiude vendite e non annulla vendite concluse.
+
+| Modulo | Responsabilità | Stato |
+|---|---|---|
+| `pr07_edit_sales_page.dart` | Pagina dedicata, ricerca, selezione vendita, anteprima, conferma e navigazione | Estratto |
+| `pr07_edit_sales_data_mixin.dart` | Lettura vendite aperte e piattaforme, caricamento note, validazione payload, blocco esclusivo, preview/review/save e rilettura runtime | Estratto |
+| `pr07_sale_edit_card.dart` | Presentazione vendita e campi modificabili con selezione esplicita | Estratto |
+| `procedure_registry.dart` | Voce autonoma Modifica vendita nel blocco VENDITE | Collegata |
+| `dashboard_home_coordinator.dart` | Instradamento WRITE-PR-07 alla pagina dedicata | Collegato |
+
+**Campi modificabili previsti dal contratto SQL TEST:** data iniziale, prezzo richiesto, piattaforme associate e note. Ogni campo è modificato solo se selezionato esplicitamente. La funzione `collection.pr_07_modifica_vendita` valida il lotto, prepara il riepilogo senza scritture, richiede conferma finale, applica le modifiche e verifica i dati rileggendoli dal database.
+
+**Sequenza operativa:** elenco vendite aperte → selezione vendita → scelta dei campi → acquisizione blocco esclusivo → anteprima → conferma dati → conferma definitiva → salvataggio e rilettura.
+
+**Confini preservati:** PR-06 Nuova vendita, PR-08 Chiudi vendita e PR-09 Annulla vendita non vengono modificati. La pagina PR-07 usa esclusivamente il codice runtime PR-07. Nessuna scrittura è stata eseguita sul database TEST o produzione durante la scomposizione.
+
+**Stato verifiche:** i test automatici di contratto sono stati aggiornati. CI/build e collaudo funzionale nell'app TEST restano da verificare; una run verde non equivale a certificazione funzionale.

@@ -27,6 +27,9 @@ void main() {
   final pr06PageStateSource = File('lib/procedures/pr06_page_state.dart').readAsStringSync();
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
+  final pr07PageSource = File('lib/procedures/pr07_edit_sales_page.dart').readAsStringSync();
+  final pr07DataSource = File('lib/procedures/pr07_edit_sales_data_mixin.dart').readAsStringSync();
+  final pr07CardSource = File('lib/procedures/pr07_sale_edit_card.dart').readAsStringSync();
   final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
   final valoraCatalogSaleControllerSource = File('lib/procedures/valora_catalog_sale_controller.dart').readAsStringSync();
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
@@ -1362,6 +1365,29 @@ void main() {
     expect(valoraMarketValuationSource, contains('_prepareValuation'));
     expect(valoraMarketValuationSource, contains('_continueToPr06Valora'));
     expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
+  });
+
+  test('PR-07 Modifica vendita ha pagina, dati e presentazione dedicati', () {
+    final registry = File('lib/procedures/procedure_registry.dart').readAsStringSync();
+    expect(source, contains("part 'procedures/pr07_edit_sales_page.dart';"));
+    expect(source, contains("part 'procedures/pr07_edit_sales_data_mixin.dart';"));
+    expect(source, contains("part 'procedures/pr07_sale_edit_card.dart';"));
+    expect(registry, contains("apiCode: 'WRITE-PR-07'"));
+    expect(pr07PageSource, contains('class Pr07EditSalesPage extends StatefulWidget'));
+    expect(pr07PageSource, contains('Pr07SaleEditCard('));
+    expect(pr07DataSource, contains('mixin Pr07EditSalesDataMixin'));
+    expect(pr07DataSource, contains("procedure('PR-07', 'preview'"));
+    expect(pr07DataSource, contains("procedure('PR-07', 'review'"));
+    expect(pr07DataSource, contains("procedure('PR-07', 'save'"));
+    expect(pr07DataSource, contains("'codice_vendita_aperta'"));
+    expect(pr07DataSource, contains("'modifica_data'"));
+    expect(pr07DataSource, contains("'modifica_prezzo'"));
+    expect(pr07DataSource, contains("'modifica_piattaforme'"));
+    expect(pr07DataSource, contains("'modifica_note'"));
+    expect(pr07CardSource, contains('class Pr07SaleEditCard extends StatelessWidget'));
+    expect(dashboardHomeCoordinatorSource, contains('const Pr07EditSalesPage()'));
+    expect(pr07DataSource, isNot(contains("procedure('PR-06'")));
+    expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
 
 }
