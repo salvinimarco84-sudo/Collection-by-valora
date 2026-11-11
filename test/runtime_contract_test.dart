@@ -738,6 +738,7 @@ void main() {
       expect(page, isNot(contains('Future<void> _photoAndRecognize')));
       final state = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
       final draftController = File('lib/purchases/pr04_draft_controller.dart').readAsStringSync();
+      final runtime = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
       final data = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
       final photo = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
       final presentation = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
