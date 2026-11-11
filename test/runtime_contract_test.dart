@@ -1569,6 +1569,7 @@ void main() {
     expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
 
+  // I contratti PR-12 sono verificati sulla sorgente modulare condivisa con main.
   test('WANTED LIST registra e consulta desideri senza creare acquisti o oggetti', () {
     final registry = File('lib/procedures/procedure_registry.dart').readAsStringSync();
     final coordinator = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
