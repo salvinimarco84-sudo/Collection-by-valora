@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final mainSource = File('lib/main.dart').readAsStringSync();
   final assistant = File('lib/procedures/valora_assistant_page.dart').readAsStringSync();
+  final presentation = File('lib/procedures/valora_assistant_presentation.dart').readAsStringSync();
 
   group('VALORA assistant module contract', () {
     test('the assistant page is declared in its dedicated procedure module', () {
@@ -21,7 +22,10 @@ void main() {
       expect(assistant, contains("'valora-assistant'"));
       expect(assistant, contains("'modalita': 'TEST'"));
       expect(assistant, contains("'sola_lettura': true"));
-      expect(assistant, contains('Nessuna modifica al database è stata eseguita.'));
+      expect(presentation, contains('Nessuna modifica al database è stata eseguita.'));
+      expect(assistant, contains('buildAssistantPage(context)'));
+      expect(presentation, contains('extension _ValoraAssistantPresentation'));
+      expect(presentation, contains('Widget buildAssistantPage(BuildContext context)'));
     });
   });
 }
