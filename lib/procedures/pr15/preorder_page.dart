@@ -303,6 +303,50 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
     }
   }
 
+  Future<void> _convertToPurchase(PreorderRecord record) async {
+    if (record.status != PreorderStatus.received || record.remainingCents != 0) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('CONVERSIONE IN ACQUISTO'),
+        content: Text('PR-15 passerà i dati a PR-04.\n\nOggetto: ${record.description}\nCosto d’acquisto: ${_money(record.agreedPriceCents)}\nGià versato: ${_money(record.paidCents)}\n\nPR-04 registrerà un unico acquisto ordinario per il costo complessivo. I pagamenti PR-15 non verranno duplicati come movimenti di cassa.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('ANNULLA')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('APRI PR-04')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final purchaseId = await Navigator.of(context).push<String>(MaterialPageRoute(
+      builder: (_) => NewPurchasePage(
+        preorderConversion: true,
+        initialMetadata: {
+          'descrizione': record.description,
+          'categoria_preorder': record.category,
+          'prezzo_acquisto_preorder': record.agreedPriceCents / 100,
+          'codice_preordine': record.id,
+          if (record.imageReference != null) 'url_immagine_catalogo': record.imageReference,
+        },
+      ),
+    ));
+    if (!mounted || purchaseId == null || purchaseId.trim().isEmpty) return;
+    try {
+      setState(() => _busy = true);
+      await _repository.markConverted(id: record.id, confirmedPurchaseId: purchaseId);
+      await _load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Preorder ${record.id} convertito nell’acquisto PR-04 #$purchaseId.')),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Acquisto PR-04 salvato, ma collegamento PR-15 non completato: $e. Riprova la conversione dalla scheda.')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _changeStatus(Future<PreorderRecord> Function(String) action, String label) async {
     try {
       setState(() => _busy = true);
@@ -345,6 +389,10 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
               if (r.notes.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text('Note: ${r.notes}')),
               if (r.purchaseId != null) Text('Acquisto PR-04: #${r.purchaseId}'),
             ]))),
+            if (r.status == PreorderStatus.received && r.remainingCents == 0 && r.purchaseId == null)
+              Padding(padding: const EdgeInsets.only(bottom: 12), child: SizedBox(width: double.infinity,
+                child: FilledButton.icon(onPressed: _busy ? null : () => _convertToPurchase(r),
+                  icon: const Icon(Icons.shopping_bag_outlined), label: const Text('CONVERTI IN ACQUISTO ORDINARIO · PR-04')))),
             if (r.isActive) Wrap(spacing: 8, runSpacing: 8, children: [
               if (r.status != PreorderStatus.received && r.status != PreorderStatus.shipped)
                 _action('REGISTRA PAGAMENTO', Icons.payments_outlined, _payment),
