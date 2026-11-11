@@ -1159,7 +1159,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final _newPassword = TextEditingController();
   final _confirmPassword = TextEditingController();
   final _emailController = TextEditingController();
-  String _market = 'Italia';
+  String _market = '';
   List<Map<String, dynamic>> _markets = [];
   bool _profileLoaded = false;
   String _currency = 'EUR - Euro (€)';
@@ -1214,9 +1214,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
           final market = _markets.where((m) => m['codice_mercato'] == row['mercato_nazionale_principale']).toList();
           if (market.isNotEmpty) _market = market.first['nome_mercato'].toString();
         }
-        if (_markets.isNotEmpty && !_markets.any((m) => m['nome_mercato'] == _market)) {
-          _market = _markets.first['nome_mercato'].toString();
-        }
         _profileLoaded = true;
       });
       return true;
@@ -1237,8 +1234,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accedi per salvare il profilo.')));
       return;
     }
-    if (!_profileLoaded || _markets.isEmpty || _name.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa il nome e verifica il catalogo mercati prima di salvare.')));
+    if (!_profileLoaded || _markets.isEmpty || _name.text.trim().isEmpty ||
+        !_markets.any((m) => m['nome_mercato'] == _market)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Completa il nome e seleziona il tuo mercato principale prima di salvare.')));
       return;
     }
     setState(() => _busy = true);
