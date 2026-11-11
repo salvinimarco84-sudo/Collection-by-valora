@@ -138,9 +138,9 @@ void main() {
       expect(pr18EdgeFunctionSource, contains('Stato e destinazione dell\'oggetto non vengono mai modificati'));
       expect(valoraKnownObjectValuationSource, contains('Pr06ValoraPage('));
       expect(valoraKnownObjectValuationSource, contains("'mercato_riferimento': _market"));
-      expect(valoraServicePageSource, contains("'destinazione'"));
-      expect(valoraServicePageSource, contains("'valore_mercato'"));
-      expect(valoraServicePageSource, contains("_openCatalogObjectForSale"));
+      expect(valoraCatalogSaleControllerSource, contains("'destinazione'"));
+      expect(valoraCatalogSaleControllerSource, contains("'valore_mercato'"));
+      expect(valoraCatalogSaleControllerSource, contains("_openCatalogObjectForSale"));
       expect(valoraServicePageSource, isNot(contains(".eq('destinazione', 'COLLEZIONE')")));
       expect(valoraServicePageSource, contains('buildPage(context)'));
       expect(source, contains("part 'procedures/valora_photo_input_presentation.dart';"));
@@ -159,6 +159,7 @@ void main() {
       expect(valoraPhotoSearchSource, contains("'ricerca_estesa': true"));
       expect(valoraPhotoSearchSource, contains('_confirmedPhotoCandidates[index]'));
       expect(source, contains("part 'procedures/valora_catalog_intake_controller.dart';"));
+      expect(source, contains("part 'procedures/valora_catalog_sale_controller.dart';"));
       expect(valoraServicePageSource, isNot(contains('Future<void> _openUncataloguedCandidate')));
       expect(valoraCatalogIntakeSource, contains('extension _ValoraCatalogIntakeActions'));
       expect(valoraCatalogIntakeSource, contains("'pr-18-valuation-test'"));
