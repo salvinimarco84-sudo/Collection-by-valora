@@ -32,6 +32,7 @@ void main() {
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final valoraCollectionSearchSource = File('lib/procedures/valora_collection_search_section.dart').readAsStringSync();
+  final valoraMarketValuationSource = File('lib/procedures/valora_market_valuation_section.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
@@ -1350,6 +1351,16 @@ void main() {
     expect(valoraCatalogSaleControllerSource, contains('rollbackSession'));
     expect(valoraCatalogSaleControllerSource, contains("release_lock"));
     expect(valoraCatalogSaleControllerSource, contains("state != 'DISPONIBILE'"));
+  });
+
+  test('VALORA separa la sezione mercato e preparazione PR18 dalla pagina', () {
+    expect(source, contains("part 'procedures/valora_market_valuation_section.dart';"));
+    expect(valoraServicePresentationSource, contains('buildMarketValuationSection()'));
+    expect(valoraMarketValuationSource, contains('buildMarketValuationSection'));
+    expect(valoraMarketValuationSource, contains('PREPARA VALUTAZIONE'));
+    expect(valoraMarketValuationSource, contains('_prepareValuation'));
+    expect(valoraMarketValuationSource, contains('_continueToPr06Valora'));
+    expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
   });
 
 }
