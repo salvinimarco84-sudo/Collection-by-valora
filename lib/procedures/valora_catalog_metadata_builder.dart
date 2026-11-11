@@ -2,7 +2,8 @@ part of '../main.dart';
 
 /// Normalizza i metadati del candidato PR-12 prima della valutazione PR-18.
 /// Funzione isolata e senza effetti collaterali: non scrive nel catalogo.
-Map<String, dynamic> _buildValoraCandidateMetadata({
+extension _ValoraCandidateMetadataBuilder on _ValoraServicePageState {
+  Map<String, dynamic> _buildValoraCandidateMetadata({
   required String title,
   required Map<String, dynamic> candidate,
   required Map<String, dynamic> clues,
@@ -21,4 +22,5 @@ Map<String, dynamic> _buildValoraCandidateMetadata({
     if (sourceUrl.startsWith('https://') || sourceUrl.startsWith('http://')) 'fonte_dati_prodotto': sourceUrl,
     if (imageUrl.startsWith('https://') || imageUrl.startsWith('http://')) 'url_immagine_catalogo': imageUrl,
   };
+  }
 }
