@@ -2,9 +2,13 @@ name: COLLECTION by VALORA CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - 'refactor/pr14-*'
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - 'refactor/pr14-*'
   workflow_dispatch:
 
 permissions:
