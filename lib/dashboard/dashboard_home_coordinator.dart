@@ -435,6 +435,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 ? null
                 : procedure.apiCode == 'WANTED-NEW'
                     ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedNewDesirePage()))
+                    : procedure.apiCode == 'WANTED-ACTIVE'
+                        ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedActiveDesiresPage()))
                     : procedure.apiCode == 'PR-21-SEARCH'
                     ? () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const CategoryObjectSearchPage()))
