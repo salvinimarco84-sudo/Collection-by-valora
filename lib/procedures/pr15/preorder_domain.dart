@@ -12,7 +12,7 @@ class PreorderPayment {
 class PreorderRecord {
   const PreorderRecord({
     required this.id, required this.description, required this.supplier,
-    required this.orderDate, required this.expectedReleaseDate,
+    required this.orderDate, this.expectedReleaseDate,
     required this.agreedPriceCents, this.category = '', this.imageReference,
     this.notes = '', this.payments = const [],
     this.status = PreorderStatus.reserved, this.purchaseId,
@@ -22,7 +22,7 @@ class PreorderRecord {
   final String description;
   final String supplier;
   final DateTime orderDate;
-  final DateTime expectedReleaseDate;
+  final DateTime? expectedReleaseDate;
   final int agreedPriceCents;
   final String category;
   final String? imageReference;
