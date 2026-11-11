@@ -59,7 +59,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Bozze inserzioni VALORA', description: 'Consulta e modifica le bozze create per le piattaforme selezionate nelle vendite VALORA.', apiCode: 'VALORA-LISTING-DRAFTS'),
   ],
   'VALUTAZIONI': [
-    ProcedureEntry(title: 'PR-14 · ASSISTENTE VALORA', description: 'Procedura coordinatrice del flusso VALORA: per gli oggetti già in collezione richiama PR-18 e, se richiesto, PR-06 VALORA; per gli oggetti da acquistare richiama PR-12, PR-18 e, se richiesto, PR-04 VALORA. Le procedure ordinarie PR-04 e PR-06 restano indipendenti.', apiCode: 'LAUNCH-VALORA'),
+    ProcedureEntry(title: 'PR-14 · ASSISTENTE VALORA', description: 'PR-14 coordina due percorsi: per gli oggetti già in collezione richiama PR-18 e, su scelta dell’utente, PR-06 VALORA; per gli oggetti non ancora in collezione richiama PR-12, poi PR-18 e, su scelta dell’utente, PR-04 VALORA. Le procedure ordinarie PR-04 e PR-06 restano indipendenti.', apiCode: 'LAUNCH-VALORA'),
     ProcedureEntry(title: 'PR-11 · VALUTAZIONE COMPLESSIVA COLLEZIONE', description: 'Valuta il patrimonio complessivo a lotti e registra lo storico dei valori.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
     ProcedureEntry(title: 'PR-13 · RICERCA OFFERTA', description: 'Analizza una specifica offerta d’acquisto, identifica l’oggetto tramite PR-12 e valuta la convenienza economica. Procedura in preparazione.', enabled: false),
   ],
