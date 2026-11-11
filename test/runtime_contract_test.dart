@@ -10,6 +10,7 @@ void main() {
   final pr04WantedLinkControllerSource = File('lib/purchases/pr04_wanted_link_controller.dart').readAsStringSync();
   final pr04SaveControllerSource = File('lib/purchases/pr04_save_controller.dart').readAsStringSync();
   final pr04PageStateSource = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
+  final pr04CategoryControllerSource = File('lib/purchases/pr04_category_controller.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
   final pr04PagePresentationSource = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
@@ -1690,6 +1691,18 @@ void main() {
     expect(historyPage, contains("from('wanted_offerte')"));
     expect(historyPage, contains("neq('stato', 'ATTIVO')"));
     expect(historyPage, contains('codice_oggetto_acquistato'));
+  });
+
+  test('PR-04 separa il caricamento delle categorie dal mixin di stato', () {
+    expect(source, contains("part 'purchases/pr04_category_controller.dart';"));
+    expect(pr04PageStateSource, isNot(contains('Future<void> _loadCollectionCategories()')));
+    expect(pr04PageStateSource, contains('_loadCollectionCategories();'));
+    expect(pr04CategoryControllerSource, contains('extension _Pr04CategoryController on _NewPurchasePageState'));
+    expect(pr04CategoryControllerSource, contains("from('master_categorie_collezione')"));
+    expect(pr04CategoryControllerSource, contains(".eq('visibile', true)"));
+    expect(pr04CategoryControllerSource, contains(".order('ordine_menu')"));
+    expect(pr04CategoryControllerSource, contains(".order('descrizione')"));
+    expect(pr04CategoryControllerSource, contains('if (!mounted) return;'));
   });
 
 }
