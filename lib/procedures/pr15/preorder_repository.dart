@@ -52,10 +52,21 @@ class PreorderRepository {
     }
     final rows = await query.order('data_prenotazione', ascending: false)
         .order('codice_preordine', ascending: false);
-    return (rows as List)
-        .whereType<Map>()
-        .map((row) => _fromRow(Map<String, dynamic>.from(row)))
-        .toList(growable: false);
+    final masterRows = (rows as List).whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row)).toList();
+    if (masterRows.isEmpty) return const [];
+    final ids = masterRows.map((row) => row['codice_preordine']).toList();
+    final paymentRows = await _client.schema('collection').from(_paymentsTable)
+        .select().inFilter('codice_preordine', ids)
+        .order('data_pagamento').order('codice_pagamento');
+    final grouped = <String, List<Map<String, dynamic>>>{};
+    for (final raw in (paymentRows as List).whereType<Map>()) {
+      final payment = Map<String, dynamic>.from(raw);
+      grouped.putIfAbsent(payment['codice_preordine'].toString(), () => []).add(payment);
+    }
+    return masterRows.map((row) => _fromRow(row,
+      paymentRows: grouped[row['codice_preordine'].toString()] ?? const [],
+    )).toList(growable: false);
   }
 
   Future<PreorderRecord> get(String id) async {
