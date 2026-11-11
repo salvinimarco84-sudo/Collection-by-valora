@@ -177,7 +177,7 @@ void main() {
       expect(valoraCollectionSearchSource, contains('extension _ValoraCollectionSearchPresentation'));
       expect(valoraCollectionSearchSource, contains('CERCA NELLA COLLEZIONE'));
       expect(valoraCollectionSearchSource, contains('required List<Map<String, dynamic>> matches'));
-      expect(valoraServicePresentationSource, contains("'PREPARA VALUTAZIONE'"));
+      expect(valoraMarketValuationSource, contains("'PREPARA VALUTAZIONE'"));
     });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
       expect(source, contains("part 'procedures/write_procedure_action_panel.dart';"));
