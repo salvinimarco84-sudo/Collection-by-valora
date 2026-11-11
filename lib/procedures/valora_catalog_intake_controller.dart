@@ -55,14 +55,7 @@ extension _ValoraCatalogIntakeActions on _ValoraServicePageState {
         if (mounted) setState(() => _analyzingPhotos = false);
       }
       if (!mounted) return;
-      final valuationText = valuation == null
-          ? 'PR18 non ha restituito una valutazione. Puoi comunque inserire l’oggetto, ma il valore di mercato resterà da determinare.'
-          : (valuation['valore_mercato'] is num
-              ? 'Valore indicativo: € ${(valuation['valore_mercato'] as num).toStringAsFixed(2)}\\n'
-                  'Fascia: € ${valuation['fascia_minima'] ?? 'n.d.'} - € ${valuation['fascia_massima'] ?? 'n.d.'}\\n'
-                  'Affidabilità: ${valuation['affidabilita'] ?? 'NON DISPONIBILE'}\\n'
-                  'Comparabili con prezzo: ${valuation['numero_comparabili_con_prezzo_estratto'] ?? 0}. I prezzi estratti vanno verificati.'
-              : 'PR18 ha completato la ricerca, ma non ha trovato prezzi verificabili. Non verrà inventato un valore.');
+      final valuationText = _buildValoraCatalogIntakeValuationSummary(valuation);
       final addObject = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => _buildValoraCatalogIntakeReviewDialog(dialogContext, valuationText),
