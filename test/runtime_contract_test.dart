@@ -31,6 +31,7 @@ void main() {
   final valoraCatalogSaleControllerSource = File('lib/procedures/valora_catalog_sale_controller.dart').readAsStringSync();
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
+  final valoraCollectionSearchSource = File('lib/procedures/valora_collection_search_section.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
@@ -170,6 +171,11 @@ void main() {
       expect(valoraServicePresentationSource, contains('buildPhotoInputSection(context)'));
       expect(valoraServicePresentationSource, contains('extension _ValoraServicePagePresentation'));
       expect(valoraServicePresentationSource, contains('Widget buildPage(BuildContext context)'));
+      expect(source, contains("part 'procedures/valora_collection_search_section.dart';"));
+      expect(valoraServicePresentationSource, contains('buildCollectionSearchSection(selected: selected, matches: matches)'));
+      expect(valoraCollectionSearchSource, contains('extension _ValoraCollectionSearchPresentation'));
+      expect(valoraCollectionSearchSource, contains('CERCA NELLA COLLEZIONE'));
+      expect(valoraCollectionSearchSource, contains('_matchingObjects'));
       expect(valoraServicePresentationSource, contains("'PREPARA VALUTAZIONE'"));
     });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
