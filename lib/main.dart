@@ -124,6 +124,7 @@ part 'procedures/valora_catalog_intake_review_dialog.dart';
 part 'procedures/valora_catalog_intake_valuation_summary.dart';
 part 'procedures/valora_catalog_intake_valuation_service.dart';
 part 'procedures/valora_catalog_metadata_builder.dart';
+part 'procedures/valora_known_object_pr18_service.dart';
 part 'procedures/valora_pr18_valuation_controller.dart';
 part 'procedures/valora_known_object_valuation_controller.dart';
 part 'procedures/valora_catalog_sale_controller.dart';
