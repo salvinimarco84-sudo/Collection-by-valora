@@ -108,6 +108,7 @@ part 'reports/sales_report_page.dart';
 part 'reports/sales_report_card.dart';
 part 'procedures/valora_service_page.dart';
 part 'procedures/valora_assistant_page.dart';
+part 'procedures/valora_assistant_session.dart';
 part 'procedures/valora_assistant_presentation.dart';
 part 'procedures/valora_assistant_input_panel.dart';
 part 'procedures/valora_assistant_answer_panel.dart';
