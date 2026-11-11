@@ -11,10 +11,12 @@ on:
       - repair/pr12-preserve-full-app
       - feature/pr04-nuovo-acquisto-mask
       - feature/valora-guided-valuation-and-listing-flow
+      - 'refactor/pr14-*'
   pull_request:
     branches:
       - main
       - repair/pr12-preserve-full-app
+      - 'refactor/pr14-*'
 
 permissions:
   contents: write
