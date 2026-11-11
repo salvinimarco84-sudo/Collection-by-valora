@@ -1332,6 +1332,7 @@ void main() {
     final form = File('lib/procedures/pr06_form_content.dart').readAsStringSync();
     final preview = File('lib/procedures/pr06_preview_confirmation_section.dart').readAsStringSync();
     final listingDrafts = File('lib/procedures/pr06_valora_listing_drafts.dart').readAsStringSync();
+    final listingDraftPages = File('lib/procedures/pr06_valora_listing_draft_pages.dart').readAsStringSync();
     final listingDraftRegistry = File('lib/procedures/procedure_registry.dart').readAsStringSync();
     final listingDraftCoordinator = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
     final listingDraftFunction = File('supabase/functions/valora-listing-drafts-test/index.ts').readAsStringSync();
@@ -1355,8 +1356,8 @@ void main() {
     expect(pr06RuntimeProcedureSource, contains('if (widget.valoraMode) return;'));
     expect(listingDrafts, contains("functions.invoke("));
     expect(listingDrafts, contains("'valora-listing-drafts-test'"));
-    expect(listingDrafts, contains('COPIA TESTO'));
-    expect(listingDrafts, contains('SALVA BOZZA'));
+    expect(listingDraftPages, contains('COPIA TESTO'));
+    expect(listingDraftPages, contains('SALVA BOZZA'));
     expect(listingDrafts, contains("body: {'action': 'list'}"));
     expect(listingDraftRegistry, contains("apiCode: 'VALORA-LISTING-DRAFTS'"));
     expect(listingDraftCoordinator, contains('Pr06ValoraListingDraftLibraryPage'));
