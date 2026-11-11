@@ -13,6 +13,7 @@ class DashboardSection {
 
 const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'CATALOGO', description: 'Consulta e gestisci gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
+  DashboardSection(title: 'WANTED LIST', description: 'Gestisci desideri, obiettivi di acquisto, offerte e storico.', icon: Icons.bookmark_outline, color: Color(0xFFB8BEC6)),
   DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti e allocazioni', icon: Icons.shopping_cart_outlined, color: Color(0xFFC74444)),
   DashboardSection(title: 'VENDITE', menuTitle: 'VENDITE E INSERZIONI', description: 'Vendite e inserzioni', icon: Icons.sell_outlined, color: Color(0xFF39875B)),
   DashboardSection(title: 'VALUTAZIONI', description: 'VALORA e valore collezione', icon: Icons.query_stats, color: Color(0xFF8556C7)),
@@ -42,6 +43,14 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
 
     ProcedureEntry(title: 'Importa oggetti', description: 'Importa record da CSV o JSON con anteprima e controllo duplicati.', apiCode: 'OBJECT-IMPORT'),
     ProcedureEntry(title: 'Esporta oggetti', description: 'Esporta il catalogo in CSV o JSON.', apiCode: 'OBJECT-EXPORT'),
+  ],
+  'WANTED LIST': [
+    ProcedureEntry(title: 'NUOVO DESIDERIO', description: 'Inserisci un oggetto che desideri acquistare.', apiCode: 'WANTED-NEW', readOnly: false, enabled: false),
+    ProcedureEntry(title: 'LISTA DEI DESIDERI', description: 'Consulta gli oggetti ancora da acquistare.', apiCode: 'WANTED-ACTIVE', enabled: false),
+    ProcedureEntry(title: 'OBIETTIVI DI ACQUISTO', description: 'Organizza gli obiettivi per tema e priorità, senza dati economici.', apiCode: 'WANTED-GOALS', readOnly: false, enabled: false),
+    ProcedureEntry(title: 'ACQUISTO WANTED LIST', description: 'Avvia l’acquisto del desiderio tramite la procedura PR-04.', apiCode: 'WANTED-PURCHASE', readOnly: false, enabled: false),
+    ProcedureEntry(title: 'RICERCA OFFERTE', description: 'Richiama il motore RICERCHE per trovare offerte sugli oggetti desiderati.', apiCode: 'WANTED-OFFERS', enabled: false),
+    ProcedureEntry(title: 'STORICO WANTED LIST', description: 'Consulta la cronologia e la storia del singolo oggetto.', apiCode: 'WANTED-HISTORY', enabled: false),
   ],
   'ACQUISTI': [
     ProcedureEntry(title: 'Nuovo acquisto', description: 'Registra un nuovo acquisto.', apiCode: 'WRITE-PR-04', readOnly: false),
