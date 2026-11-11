@@ -193,6 +193,7 @@ void main() {
       expect(valoraServicePageSource, isNot(contains('Future<Map<String, dynamic>> _analyzeImageBytes')));
       expect(valoraServicePageSource, isNot(contains('Future<void> _retryPhotoSearch')));
       expect(valoraPhotoSearchSource, contains('extension _ValoraPhotoSearchActions'));
+      // L'analisi fotografica è attualmente nel controller di ricerca PR-12.
       expect(valoraPhotoSearchSource, contains('Future<Map<String, dynamic>> _analyzeImageBytes('));
       expect(valoraPhotoSearchSource, contains("'pr-12-engine-test'"));
       expect(valoraPhotoSearchSource, contains("'mercato': _market"));
