@@ -23,7 +23,7 @@ extension _ValoraMarketValuationPresentation on _ValoraServicePageState {
                     icon: _preparing ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.travel_explore),
                     label: Text(_preparing ? ValoraI18n.tr('Preparazione in corso…') : ValoraI18n.tr('PREPARA VALUTAZIONE')),
                   ),
-                  buildMarketValuationResultSection(),
+                  _buildValoraMarketValuationResult(this),
       ],
     );
   }
