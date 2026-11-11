@@ -36,6 +36,8 @@ void main() {
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final valoraCollectionSearchSource = File('lib/procedures/valora_collection_search_section.dart').readAsStringSync();
   final valoraMarketValuationSource = File('lib/procedures/valora_market_valuation_section.dart').readAsStringSync();
+  final valoraIntroSectionSource = File('lib/procedures/valora_intro_section.dart').readAsStringSync();
+  final valoraCatalogActionsSectionSource = File('lib/procedures/valora_catalog_actions_section.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
@@ -1365,6 +1367,22 @@ void main() {
     expect(valoraMarketValuationSource, contains('_prepareValuation'));
     expect(valoraMarketValuationSource, contains('_continueToPr06Valora'));
     expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
+  });
+
+  test('VALORA separa introduzione assistente e azioni catalogo dalla presentazione', () {
+    expect(source, contains("part 'procedures/valora_intro_section.dart';"));
+    expect(source, contains("part 'procedures/valora_catalog_actions_section.dart';"));
+    expect(valoraServicePresentationSource, contains('buildValoraIntroSection()'));
+    expect(valoraServicePresentationSource, contains('buildValoraCatalogActionsSection(selected)'));
+    expect(valoraServicePresentationSource, isNot(contains('ASSISTENTE VALORA')));
+    expect(valoraServicePresentationSource, isNot(contains('AVVIA PROCEDURA DI VENDITA')));
+    expect(valoraIntroSectionSource, contains('ASSISTENTE VALORA'));
+    expect(valoraIntroSectionSource, contains('ricerca PR-12'));
+    expect(valoraCatalogActionsSectionSource, contains('AVVIA PROCEDURA DI VENDITA'));
+    expect(valoraCatalogActionsSectionSource, contains('_openCatalogObjectForSale'));
+    expect(valoraCatalogActionsSectionSource, contains("ValoraI18n.tr('AGGIORNA OGGETTI')"));
+    expect(valoraCatalogActionsSectionSource, contains('_loadObjects'));
+    expect(valoraCatalogActionsSectionSource, contains("!= 'DISPONIBILE'"));
   });
 
   test('PR-07 Modifica vendita ha pagina, dati e presentazione dedicati', () {
