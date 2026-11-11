@@ -3,23 +3,6 @@ part of '../main.dart';
 /// Azioni di ricerca fotografica PR-12 di VALORA.
 /// Gestisce analisi immagini, selezione/conferma candidati e ricerche estese.
 extension _ValoraPhotoSearchActions on _ValoraServicePageState {
-    Future<Map<String, dynamic>> _analyzeImageBytes(Uint8List bytes, String fileName) async {
-      if (bytes.isEmpty) throw Exception('Il file $fileName è vuoto o non leggibile.');
-      if (bytes.length > 10 * 1024 * 1024) throw Exception('Il file $fileName supera il limite di 10 MB.');
-      final name = fileName.toLowerCase();
-      final mime = name.endsWith('.png') ? 'image/png' : name.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
-      final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
-        'azione': 'ANALIZZA_FOTO',
-        'modalita_ia': 'TEST',
-        'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}',
-        'mercato': _market,
-      });
-      final data = response.data;
-      if (data is! Map || data['ok'] != true) {
-        throw Exception(data is Map ? (data['error'] ?? 'Ricerca foto non riuscita').toString() : 'Risposta PR-12 non valida.');
-      }
-      return Map<String, dynamic>.from(data);
-    }
   
     Future<void> _analyzeSelectedPhotos() async {
       if (_selectedImages.isEmpty && _selectedFiles.isEmpty) {
@@ -33,7 +16,7 @@ extension _ValoraPhotoSearchActions on _ValoraServicePageState {
           ..._selectedFiles.map((file) => (name: file.name, bytes: Future.value(file.bytes ?? Uint8List(0)))),
         ];
         for (final input in inputs) {
-          final data = await _analyzeImageBytes(await input.bytes, input.name);
+          final data = await _analyzeValoraImageBytes(await input.bytes, input.name, _market);
           if (!mounted) return;
           setState(() => _photoSearchResults.add({
             'nome_foto': input.name,
