@@ -230,6 +230,107 @@ class _Pr15CreateDialogState extends State<_Pr15CreateDialog> {
   );
 }
 
+class _Pr15EditDialog extends StatefulWidget {
+  const _Pr15EditDialog({required this.record});
+  final PreorderRecord record;
+
+  @override
+  State<_Pr15EditDialog> createState() => _Pr15EditDialogState();
+}
+
+class _Pr15EditDialogState extends State<_Pr15EditDialog> {
+  late final TextEditingController _description;
+  late final TextEditingController _supplier;
+  late final TextEditingController _category;
+  late final TextEditingController _price;
+  late final TextEditingController _reference;
+  late final TextEditingController _notes;
+  late DateTime _orderDate;
+  DateTime? _expectedDate;
+
+  @override
+  void initState() {
+    super.initState();
+    final r = widget.record;
+    _description = TextEditingController(text: r.description);
+    _supplier = TextEditingController(text: r.supplier);
+    _category = TextEditingController(text: r.category);
+    _price = TextEditingController(text: (r.agreedPriceCents / 100).toStringAsFixed(2));
+    _reference = TextEditingController();
+    _notes = TextEditingController(text: r.notes);
+    _orderDate = r.orderDate;
+    _expectedDate = r.expectedReleaseDate;
+  }
+
+  @override
+  void dispose() {
+    _description.dispose(); _supplier.dispose(); _category.dispose();
+    _price.dispose(); _reference.dispose(); _notes.dispose();
+    super.dispose();
+  }
+
+  Future<DateTime?> _pick(DateTime initial) => showDatePicker(
+    context: context, initialDate: initial, firstDate: DateTime(2000),
+    lastDate: DateTime(2100), cancelText: 'ANNULLA', confirmText: 'CONFERMA');
+
+  String _date(DateTime? value) => value == null ? 'Non indicata'
+      : '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+
+  void _submit() {
+    final amount = double.tryParse(_price.text.trim().replaceAll(',', '.'));
+    if (_description.text.trim().isEmpty || _supplier.text.trim().isEmpty ||
+        amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inserisci descrizione, fornitore e prezzo valido.')),
+      );
+      return;
+    }
+    Navigator.of(context).pop({
+      'description': _description.text.trim(),
+      'supplier': _supplier.text.trim(),
+      'category': _category.text.trim(),
+      'priceCents': (amount * 100).round(),
+      'reference': _reference.text.trim(),
+      'notes': _notes.text.trim(),
+      'orderDate': _orderDate,
+      'expectedDate': _expectedDate,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('MODIFICA PREORDER'),
+    content: SizedBox(width: 480, child: SingleChildScrollView(child: Column(
+      mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: _description, decoration: const InputDecoration(labelText: 'Oggetto / descrizione *')),
+        TextField(controller: _supplier, decoration: const InputDecoration(labelText: 'Fornitore *')),
+        TextField(controller: _category, decoration: const InputDecoration(labelText: 'Categoria')),
+        TextField(controller: _price,
+          readOnly: widget.record.payments.isNotEmpty,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(
+            labelText: 'Prezzo concordato (€) *',
+            helperText: widget.record.payments.isNotEmpty
+              ? 'Bloccato perché sono già presenti pagamenti.' : null,
+          )),
+        TextField(controller: _reference, decoration: const InputDecoration(labelText: 'Riferimento ordine')),
+        TextField(controller: _notes, maxLines: 2, decoration: const InputDecoration(labelText: 'Note')),
+        const SizedBox(height: 10),
+        ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data prenotazione'),
+          subtitle: Text(_date(_orderDate)), trailing: const Icon(Icons.calendar_today),
+          onTap: () async { final d = await _pick(_orderDate); if (d != null) setState(() => _orderDate = d); }),
+        ListTile(contentPadding: EdgeInsets.zero, title: const Text('Uscita prevista'),
+          subtitle: Text(_date(_expectedDate)), trailing: const Icon(Icons.event),
+          onTap: () async { final d = await _pick(_expectedDate ?? DateTime.now()); if (d != null) setState(() => _expectedDate = d); }),
+      ],
+    ))),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(context), child: const Text('ANNULLA')),
+      FilledButton(onPressed: _submit, child: const Text('SALVA MODIFICHE')),
+    ],
+  );
+}
+
 class Pr15PreorderDetailPage extends StatefulWidget {
   const Pr15PreorderDetailPage({super.key, required this.preorderId});
   final String preorderId;
@@ -260,6 +361,39 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
 
   String _money(int cents) => '€ ${(cents / 100).toStringAsFixed(2).replaceAll('.', ',')}';
   String _date(DateTime? d) => d == null ? 'Non indicata' : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  Future<void> _edit(PreorderRecord record) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _Pr15EditDialog(record: record),
+    );
+    if (result == null || !mounted) return;
+    try {
+      setState(() => _busy = true);
+      await _repository.updateDetails(
+        id: record.id,
+        description: result['description'] as String,
+        supplier: result['supplier'] as String,
+        category: result['category'] as String,
+        agreedPriceCents: result['priceCents'] as int,
+        orderDate: result['orderDate'] as DateTime,
+        expectedReleaseDate: result['expectedDate'] as DateTime?,
+        orderReference: result['reference'] as String,
+        notes: result['notes'] as String,
+      );
+      await _load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preorder aggiornato.')),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Modifica preorder non riuscita: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _payment() async {
     final amount = TextEditingController();
@@ -388,6 +522,19 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
                 style: TextStyle(fontWeight: FontWeight.w900, color: r.remainingCents == 0 ? Colors.green : accent)),
               if (r.notes.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text('Note: ${r.notes}')),
               if (r.purchaseId != null) Text('Acquisto PR-04: #${r.purchaseId}'),
+              if (r.status != PreorderStatus.converted &&
+                  r.status != PreorderStatus.cancelled &&
+                  r.status != PreorderStatus.refunded)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: SizedBox(width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _busy ? null : () => _edit(r),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('MODIFICA PREORDER'),
+                    ),
+                  ),
+                ),
             ]))),
             if (r.status == PreorderStatus.received && r.remainingCents == 0 && r.purchaseId == null)
               Padding(padding: const EdgeInsets.only(bottom: 12), child: SizedBox(width: double.infinity,
