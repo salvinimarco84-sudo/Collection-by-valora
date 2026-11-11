@@ -9,6 +9,7 @@ void main() {
   final speech = File('lib/procedures/valora_assistant_speech.dart').readAsStringSync();
   final command = File('lib/procedures/valora_assistant_command.dart').readAsStringSync();
   final inputPanel = File('lib/procedures/valora_assistant_input_panel.dart').readAsStringSync();
+  final answerPanel = File('lib/procedures/valora_assistant_answer_panel.dart').readAsStringSync();
 
   group('VALORA assistant module contract', () {
     test('the assistant page is declared in its dedicated procedure module', () {
@@ -40,6 +41,13 @@ void main() {
       expect(assistant, contains('buildAssistantPage(context)'));
       expect(presentation, contains('extension _ValoraAssistantPresentation'));
       expect(presentation, contains('Widget buildAssistantPage(BuildContext context)'));
+    });
+
+    test('the answer panel is isolated from the main presentation', () {
+      expect(mainSource, contains("part 'procedures/valora_assistant_answer_panel.dart';"));
+      expect(presentation, contains('buildAssistantAnswerPanel()'));
+      expect(answerPanel, contains('extension _ValoraAssistantAnswerPanel'));
+      expect(answerPanel, contains('SelectableText(_answer)'));
     });
   });
 }

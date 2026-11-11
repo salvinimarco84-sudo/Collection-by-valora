@@ -110,6 +110,7 @@ part 'procedures/valora_service_page.dart';
 part 'procedures/valora_assistant_page.dart';
 part 'procedures/valora_assistant_presentation.dart';
 part 'procedures/valora_assistant_input_panel.dart';
+part 'procedures/valora_assistant_answer_panel.dart';
 part 'procedures/valora_assistant_speech.dart';
 part 'procedures/valora_assistant_command.dart';
 part 'procedures/valora_photo_search.dart';
