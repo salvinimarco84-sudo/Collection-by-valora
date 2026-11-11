@@ -6,6 +6,10 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
+  final pr04PageStateSource = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
+  final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
+  final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
+  final pr04PagePresentationSource = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
   final pr04FormContentSource = File('lib/purchases/pr04_form_content.dart').readAsStringSync();
   final pr05FormContentSource = File('lib/purchases/pr05_form_content.dart').readAsStringSync();
@@ -744,11 +748,7 @@ void main() {
     });
 
     test('PR-04 consente di inserire e salvare le note del singolo oggetto', () {
-      final draftStart = source.indexOf('class _PurchaseItemDraft');
-      final draftEnd = source.indexOf('/// PR-04:', draftStart);
-      expect(draftStart, isNonNegative);
-      expect(draftEnd, greaterThan(draftStart));
-      final draft = source.substring(draftStart, draftEnd);
+      final draft = pr04PageStateSource;
       expect(draft, contains('final notes = TextEditingController();'));
       expect(draft, contains("'note': notes.text.trim()"));
       expect(draft, contains('notes.dispose()'));
@@ -1024,7 +1024,7 @@ void main() {
     });
 
     test('PR-04 separa la revisione PR-12 di metadati e immagine', () {
-      expect(source, contains('Pr04RecognitionDialog('));
+      expect(pr04PhotoControllerSource, contains('Pr04RecognitionDialog('));
       expect(pr04RecognitionDialogSource, contains('Mantieni la foto scattata'));
       expect(pr04RecognitionDialogSource, contains('USA SELEZIONE'));
       expect(pr04RecognitionDialogSource, contains('imageCandidates[_selected]'));
@@ -1040,7 +1040,7 @@ void main() {
     });
 
     test('PR-04 preserves every queued purchase until final save', () {
-      expect(source, contains('_pendingPurchases'));
+      expect(pr04PageStateSource, contains('_pendingPurchases'));
       expect(purchaseRuntimeSource, contains('_currentPurchaseOperation()'));
       expect(purchaseRuntimeSource, contains('_queueCurrentAndStartNext'));
       expect(purchaseRuntimeSource, contains("'operazioni': [..._pendingPurchases, _currentPurchaseOperation()]"));
@@ -1347,8 +1347,8 @@ void main() {
     expect(valoraCatalogIntakeSource, contains('Pr04ValoraPurchasePage('));
     expect(valoraServicePageSource, isNot(contains('builder: (_) => NewPurchasePage(')));
     expect(source, contains('this.initialMetadata'));
-    expect(source, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
-    expect(source, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
+    expect(pr04PageStateSource, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
+    expect(pr04PageStateSource, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
     expect(pr04FormContentSource, contains('Inserisci il costo effettivamente sostenuto.'));
     expect(pr04FormContentSource, contains('Non è il costo di acquisto.'));
     expect(valoraCatalogIntakeSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
