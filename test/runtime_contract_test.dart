@@ -157,7 +157,7 @@ void main() {
       expect(source, contains("part 'procedures/pr06_valora_page.dart';"));
       expect(valoraCatalogIntakeSource, contains('Pr04ValoraPurchasePage('));
       expect(valoraKnownObjectValuationSource, contains('Pr06ValoraPage('));
-      expect(valoraServicePageSource, contains('buildMarketValuationSection()'));
+      expect(valoraServicePresentationSource, contains('buildMarketValuationSection()'));
       expect(valoraServicePageSource, contains('buildValoraCatalogActionsSection(selected)'));
 
       expect(valoraKnownObjectValuationSource, contains("pop('SOLO_VALUTAZIONE')"));
