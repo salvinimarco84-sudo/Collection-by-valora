@@ -214,7 +214,7 @@ void main() {
       expect(valoraCollectionSearchSource, contains('extension _ValoraCollectionSearchPresentation'));
       expect(valoraCollectionSearchSource, contains('CERCA NELLA COLLEZIONE'));
       expect(valoraCollectionSearchSource, contains('required List<Map<String, dynamic>> matches'));
-      expect(valoraMarketValuationSource, contains("'PREPARA VALUTAZIONE'"));
+      expect(valoraMarketValuationControlsSource, contains("'PREPARA VALUTAZIONE'"));
     });
     test('le procedure di scrittura condividono il pannello azioni estratto senza spostare lo stato', () {
       expect(source, contains("part 'procedures/write_procedure_action_panel.dart';"));
@@ -1421,8 +1421,8 @@ void main() {
     expect(source, contains("part 'procedures/valora_market_valuation_section.dart';"));
     expect(valoraServicePresentationSource, contains('buildMarketValuationSection()'));
     expect(valoraMarketValuationSource, contains('buildMarketValuationSection'));
-    expect(valoraMarketValuationSource, contains('PREPARA VALUTAZIONE'));
-    expect(valoraMarketValuationSource, contains('_prepareValuation'));
+    expect(valoraMarketValuationControlsSource, contains('PREPARA VALUTAZIONE'));
+    expect(valoraMarketValuationControlsSource, contains('_prepareValuation'));
     expect(source, contains("part 'procedures/valora_market_valuation_result.dart';"));
     expect(valoraMarketValuationSource, contains('_buildValoraMarketValuationControls(this)'));
     expect(valoraMarketValuationSource, contains('_buildValoraMarketValuationResult(this)'));
