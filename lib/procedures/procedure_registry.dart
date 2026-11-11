@@ -46,6 +46,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   'ACQUISTI': [
     ProcedureEntry(title: 'Nuovo acquisto', description: 'Registra un nuovo acquisto.', apiCode: 'WRITE-PR-04', readOnly: false),
     ProcedureEntry(title: 'Modifica acquisto', description: 'Modifica un acquisto esistente.', apiCode: 'WRITE-PR-05', readOnly: false),
+    ProcedureEntry(title: 'PR-15 · PREORDER', description: 'Gestione delle prenotazioni: ordine, fornitore, uscita prevista, acconti, pagamenti successivi, saldo residuo, ricezione e conversione in acquisto. Procedura in preparazione.', enabled: false),
     ProcedureEntry(title: 'Acquisti comparati', description: 'Confronta i prezzi pagati per lo stesso prodotto, con minimo, massimo, media e storico degli acquisti.', apiCode: 'PURCHASES-COMPARE'),
     ProcedureEntry(title: 'Report acquisti', description: 'Riepilogo degli acquisti registrati.', apiCode: 'REPORT-PURCHASES'),
   ],
