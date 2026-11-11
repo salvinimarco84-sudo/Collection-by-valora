@@ -45,7 +45,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Esporta oggetti', description: 'Esporta il catalogo in CSV o JSON.', apiCode: 'OBJECT-EXPORT'),
   ],
   'WANTED LIST': [
-    ProcedureEntry(title: 'NUOVO DESIDERIO', description: 'Inserisci un oggetto che desideri acquistare.', apiCode: 'WANTED-NEW', readOnly: false, enabled: false),
+    ProcedureEntry(title: 'NUOVO DESIDERIO', description: 'Inserisci un oggetto che desideri acquistare.', apiCode: 'WANTED-NEW', readOnly: false),
     ProcedureEntry(title: 'LISTA DEI DESIDERI', description: 'Consulta gli oggetti ancora da acquistare.', apiCode: 'WANTED-ACTIVE', enabled: false),
     ProcedureEntry(title: 'OBIETTIVI DI ACQUISTO', description: 'Organizza gli obiettivi per tema e priorità, senza dati economici.', apiCode: 'WANTED-GOALS', readOnly: false, enabled: false),
     ProcedureEntry(title: 'ACQUISTO WANTED LIST', description: 'Avvia l’acquisto del desiderio tramite la procedura PR-04.', apiCode: 'WANTED-PURCHASE', readOnly: false, enabled: false),
