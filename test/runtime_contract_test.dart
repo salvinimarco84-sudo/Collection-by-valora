@@ -8,6 +8,7 @@ void main() {
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr04LockControllerSource = File('lib/purchases/pr04_lock_controller.dart').readAsStringSync();
   final pr04WantedLinkControllerSource = File('lib/purchases/pr04_wanted_link_controller.dart').readAsStringSync();
+  final pr04SaveControllerSource = File('lib/purchases/pr04_save_controller.dart').readAsStringSync();
   final pr04PageStateSource = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
@@ -763,7 +764,12 @@ void main() {
       expect(pr04WantedLinkControllerSource, contains('Future<void> _completeWantedPurchaseLink()'));
       expect(pr04WantedLinkControllerSource, contains("from('wanted_desideri')"));
       expect(runtime, isNot(contains('Future<void> _completeWantedPurchaseLink()')));
-      expect(runtime, contains('Future<void> _save()'));
+      expect(source, contains("part 'purchases/pr04_save_controller.dart';"));
+      expect(pr04SaveControllerSource, contains('extension _Pr04SaveController'));
+      expect(pr04SaveControllerSource, contains('Future<void> _save()'));
+      expect(pr04SaveControllerSource, contains("'SALVATO_E_VERIFICATO'"));
+      expect(pr04SaveControllerSource, contains('_completeWantedPurchaseLink()'));
+      expect(runtime, isNot(contains('Future<void> _save()')));
       expect(photo, contains("functions.invoke('pr-12-engine-test'"));
       expect(presentation, contains('Widget _content()'));
       expect(presentation, contains('Widget _buildPr04PurchasePage(BuildContext context)'));
