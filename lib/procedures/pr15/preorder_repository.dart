@@ -164,6 +164,27 @@ class PreorderRepository {
         PreorderStatus.shipped, PreorderStatus.available,
       });
 
+
+  /// Collega il preorder all'acquisto ordinario già salvato e verificato da PR-04.
+  Future<PreorderRecord> markConverted({
+    required String id,
+    required String confirmedPurchaseId,
+  }) async {
+    final code = _parseId(id);
+    final purchaseCode = int.tryParse(confirmedPurchaseId);
+    if (purchaseCode == null || purchaseCode <= 0) {
+      throw ArgumentError.value(confirmedPurchaseId, 'confirmedPurchaseId', 'Codice acquisto PR-04 non valido.');
+    }
+    final current = await get(id);
+    current.preparePurchase();
+    await _client.schema('collection').from(_masterTable).update({
+      'stato': 'CONVERTITO',
+      'codice_acquisto_convertito': purchaseCode,
+      'convertito_il': DateTime.now().toUtc().toIso8601String(),
+    }).eq('codice_preordine', code);
+    return get(id);
+  }
+
   Future<List<Map<String, dynamic>>> history(String id) async {
     final code = _parseId(id);
     final rows = await _client.schema('collection').from(_historyTable)
