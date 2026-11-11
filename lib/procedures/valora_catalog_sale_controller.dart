@@ -70,7 +70,7 @@ extension _ValoraCatalogSaleController on _ValoraServicePageState {
       }
       if (!mounted) return;
       final saleSaved = await Navigator.of(context).push<bool>(MaterialPageRoute(
-        builder: (_) => NewSalePage(initialObjectCode: id, initialSalePrice: price),
+        builder: (_) => Pr06ValoraPage(initialObjectCode: id, marketValue: price),
       ));
       if (destinationChanged && saleSaved != true) {
         final rollbackSession = _uuid.v4();
