@@ -6,6 +6,7 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
+  final pr04LockControllerSource = File('lib/purchases/pr04_lock_controller.dart').readAsStringSync();
   final pr04PageStateSource = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
@@ -725,6 +726,7 @@ void main() {
       expect(source, contains("part 'purchases/pr04_page_state.dart';"));
       expect(source, contains("part 'purchases/pr04_data_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_draft_controller.dart';"));
+      expect(source, contains("part 'purchases/pr04_lock_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_photo_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_page_presentation.dart';"));
       final pageStart = source.indexOf('class _NewPurchasePageState');
@@ -749,6 +751,11 @@ void main() {
       expect(draftController, contains('void _queueCurrentAndStartNext()'));
       expect(draftController, contains('Map<String, dynamic> _payload('));
       expect(runtime, isNot(contains('void _queueCurrentAndStartNext()')));
+      expect(pr04LockControllerSource, contains('extension _Pr04LockController'));
+      expect(pr04LockControllerSource, contains("call('acquire_lock'"));
+      expect(pr04LockControllerSource, contains("call('release_lock'"));
+      expect(runtime, isNot(contains('Future<bool> _acquire()')));
+      expect(runtime, isNot(contains('Future<void> _release()')));
       expect(runtime, contains('Future<void> _runPreview()'));
       expect(runtime, contains('Future<void> _save()'));
       expect(photo, contains("functions.invoke('pr-12-engine-test'"));
