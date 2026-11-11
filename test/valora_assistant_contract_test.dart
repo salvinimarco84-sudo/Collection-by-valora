@@ -24,7 +24,7 @@ void main() {
       expect(speech, contains('_speechLocaleId'));
       expect(speech, contains('_speechLanguageName'));
       expect(assistant, contains('_initializeSpeech()'));
-      expect(assistant, contains('_sendCommand()'));
+      expect(presentation, contains('_sendCommand'));
       expect(command, contains('Future<void> _sendCommand() async'));
       expect(command, contains('extension _ValoraAssistantCommand'));
       expect(mainSource, contains("part 'procedures/valora_assistant_command.dart';"));
