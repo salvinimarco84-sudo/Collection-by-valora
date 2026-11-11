@@ -1429,7 +1429,17 @@ void main() {
     expect(source, contains("part 'procedures/valora_market_valuation_controls.dart';"));
     expect(valoraMarketValuationControlsSource, contains('_buildValoraMarketValuationControls'));
     expect(valoraMarketValuationControlsSource, contains('Mercato di riferimento'));
+    expect(valoraMarketValuationControlsSource, contains('state._market'));
+    expect(valoraMarketValuationControlsSource, contains('state._loadUserMarket'));
+    expect(valoraMarketValuationControlsSource, isNot(contains('DropdownButtonFormField')));
+    expect(valoraMarketValuationControlsSource, isNot(contains("'ITALIA'")));
     expect(valoraMarketValuationControlsSource, contains('_prepareValuation'));
+    expect(valoraServicePageSource, contains('Future<void> _loadUserMarket()'));
+    expect(valoraServicePageSource, contains("select('mercato_nazionale_principale,mercati(nome_mercato)')"));
+    expect(valoraServicePageSource, contains("String _market = '';"));
+    expect(pr18EdgeFunctionSource, contains('mercato: marketName'));
+    expect(pr18EdgeFunctionSource, contains('profiles[0].mercati?.nome_mercato'));
+    expect(pr18EdgeFunctionSource, isNot(contains('body.mercato_riferimento ?? body.mercato ?? "Italia"')));
     expect(valoraMarketValuationResultSource, contains('_continueToPr06Valora'));
     expect(valoraMarketValuationResultSource, contains('ESITO PREPARAZIONE'));
     expect(valoraMarketValuationResultSource, contains('VALUTAZIONE COMPLETATA · CONTINUA A PR06 VALORA'));
