@@ -44,6 +44,7 @@ void main() {
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
   final valoraPhotoCandidateSource = File('lib/procedures/valora_photo_candidate_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
+  final valoraCatalogIntakeValuationServiceSource = File('lib/procedures/valora_catalog_intake_valuation_service.dart').readAsStringSync();
   final valoraKnownObjectValuationSource = File('lib/procedures/valora_known_object_valuation_controller.dart').readAsStringSync();
   final valoraPr18ValuationControllerSource = File('lib/procedures/valora_pr18_valuation_controller.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
@@ -196,7 +197,7 @@ void main() {
       expect(source, contains("part 'procedures/valora_catalog_sale_controller.dart';"));
       expect(valoraServicePageSource, isNot(contains('Future<void> _openUncataloguedCandidate')));
       expect(valoraCatalogIntakeSource, contains('extension _ValoraCatalogIntakeActions'));
-      expect(valoraCatalogIntakeSource, contains("'pr-18-valuation-test'"));
+      expect(valoraCatalogIntakeValuationServiceSource, contains("'pr-18-valuation-test'"));
       expect(valoraCatalogIntakeSource, contains('Pr04ValoraPurchasePage('));
       expect(valoraCatalogIntakeSource, contains("if (addObject != true || !mounted) return;"));
 
@@ -1311,7 +1312,7 @@ void main() {
     expect(valoraCatalogIntakeSource, contains('_confirmedPhotoCandidates[index]'));
     expect(valoraCatalogIntakeSource, contains('initialMetadata: metadata'));
     expect(valoraCatalogIntakeSource, contains("'pr-18-valuation-test'"));
-    expect(valoraCatalogIntakeSource, contains("'metadati': metadata"));
+    expect(valoraCatalogIntakeValuationServiceSource, contains("'metadati': metadata"));
     expect(valoraPhotoInputSource, contains('selectedUrl != null && _confirmedPhotoCandidates[photoIndex] != null'));
     expect(valoraPhotoInputSource, contains('OGGETTO NON IN CATALOGO · APRI PR-04'));
     expect(valoraServicePageSource, isNot(contains("'MARKET_VALUATION_PREPARE'")));
