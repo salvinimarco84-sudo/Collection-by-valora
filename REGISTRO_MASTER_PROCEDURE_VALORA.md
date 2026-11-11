@@ -146,7 +146,7 @@ I report non vengono numerati come PR: sono consultazioni/report e usano codici 
 3. PR-10 è **Scambio** nel contratto runtime, ma non è una voce autonoma nell'attuale menu.
 4. PR-18 è la voce menu **VALORA**.
 5. PR-19 non risulta registrata come procedura autonoma nel menu attuale.
-6. PR-20 è soltanto una voce disabilitata, senza API collegata.
+6. PR-13 · RICERCA OFFERTA è registrata nel menu ma resta disabilitata finché il motore e il collegamento runtime non saranno implementati.
 7. PR-11 è **Valutazione complessiva collezione**.
 8. PR-21 è **Ricerca schede**; la vecchia RPC PR-11 resta solo come alias tecnico di compatibilità.
 8. PR-06 VALORA è un ingresso dedicato che riutilizza PR-06 ordinaria, non una seconda implementazione della vendita.
