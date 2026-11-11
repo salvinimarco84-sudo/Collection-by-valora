@@ -85,7 +85,7 @@ Deno.serve(async (req: Request) => {
       return reply({ ok: false, error: "Profilo utente o mercato di riferimento assente." }, 409);
     }
     const profile = profiles[0];
-    const marketName = String(profile.mercati?.nome_mercato ?? body.mercato_riferimento ?? "");
+    const marketName = String(profile.mercati?.nome_mercato ?? "");
     const comparables = Array.isArray(valuation.comparabili) ? valuation.comparabili.slice(0, 100) as Candidate[] : [];
     const sold = comparables.filter((item) => String(item.tipo_prezzo ?? "").toUpperCase() === "VENDITA_CONCLUSA");
     const rawReliability = String(valuation.affidabilita ?? "NON_VALUTABILE").toUpperCase();
