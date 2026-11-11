@@ -176,12 +176,22 @@ class PreorderRepository {
       throw ArgumentError.value(confirmedPurchaseId, 'confirmedPurchaseId', 'Codice acquisto PR-04 non valido.');
     }
     final current = await get(id);
+    // Idempotenza: una conferma ripetuta dello stesso acquisto non crea un nuovo evento.
+    if (current.status == PreorderStatus.converted) {
+      if (current.purchaseId == confirmedPurchaseId) return current;
+      throw StateError('Questo preorder risulta già collegato all’acquisto PR-04 #${current.purchaseId}.');
+    }
     current.preparePurchase();
-    await _client.schema('collection').from(_masterTable).update({
+    final updated = await _client.schema('collection').from(_masterTable).update({
       'stato': 'CONVERTITO',
       'codice_acquisto_convertito': purchaseCode,
       'convertito_il': DateTime.now().toUtc().toIso8601String(),
-    }).eq('codice_preordine', code);
+    }).eq('codice_preordine', code).eq('stato', 'RICEVUTO').select('codice_preordine');
+    if (updated is! List || updated.isEmpty) {
+      final latest = await get(id);
+      if (latest.status == PreorderStatus.converted && latest.purchaseId == confirmedPurchaseId) return latest;
+      throw StateError('Il preorder è cambiato durante la conversione. Aggiorna la scheda prima di riprovare.');
+    }
     return get(id);
   }
 
