@@ -3112,11 +3112,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       if (!mounted) return;
       setState(() {
         _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-        if (widget.preorderConversion && _items.first.collectionCategoryCode == null) {
-          final wanted = (widget.initialMetadata?['categoria_preorder'] ?? '').toString().trim().toLowerCase();
-          final match = _collectionCategories.where((e) => (e['descrizione'] ?? '').toString().trim().toLowerCase() == wanted);
-          if (match.isNotEmpty) _items.first.collectionCategoryCode = match.first['codice_categoria']?.toString();
-        }
       });
     } catch (e) { if (mounted) setState(() => _output = 'Errore caricamento categorie COLLEZIONE: $e'); }
     finally { _categoriesLoading = false; }
@@ -6501,7 +6496,14 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
           .select('codice_categoria, descrizione, ordine_menu, visibile').eq('visibile', true)
           .order('ordine_menu').order('descrizione');
       if (!mounted) return;
-      setState(() => _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
+      setState(() {
+        _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        if (widget.preorderConversion && _items.first.collectionCategoryCode == null) {
+          final wanted = (widget.initialMetadata?['categoria_preorder'] ?? '').toString().trim().toLowerCase();
+          final match = _collectionCategories.where((e) => (e['descrizione'] ?? '').toString().trim().toLowerCase() == wanted);
+          if (match.isNotEmpty) _items.first.collectionCategoryCode = match.first['codice_categoria']?.toString();
+        }
+      });
     } catch (e) { if (mounted) setState(() => _status = 'Errore caricamento categorie: $e'); }
     finally { _categoriesLoading = false; }
   }
