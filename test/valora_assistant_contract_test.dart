@@ -8,6 +8,7 @@ void main() {
   final presentation = File('lib/procedures/valora_assistant_presentation.dart').readAsStringSync();
   final speech = File('lib/procedures/valora_assistant_speech.dart').readAsStringSync();
   final command = File('lib/procedures/valora_assistant_command.dart').readAsStringSync();
+  final inputPanel = File('lib/procedures/valora_assistant_input_panel.dart').readAsStringSync();
 
   group('VALORA assistant module contract', () {
     test('the assistant page is declared in its dedicated procedure module', () {
@@ -23,10 +24,15 @@ void main() {
       expect(speech, contains('_speechLocaleId'));
       expect(speech, contains('_speechLanguageName'));
       expect(assistant, contains('_initializeSpeech()'));
-      expect(presentation, contains('_sendCommand'));
+      expect(presentation, contains('buildAssistantInputPanel()'));
+      expect(inputPanel, contains('extension _ValoraAssistantInputPanel'));
+      expect(inputPanel, contains('TextField('));
+      expect(inputPanel, contains('_toggleListening'));
+      expect(inputPanel, contains('_sendCommand'));
       expect(command, contains('Future<void> _sendCommand() async'));
       expect(command, contains('extension _ValoraAssistantCommand'));
       expect(mainSource, contains("part 'procedures/valora_assistant_command.dart';"));
+      expect(mainSource, contains("part 'procedures/valora_assistant_input_panel.dart';"));
       expect(command, contains("'valora-assistant'"));
       expect(command, contains("'modalita': 'TEST'"));
       expect(command, contains("'sola_lettura': true"));
