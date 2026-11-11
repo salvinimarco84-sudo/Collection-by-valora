@@ -12,6 +12,7 @@ void main() {
   final pr04PageStateSource = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
   final pr04CategoryControllerSource = File('lib/purchases/pr04_category_controller.dart').readAsStringSync();
   final pr04MetadataControllerSource = File('lib/purchases/pr04_metadata_controller.dart').readAsStringSync();
+  final pr04ItemDraftSource = File('lib/purchases/pr04_item_draft.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
   final pr04PagePresentationSource = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
@@ -1694,6 +1695,18 @@ void main() {
     expect(historyPage, contains("from('wanted_offerte')"));
     expect(historyPage, contains("neq('stato', 'ATTIVO')"));
     expect(historyPage, contains('codice_oggetto_acquistato'));
+  });
+
+  test('PR-04 separa il modello della bozza acquisto dalla pagina', () {
+    expect(source, contains("part 'purchases/pr04_item_draft.dart';"));
+    expect(pr04PageStateSource, isNot(contains('class _PurchaseItemDraft')));
+    expect(pr04PageStateSource, contains('final List<_PurchaseItemDraft> _items = [_PurchaseItemDraft()];'));
+    expect(pr04ItemDraftSource, contains('class _PurchaseItemDraft'));
+    expect(pr04ItemDraftSource, contains('double? get amount'));
+    expect(pr04ItemDraftSource, contains("Map<String, dynamic> json()"));
+    expect(pr04ItemDraftSource, contains("'valore_acquisto': amount"));
+    expect(pr04ItemDraftSource, contains("'stato_verifica_dati': 'DA_VERIFICARE'"));
+    expect(pr04ItemDraftSource, contains('void dispose()'));
   });
 
   test('PR-04 separa la precompilazione dei metadati dal mixin di stato', () {
