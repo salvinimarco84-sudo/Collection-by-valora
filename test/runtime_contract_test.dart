@@ -193,6 +193,10 @@ void main() {
       expect(valoraServicePageSource, isNot(contains('Future<Map<String, dynamic>> _analyzeImageBytes')));
       expect(valoraServicePageSource, isNot(contains('Future<void> _retryPhotoSearch')));
       expect(valoraPhotoSearchSource, contains('extension _ValoraPhotoSearchActions'));
+      expect(valoraPhotoSearchSource, contains('Future<Map<String, dynamic>> _analyzeImageBytes('));
+      expect(valoraPhotoSearchSource, contains("'pr-12-engine-test'"));
+      expect(valoraPhotoSearchSource, contains("'mercato': _market"));
+      expect(valoraPhotoSearchSource, contains('bytes.length > 10 * 1024 * 1024'));
       expect(valoraPhotoSearchSource, contains("'ANALIZZA_FOTO'"));
       expect(source, contains("part 'procedures/valora_photo_candidate_controller.dart';"));
       expect(valoraPhotoCandidateSource, contains("'ricerca_estesa': true"));
