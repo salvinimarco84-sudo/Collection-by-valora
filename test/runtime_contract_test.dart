@@ -1619,6 +1619,22 @@ void main() {
     expect(purchaseGoals, contains(".update("));
     expect(purchaseGoals, isNot(contains("'prezzo':")));
     expect(purchaseGoals, isNot(contains("'budget':")));
+    final offersPage = File('lib/wanted_list/wanted_offers_page.dart').readAsStringSync();
+    final historyPage = File('lib/wanted_list/wanted_history_page.dart').readAsStringSync();
+    expect(source, contains("part 'wanted_list/wanted_offers_page.dart';"));
+    expect(source, contains("part 'wanted_list/wanted_history_page.dart';"));
+    expect(registry, contains("apiCode: 'WANTED-OFFERS'"));
+    expect(registry, contains("apiCode: 'WANTED-HISTORY'"));
+    expect(coordinator, contains('const WantedOffersPage()'));
+    expect(coordinator, contains('const WantedHistoryPage()'));
+    expect(offersPage, contains("'pr-12-web-search-test'"));
+    expect(offersPage, contains("from('wanted_offerte')"));
+    expect(offersPage, contains("'mercato': _market.text.trim()"));
+    expect(offersPage, contains('CERCA OFFERTE CON PR-12'));
+    expect(historyPage, contains("from('wanted_desideri')"));
+    expect(historyPage, contains("from('wanted_offerte')"));
+    expect(historyPage, contains("neq('stato', 'ATTIVO')"));
+    expect(historyPage, contains('codice_oggetto_acquistato'));
   });
 
 }
