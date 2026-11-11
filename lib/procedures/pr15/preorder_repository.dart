@@ -89,9 +89,11 @@ class PreorderRepository {
     final existing = await get(id);
     if (existing.status == PreorderStatus.converted ||
         existing.status == PreorderStatus.cancelled ||
-        existing.status == PreorderStatus.refunded ||
-        existing.payments.isNotEmpty) {
-      throw StateError('Dati economici e anagrafici bloccati dopo il primo pagamento o la chiusura.');
+        existing.status == PreorderStatus.refunded) {
+      throw StateError('Un preorder chiuso non può essere modificato.');
+    }
+    if (existing.payments.isNotEmpty && agreedPriceCents != existing.agreedPriceCents) {
+      throw StateError('Il prezzo concordato non può cambiare dopo il primo pagamento.');
     }
     await _client.schema('collection').from(_masterTable).update({
       'descrizione_oggetto': description.trim(),
@@ -192,7 +194,7 @@ class PreorderRepository {
       supplier: (row['fornitore'] ?? '').toString(),
       orderDate: DateTime.parse(row['data_prenotazione'].toString()),
       expectedReleaseDate: row['data_uscita_prevista'] == null
-          ? DateTime(2100) : DateTime.parse(row['data_uscita_prevista'].toString()),
+          ? null : DateTime.parse(row['data_uscita_prevista'].toString()),
       agreedPriceCents: _cents(row['prezzo_concordato']),
       category: (row['categoria'] ?? '').toString(),
       imageReference: row['immagine_riferimento']?.toString(),
@@ -238,9 +240,11 @@ class PreorderRepository {
     return value;
   }
 
-  static int _cents(dynamic value) =>
-      ((value as num?)?.toDouble() ?? double.tryParse(value?.toString() ?? '') ?? 0)
-          .toStringAsFixed(2).replaceAll('.', '').letInt();
+  static int _cents(dynamic value) {
+    final amount = value is num ? value.toDouble()
+        : double.tryParse(value?.toString() ?? '') ?? 0;
+    return (amount * 100).round();
+  }
 
   static double _money(int cents) => cents / 100;
   static String _date(DateTime value) =>
@@ -249,8 +253,4 @@ class PreorderRepository {
   static void _validateText(String value, String label) {
     if (value.trim().isEmpty) throw ArgumentError('$label obbligatoria.');
   }
-}
-
-extension on String {
-  int letInt() => int.tryParse(this) ?? 0;
 }
