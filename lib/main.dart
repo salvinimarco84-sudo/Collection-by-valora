@@ -65,6 +65,7 @@ part 'dashboard/dashboard_collection_content.dart';
 part 'procedures/pr01_runtime_procedure.dart';
 part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
+part 'purchases/pr04_draft_controller.dart';
 part 'purchases/pr04_runtime_procedure.dart';
 part 'purchases/pr04_data_controller.dart';
 part 'purchases/pr04_photo_controller.dart';

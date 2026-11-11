@@ -724,6 +724,7 @@ void main() {
     test('PR-04 mantiene la pagina sottile e separa stato, dati, foto e presentazione', () {
       expect(source, contains("part 'purchases/pr04_page_state.dart';"));
       expect(source, contains("part 'purchases/pr04_data_controller.dart';"));
+      expect(source, contains("part 'purchases/pr04_draft_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_photo_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_page_presentation.dart';"));
       final pageStart = source.indexOf('class _NewPurchasePageState');
@@ -736,12 +737,17 @@ void main() {
       expect(page, isNot(contains('TextEditingController')));
       expect(page, isNot(contains('Future<void> _photoAndRecognize')));
       final state = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
+      final draftController = File('lib/purchases/pr04_draft_controller.dart').readAsStringSync();
       final data = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
       final photo = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
       final presentation = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
       expect(state, contains('class _PurchaseItemDraft'));
       expect(state, contains('mixin _Pr04PageState'));
       expect(state, contains('Future<void> _loadCollectionCategories()'));
+      expect(draftController, contains('extension _Pr04DraftController'));
+      expect(draftController, contains('void _queueCurrentAndStartNext()'));
+      expect(draftController, contains('Map<String, dynamic> _payload('));
+      expect(runtime, isNot(contains('void _queueCurrentAndStartNext()')));
       expect(photo, contains("functions.invoke('pr-12-engine-test'"));
       expect(presentation, contains('Widget _content()'));
       expect(presentation, contains('Widget _buildPr04PurchasePage(BuildContext context)'));
