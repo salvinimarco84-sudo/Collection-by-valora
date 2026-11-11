@@ -7,6 +7,7 @@ void main() {
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr04LockControllerSource = File('lib/purchases/pr04_lock_controller.dart').readAsStringSync();
+  final pr04WantedLinkControllerSource = File('lib/purchases/pr04_wanted_link_controller.dart').readAsStringSync();
   final pr04PageStateSource = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
@@ -757,6 +758,11 @@ void main() {
       expect(runtime, isNot(contains('Future<bool> _acquire()')));
       expect(runtime, isNot(contains('Future<void> _release()')));
       expect(runtime, contains('Future<void> _runPreview()'));
+      expect(source, contains("part 'purchases/pr04_wanted_link_controller.dart';"));
+      expect(pr04WantedLinkControllerSource, contains('extension _Pr04WantedLinkController'));
+      expect(pr04WantedLinkControllerSource, contains('Future<void> _completeWantedPurchaseLink()'));
+      expect(pr04WantedLinkControllerSource, contains("from('wanted_desideri')"));
+      expect(runtime, isNot(contains('Future<void> _completeWantedPurchaseLink()')));
       expect(runtime, contains('Future<void> _save()'));
       expect(photo, contains("functions.invoke('pr-12-engine-test'"));
       expect(presentation, contains('Widget _content()'));
