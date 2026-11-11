@@ -48,6 +48,7 @@ void main() {
   final valoraCatalogIntakeValuationServiceSource = File('lib/procedures/valora_catalog_intake_valuation_service.dart').readAsStringSync();
   final valoraKnownObjectValuationSource = File('lib/procedures/valora_known_object_valuation_controller.dart').readAsStringSync();
   final valoraPr18ValuationControllerSource = File('lib/procedures/valora_pr18_valuation_controller.dart').readAsStringSync();
+  final valoraKnownObjectPr18ServiceSource = File('lib/procedures/valora_known_object_pr18_service.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
   final procedureRegistrySource = File('lib/procedures/procedure_registry.dart').readAsStringSync();
   final collectionValueEdgeFunctionSource = File('supabase/functions/collection-market-value-test/index.ts').readAsStringSync();
@@ -1396,8 +1397,16 @@ void main() {
   test('VALORA separa la preparazione PR18 dal passaggio a PR06', () {
     expect(source, contains("part 'procedures/valora_pr18_valuation_controller.dart';"));
     expect(valoraPr18ValuationControllerSource, contains('extension _ValoraKnownObjectPr18Controller'));
+    expect(source, contains("part 'procedures/valora_known_object_pr18_service.dart';"));
     expect(valoraPr18ValuationControllerSource, contains('Future<void> _prepareValuation()'));
     expect(valoraPr18ValuationControllerSource, contains('Future<void> _saveKnownObjectValuation('));
+    expect(valoraPr18ValuationControllerSource, contains('_requestKnownObjectPr18Valuation('));
+    expect(valoraPr18ValuationControllerSource, contains('_persistKnownObjectPr18Valuation('));
+    expect(valoraPr18ValuationControllerSource, isNot(contains("functions.invoke('pr-18-valuation-test'")));
+    expect(valoraKnownObjectPr18ServiceSource, contains('extension _ValoraKnownObjectPr18Service'));
+    expect(valoraKnownObjectPr18ServiceSource, contains("functions.invoke(\n      'pr-18-valuation-test'"));
+    expect(valoraKnownObjectPr18ServiceSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
+    expect(valoraKnownObjectPr18ServiceSource, contains("'mercato_riferimento': market"));
     expect(valoraKnownObjectValuationSource, contains('extension _ValoraKnownObjectValuationActions'));
     expect(valoraKnownObjectValuationSource, contains('Future<void> _continueToPr06Valora()'));
     expect(valoraKnownObjectValuationSource, isNot(contains('Future<void> _prepareValuation()')));
