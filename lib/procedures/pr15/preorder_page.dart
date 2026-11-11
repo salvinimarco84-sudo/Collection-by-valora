@@ -1,4 +1,4 @@
-part of '../main.dart';
+part of '../../main.dart';
 
 class Pr15PreorderPage extends StatefulWidget {
   const Pr15PreorderPage({super.key});
