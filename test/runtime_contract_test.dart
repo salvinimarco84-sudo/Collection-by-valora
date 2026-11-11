@@ -1652,8 +1652,8 @@ void main() {
     expect(registry, contains("apiCode: 'WANTED-PURCHASE', readOnly: false"));
     expect(File('lib/wanted_list/wanted_purchase_page.dart').readAsStringSync(), contains('wantedDesireId: desire[\'id\'].toString()'));
     expect(pr04RuntimeProcedureSource, contains('_completeWantedPurchaseLink()'));
-    expect(pr04RuntimeProcedureSource, contains(".eq('codice_acquisto', purchaseCode)"));
-    expect(pr04RuntimeProcedureSource, contains("'codice_oggetto_acquistato': objectCode"));
+    expect(pr04WantedLinkControllerSource, contains(".eq('codice_acquisto', purchaseCode)"));
+    expect(pr04WantedLinkControllerSource, contains("'codice_oggetto_acquistato': objectCode"));
     expect(pr04RuntimeProcedureSource, contains('_wantedPurchaseCommitted'));
     expect(newDesire, contains("from('wanted_desideri')"));
     expect(newDesire, contains("'stato': 'ATTIVO'"));
