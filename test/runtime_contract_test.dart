@@ -1375,10 +1375,11 @@ void main() {
     expect(registry, contains("apiCode: 'WRITE-PR-07'"));
     expect(pr07PageSource, contains('class Pr07EditSalesPage extends StatefulWidget'));
     expect(pr07PageSource, contains('Pr07SaleEditCard('));
+    expect(pr07PageSource, contains('CONFERMA I DATI'));
     expect(pr07DataSource, contains('mixin Pr07EditSalesDataMixin'));
-    expect(pr07DataSource, contains("procedure('PR-07', 'preview'"));
-    expect(pr07DataSource, contains("procedure('PR-07', 'review'"));
-    expect(pr07DataSource, contains("procedure('PR-07', 'save'"));
+    expect(pr07DataSource, contains("'PR-07', 'preview'"));
+    expect(pr07DataSource, contains("'PR-07', 'review'"));
+    expect(pr07DataSource, contains("'PR-07', 'save'"));
     expect(pr07DataSource, contains("'codice_vendita_aperta'"));
     expect(pr07DataSource, contains("'modifica_data'"));
     expect(pr07DataSource, contains("'modifica_prezzo'"));

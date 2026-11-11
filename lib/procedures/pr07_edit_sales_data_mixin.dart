@@ -106,10 +106,16 @@ mixin Pr07EditSalesDataMixin on State<Pr07EditSalesPage> {
       pr07Sales = sales;
       pr07Platforms = platforms;
       final selectedId = pr07SelectedSale?['codice_vendita_aperta']?.toString();
-      pr07SelectedSale = selectedId == null
-          ? null
-          : sales.where((row) => row['codice_vendita_aperta']?.toString() == selectedId)
-              .firstOrNull;
+      Map<String, dynamic>? retainedSelection;
+      if (selectedId != null) {
+        for (final row in sales) {
+          if (row['codice_vendita_aperta']?.toString() == selectedId) {
+            retainedSelection = row;
+            break;
+          }
+        }
+      }
+      pr07SelectedSale = retainedSelection;
     });
   }
 

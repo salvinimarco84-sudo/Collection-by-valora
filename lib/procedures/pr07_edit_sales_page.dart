@@ -128,6 +128,15 @@ class _Pr07EditSalesPageState extends State<Pr07EditSalesPage>
               ),
             ),
           ],
+          if (pr07Preview != null && pr07Review == null)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: pr07Loading ? null : () => runPr07(confirmPr07Changes),
+                icon: const Icon(Icons.verified_outlined),
+                label: const Text('CONFERMA I DATI'),
+              ),
+            ),
           if (pr07Review != null)
             Card(
               child: Padding(
