@@ -1072,8 +1072,8 @@ void main() {
       expect(purchaseRuntimeSource, contains('_currentPurchaseOperation()'));
       expect(purchaseRuntimeSource, contains('_queueCurrentAndStartNext'));
       expect(purchaseRuntimeSource, contains("'operazioni': [..._pendingPurchases, _currentPurchaseOperation()]"));
-      expect(purchaseRuntimeSource, contains('reread.length == expectedPurchases'));
-      expect(purchaseRuntimeSource, contains("r['numero_acquisti'] == expectedPurchases"));
+      expect(pr04SaveControllerSource, contains('reread.length == expectedPurchases'));
+      expect(pr04SaveControllerSource, contains("r['numero_acquisti'] == expectedPurchases"));
       expect(purchaseRuntimeSource, contains('AGGIUNGI UN ALTRO ACQUISTO ALLA CODA'));
       expect(source, isNot(contains('Vuoi effettuare un altro acquisto?')));
     });
@@ -1657,7 +1657,7 @@ void main() {
     expect(coordinator, contains('const WantedPurchasePage()'));
     expect(registry, contains("apiCode: 'WANTED-PURCHASE', readOnly: false"));
     expect(File('lib/wanted_list/wanted_purchase_page.dart').readAsStringSync(), contains('wantedDesireId: desire[\'id\'].toString()'));
-    expect(pr04RuntimeProcedureSource, contains('_completeWantedPurchaseLink()'));
+    expect(pr04SaveControllerSource, contains('_completeWantedPurchaseLink()'));
     expect(pr04WantedLinkControllerSource, contains(".eq('codice_acquisto', purchaseCode)"));
     expect(pr04WantedLinkControllerSource, contains("'codice_oggetto_acquistato': objectCode"));
     expect(pr04RuntimeProcedureSource, contains('_wantedPurchaseCommitted'));
