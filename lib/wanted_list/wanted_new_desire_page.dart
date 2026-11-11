@@ -44,6 +44,7 @@ class _WantedNewDesirePageState extends State<WantedNewDesirePage> {
       final client = Supabase.instance.client.schema('collection');
       final inserted = await client.from('wanted_desideri').insert({
         'user_id': user.id,
+        'stato': 'ATTIVO',
         'descrizione': _description.text.trim(),
         'categoria': _category.text.trim().isEmpty ? null : _category.text.trim(),
         'condizione_desiderata': _condition,
