@@ -40,7 +40,7 @@ Funzioni aggiuntive di catalogo già presenti nel menu: Visualizza scheda, Elenc
 |---|---|---|---|
 | PR-04 | Nuovo acquisto ordinario | `WRITE-PR-04`, `NewPurchasePage` e moduli PR-04 | Presente nel menu; da collaudare |
 | PR-04 VALORA | Nuovo acquisto semplificato da identificazione VALORA | `Pr04ValoraPurchasePage` e `pr04_valora_page.dart`; ingresso interno a VALORA, con modalità dedicata e runtime PR-04 condiviso | Maschera semplificata collegata; CI e build Android/Windows verdi; test end-to-end TEST da eseguire |
-| PR-05 | Modifica acquisto | `WRITE-PR-05`, pagina modifica dedicata | Presente nel menu; da collaudare |
+| PR-05 | Modifica acquisto | `WRITE-PR-05`, pagina modifica dedicata | Presente nel menu; da collaudare |\n| PR-15 | PREORDER | Voce registrata nel menu ACQUISTI come procedura in preparazione; pagina, archivio preorder e gestione pagamenti non ancora implementati | Progettata; non attiva |
 
 Funzioni correlate: Acquisti comparati e Report acquisti.
 
@@ -190,7 +190,7 @@ Per ogni procedura mantenere questi campi:
 | PR-03 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-04 | Presente; da collaudare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-04 VALORA | Pagina dedicata collegata da VALORA; runtime PR-04 condiviso | CI 663 SUCCESS | Manuale end-to-end TEST da eseguire | Regressione PR-04 ordinaria da provare nell'app | Build 1670 SUCCESS (Android/Windows) | Aperta, collaudo manuale pendente |
-| PR-05 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-05 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |\n| PR-15 | Voce menu registrata su branch dedicato; disabilitata fino all'implementazione | Da eseguire | Da eseguire | Da eseguire | Da registrare | Progettata, non attiva |
 | PR-06 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-07 | Scomposta: pagina dedicata, mixin dati/runtime e scheda di presentazione; collegata al menu VENDITE | Contratti automatici aggiunti; CI da registrare | Da eseguire nell'app TEST | Regressioni PR-06, PR-08 e PR-09 da eseguire | In attesa CI/build | Aperta, collaudo funzionale pendente |
 | PR-08 | Da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
