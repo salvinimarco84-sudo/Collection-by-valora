@@ -94,13 +94,13 @@ Caratteristiche rilevate nel codice:
 | PR-18 | VALORA | Voce menu `LAUNCH-VALORA`, `ValoraServicePage`; funzione di valutazione `pr-18-valuation-test` richiamata nel flusso di identificazione | Presente nel menu e collegata; collaudo end-to-end da verificare |
 | PR-19 | Nessuna voce autonoma rilevata | Non identificata nell'attuale `procedure_registry.dart` | Da definire/allineare; non dichiararla implementata |
 | PR-20 | Valuta acquisto | Voce descrittiva presente ma `enabled: false`, senza codice API associato | Progettata/non attiva |
-| PR-21 | Valutazione complessiva collezione | `LAUNCH-COLLECTION-VALUE`, `CollectionValuePage` e relativa presentazione | Presente nel menu e collegata; collaudo end-to-end da verificare |
+| PR-11 | Valutazione complessiva collezione | `LAUNCH-COLLECTION-VALUE`, `CollectionValuePage` e relativa presentazione | Presente nel menu e collegata; collaudo end-to-end da verificare |
 
 **Distinzione funzionale:**
 - PR-12 ricerca e restituisce metadati e candidati.
 - PR-18 è la procedura di valutazione specialistica del singolo oggetto.
 - PR-20 dovrà valutare la convenienza di un acquisto e non va confusa con la valutazione patrimoniale.
-- PR-21 riguarda il valore complessivo della collezione e lo storico delle fotografie patrimoniali.
+- PR-11 riguarda il valore complessivo della collezione e lo storico delle fotografie patrimoniali.
 
 **Ingresso PR-06 VALORA:** `Pr06ValoraPage` è un ingresso guidato alla `NewSalePage` standard, con oggetto e prezzo iniziale precompilati. Non è una nuova procedura di vendita indipendente e non deve sostituire PR-06.
 
@@ -137,7 +137,7 @@ I report non vengono numerati come PR: sono consultazioni/report e usano codici 
 4. PR-18 è la voce menu **VALORA**.
 5. PR-19 non risulta registrata come procedura autonoma nel menu attuale.
 6. PR-20 è soltanto una voce disabilitata, senza API collegata.
-7. PR-21 è **Valutazione complessiva collezione**.
+7. PR-11 è **Valutazione complessiva collezione**.
 8. PR-06 VALORA è un ingresso dedicato che riutilizza PR-06 ordinaria, non una seconda implementazione della vendita.
 9. Consultazioni e report non devono essere inventati come codici PR.
 
@@ -187,7 +187,7 @@ Per ogni procedura mantenere questi campi:
 | PR-18 | Presente e collegata | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-19 | Non registrata | N/A | N/A | N/A | N/A | Da definire |
 | PR-20 | Disabilitata | N/A | N/A | N/A | N/A | Da sviluppare |
-| PR-21 | Presente e collegata | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-11 | Presente e collegata | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 
 ## 8. Regola di aggiornamento del registro
 

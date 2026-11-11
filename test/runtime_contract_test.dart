@@ -44,6 +44,8 @@ void main() {
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
   final valoraKnownObjectValuationSource = File('lib/procedures/valora_known_object_valuation_controller.dart').readAsStringSync();
   final collectionValuePageSource = File('lib/procedures/collection_value_page.dart').readAsStringSync();
+  final procedureRegistrySource = File('lib/procedures/procedure_registry.dart').readAsStringSync();
+  final collectionValueEdgeFunctionSource = File('supabase/functions/collection-market-value-test/index.ts').readAsStringSync();
   final collectionValuePresentationSource = File('lib/procedures/collection_value_presentation.dart').readAsStringSync();
   final pr08SalesSummaryCardSource = File('lib/procedures/pr08_sales_summary_card.dart').readAsStringSync();
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
@@ -109,6 +111,10 @@ void main() {
 
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('la schermata VALORE COLLEZIONE è estratta mantenendo calcoli e snapshot', () {
+      expect(procedureRegistrySource, contains('PR-11 · VALUTAZIONE COMPLESSIVA COLLEZIONE'));
+      expect(procedureRegistrySource, isNot(contains('PR-21')));
+      expect(collectionValueEdgeFunctionSource, contains('procedura: "PR-11"'));
+      expect(collectionValueEdgeFunctionSource, isNot(contains('PR-21')));
       expect(source, contains("part 'procedures/collection_value_page.dart';"));
       expect(source, isNot(contains('class CollectionValuePage extends StatefulWidget')));
       expect(collectionValuePageSource, contains('class CollectionValuePage extends StatefulWidget'));

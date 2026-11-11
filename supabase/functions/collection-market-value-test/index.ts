@@ -132,22 +132,22 @@ Deno.serve(async (req: Request) => {
         oggetti_esaminati: 0,
         oggetti_valutati: 0,
         oggetti_senza_stima: 0,
-        report_riepilogo: { motore: "PR-21", fonte_ricerca: "PR-12", oggetti_ids: ids, prossimo_offset: 0, batch_size: 10, oggetti_con_stima: 0, oggetti_senza_stima: 0, mercato_riferimento: marketName, avviso: "Stima teorica orientativa del mercato configurato (" + marketName + "); le fonti distinguono prezzi richiesti/catalogo e vendite concluse." },
+        report_riepilogo: { motore: "PR-11", fonte_ricerca: "PR-12", oggetti_ids: ids, prossimo_offset: 0, batch_size: 10, oggetti_con_stima: 0, oggetti_senza_stima: 0, mercato_riferimento: marketName, avviso: "Stima teorica orientativa del mercato configurato (" + marketName + "); le fonti distinguono prezzi richiesti/catalogo e vendite concluse." },
       }),
     });
-    if (!createResponse.ok) return reply({ ok: false, error: "Impossibile registrare l'avvio PR-21.", dettaglio: (await createResponse.text()).slice(0, 300) }, 502);
+    if (!createResponse.ok) return reply({ ok: false, error: "Impossibile registrare l'avvio PR-11.", dettaglio: (await createResponse.text()).slice(0, 300) }, 502);
     const created = await createResponse.json();
-    if (!Array.isArray(created) || !created.length) return reply({ ok: false, error: "PR-21 non ha restituito il codice della nuova valutazione." }, 502);
+    if (!Array.isArray(created) || !created.length) return reply({ ok: false, error: "PR-11 non ha restituito il codice della nuova valutazione." }, 502);
     run = created[0];
     runId = Number(run.codice_valutazione);
   } else {
-    if (!runId) return reply({ ok: false, error: "Per proseguire è necessario il codice_valutazione restituito da PR-21." }, 400);
+    if (!runId) return reply({ ok: false, error: "Per proseguire è necessario il codice_valutazione restituito da PR-11." }, 400);
     const runResponse = await fetch(base + "/rest/v1/valutazioni_mercato?select=codice_valutazione,stato_esecuzione,oggetti_esaminati,oggetti_valutati,oggetti_senza_stima,report_riepilogo&codice_valutazione=eq." + runId, {
       headers: { ...adminHeaders, "Accept-Profile": "collection" },
     });
     if (!runResponse.ok) return reply({ ok: false, error: "Impossibile leggere lo stato della valutazione." }, 502);
     const runs = await runResponse.json();
-    if (!Array.isArray(runs) || !runs.length) return reply({ ok: false, error: "Valutazione PR-21 non trovata." }, 404);
+    if (!Array.isArray(runs) || !runs.length) return reply({ ok: false, error: "Valutazione PR-11 non trovata." }, 404);
     run = runs[0];
     if (run.stato_esecuzione !== "AVVIATA") return reply({ ok: false, error: "La valutazione non è in stato AVVIATA.", stato_esecuzione: run.stato_esecuzione }, 409);
     const report = run.report_riepilogo ?? {};
@@ -259,7 +259,7 @@ Deno.serve(async (req: Request) => {
   const more = nextOffset < total;
   const examined = nextOffset;
   const report = {
-    motore: "PR-21",
+    motore: "PR-11",
     fonte_ricerca: "PR-12",
     oggetti_ids: ids,
     prossimo_offset: nextOffset,
@@ -282,11 +282,11 @@ Deno.serve(async (req: Request) => {
       ...(more ? {} : { completata_il: new Date().toISOString() }),
     }),
   });
-  if (!updateResponse.ok) return reply({ ok: false, codice_valutazione: runId, error: "Impossibile aggiornare l'avanzamento PR-21.", dettaglio: (await updateResponse.text()).slice(0, 300) }, 502);
+  if (!updateResponse.ok) return reply({ ok: false, codice_valutazione: runId, error: "Impossibile aggiornare l'avanzamento PR-11.", dettaglio: (await updateResponse.text()).slice(0, 300) }, 502);
 
   return reply({
     ok: true,
-    procedura: "PR-21",
+    procedura: "PR-11",
     nome: "VALUTAZIONE COMPLESSIVA COLLEZIONE",
     codice_valutazione: runId,
     stato_esecuzione: state,

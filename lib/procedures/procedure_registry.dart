@@ -60,7 +60,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
   ],
   'VALUTAZIONI': [
     ProcedureEntry(title: 'PR-18 · VALORA', description: 'Valutazione specialistica del singolo oggetto dopo conferma PR-12, con comparabili e affidabilità.', apiCode: 'LAUNCH-VALORA'),
-    ProcedureEntry(title: 'PR-21 · VALUTAZIONE COMPLESSIVA COLLEZIONE', description: 'Valuta il patrimonio complessivo a lotti e registra lo storico dei valori.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
+    ProcedureEntry(title: 'PR-11 · VALUTAZIONE COMPLESSIVA COLLEZIONE', description: 'Valuta il patrimonio complessivo a lotti e registra lo storico dei valori.', apiCode: 'LAUNCH-COLLECTION-VALUE'),
     ProcedureEntry(title: 'VALUTA ACQUISTO', description: 'Analisi rapida di un acquisto prima di concluderlo. Motore in preparazione.', enabled: false),
   ],
   'FLUSSI DI CASSA': [
