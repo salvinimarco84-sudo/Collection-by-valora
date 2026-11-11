@@ -142,6 +142,7 @@ part 'procedures/collection_value_presentation.dart';
 part 'procedures/pr12_batch_page.dart';
 part 'wanted_list/wanted_new_desire_page.dart';
 part 'wanted_list/wanted_active_desires_page.dart';
+part 'wanted_list/wanted_purchase_page.dart';
 part 'wanted_list/wanted_purchase_objectives_page.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
@@ -6431,8 +6432,9 @@ class _PurchaseItemDraft {
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
 
 class NewPurchasePage extends StatefulWidget {
-  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.valoraMode = false});
+  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.valoraMode = false, this.wantedDesireId});
   final Map<String, dynamic>? initialMetadata;
+  final String? wantedDesireId;
   final double? suggestedMarketValue;
   final bool valoraMode;
   @override
@@ -6451,6 +6453,8 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
   bool _categoriesLoading = false;
   final String _session = _uuid.v4();
   bool _busy = false, _locked = false, _dataConfirmed = false;
+  bool _wantedPurchaseCommitted = false;
+  int? _wantedPurchaseCode;
   Map<String, dynamic>? _preview;
   String _status = 'Bozza locale: nessun acquisto registrato.';
 
