@@ -749,7 +749,8 @@ void main() {
       final presentation = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
       expect(state, contains('class _PurchaseItemDraft'));
       expect(state, contains('mixin _Pr04PageState'));
-      expect(state, contains('Future<void> _loadCollectionCategories()'));
+      expect(state, isNot(contains('Future<void> _loadCollectionCategories()')));
+      expect(pr04CategoryControllerSource, contains('Future<void> _loadCollectionCategories()'));
       expect(draftController, contains('extension _Pr04DraftController'));
       expect(draftController, contains('void _queueCurrentAndStartNext()'));
       expect(draftController, contains('Map<String, dynamic> _payload('));
