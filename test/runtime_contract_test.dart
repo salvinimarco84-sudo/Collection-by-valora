@@ -11,6 +11,7 @@ void main() {
   final pr04SaveControllerSource = File('lib/purchases/pr04_save_controller.dart').readAsStringSync();
   final pr04PageStateSource = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
   final pr04CategoryControllerSource = File('lib/purchases/pr04_category_controller.dart').readAsStringSync();
+  final pr04MetadataControllerSource = File('lib/purchases/pr04_metadata_controller.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
   final pr04PagePresentationSource = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
@@ -1692,6 +1693,21 @@ void main() {
     expect(historyPage, contains("from('wanted_offerte')"));
     expect(historyPage, contains("neq('stato', 'ATTIVO')"));
     expect(historyPage, contains('codice_oggetto_acquistato'));
+  });
+
+  test('PR-04 separa la precompilazione dei metadati dal mixin di stato', () {
+    expect(source, contains("part 'purchases/pr04_metadata_controller.dart';"));
+    expect(pr04PageStateSource, isNot(contains('_nonEmptyMetadata')));
+    expect(pr04PageStateSource, contains('_initializeFromMetadata(widget.initialMetadata);'));
+    expect(pr04MetadataControllerSource, contains('extension _Pr04MetadataController on _Pr04PageState'));
+    expect(pr04MetadataControllerSource, contains("metadata['descrizione']"));
+    expect(pr04MetadataControllerSource, contains("metadata['produttore']"));
+    expect(pr04MetadataControllerSource, contains("metadata['codice_prodotto']"));
+    expect(pr04MetadataControllerSource, contains("metadata['anno_uscita']"));
+    expect(pr04MetadataControllerSource, contains("metadata['fonte_dati_prodotto']"));
+    expect(pr04MetadataControllerSource, contains("metadata['url_immagine_catalogo']"));
+    expect(pr04MetadataControllerSource, contains('item.price'));
+    expect(pr04MetadataControllerSource, contains('Il costo resta intenzionalmente vuoto'));
   });
 
   test('PR-04 separa il caricamento delle categorie dal mixin di stato', () {
