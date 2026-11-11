@@ -3,19 +3,29 @@
 ## Numerazione delle procedure
 
 - **PR-12 - Ricerca metadati:** motore centrale condiviso, senza limiti commerciali legati all'abbonamento VALORA.
-- **PR-18 - VALORA:** valutazione specialistica del singolo oggetto dopo conferma PR-12.
+- **PR-14 - ASSISTENTE VALORA:** procedura coordinatrice con due rami, oggetto già in collezione oppure oggetto da identificare/acquistare.
+- **PR-18 - Motore VALORA:** valutazione specialistica del singolo oggetto dopo conferma PR-12, richiamata internamente da PR-14.
 - **PR-11 - VALUTAZIONE COMPLESSIVA COLLEZIONE:** valutazione in lotti del patrimonio e report storico.
 - 
 - **PR-13 - RICERCA OFFERTA:** analisi rapida della convenienza di una specifica offerta, senza creare necessariamente una scheda oggetto nella collezione.
 
-La numerazione è allineata: PR-18 è il motore del singolo oggetto, PR-13 diventa RICERCA OFFERTA e PR-11 gestisce la valutazione complessiva della collezione. Il vecchio endpoint PR-19 è dismesso e risponde con HTTP 410 indicando PR-18 come sostituto.
+La numerazione è allineata: PR-14 è l'assistente coordinatore VALORA; PR-18 è il motore specialistico del singolo oggetto; PR-13 è RICERCA OFFERTA e PR-11 gestisce la valutazione complessiva della collezione. Il vecchio endpoint PR-19 è dismesso e risponde con HTTP 410 indicando PR-18 come sostituto.
 
 ## Ruoli
 
+- **PR-14 - ASSISTENTE VALORA:** unico ingresso coordinatore. Se l'oggetto è già in collezione avvia il ramo PR-18 e può passare a PR-06 VALORA; se l'oggetto non è presente avvia PR-12 per identificazione, poi PR-18 e può passare a PR-04 VALORA. Riutilizza le procedure esistenti senza duplicarne logica e salvataggi.
 - **PR-12 - motore di ricerca centrale:** identifica oggetti, ricerca fonti e corrispondenze, raccoglie metadati e restituisce evidenze con URL e diagnostica. È condiviso e non duplicato; non è di per sé una funzione premium.
 - **PR-18 - VALORA:** si avvia esclusivamente dopo la conferma esplicita del candidato identificato da PR-12. Usa PR-12 per recuperare comparabili di mercato, distingue vendite concluse da prezzi richiesti e restituisce valore, fascia e affidabilità. Non scrive direttamente oggetti, acquisti o vendite.
 - **PR-11 - VALUTAZIONE COMPLESSIVA COLLEZIONE:** usa PR-12 per valutare il patrimonio complessivo dell'utente a lotti di 10, registrare le rilevazioni periodiche e produrre il report di variazione. Non genera annunci di vendita.
 - **PR-13 - RICERCA OFFERTA:** aiuta a decidere se una proposta d'acquisto è conveniente. Non è una valutazione specialistica dell'oggetto e non richiede che l'oggetto sia già registrato nella collezione.
+
+## Flusso PR-14 - ASSISTENTE VALORA
+
+PR-14 è il coordinatore e non duplica i motori o le procedure operative.
+
+1. **Oggetto già in collezione:** ricerca e selezione dell'oggetto, valutazione tramite PR-18 e scelta facoltativa di vendita tramite PR-06 VALORA.
+2. **Oggetto non presente in collezione:** identificazione e metadati tramite PR-12, conferma del candidato, valutazione tramite PR-18 e scelta facoltativa di acquisto tramite PR-04 VALORA.
+3. PR-04 ordinaria e PR-06 ordinaria restano indipendenti; le varianti VALORA riutilizzano i rispettivi contratti e salvataggi senza alterare i pulsanti ordinari.
 
 ## Flusso PR-18 - VALORA
 
