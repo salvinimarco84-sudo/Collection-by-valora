@@ -93,6 +93,7 @@ part 'procedures/pr06_page_state.dart';
 part 'procedures/pr06_valora_page.dart';
 part 'procedures/pr06_valora_listing_drafts.dart';
 part 'procedures/pr06_valora_listing_draft_pages.dart';
+part 'procedures/pr06_valora_listing_draft_card.dart';
 part 'procedures/pr08_close_sales_page.dart';
 part 'procedures/pr09_cancel_sales_page.dart';
 part 'procedures/pr09_completed_sale_card.dart';
