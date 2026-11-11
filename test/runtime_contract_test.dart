@@ -1457,6 +1457,17 @@ void main() {
     expect(valoraCatalogObjectsControllerSource, contains('_error ='));
   });
 
+  test('VALORA separa il riepilogo PR-18 dalla procedura di intake', () {
+    final intake = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
+    final summary = File('lib/procedures/valora_catalog_intake_valuation_summary.dart').readAsStringSync();
+    expect(source, contains("part 'procedures/valora_catalog_intake_valuation_summary.dart';"));
+    expect(intake, contains('_buildValoraCatalogIntakeValuationSummary(valuation)'));
+    expect(intake, isNot(contains('Valore indicativo:')));
+    expect(summary, contains('String _buildValoraCatalogIntakeValuationSummary('));
+    expect(summary, contains('PR18 non ha restituito una valutazione'));
+    expect(summary, contains('non ha trovato prezzi verificabili'));
+    expect(summary, contains('Comparabili con prezzo:'));
+  });
   test('VALORA separa la conferma candidato PR-12 dalla logica di intake', () {
     final intake = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
     final reviewDialog = File('lib/procedures/valora_catalog_intake_review_dialog.dart').readAsStringSync();
