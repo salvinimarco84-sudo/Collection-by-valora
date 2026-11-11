@@ -1378,8 +1378,9 @@ void main() {
     expect(valoraCatalogIntakeSource, contains('Pr04ValoraPurchasePage('));
     expect(valoraServicePageSource, isNot(contains('builder: (_) => NewPurchasePage(')));
     expect(source, contains('this.initialMetadata'));
-    expect(pr04PageStateSource, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
-    expect(pr04PageStateSource, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
+    expect(pr04PageStateSource, contains('_initializeFromMetadata(widget.initialMetadata);'));
+    expect(pr04MetadataControllerSource, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
+    expect(pr04MetadataControllerSource, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
     expect(pr04FormContentSource, contains('Inserisci il costo effettivamente sostenuto.'));
     expect(pr04FormContentSource, contains('Non è il costo di acquisto.'));
     expect(valoraCatalogIntakeSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
