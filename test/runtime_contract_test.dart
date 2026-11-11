@@ -28,6 +28,7 @@ void main() {
   final pr06RuntimeProcedureSource = File('lib/procedures/pr06_runtime_procedure.dart').readAsStringSync();
   final pr08CloseSalesPageSource = File('lib/procedures/pr08_close_sales_page.dart').readAsStringSync();
   final valoraServicePageSource = File('lib/procedures/valora_service_page.dart').readAsStringSync();
+  final valoraCatalogSaleControllerSource = File('lib/procedures/valora_catalog_sale_controller.dart').readAsStringSync();
   final pr18EdgeFunctionSource = File('supabase/functions/pr-18-valuation-test/index.ts').readAsStringSync();
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
@@ -1324,6 +1325,22 @@ void main() {
     expect(listingDraftMigration, contains('enable row level security'));
     expect(listingDraftMigration, contains('auth.uid()'));
     expect(listingDraftOwnerMigration, contains('unique (user_id, codice_vendita_aperta, codice_piattaforma)'));
+  });
+
+
+  test('VALORA mantiene isolato il flusso di avvio vendita dal controller pagina', () {
+    expect(source, contains("part 'procedures/valora_catalog_sale_controller.dart';"));
+    expect(valoraServicePageSource, isNot(contains('Future<void> _openCatalogObjectForSale()')));
+    expect(valoraServicePageSource, isNot(contains('double? _marketPriceFrom(dynamic value)')));
+    expect(valoraCatalogSaleControllerSource, contains('extension _ValoraCatalogSaleController'));
+    expect(valoraCatalogSaleControllerSource, contains('Future<void> _openCatalogObjectForSale()'));
+    expect(valoraCatalogSaleControllerSource, contains("procedure('PR-02', 'preview'"));
+    expect(valoraCatalogSaleControllerSource, contains("procedure('PR-02', 'review'"));
+    expect(valoraCatalogSaleControllerSource, contains("procedure('PR-02', 'save'"));
+    expect(valoraCatalogSaleControllerSource, contains('NewSalePage(initialObjectCode: id, initialSalePrice: price)'));
+    expect(valoraCatalogSaleControllerSource, contains('rollbackSession'));
+    expect(valoraCatalogSaleControllerSource, contains("release_lock"));
+    expect(valoraCatalogSaleControllerSource, contains("state != 'DISPONIBILE'"));
   });
 
 }
