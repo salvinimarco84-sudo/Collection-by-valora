@@ -11,6 +11,7 @@ on:
       - repair/pr12-preserve-full-app
       - feature/pr04-nuovo-acquisto-mask
       - feature/valora-guided-valuation-and-listing-flow
+      - feature/wanted-list-section
   pull_request:
     branches:
       - main
