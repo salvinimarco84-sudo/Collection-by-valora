@@ -30,7 +30,7 @@ void main() {
       expect(command, contains("'valora-assistant'"));
       expect(command, contains("'modalita': 'TEST'"));
       expect(command, contains("'sola_lettura': true"));
-      expect(presentation, contains('Nessuna modifica al database è stata eseguita.'));
+      expect(command, contains('Nessuna modifica al database è stata eseguita.'));
       expect(assistant, contains('buildAssistantPage(context)'));
       expect(presentation, contains('extension _ValoraAssistantPresentation'));
       expect(presentation, contains('Widget buildAssistantPage(BuildContext context)'));
