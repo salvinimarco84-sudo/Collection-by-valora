@@ -36,6 +36,7 @@ void main() {
   final valoraServicePresentationSource = File('lib/procedures/valora_service_presentation.dart').readAsStringSync();
   final valoraCollectionSearchSource = File('lib/procedures/valora_collection_search_section.dart').readAsStringSync();
   final valoraMarketValuationSource = File('lib/procedures/valora_market_valuation_section.dart').readAsStringSync();
+  final valoraMarketValuationResultSource = File('lib/procedures/valora_market_valuation_result.dart').readAsStringSync();
   final valoraIntroSectionSource = File('lib/procedures/valora_intro_section.dart').readAsStringSync();
   final valoraCatalogActionsSectionSource = File('lib/procedures/valora_catalog_actions_section.dart').readAsStringSync();
   final valoraCatalogObjectsControllerSource = File('lib/procedures/valora_catalog_objects_controller.dart').readAsStringSync();
@@ -1421,8 +1422,12 @@ void main() {
     expect(valoraMarketValuationSource, contains('buildMarketValuationSection'));
     expect(valoraMarketValuationSource, contains('PREPARA VALUTAZIONE'));
     expect(valoraMarketValuationSource, contains('_prepareValuation'));
-    expect(valoraMarketValuationSource, contains('_continueToPr06Valora'));
+    expect(source, contains("part 'procedures/valora_market_valuation_result.dart';"));
+    expect(valoraMarketValuationSource, contains('buildMarketValuationResultSection()'));
     expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
+    expect(valoraMarketValuationResultSource, contains('_continueToPr06Valora'));
+    expect(valoraMarketValuationResultSource, contains('ESITO PREPARAZIONE'));
+    expect(valoraMarketValuationResultSource, contains('VALUTAZIONE COMPLETATA · CONTINUA A PR06 VALORA'));
   });
 
   test('VALORA separa le azioni di selezione foto dalla presentazione', () {
