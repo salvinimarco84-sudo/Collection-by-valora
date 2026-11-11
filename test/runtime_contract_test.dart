@@ -1569,4 +1569,25 @@ void main() {
     expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
 
+  test('WANTED LIST registra e consulta desideri senza creare acquisti o oggetti', () {
+    final registry = File('lib/procedures/procedure_registry.dart').readAsStringSync();
+    final coordinator = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
+    final newDesire = File('lib/wanted_list/wanted_new_desire_page.dart').readAsStringSync();
+    final activeDesires = File('lib/wanted_list/wanted_active_desires_page.dart').readAsStringSync();
+
+    expect(source, contains("part 'wanted_list/wanted_new_desire_page.dart';"));
+    expect(source, contains("part 'wanted_list/wanted_active_desires_page.dart';"));
+    expect(registry, contains("title: 'WANTED LIST'"));
+    expect(registry, contains("apiCode: 'WANTED-NEW'"));
+    expect(registry, contains("apiCode: 'WANTED-ACTIVE'"));
+    expect(coordinator, contains('const WantedNewDesirePage()'));
+    expect(coordinator, contains('const WantedActiveDesiresPage()'));
+    expect(newDesire, contains("from('wanted_desideri')"));
+    expect(newDesire, contains("'stato': 'ATTIVO'"));
+    expect(newDesire, contains('Il desiderio non ha superato la verifica'));
+    expect(newDesire, isNot(contains("from('master_oggetti')")));
+    expect(activeDesires, contains(".eq('stato', 'ATTIVO')"));
+    expect(activeDesires, contains("order('data_creazione', ascending: false)"));
+  });
+
 }
