@@ -153,7 +153,7 @@ void main() {
       expect(valoraServicePageSource, isNot(contains('Future<void> _prepareValuation()')));
       expect(valoraKnownObjectValuationSource, contains('extension _ValoraKnownObjectValuationActions'));
       expect(valoraPr18ValuationControllerSource, contains('_prepareValuation'));
-      expect(valoraPr18ValuationControllerSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
+      expect(valoraKnownObjectPr18ServiceSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
       expect(valoraPr18ValuationControllerSource, contains('_saveKnownObjectValuation'));
       expect(valoraKnownObjectValuationSource, contains('_continueToPr06Valora'));
       expect(valoraKnownObjectValuationSource, contains('SOLO VALUTAZIONE'));
