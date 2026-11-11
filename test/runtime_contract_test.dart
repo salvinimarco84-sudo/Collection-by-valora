@@ -1660,7 +1660,7 @@ void main() {
     expect(pr04SaveControllerSource, contains('_completeWantedPurchaseLink()'));
     expect(pr04WantedLinkControllerSource, contains(".eq('codice_acquisto', purchaseCode)"));
     expect(pr04WantedLinkControllerSource, contains("'codice_oggetto_acquistato': objectCode"));
-    expect(pr04RuntimeProcedureSource, contains('_wantedPurchaseCommitted'));
+    expect(pr04PageStateSource, contains('_wantedPurchaseCommitted'));
     expect(newDesire, contains("from('wanted_desideri')"));
     expect(newDesire, contains("'stato': 'ATTIVO'"));
     expect(newDesire, contains('Il desiderio non ha superato la verifica'));
