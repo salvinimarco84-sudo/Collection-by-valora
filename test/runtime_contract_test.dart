@@ -37,6 +37,7 @@ void main() {
   final valoraCollectionSearchSource = File('lib/procedures/valora_collection_search_section.dart').readAsStringSync();
   final valoraMarketValuationSource = File('lib/procedures/valora_market_valuation_section.dart').readAsStringSync();
   final valoraMarketValuationResultSource = File('lib/procedures/valora_market_valuation_result.dart').readAsStringSync();
+  final valoraMarketValuationControlsSource = File('lib/procedures/valora_market_valuation_controls.dart').readAsStringSync();
   final valoraIntroSectionSource = File('lib/procedures/valora_intro_section.dart').readAsStringSync();
   final valoraCatalogActionsSectionSource = File('lib/procedures/valora_catalog_actions_section.dart').readAsStringSync();
   final valoraCatalogObjectsControllerSource = File('lib/procedures/valora_catalog_objects_controller.dart').readAsStringSync();
@@ -1423,8 +1424,12 @@ void main() {
     expect(valoraMarketValuationSource, contains('PREPARA VALUTAZIONE'));
     expect(valoraMarketValuationSource, contains('_prepareValuation'));
     expect(source, contains("part 'procedures/valora_market_valuation_result.dart';"));
+    expect(valoraMarketValuationSource, contains('_buildValoraMarketValuationControls(this)'));
     expect(valoraMarketValuationSource, contains('_buildValoraMarketValuationResult(this)'));
-    expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
+    expect(source, contains("part 'procedures/valora_market_valuation_controls.dart';"));
+    expect(valoraMarketValuationControlsSource, contains('_buildValoraMarketValuationControls'));
+    expect(valoraMarketValuationControlsSource, contains('Mercato di riferimento'));
+    expect(valoraMarketValuationControlsSource, contains('_prepareValuation'));
     expect(valoraMarketValuationResultSource, contains('_continueToPr06Valora'));
     expect(valoraMarketValuationResultSource, contains('ESITO PREPARAZIONE'));
     expect(valoraMarketValuationResultSource, contains('VALUTAZIONE COMPLETATA · CONTINUA A PR06 VALORA'));
