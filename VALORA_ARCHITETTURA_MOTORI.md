@@ -6,9 +6,9 @@
 - **PR-18 - VALORA:** valutazione specialistica del singolo oggetto dopo conferma PR-12.
 - **PR-11 - VALUTAZIONE COMPLESSIVA COLLEZIONE:** valutazione in lotti del patrimonio e report storico.
 - 
-- **PR-20 - VALUTA ACQUISTO:** analisi rapida della convenienza di una specifica offerta, senza creare necessariamente una scheda oggetto nella collezione.
+- **PR-13 - RICERCA OFFERTA:** analisi rapida della convenienza di una specifica offerta, senza creare necessariamente una scheda oggetto nella collezione.
 
-La numerazione è allineata: PR-18 è il motore del singolo oggetto, PR-20 resta VALUTA ACQUISTO e PR-11 gestisce la valutazione complessiva della collezione. Il vecchio endpoint PR-19 è dismesso e risponde con HTTP 410 indicando PR-18 come sostituto.
+La numerazione è allineata: PR-18 è il motore del singolo oggetto, PR-13 diventa RICERCA OFFERTA e PR-11 gestisce la valutazione complessiva della collezione. Il vecchio endpoint PR-19 è dismesso e risponde con HTTP 410 indicando PR-18 come sostituto.
 
 ## Ruoli
 
@@ -26,9 +26,9 @@ La numerazione è allineata: PR-18 è il motore del singolo oggetto, PR-20 resta
 5. Prepara bozze di annunci specifiche per le piattaforme selezionate dall'utente. Le bozze sono revisionabili e non vengono pubblicate automaticamente.
 6. Restituisce valutazione, fonti, comparabili e bozze al chiamante.
 
-## Flusso PR-20 - VALUTA ACQUISTO
+## Flusso PR-13 - RICERCA OFFERTA
 
-PR-20 deve accettare più modalità di ingresso:
+PR-13 deve accettare più modalità di ingresso:
 - foto scattata direttamente all'oggetto, ad esempio al mercatino o a una fiera;
 - screenshot di un'inserzione online;
 - link a un'inserzione, se accessibile;
@@ -46,7 +46,7 @@ Flusso:
 
 - La ricerca metadati PR-12 non richiede l'abbonamento VALORA e non eredita i limiti commerciali del servizio premium.
 - **PR-18 VALORA e PR-11 VALUTAZIONE COMPLESSIVA COLLEZIONE sono inclusi nello stesso abbonamento premium.** L'utente può continuare a utilizzare la struttura di base e gestire la propria collezione secondo le funzionalità non premium previste.
-- PR-20 VALUTA ACQUISTO è una funzione distinta che utilizza PR-12 e la propria logica economica; non può invocare PR-18 per aggirare l'abbonamento.
+- PR-13 RICERCA OFFERTA è una funzione distinta che utilizza PR-12 e la propria logica economica; non può invocare PR-18 per aggirare l'abbonamento.
 - Il controllo dell'accesso alle funzioni premium deve essere applicato sul server, non soltanto nascondendo pulsanti nell'app.
 - Alla scadenza dell'abbonamento si bloccano le nuove operazioni premium, senza cancellare oggetti, valutazioni o annunci salvati. Le regole per consultare o modificare contenuti premium già generati devono essere esplicite.
 
@@ -54,7 +54,7 @@ Flusso:
 
 - Ogni risposta di ricerca deve preservare le fonti e la diagnostica, evitando di promuovere automaticamente un risultato web a metadato confermato.
 - Le stime di PR-18 e PR-11 devono indicare mercato, valuta, data di riferimento, comparabili, intervallo, affidabilità e limiti.
-- PR-20 produce un'analisi di convenienza e non deve presentarla come valutazione specialistica di VALORA.
+- PR-13 produce un'analisi di convenienza e non deve presentarla come valutazione specialistica di VALORA.
 - Per PR-11, valori insufficientemente supportati non sovrascrivono il valore corrente dell'oggetto; le rilevazioni devono restare tracciabili.
 - Le scritture di storico e aggiornamento dei valori devono essere atomiche e autorizzate sul server.
 - I motori vengono implementati e collaudati prima delle form finali; le interfacce chiamano contratti stabili e non duplicano logica di ricerca.
