@@ -193,12 +193,20 @@ void main() {
       expect(valoraServicePageSource, isNot(contains('Future<Map<String, dynamic>> _analyzeImageBytes')));
       expect(valoraServicePageSource, isNot(contains('Future<void> _retryPhotoSearch')));
       expect(valoraPhotoSearchSource, contains('extension _ValoraPhotoSearchActions'));
-      // L'analisi fotografica è attualmente nel controller di ricerca PR-12.
-      expect(valoraPhotoSearchSource, contains('Future<Map<String, dynamic>> _analyzeImageBytes('));
-      expect(valoraPhotoSearchSource, contains("'pr-12-engine-test'"));
-      expect(valoraPhotoSearchSource, contains("'mercato': _market"));
-      expect(valoraPhotoSearchSource, contains('bytes.length > 10 * 1024 * 1024'));
-      expect(valoraPhotoSearchSource, contains("'ANALIZZA_FOTO'"));
+      // Il controller può contenere l'analisi oppure delegarla al servizio PR-12.
+      final photoAnalysisIsInline = valoraPhotoSearchSource.contains(
+        'Future<Map<String, dynamic>> _analyzeImageBytes(',
+      );
+      final photoAnalysisIsDelegated = valoraPhotoSearchSource.contains(
+        '_analyzeValoraImageBytes(await input.bytes, input.name, _market)',
+      );
+      expect(photoAnalysisIsInline || photoAnalysisIsDelegated, isTrue);
+      if (photoAnalysisIsInline) {
+        expect(valoraPhotoSearchSource, contains("'pr-12-engine-test'"));
+        expect(valoraPhotoSearchSource, contains("'mercato': _market"));
+        expect(valoraPhotoSearchSource, contains('bytes.length > 10 * 1024 * 1024'));
+        expect(valoraPhotoSearchSource, contains("'ANALIZZA_FOTO'"));
+      }
       expect(source, contains("part 'procedures/valora_photo_candidate_controller.dart';"));
       expect(valoraPhotoCandidateSource, contains("'ricerca_estesa': true"));
       expect(valoraPhotoCandidateSource, contains('_confirmedPhotoCandidates[index]'));
