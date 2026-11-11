@@ -121,6 +121,8 @@ part 'procedures/valora_catalog_sale_controller.dart';
 part 'procedures/valora_service_presentation.dart';
 part 'procedures/valora_collection_search_section.dart';
 part 'procedures/valora_market_valuation_section.dart';
+part 'procedures/valora_intro_section.dart';
+part 'procedures/valora_catalog_actions_section.dart';
 part 'procedures/collection_value_page.dart';
 part 'procedures/collection_value_presentation.dart';
 part 'procedures/pr12_batch_page.dart';
