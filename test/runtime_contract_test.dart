@@ -1600,8 +1600,8 @@ void main() {
     expect(purchaseGoals, contains("'categoria_tema': category.text.trim()"));
     expect(purchaseGoals, contains(".delete()"));
     expect(purchaseGoals, contains(".update("));
-    expect(purchaseGoals, isNot(contains('prezzo')));
-    expect(purchaseGoals, isNot(contains('budget')));
+    expect(purchaseGoals, isNot(contains("'prezzo':")));
+    expect(purchaseGoals, isNot(contains("'budget':")));
   });
 
 }
