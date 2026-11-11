@@ -749,7 +749,9 @@ void main() {
       final data = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
       final photo = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
       final presentation = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
-      expect(state, contains('class _PurchaseItemDraft'));
+      expect(state, isNot(contains('class _PurchaseItemDraft')));
+      expect(pr04ItemDraftSource, contains('class _PurchaseItemDraft'));
+      expect(pr04ItemDraftSource, contains('final notes = TextEditingController();'));
       expect(state, contains('mixin _Pr04PageState'));
       expect(state, isNot(contains('Future<void> _loadCollectionCategories()')));
       expect(pr04CategoryControllerSource, contains('Future<void> _loadCollectionCategories()'));
@@ -780,7 +782,7 @@ void main() {
     });
 
     test('PR-04 consente di inserire e salvare le note del singolo oggetto', () {
-      final draft = pr04PageStateSource;
+      final draft = pr04ItemDraftSource;
       expect(draft, contains('final notes = TextEditingController();'));
       expect(draft, contains("'note': notes.text.trim()"));
       expect(draft, contains('notes.dispose()'));
