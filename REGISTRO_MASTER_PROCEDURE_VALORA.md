@@ -102,14 +102,14 @@ Caratteristiche rilevate nel codice:
 | Codice / voce | Nome effettivo | Collegamento / implementazione rilevata | Stato rilevato |
 |---|---|---|---|
 | PR-18 | VALORA | Voce menu `LAUNCH-VALORA`, `ValoraServicePage`; funzione di valutazione `pr-18-valuation-test` richiamata nel flusso di identificazione | Presente nel menu e collegata; collaudo end-to-end da verificare |
-| PR-19 | Nessuna voce autonoma rilevata | Non identificata nell'attuale `procedure_registry.dart` | Da definire/allineare; non dichiararla implementata |
-| PR-20 | Valuta acquisto | Voce descrittiva presente ma `enabled: false`, senza codice API associato | Progettata/non attiva |
+| PR-19 | Nessuna procedura autonoma | Codice non utilizzato | Libero |
+| PR-13 | Ricerca offerta | Voce menu rinominata; nessun motore/runtime dedicato collegato | Presente nel menu ma disabilitata; sviluppo da completare |
 | PR-11 | Valutazione complessiva collezione | `LAUNCH-COLLECTION-VALUE`, `CollectionValuePage` e relativa presentazione | Presente nel menu e collegata; collaudo end-to-end da verificare |
 
 **Distinzione funzionale:**
 - PR-12 ricerca e restituisce metadati e candidati.
 - PR-18 è la procedura di valutazione specialistica del singolo oggetto.
-- PR-20 dovrà valutare la convenienza di un acquisto e non va confusa con la valutazione patrimoniale.
+- PR-13 Ricerca offerta dovrà valutare la convenienza di una proposta d’acquisto e non va confusa con la valutazione patrimoniale.
 - PR-11 riguarda il valore complessivo della collezione e lo storico delle fotografie patrimoniali.
 
 **Ingresso PR-06 VALORA:** `Pr06ValoraPage` è un ingresso guidato alla `NewSalePage` standard, con oggetto e prezzo iniziale precompilati. Non è una nuova procedura di vendita indipendente e non deve sostituire PR-06.
@@ -196,8 +196,8 @@ Per ogni procedura mantenere questi campi:
 | PR-10 | Mapping runtime; UI da verificare | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-12 | Presente, sola lettura | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-18 | Presente e collegata | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
-| PR-19 | Non registrata | N/A | N/A | N/A | N/A | Da definire |
-| PR-20 | Disabilitata | N/A | N/A | N/A | N/A | Da sviluppare |
+| PR-19 | Non utilizzata | N/A | N/A | N/A | N/A | Libera |
+| PR-13 | Voce rinominata, disabilitata e non ancora collegata a un motore | Da eseguire | Da eseguire | Da eseguire | Da registrare | In sviluppo |
 | PR-11 | Presente e collegata | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
 | PR-21 | Presente e collegata in RICERCHE | Da verificare | Da verificare | Da registrare | Da registrare | Aperta |
 
