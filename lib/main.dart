@@ -115,6 +115,7 @@ part 'reports/sales_report_data_mixin.dart';
 part 'reports/sales_report_export_service.dart';
 part 'reports/sales_report_card.dart';
 part 'procedures/valora_service_page.dart';
+part 'procedures/valora_user_market_service.dart';
 part 'procedures/valora_photo_input_controller.dart';
 part 'procedures/valora_photo_input_presentation.dart';
 part 'procedures/valora_photo_search_controller.dart';
