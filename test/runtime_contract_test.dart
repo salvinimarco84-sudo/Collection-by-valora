@@ -1337,7 +1337,8 @@ void main() {
     expect(valoraCatalogSaleControllerSource, contains("procedure('PR-02', 'preview'"));
     expect(valoraCatalogSaleControllerSource, contains("procedure('PR-02', 'review'"));
     expect(valoraCatalogSaleControllerSource, contains("procedure('PR-02', 'save'"));
-    expect(valoraCatalogSaleControllerSource, contains('NewSalePage(initialObjectCode: id, initialSalePrice: price)'));
+    expect(valoraCatalogSaleControllerSource, contains('Pr06ValoraPage(initialObjectCode: id, marketValue: price)'));
+    expect(valoraCatalogSaleControllerSource, isNot(contains('NewSalePage(initialObjectCode: id')));
     expect(valoraCatalogSaleControllerSource, contains('rollbackSession'));
     expect(valoraCatalogSaleControllerSource, contains("release_lock"));
     expect(valoraCatalogSaleControllerSource, contains("state != 'DISPONIBILE'"));
