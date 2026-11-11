@@ -433,7 +433,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
             neutralOverlayStrong: appearance.neutralOverlayStrong,
             onTap: !procedure.enabled
                 ? null
-                : procedure.apiCode == 'PR-21-SEARCH'
+                : procedure.apiCode == 'WANTED-NEW'
+                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedNewDesirePage()))
+                    : procedure.apiCode == 'PR-21-SEARCH'
                     ? () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const CategoryObjectSearchPage()))
                     : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
