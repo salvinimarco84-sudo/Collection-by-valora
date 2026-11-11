@@ -1435,6 +1435,9 @@ void main() {
     expect(valoraMarketValuationControlsSource, isNot(contains("'ITALIA'")));
     expect(valoraMarketValuationControlsSource, contains('_prepareValuation'));
     expect(valoraServicePageSource, contains('Future<void> _loadUserMarket()'));
+    expect(source, contains("String _market = '';"));
+    expect(source, contains('seleziona il tuo mercato principale prima di salvare.'));
+    expect(source, isNot(contains("_market = _markets.first['nome_mercato']")));
     expect(valoraServicePageSource, contains("select('mercato_nazionale_principale,mercati(nome_mercato)')"));
     expect(valoraServicePageSource, contains("String _market = '';"));
     expect(pr18EdgeFunctionSource, contains('mercato: marketName'));
