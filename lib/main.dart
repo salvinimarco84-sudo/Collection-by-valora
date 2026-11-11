@@ -1837,7 +1837,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
       final otherCollectionsMode = !categoryMode &&
           (normalizedInput == 'altre collezioni' || normalizedInput == 'altre collezione');
       final response = await Supabase.instance.client.schema('collection').rpc(
-        'pr_11_ricerca_schede',
+        'pr_21_ricerca_schede',
         params: {'p_cerca': (categoryMode || otherCollectionsMode) ? null : query},
       );
       dynamic payload = response;
@@ -1884,7 +1884,7 @@ class _CategoryObjectSearchPageState extends State<CategoryObjectSearchPage> {
         ..sort((a, b) => (int.tryParse(_code(a)) ?? 0).compareTo(int.tryParse(_code(b)) ?? 0));
 
       final allResponse = await Supabase.instance.client.schema('collection').rpc(
-        'pr_11_ricerca_schede',
+        'pr_21_ricerca_schede',
         params: {'p_cerca': null},
       );
       dynamic allPayload = allResponse;
@@ -2065,7 +2065,7 @@ class _ObjectTransferPageState extends State<ObjectTransferPage> {
   String _norm(dynamic value) => (value ?? '').toString().trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
   Future<List<Map<String,dynamic>>> _catalog() async {
-    final result = await Supabase.instance.client.schema('collection').rpc('pr_11_ricerca_schede', params: {'p_cerca': null});
+    final result = await Supabase.instance.client.schema('collection').rpc('pr_21_ricerca_schede', params: {'p_cerca': null});
     dynamic data = result;
     if (data is List && data.length == 1 && data.first is Map) data = data.first;
     if (data is! Map || data['oggetti'] is! List) throw Exception('Risposta catalogo non valida.');
@@ -3322,7 +3322,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
     Future<List<Map<String, dynamic>>> searchPhrase(String phrase) async {
       final searchRpc = (widget.apiCode == 'OBJECT_MASTER' || widget.apiCode == 'EXPLORE_RECORDS')
-          ? 'pr_11_ricerca_schede'
+          ? 'pr_21_ricerca_schede'
           : 'pr_02_ricerca_oggetti';
       final response = await Supabase.instance.client.schema('collection').rpc(
         searchRpc,

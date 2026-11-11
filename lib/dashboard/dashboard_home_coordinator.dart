@@ -39,7 +39,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Future<void> _loadDashboardCatalog() async {
     try {
       final response = await Supabase.instance.client.schema('collection').rpc(
-        'pr_11_ricerca_schede', params: {'p_cerca': null},
+        'pr_21_ricerca_schede', params: {'p_cerca': null},
       );
       dynamic payload = response;
       if (payload is List && payload.length == 1 && payload.first is Map) {
@@ -433,7 +433,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             neutralOverlayStrong: appearance.neutralOverlayStrong,
             onTap: !procedure.enabled
                 ? null
-                : procedure.title == 'Ricerca oggetti'
+                : procedure.apiCode == 'PR-21-SEARCH'
                     ? () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const CategoryObjectSearchPage()))
                     : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')

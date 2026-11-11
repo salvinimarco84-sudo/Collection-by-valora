@@ -71,7 +71,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'Report mattutino', description: 'Riepilogo operativo del mattino.', enabled: false),
   ],
   'RICERCHE': [
-    ProcedureEntry(title: 'Ricerca oggetti', description: 'Cerca gli oggetti nel catalogo.', apiCode: 'READ-EXPLORE-RECORDS'),
+    ProcedureEntry(title: 'PR-21 · Ricerca schede', description: 'Ricerca le schede degli oggetti disponibili destinati alla collezione, per codice o descrizione. Consultazione in sola lettura.', apiCode: 'PR-21-SEARCH', readOnly: true),
     ProcedureEntry(title: 'PR-12 · Ricerca metadati in lotti', description: 'Analizza fino a 10 oggetti incompleti per lotto, mostra fonti e risultati senza modificare il database.', apiCode: 'PR-12-BATCH', readOnly: true),
     ProcedureEntry(title: 'REGISTRO FONTI · Gestisci cataloghi e siti', description: 'Consulta le fonti iniziali e aggiungi fonti specialistiche della tua nicchia collezionistica.', apiCode: 'SOURCE-REGISTRY', readOnly: false),
     ProcedureEntry(title: 'Le mie piattaforme di vendita', description: 'Aggiungi solo le piattaforme che utilizzi e attiva o disattiva ciascuna destinazione per le inserzioni VALORA.', apiCode: 'USER-SALES-PLATFORMS', readOnly: false),

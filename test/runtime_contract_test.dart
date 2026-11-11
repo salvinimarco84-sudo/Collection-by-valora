@@ -113,10 +113,16 @@ void main() {
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('la schermata VALORE COLLEZIONE è estratta mantenendo calcoli e snapshot', () {
       expect(procedureRegistrySource, contains('PR-11 · VALUTAZIONE COMPLESSIVA COLLEZIONE'));
-      expect(procedureRegistrySource, isNot(contains('PR-21')));
+      expect(procedureRegistrySource, contains('PR-21 · Ricerca schede'));
+      expect(procedureRegistrySource, contains("apiCode: 'PR-21-SEARCH'"));
+      expect(procedureRegistrySource, contains('PR-11 · VALUTAZIONE COMPLESSIVA COLLEZIONE'));
       expect(collectionValueEdgeFunctionSource, contains('procedura: "PR-11"'));
       expect(collectionValueEdgeFunctionSource, isNot(contains('PR-21')));
       expect(source, contains("part 'procedures/collection_value_page.dart';"));
+      expect(source, contains("'pr_21_ricerca_schede'"));
+      expect(dashboardHomeCoordinatorSource, contains("'pr_21_ricerca_schede'"));
+      expect(dashboardHomeCoordinatorSource, contains("procedure.apiCode == 'PR-21-SEARCH'"));
+      expect(dashboardHomeCoordinatorSource, isNot(contains("procedure.title == 'Ricerca oggetti'")));
       expect(source, isNot(contains('class CollectionValuePage extends StatefulWidget')));
       expect(collectionValuePageSource, contains('class CollectionValuePage extends StatefulWidget'));
       expect(collectionValuePageSource, contains("_readAll('master_oggetti'"));

@@ -77,7 +77,17 @@ Flusso previsto:
 
 | Codice | Nome effettivo | Collegamento / implementazione rilevata | Stato rilevato |
 |---|---|---|---|
+| PR-21 | Ricerca schede | RPC `collection.pr_21_ricerca_schede(text)`; menu RICERCHE `PR-21-SEARCH`; la vecchia RPC `pr_11_ricerca_schede` resta come alias retrocompatibile | Presente nel menu; sola lettura; confronto risultati tra RPC nuova e alias storico verificato su TEST |
 | PR-12 | Ricerca metadati in lotti | `PR-12-BATCH`, `Pr12BatchPage`, motore `pr-12-engine-test` | Presente nel menu; flusso in sola lettura |
+
+**PR-21 · Ricerca schede: nota tecnica**
+
+- RPC primaria: `collection.pr_21_ricerca_schede(p_cerca text)`.
+- Restituisce un JSON con `totale` e `oggetti`; ricerca per codice o descrizione e filtra oggetti `DISPONIBILE`, destinazione `COLLEZIONE`, escludendo record archiviati di test.
+- Include condizione, completezza, quantità, valore, categoria, tema e sottotema; il campo `modificabile` è sempre `false`.
+- Funzione SQL `STABLE`, `SECURITY DEFINER`, `search_path` limitato a `collection, pg_temp`; esecuzione concessa ad `authenticated` e `service_role`.
+- La vecchia RPC `pr_11_ricerca_schede(text)` rimane come wrapper tecnico di compatibilità e delega alla nuova PR-21. Il codice applicativo usa il nuovo nome.
+- Verifica ambiente TEST: RPC PR-21 e alias SQL storico restituiscono lo stesso JSON; 909 schede disponibili al momento del controllo. Nessuna scrittura sui record.
 
 Caratteristiche rilevate nel codice:
 - coda degli oggetti con metadati incompleti;
@@ -138,6 +148,7 @@ I report non vengono numerati come PR: sono consultazioni/report e usano codici 
 5. PR-19 non risulta registrata come procedura autonoma nel menu attuale.
 6. PR-20 è soltanto una voce disabilitata, senza API collegata.
 7. PR-11 è **Valutazione complessiva collezione**.
+8. PR-21 è **Ricerca schede**; la vecchia RPC PR-11 resta solo come alias tecnico di compatibilità.
 8. PR-06 VALORA è un ingresso dedicato che riutilizza PR-06 ordinaria, non una seconda implementazione della vendita.
 9. Consultazioni e report non devono essere inventati come codici PR.
 
@@ -188,6 +199,7 @@ Per ogni procedura mantenere questi campi:
 | PR-19 | Non registrata | N/A | N/A | N/A | N/A | Da definire |
 | PR-20 | Disabilitata | N/A | N/A | N/A | N/A | Da sviluppare |
 | PR-11 | Presente e collegata | Da verificare | Da verificare | Da verificare | Da registrare | Aperta |
+| PR-21 | Presente e collegata in RICERCHE | Da verificare | Da verificare | Da registrare | Da registrare | Aperta |
 
 ## 8. Regola di aggiornamento del registro
 
