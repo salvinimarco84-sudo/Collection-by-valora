@@ -72,6 +72,7 @@ part 'purchases/pr04_save_controller.dart';
 part 'purchases/pr04_runtime_procedure.dart';
 part 'purchases/pr04_data_controller.dart';
 part 'purchases/pr04_category_controller.dart';
+part 'purchases/pr04_metadata_controller.dart';
 part 'purchases/pr04_photo_controller.dart';
 part 'purchases/pr04_page_presentation.dart';
 part 'purchases/pr04_page_state.dart';
