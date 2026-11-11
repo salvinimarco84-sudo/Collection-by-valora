@@ -225,7 +225,7 @@ Deno.serve(async (req: Request) => {
       procedura: "PR-18",
       nome: "PR18 · VALORA · VALUTAZIONE SINGOLO OGGETTO",
       oggetto_confermato: { descrizione, produttore: String(metadata.produttore ?? ""), codice_prodotto: String(metadata.codice_prodotto ?? "") },
-      mercato_riferimento: String(body.mercato_riferimento ?? body.mercato ?? "Italia"),
+      mercato_riferimento: marketName,
       valore_mercato: estimate,
       fascia_minima: low,
       fascia_massima: high,
