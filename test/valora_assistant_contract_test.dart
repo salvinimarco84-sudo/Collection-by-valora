@@ -10,6 +10,7 @@ void main() {
   final command = File('lib/procedures/valora_assistant_command.dart').readAsStringSync();
   final inputPanel = File('lib/procedures/valora_assistant_input_panel.dart').readAsStringSync();
   final answerPanel = File('lib/procedures/valora_assistant_answer_panel.dart').readAsStringSync();
+  final safetyNotice = File('lib/procedures/valora_assistant_safety_notice.dart').readAsStringSync();
 
   group('VALORA assistant module contract', () {
     test('the assistant page is declared in its dedicated procedure module', () {
@@ -41,6 +42,13 @@ void main() {
       expect(assistant, contains('buildAssistantPage(context)'));
       expect(presentation, contains('extension _ValoraAssistantPresentation'));
       expect(presentation, contains('Widget buildAssistantPage(BuildContext context)'));
+    });
+
+    test('the safety notice is isolated from the main presentation', () {
+      expect(mainSource, contains("part 'procedures/valora_assistant_safety_notice.dart';"));
+      expect(presentation, contains('buildAssistantSafetyNotice()'));
+      expect(safetyNotice, contains('extension _ValoraAssistantSafetyNotice'));
+      expect(safetyNotice, contains('non salva, cancella o modifica record'));
     });
 
     test('the answer panel is isolated from the main presentation', () {
