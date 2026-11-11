@@ -1706,7 +1706,7 @@ void main() {
     expect(pr04MetadataControllerSource, contains("metadata['anno_uscita']"));
     expect(pr04MetadataControllerSource, contains("metadata['fonte_dati_prodotto']"));
     expect(pr04MetadataControllerSource, contains("metadata['url_immagine_catalogo']"));
-    expect(pr04MetadataControllerSource, contains('item.price'));
+    expect(pr04MetadataControllerSource, isNot(contains('price.text')));
     expect(pr04MetadataControllerSource, contains('Il costo resta intenzionalmente vuoto'));
   });
 
