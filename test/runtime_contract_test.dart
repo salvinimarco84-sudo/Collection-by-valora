@@ -1592,12 +1592,20 @@ void main() {
 
     expect(source, contains("part 'wanted_list/wanted_new_desire_page.dart';"));
     expect(source, contains("part 'wanted_list/wanted_active_desires_page.dart';"));
+    expect(source, contains("part 'wanted_list/wanted_purchase_page.dart';"));
     expect(registry, contains("title: 'WANTED LIST'"));
     expect(registry, contains("apiCode: 'WANTED-NEW'"));
     expect(registry, contains("apiCode: 'WANTED-ACTIVE'"));
     expect(coordinator, contains('const WantedNewDesirePage()'));
     expect(coordinator, contains('const WantedActiveDesiresPage()'));
     expect(coordinator, contains('const WantedPurchaseObjectivesPage()'));
+    expect(coordinator, contains('const WantedPurchasePage()'));
+    expect(registry, contains("apiCode: 'WANTED-PURCHASE', readOnly: false"));
+    expect(File('lib/wanted_list/wanted_purchase_page.dart').readAsStringSync(), contains('wantedDesireId: desire[\'id\'].toString()'));
+    expect(pr04RuntimeProcedureSource, contains('_completeWantedPurchaseLink()'));
+    expect(pr04RuntimeProcedureSource, contains(".eq('codice_acquisto', purchaseCode)"));
+    expect(pr04RuntimeProcedureSource, contains("'codice_oggetto_acquistato': objectCode"));
+    expect(pr04RuntimeProcedureSource, contains('_wantedPurchaseCommitted'));
     expect(newDesire, contains("from('wanted_desideri')"));
     expect(newDesire, contains("'stato': 'ATTIVO'"));
     expect(newDesire, contains('Il desiderio non ha superato la verifica'));
