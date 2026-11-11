@@ -140,6 +140,7 @@ part 'procedures/valora_catalog_objects_controller.dart';
 part 'procedures/collection_value_page.dart';
 part 'procedures/collection_value_presentation.dart';
 part 'procedures/pr12_batch_page.dart';
+part 'wanted_list/wanted_new_desire_page.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
