@@ -106,6 +106,7 @@ part 'reports/active_sales_report_page.dart';
 part 'reports/active_sale_report_card.dart';
 part 'reports/sales_report_page.dart';
 part 'reports/sales_report_data_mixin.dart';
+part 'reports/sales_report_export_service.dart';
 part 'reports/sales_report_card.dart';
 part 'procedures/valora_service_page.dart';
 part 'procedures/valora_photo_input_presentation.dart';

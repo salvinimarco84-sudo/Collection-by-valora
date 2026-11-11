@@ -13,58 +13,16 @@ class _SalesReportPageState extends State<SalesReportPage> with SalesReportDataM
       return;
     }
     try {
-      final records = _rows;
-      final headers = <String>[];
-      for (final row in records) { for (final key in row.keys) { if (!headers.contains(key)) headers.add(key); } }
-      String cell(dynamic value) => value == null ? '' : value is Map || value is List ? jsonEncode(value) : value.toString();
-      final stamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
-      final name = 'VALORA_REPORT_SALES_$stamp';
-      late Uint8List bytes;
-      final extension = pdf ? 'pdf' : 'xlsx';
-      if (pdf) {
-        final document = pw.Document();
-        document.addPage(pw.MultiPage(
-          pageFormat: pw_core.PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(28),
-          build: (_) => [
-            pw.Text('COLLECTION by VALORA', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 6),
-            pw.Text('REPORT VENDITE · ${_periodArguments()['data_da']} / ${_periodArguments()['data_a']}'),
-            pw.Text('Vendite: ${records.length} · Totale: ${_money(records.fold<double>(0, (sum, row) => sum + _amount(row)))}'),
-            pw.SizedBox(height: 12),
-            pw.TableHelper.fromTextArray(
-              data: [headers, ...records.map((row) => headers.map((key) => cell(row[key])).toList())],
-              headerStyle: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
-              cellStyle: const pw.TextStyle(fontSize: 6),
-              headerDecoration: const pw.BoxDecoration(color: pw_core.PdfColor.fromInt(0xFFD6B15E)),
-              cellAlignment: pw.Alignment.topLeft,
-              border: pw.TableBorder.all(color: pw_core.PdfColor.fromInt(0xFFBBBBBB), width: 0.35),
-            ),
-          ],
-        ));
-        bytes = Uint8List.fromList(await document.save());
-      } else {
-        final workbook = xlsx.Excel.createExcel();
-        final sheet = workbook['Vendite'];
-        sheet.appendRow(headers.map((key) => xlsx.TextCellValue(key)).toList());
-        for (final row in records) { sheet.appendRow(headers.map((key) => xlsx.TextCellValue(cell(row[key]))).toList()); }
-        final encoded = workbook.encode();
-        if (encoded == null) throw Exception('Creazione Excel non riuscita.');
-        bytes = Uint8List.fromList(encoded);
-      }
-      final path = await FilePicker.platform.saveFile(
-        dialogTitle: pdf ? 'Salva report PDF' : 'Salva report Excel',
-        fileName: '$name.$extension',
-        type: FileType.custom, allowedExtensions: [extension], bytes: bytes,
+      final path = await SalesReportExportService.createAndSave(
+        rows: _rows, pdf: pdf, period: _periodArguments(), amount: _amount, money: _money,
       );
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(path == null ? 'Esportazione annullata.' : 'File $extension creato: $path'),
+        content: Text(path == null ? 'Esportazione annullata.' : 'File ${pdf ? 'pdf' : 'xlsx'} creato: $path'),
       ));
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Esportazione non riuscita: $error')));
     }
   }
-
   Future<void> _changePage(int nextPage) async {
     if (nextPage < 0 || nextPage >= (_rows.length / _pageSize).ceil()) return;
     setState(() => _page = nextPage);
