@@ -1698,7 +1698,7 @@ void main() {
     expect(source, contains("part 'purchases/pr04_category_controller.dart';"));
     expect(pr04PageStateSource, isNot(contains('Future<void> _loadCollectionCategories()')));
     expect(pr04PageStateSource, contains('_loadCollectionCategories();'));
-    expect(pr04CategoryControllerSource, contains('extension _Pr04CategoryController on _NewPurchasePageState'));
+    expect(pr04CategoryControllerSource, contains('extension _Pr04CategoryController on _Pr04PageState'));
     expect(pr04CategoryControllerSource, contains("from('master_categorie_collezione')"));
     expect(pr04CategoryControllerSource, contains(".eq('visibile', true)"));
     expect(pr04CategoryControllerSource, contains(".order('ordine_menu')"));
