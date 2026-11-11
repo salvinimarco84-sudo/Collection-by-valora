@@ -171,7 +171,7 @@ void main() {
       expect(pr18EdgeFunctionSource, contains('valore_master_aggiornato: masterUpdated'));
       expect(pr18EdgeFunctionSource, contains('Stato e destinazione dell\'oggetto non vengono mai modificati'));
       expect(valoraKnownObjectValuationSource, contains('Pr06ValoraPage('));
-      expect(valoraPr18ValuationControllerSource, contains("'mercato_riferimento': _market"));
+      expect(valoraKnownObjectPr18ServiceSource, contains("'mercato_riferimento': market"));
       expect(valoraCatalogSaleControllerSource, contains("'destinazione'"));
       expect(valoraCatalogSaleControllerSource, contains("'valore_mercato'"));
       expect(valoraCatalogSaleControllerSource, contains("_openCatalogObjectForSale"));
