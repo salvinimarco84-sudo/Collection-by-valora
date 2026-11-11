@@ -748,6 +748,8 @@ void main() {
       expect(draftController, contains('void _queueCurrentAndStartNext()'));
       expect(draftController, contains('Map<String, dynamic> _payload('));
       expect(runtime, isNot(contains('void _queueCurrentAndStartNext()')));
+      expect(runtime, contains('Future<void> _runPreview()'));
+      expect(runtime, contains('Future<void> _save()'));
       expect(photo, contains("functions.invoke('pr-12-engine-test'"));
       expect(presentation, contains('Widget _content()'));
       expect(presentation, contains('Widget _buildPr04PurchasePage(BuildContext context)'));
