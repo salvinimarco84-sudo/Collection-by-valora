@@ -113,9 +113,7 @@ class PreorderRepository {
       'data_uscita_prevista': expectedReleaseDate == null ? null : _date(expectedReleaseDate),
       'prezzo_concordato': _money(agreedPriceCents),
       'categoria': category.trim().isEmpty ? null : category.trim(),
-      'immagine_riferimento': imageReference,
       'note': notes.trim().isEmpty ? null : notes.trim(),
-      'riferimento_ordine': orderReference,
     }).eq('codice_preordine', code);
     return get(id);
   }
