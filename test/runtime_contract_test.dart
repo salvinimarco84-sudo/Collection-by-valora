@@ -1457,6 +1457,18 @@ void main() {
     expect(valoraCatalogObjectsControllerSource, contains('_error ='));
   });
 
+  test('VALORA separa la conferma candidato PR-12 dalla logica di intake', () {
+    final intake = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
+    final reviewDialog = File('lib/procedures/valora_catalog_intake_review_dialog.dart').readAsStringSync();
+    expect(source, contains("part 'procedures/valora_catalog_intake_review_dialog.dart';"));
+    expect(intake, contains('_buildValoraCatalogIntakeReviewDialog(dialogContext, valuationText)'));
+    expect(intake, isNot(contains("title: const Text('Valutazione PR18')")));
+    expect(reviewDialog, contains('Widget _buildValoraCatalogIntakeReviewDialog('));
+    expect(reviewDialog, contains('PROCEDI A PR-04'));
+    expect(reviewDialog, contains('ANNULLA'));
+    expect(reviewDialog, contains('Vuoi procedere con PR-04 Nuovo Acquisto?'));
+  });
+
   test('VALORA separa introduzione assistente e azioni catalogo dalla presentazione', () {
     expect(source, contains("part 'procedures/valora_intro_section.dart';"));
     expect(source, contains("part 'procedures/valora_catalog_actions_section.dart';"));
