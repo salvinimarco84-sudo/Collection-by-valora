@@ -153,6 +153,12 @@ void main() {
       expect(valoraKnownObjectValuationSource, contains('_continueToPr06Valora'));
       expect(valoraKnownObjectValuationSource, contains('SOLO VALUTAZIONE'));
       expect(valoraKnownObjectValuationSource, contains('CONTINUA A PR06 VALORA'));
+      expect(source, contains("part 'purchases/pr04_valora_page.dart';"));
+      expect(source, contains("part 'procedures/pr06_valora_page.dart';"));
+      expect(valoraCatalogIntakeSource, contains('Pr04ValoraPurchasePage('));
+      expect(valoraKnownObjectValuationSource, contains('Pr06ValoraPage('));
+      expect(valoraServicePageSource, contains('buildMarketValuationSection()'));
+      expect(valoraServicePageSource, contains('buildValoraCatalogActionsSection(selected)'));
 
       expect(valoraKnownObjectValuationSource, contains("pop('SOLO_VALUTAZIONE')"));
       expect(pr18EdgeFunctionSource, contains('SALVA_VALUTAZIONE'));
@@ -170,7 +176,9 @@ void main() {
       expect(valoraServicePageSource, isNot(contains('Future<void> _pickImage(ImageSource source)')));
       expect(valoraServicePageSource, isNot(contains('Future<void> _pickFiles()')));
       expect(valoraPhotoInputControllerSource, contains('extension _ValoraPhotoInputActions'));
-      expect(valoraPhotoInputControllerSource, contains('ImageSource.camera'));
+      expect(valoraPhotoInputControllerSource, contains('Future<void> _pickImage(ImageSource source)'));
+      expect(valoraPhotoInputControllerSource, contains('picker.pickImage(source: source'));
+      expect(valoraPhotoInputControllerSource, contains('source == ImageSource.gallery'));
       expect(valoraPhotoInputControllerSource, contains('ImageSource.gallery'));
       expect(valoraPhotoInputControllerSource, contains('FilePicker.platform.pickFiles'));
       expect(valoraPhotoInputSource, contains('extension _ValoraPhotoInputPresentation'));
