@@ -147,9 +147,9 @@ void main() {
       expect(source, contains("part 'procedures/valora_known_object_valuation_controller.dart';"));
       expect(valoraServicePageSource, isNot(contains('Future<void> _prepareValuation()')));
       expect(valoraKnownObjectValuationSource, contains('extension _ValoraKnownObjectValuationActions'));
-      expect(valoraKnownObjectValuationSource, contains('_prepareValuation'));
-      expect(valoraKnownObjectValuationSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
-      expect(valoraKnownObjectValuationSource, contains('_saveKnownObjectValuation'));
+      expect(valoraPr18ValuationControllerSource, contains('_prepareValuation'));
+      expect(valoraPr18ValuationControllerSource, contains("'azione': 'SALVA_VALUTAZIONE'"));
+      expect(valoraPr18ValuationControllerSource, contains('_saveKnownObjectValuation'));
       expect(valoraKnownObjectValuationSource, contains('_continueToPr06Valora'));
       expect(valoraKnownObjectValuationSource, contains('SOLO VALUTAZIONE'));
       expect(valoraKnownObjectValuationSource, contains('CONTINUA A PR06 VALORA'));
@@ -160,7 +160,7 @@ void main() {
       expect(pr18EdgeFunctionSource, contains('valore_master_aggiornato: masterUpdated'));
       expect(pr18EdgeFunctionSource, contains('Stato e destinazione dell\'oggetto non vengono mai modificati'));
       expect(valoraKnownObjectValuationSource, contains('Pr06ValoraPage('));
-      expect(valoraKnownObjectValuationSource, contains("'mercato_riferimento': _market"));
+      expect(valoraPr18ValuationControllerSource, contains("'mercato_riferimento': _market"));
       expect(valoraCatalogSaleControllerSource, contains("'destinazione'"));
       expect(valoraCatalogSaleControllerSource, contains("'valore_mercato'"));
       expect(valoraCatalogSaleControllerSource, contains("_openCatalogObjectForSale"));
@@ -169,10 +169,10 @@ void main() {
       expect(source, contains("part 'procedures/valora_photo_input_presentation.dart';"));
       expect(valoraServicePageSource, isNot(contains('Future<void> _pickImage(ImageSource source)')));
       expect(valoraServicePageSource, isNot(contains('Future<void> _pickFiles()')));
-      expect(valoraPhotoInputSource, contains('extension _ValoraPhotoInputActions'));
-      expect(valoraPhotoInputSource, contains('ImageSource.camera'));
-      expect(valoraPhotoInputSource, contains('ImageSource.gallery'));
-      expect(valoraPhotoInputSource, contains('FilePicker.platform.pickFiles'));
+      expect(valoraPhotoInputControllerSource, contains('extension _ValoraPhotoInputActions'));
+      expect(valoraPhotoInputControllerSource, contains('ImageSource.camera'));
+      expect(valoraPhotoInputControllerSource, contains('ImageSource.gallery'));
+      expect(valoraPhotoInputControllerSource, contains('FilePicker.platform.pickFiles'));
       expect(valoraPhotoInputSource, contains('extension _ValoraPhotoInputPresentation'));
       expect(source, contains("part 'procedures/valora_photo_search_controller.dart';"));
       expect(valoraServicePageSource, isNot(contains('Future<Map<String, dynamic>> _analyzeImageBytes')));
