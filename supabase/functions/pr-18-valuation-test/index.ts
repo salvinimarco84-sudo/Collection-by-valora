@@ -161,6 +161,28 @@ Deno.serve(async (req: Request) => {
     });
   }
   try {
+    const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
+    const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (!anon || !service) return reply({ ok: false, error: "Configurazione autorizzazioni non disponibile." }, 500);
+    const authResponse = await fetch(base + "/auth/v1/user", {
+      headers: { apikey: anon, Authorization: authorization },
+    });
+    if (!authResponse.ok) return reply({ ok: false, error: "Sessione non valida o scaduta." }, 401);
+    const authUser = await authResponse.json();
+    const userId = String(authUser?.id ?? "");
+    if (!userId) return reply({ ok: false, error: "Utente autenticato non identificabile." }, 401);
+    const adminHeaders = { apikey: service, Authorization: "Bearer " + service, "Content-Type": "application/json" };
+    const profileResponse = await fetch(
+      base + "/rest/v1/master_utente?select=mercato_nazionale_principale,mercati(codice_mercato,nome_mercato)&auth_user_id=eq." + encodeURIComponent(userId),
+      { headers: { ...adminHeaders, "Accept-Profile": "collection" } },
+    );
+    if (!profileResponse.ok) return reply({ ok: false, error: "Impossibile leggere il mercato configurato nel profilo utente." }, 502);
+    const profiles = await profileResponse.json();
+    if (!Array.isArray(profiles) || profiles.length !== 1 ||
+        !profiles[0].mercato_nazionale_principale || !profiles[0].mercati?.nome_mercato) {
+      return reply({ ok: false, error: "Completa il profilo e configura un mercato principale prima di avviare PR-18." }, 409);
+    }
+    const marketName = String(profiles[0].mercati.nome_mercato).slice(0, 40);
     const response = await fetch(base + "/functions/v1/pr-12-web-search-corrected-test", {
       method: "POST",
       headers: { apikey, Authorization: authorization, "Content-Type": "application/json" },
@@ -170,7 +192,7 @@ Deno.serve(async (req: Request) => {
         categoria: String(metadata.categoria ?? "COLLEZIONABILE").slice(0, 40),
         codice_prodotto: String(metadata.codice_prodotto ?? "").slice(0, 100),
         produttore: String(metadata.produttore ?? "").slice(0, 160),
-        mercato: String(body.mercato_riferimento ?? body.mercato ?? "Italia").slice(0, 40),
+        mercato: marketName,
       }),
     });
     const searched = await response.json().catch(() => ({}));
