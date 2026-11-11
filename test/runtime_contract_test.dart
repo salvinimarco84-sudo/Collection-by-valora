@@ -115,6 +115,8 @@ void main() {
   group('Contratti di regressione COLLECTION by VALORA', () {
     test('la schermata VALORE COLLEZIONE è estratta mantenendo calcoli e snapshot', () {
       expect(procedureRegistrySource, contains('PR-11 · VALUTAZIONE COMPLESSIVA COLLEZIONE'));
+      expect(procedureRegistrySource, contains('PR-14 · ASSISTENTE VALORA'));
+      expect(procedureRegistrySource, contains("apiCode: 'LAUNCH-VALORA'"));
       expect(procedureRegistrySource, contains('PR-21 · Ricerca schede'));
       expect(procedureRegistrySource, contains("apiCode: 'PR-21-SEARCH'"));
       expect(procedureRegistrySource, contains('PR-11 · VALUTAZIONE COMPLESSIVA COLLEZIONE'));
