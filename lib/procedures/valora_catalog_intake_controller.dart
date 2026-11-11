@@ -26,20 +26,8 @@ extension _ValoraCatalogIntakeActions on _ValoraServicePageState {
       setState(() { _error = null; _analyzingPhotos = true; });
       Map<String, dynamic>? valuation;
       try {
-        final response = await Supabase.instance.client.functions.invoke(
-          'pr-18-valuation-test',
-          body: {
-            'metadati': metadata,
-            'mercato_riferimento': _market,
-          },
-        );
-        final data = response.data;
-        if (data is! Map || data['ok'] != true) {
-          throw Exception(data is Map
-              ? (data['error'] ?? 'PR18 non ha completato la valutazione').toString()
-              : 'Risposta PR18 non valida.');
-        }
-        valuation = Map<String, dynamic>.from(data);
+        valuation = await _requestValoraCatalogIntakeValuation(metadata);
+
         final marketValue = valuation['valore_mercato'];
         final reliability = (valuation['affidabilita'] ?? 'NON DISPONIBILE').toString();
         if (mounted) {
