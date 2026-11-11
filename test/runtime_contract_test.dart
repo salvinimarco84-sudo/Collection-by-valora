@@ -200,7 +200,7 @@ void main() {
       expect(valoraPhotoAnalysisServiceSource, contains("'pr-12-engine-test'"));
       expect(valoraPhotoAnalysisServiceSource, contains("'mercato': market"));
       expect(valoraPhotoAnalysisServiceSource, contains('bytes.length > 10 * 1024 * 1024'));
-      expect(valoraPhotoSearchSource, contains("'ANALIZZA_FOTO'"));
+      expect(valoraPhotoAnalysisServiceSource, contains("'ANALIZZA_FOTO'"));
       expect(source, contains("part 'procedures/valora_photo_candidate_controller.dart';"));
       expect(valoraPhotoCandidateSource, contains("'ricerca_estesa': true"));
       expect(valoraPhotoCandidateSource, contains('_confirmedPhotoCandidates[index]'));
