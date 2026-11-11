@@ -40,6 +40,7 @@ void main() {
   final valoraCatalogActionsSectionSource = File('lib/procedures/valora_catalog_actions_section.dart').readAsStringSync();
   final valoraCatalogObjectsControllerSource = File('lib/procedures/valora_catalog_objects_controller.dart').readAsStringSync();
   final valoraPhotoInputSource = File('lib/procedures/valora_photo_input_presentation.dart').readAsStringSync();
+  final valoraPhotoInputControllerSource = File('lib/procedures/valora_photo_input_controller.dart').readAsStringSync();
   final valoraPhotoSearchSource = File('lib/procedures/valora_photo_search_controller.dart').readAsStringSync();
   final valoraPhotoCandidateSource = File('lib/procedures/valora_photo_candidate_controller.dart').readAsStringSync();
   final valoraCatalogIntakeSource = File('lib/procedures/valora_catalog_intake_controller.dart').readAsStringSync();
@@ -1382,6 +1383,18 @@ void main() {
     expect(valoraMarketValuationSource, contains('_prepareValuation'));
     expect(valoraMarketValuationSource, contains('_continueToPr06Valora'));
     expect(valoraMarketValuationSource, contains('Mercato di riferimento'));
+  });
+
+  test('VALORA separa le azioni di selezione foto dalla presentazione', () {
+    expect(source, contains("part 'procedures/valora_photo_input_controller.dart';"));
+    expect(valoraPhotoInputControllerSource, contains('extension _ValoraPhotoInputActions'));
+    expect(valoraPhotoInputControllerSource, contains('Future<void> _pickImage(ImageSource source) async'));
+    expect(valoraPhotoInputControllerSource, contains('Future<void> _pickFiles() async'));
+    expect(valoraPhotoInputControllerSource, contains('_removeImage(XFile image)'));
+    expect(valoraPhotoInputControllerSource, contains('_removeFile(PlatformFile file)'));
+    expect(valoraPhotoInputSource, isNot(contains('Future<void> _pickImage')));
+    expect(valoraPhotoInputSource, isNot(contains('Future<void> _pickFiles')));
+    expect(valoraPhotoInputSource, contains('buildPhotoInputSection(BuildContext context)'));
   });
 
   test('VALORA separa conferma e ricerca estesa dei candidati fotografici', () {
