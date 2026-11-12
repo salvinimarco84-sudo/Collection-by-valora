@@ -495,7 +495,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       ],
       footer: DashboardSectionFooter(
         label: ValoraI18n.tr('TORNA ALLA DASHBOARD'),
-        accentColor: appearance.colorFor(section.title),
+        accentColor: sectionAccent,
         onPressed: () => setState(() => selectedSection = null),
       ),
     );
