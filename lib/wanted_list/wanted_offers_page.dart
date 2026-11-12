@@ -120,7 +120,14 @@ class _WantedOffersPageState extends State<WantedOffersPage> {
   @override
   Widget build(BuildContext context) {
     const silver = Color(0xFFB8BEC6);
-    return Scaffold(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          primary: const Color(0xFFB8BEC6),
+          secondary: const Color(0xFFB8BEC6),
+        ),
+      ),
+      child: Scaffold(
       appBar: AppBar(title: const Text('RICERCA OFFERTE')),
       body: SafeArea(
         child: _loading
@@ -188,6 +195,6 @@ class _WantedOffersPageState extends State<WantedOffersPage> {
                   ],
                 ),
       ),
-    );
+    ));
   }
 }
