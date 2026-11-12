@@ -13,6 +13,7 @@ void main() {
   final pr04CategoryControllerSource = File('lib/purchases/pr04_category_controller.dart').readAsStringSync();
   final pr04MetadataControllerSource = File('lib/purchases/pr04_metadata_controller.dart').readAsStringSync();
   final pr04ItemDraftSource = File('lib/purchases/pr04_item_draft.dart').readAsStringSync();
+  final pr04QueueControllerSource = File('lib/purchases/pr04_queue_controller.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
   final pr04PhotoRecognitionControllerSource = File('lib/purchases/pr04_photo_recognition_controller.dart').readAsStringSync();
@@ -1706,6 +1707,19 @@ void main() {
     expect(historyPage, contains("from('wanted_offerte')"));
     expect(historyPage, contains("neq('stato', 'ATTIVO')"));
     expect(historyPage, contains('codice_oggetto_acquistato'));
+  });
+
+  test('PR-04 separa la coda acquisti e il payload dalla validazione bozza', () {
+    expect(source, contains("part 'purchases/pr04_queue_controller.dart';"));
+    expect(pr04DraftControllerSource, isNot(contains('_currentPurchaseOperation')));
+    expect(pr04DraftControllerSource, isNot(contains('_queueCurrentAndStartNext')));
+    expect(pr04DraftControllerSource, contains('bool _valid()'));
+    expect(pr04QueueControllerSource, contains('extension _Pr04QueueController on _NewPurchasePageState'));
+    expect(pr04QueueControllerSource, contains('_currentPurchaseOperation'));
+    expect(pr04QueueControllerSource, contains("'operazioni': [..._pendingPurchases, _currentPurchaseOperation()]" ));
+    expect(pr04QueueControllerSource, contains('_queueCurrentAndStartNext'));
+    expect(pr04QueueControllerSource, contains('Nessuna scrittura eseguita.'));
+    expect(pr04SaveControllerSource, contains("'save'"));
   });
 
   test('PR-04 separa il modello della bozza acquisto dalla pagina', () {
