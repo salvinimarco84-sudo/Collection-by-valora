@@ -15,6 +15,7 @@ void main() {
   final pr04ItemDraftSource = File('lib/purchases/pr04_item_draft.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
+  final pr04PhotoRecognitionControllerSource = File('lib/purchases/pr04_photo_recognition_controller.dart').readAsStringSync();
   final pr04PagePresentationSource = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
   final pr04FormContentSource = File('lib/purchases/pr04_form_content.dart').readAsStringSync();
@@ -1063,7 +1064,10 @@ void main() {
     });
 
     test('PR-04 separa la revisione PR-12 di metadati e immagine', () {
-      expect(pr04PhotoControllerSource, contains('Pr04RecognitionDialog('));
+      expect(pr04PhotoControllerSource, contains('ImagePicker().pickImage'));
+      expect(pr04PhotoControllerSource, contains('_recognizeAndApplyPurchasePhoto(item, bytes)'));
+      expect(pr04PhotoRecognitionControllerSource, contains('Pr04RecognitionDialog('));
+      expect(pr04PhotoRecognitionControllerSource, contains("functions.invoke('pr-12-engine-test'"));
       expect(pr04RecognitionDialogSource, contains('Mantieni la foto scattata'));
       expect(pr04RecognitionDialogSource, contains('USA SELEZIONE'));
       expect(pr04RecognitionDialogSource, contains('imageCandidates[_selected]'));
