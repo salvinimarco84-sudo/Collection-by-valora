@@ -37,7 +37,7 @@ const Map<String, List<ProcedureEntry>> sectionProcedures = {
     ProcedureEntry(title: 'NUOVO DESIDERIO', description: 'Inserisci un oggetto che desideri acquistare.', apiCode: 'WANTED-NEW', readOnly: false),
     ProcedureEntry(title: 'LISTA DEI DESIDERI', description: 'Consulta gli oggetti ancora da acquistare.', apiCode: 'WANTED-ACTIVE'),
     ProcedureEntry(title: 'OBIETTIVI DI ACQUISTO', description: 'Organizza gli obiettivi per tema e priorità, senza dati economici.', apiCode: 'WANTED-GOALS', readOnly: false),
-    ProcedureEntry(title: 'ACQUISTO WANTED LIST', description: 'Avvia l'acquisto del desiderio tramite la procedura PR-04.', apiCode: 'WANTED-PURCHASE', readOnly: false),
+    ProcedureEntry(title: 'ACQUISTO WANTED LIST', description: 'Avvia l’acquisto del desiderio tramite la procedura PR-04.', apiCode: 'WANTED-PURCHASE', readOnly: false),
     ProcedureEntry(title: 'RICERCA OFFERTE', description: 'Usa PR-12 per cercare offerte sul desiderio selezionato e salvare i candidati da verificare.', apiCode: 'WANTED-OFFERS'),
     ProcedureEntry(title: 'STORICO WANTED LIST', description: 'Consulta desideri conclusi, offerte salvate e collegamento agli oggetti acquistati.', apiCode: 'WANTED-HISTORY'),
   ],
