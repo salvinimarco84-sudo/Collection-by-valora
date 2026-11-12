@@ -75,6 +75,7 @@ part 'purchases/pr04_category_controller.dart';
 part 'purchases/pr04_metadata_controller.dart';
 part 'purchases/pr04_item_draft.dart';
 part 'purchases/pr04_photo_controller.dart';
+part 'purchases/pr04_photo_recognition_controller.dart';
 part 'purchases/pr04_page_presentation.dart';
 part 'purchases/pr04_page_state.dart';
 part 'purchases/pr05_runtime_procedure.dart';

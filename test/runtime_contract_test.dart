@@ -733,6 +733,7 @@ void main() {
       expect(source, contains("part 'purchases/pr04_draft_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_lock_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_photo_controller.dart';"));
+      expect(source, contains("part 'purchases/pr04_photo_recognition_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_page_presentation.dart';"));
       final pageStart = source.indexOf('class _NewPurchasePageState');
       final pageEnd = source.indexOf('class EditPurchasePage', pageStart);
@@ -748,6 +749,7 @@ void main() {
       final runtime = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
       final data = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
       final photo = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
+      final photoRecognition = File('lib/purchases/pr04_photo_recognition_controller.dart').readAsStringSync();
       final presentation = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
       expect(state, isNot(contains('class _PurchaseItemDraft')));
       expect(pr04ItemDraftSource, contains('class _PurchaseItemDraft'));
@@ -776,7 +778,10 @@ void main() {
       expect(pr04SaveControllerSource, contains("'SALVATO_E_VERIFICATO'"));
       expect(pr04SaveControllerSource, contains('_completeWantedPurchaseLink()'));
       expect(runtime, isNot(contains('Future<void> _save()')));
-      expect(photo, contains("functions.invoke('pr-12-engine-test'"));
+      expect(photo, contains('ImagePicker().pickImage'));
+      expect(photo, isNot(contains("functions.invoke('pr-12-engine-test'")));
+      expect(photoRecognition, contains('Future<void> _recognizeAndApplyPurchasePhoto'));
+      expect(photoRecognition, contains("functions.invoke('pr-12-engine-test'"));
       expect(presentation, contains('Widget _content()'));
       expect(presentation, contains('Widget _buildPr04PurchasePage(BuildContext context)'));
     });
