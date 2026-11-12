@@ -1762,4 +1762,15 @@ void main() {
     expect(pr04InitializationControllerSource, contains('if (!mounted) return;'));
   });
 
+
+  test('WANTED LIST mantiene accento argento nel menu e nelle procedure', () {
+    final dashboard = File('lib/dashboard/dashboard_home_coordinator.dart').readAsStringSync();
+    final registry = File('lib/procedures/procedure_registry.dart').readAsStringSync();
+    expect(registry, contains("color: Color(0xFFB8BEC6)"));
+    expect(dashboard, contains("'color':section.title == 'WANTED LIST' ? const Color(0xFFB8BEC6)"));
+    expect(dashboard, contains("color: section.title == 'WANTED LIST' ? const Color(0xFFB8BEC6)"));
+    expect(dashboard, contains("final sectionAccent = section.title == 'WANTED LIST'"));
+    expect(dashboard, contains("'WANTED LIST': 'assets/menu_sections/file_0000000075d4821097855c8736518ab9.png'"));
+  });
+
 }
