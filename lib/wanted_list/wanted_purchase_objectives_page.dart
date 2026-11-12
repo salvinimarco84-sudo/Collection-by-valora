@@ -176,7 +176,14 @@ class _WantedPurchaseObjectivesPageState extends State<WantedPurchaseObjectivesP
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          primary: const Color(0xFFB8BEC6),
+          secondary: const Color(0xFFB8BEC6),
+        ),
+      ),
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('OBIETTIVI DI ACQUISTO'),
         actions: [
@@ -255,6 +262,6 @@ class _WantedPurchaseObjectivesPageState extends State<WantedPurchaseObjectivesP
                         ),
                       ),
       ),
-    );
+    ));
   }
 }
