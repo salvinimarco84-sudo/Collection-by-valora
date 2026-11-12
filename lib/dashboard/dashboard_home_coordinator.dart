@@ -405,6 +405,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
       'CATALOGO': 'assets/menu_sections/05_CATALOGO.jpg',
       'REPORT': 'assets/menu_sections/06_REPORT.jpg',
       'COLLEZIONE': 'assets/menu_sections/01_collezione_personale.png',
+      'WANTED LIST': 'assets/menu_sections/file_0000000075d4821097855c8736518ab9.png',
     };
     return assets[section] ?? '';
   }
