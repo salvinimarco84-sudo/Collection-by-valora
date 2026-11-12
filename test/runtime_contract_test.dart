@@ -10,8 +10,7 @@ void main() {
   final pr04WantedLinkControllerSource = File('lib/purchases/pr04_wanted_link_controller.dart').readAsStringSync();
   final pr04SaveControllerSource = File('lib/purchases/pr04_save_controller.dart').readAsStringSync();
   final pr04PageStateSource = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
-  final pr04CategoryControllerSource = File('lib/purchases/pr04_category_controller.dart').readAsStringSync();
-  final pr04MetadataControllerSource = File('lib/purchases/pr04_metadata_controller.dart').readAsStringSync();
+  final pr04InitializationControllerSource = File('lib/purchases/pr04_initialization_controller.dart').readAsStringSync();
   final pr04ItemDraftSource = File('lib/purchases/pr04_item_draft.dart').readAsStringSync();
   final pr04DraftControllerSource = File('lib/purchases/pr04_draft_controller.dart').readAsStringSync();
   final pr04QueueControllerSource = File('lib/purchases/pr04_queue_controller.dart').readAsStringSync();
@@ -756,7 +755,7 @@ void main() {
       expect(pr04ItemDraftSource, contains('final notes = TextEditingController();'));
       expect(state, contains('mixin _Pr04PageState'));
       expect(state, isNot(contains('Future<void> _loadCollectionCategories()')));
-      expect(pr04CategoryControllerSource, contains('Future<void> _loadCollectionCategories()'));
+      expect(pr04InitializationControllerSource, contains('Future<void> _loadCollectionCategories()'));
       expect(draftController, contains('extension _Pr04DraftController'));
       expect(draftController, contains('Future<void> _pickDate()'));
       expect(draftController, contains('DATA DELL’ACQUISTO'));
@@ -1394,8 +1393,8 @@ void main() {
     expect(valoraServicePageSource, isNot(contains('builder: (_) => NewPurchasePage(')));
     expect(source, contains('this.initialMetadata'));
     expect(pr04PageStateSource, contains('_initializeFromMetadata(widget.initialMetadata);'));
-    expect(pr04MetadataControllerSource, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
-    expect(pr04MetadataControllerSource, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
+    expect(pr04InitializationControllerSource, contains("item.description.text = (metadata['descrizione'] ?? '').toString();"));
+    expect(pr04InitializationControllerSource, contains('// Il costo resta intenzionalmente vuoto: il valore di mercato non è un costo d’acquisto.'));
     expect(pr04FormContentSource, contains('Inserisci il costo effettivamente sostenuto.'));
     expect(pr04FormContentSource, contains('Non è il costo di acquisto.'));
     expect(valoraCatalogIntakeSource, contains('Future<void> _openUncataloguedCandidate(int index) async'));
@@ -1737,30 +1736,30 @@ void main() {
   });
 
   test('PR-04 separa la precompilazione dei metadati dal mixin di stato', () {
-    expect(source, contains("part 'purchases/pr04_metadata_controller.dart';"));
+    expect(source, contains("part 'purchases/pr04_initialization_controller.dart';"));
     expect(pr04PageStateSource, isNot(contains('_nonEmptyMetadata')));
     expect(pr04PageStateSource, contains('_initializeFromMetadata(widget.initialMetadata);'));
-    expect(pr04MetadataControllerSource, contains('extension _Pr04MetadataController on _Pr04PageState'));
-    expect(pr04MetadataControllerSource, contains("metadata['descrizione']"));
-    expect(pr04MetadataControllerSource, contains("metadata['produttore']"));
-    expect(pr04MetadataControllerSource, contains("metadata['codice_prodotto']"));
-    expect(pr04MetadataControllerSource, contains("metadata['anno_uscita']"));
-    expect(pr04MetadataControllerSource, contains("metadata['fonte_dati_prodotto']"));
-    expect(pr04MetadataControllerSource, contains("metadata['url_immagine_catalogo']"));
-    expect(pr04MetadataControllerSource, isNot(contains('price.text')));
-    expect(pr04MetadataControllerSource, contains('Il costo resta intenzionalmente vuoto'));
+    expect(pr04InitializationControllerSource, contains('extension _Pr04InitializationController on _Pr04PageState'));
+    expect(pr04InitializationControllerSource, contains("metadata['descrizione']"));
+    expect(pr04InitializationControllerSource, contains("metadata['produttore']"));
+    expect(pr04InitializationControllerSource, contains("metadata['codice_prodotto']"));
+    expect(pr04InitializationControllerSource, contains("metadata['anno_uscita']"));
+    expect(pr04InitializationControllerSource, contains("metadata['fonte_dati_prodotto']"));
+    expect(pr04InitializationControllerSource, contains("metadata['url_immagine_catalogo']"));
+    expect(pr04InitializationControllerSource, isNot(contains('price.text')));
+    expect(pr04InitializationControllerSource, contains('Il costo resta intenzionalmente vuoto'));
   });
 
   test('PR-04 separa il caricamento delle categorie dal mixin di stato', () {
-    expect(source, contains("part 'purchases/pr04_category_controller.dart';"));
+    expect(source, contains("part 'purchases/pr04_initialization_controller.dart';"));
     expect(pr04PageStateSource, isNot(contains('Future<void> _loadCollectionCategories()')));
     expect(pr04PageStateSource, contains('_loadCollectionCategories();'));
-    expect(pr04CategoryControllerSource, contains('extension _Pr04CategoryController on _Pr04PageState'));
-    expect(pr04CategoryControllerSource, contains("from('master_categorie_collezione')"));
-    expect(pr04CategoryControllerSource, contains(".eq('visibile', true)"));
-    expect(pr04CategoryControllerSource, contains(".order('ordine_menu')"));
-    expect(pr04CategoryControllerSource, contains(".order('descrizione')"));
-    expect(pr04CategoryControllerSource, contains('if (!mounted) return;'));
+    expect(pr04InitializationControllerSource, contains('extension _Pr04InitializationController on _Pr04PageState'));
+    expect(pr04InitializationControllerSource, contains("from('master_categorie_collezione')"));
+    expect(pr04InitializationControllerSource, contains(".eq('visibile', true)"));
+    expect(pr04InitializationControllerSource, contains(".order('ordine_menu')"));
+    expect(pr04InitializationControllerSource, contains(".order('descrizione')"));
+    expect(pr04InitializationControllerSource, contains('if (!mounted) return;'));
   });
 
 }
