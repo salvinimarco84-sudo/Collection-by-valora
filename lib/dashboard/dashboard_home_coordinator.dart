@@ -421,7 +421,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
         accentColor: appearance.colorFor(section.title),
         secondaryTextColor: appearance.textSecondary,
       ),
-      showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE'].contains(section.title),
+      showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE', 'WANTED LIST'].contains(section.title),
       procedureCards: [
             ...procedures.map((procedure) => ProcedureCard(
             procedure: procedure,
