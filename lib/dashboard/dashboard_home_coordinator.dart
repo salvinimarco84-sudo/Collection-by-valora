@@ -336,7 +336,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
               'title':ValoraI18n.tr(section.menuTitle ?? section.title),
               'sectionKey':section.title,
               'subtitle':ValoraI18n.tr(section.description),
-              'color':ValoraAppearance.instance.colorFor(section.title),
+              'color':section.title == 'WANTED LIST' ? const Color(0xFFB8BEC6) : ValoraAppearance.instance.colorFor(section.title),
               'icon':section.icon,
               'tap':() => setState(()=>selectedSection=section),
             }),
@@ -369,7 +369,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
           sectionCards: dashboardSections.map((section) => _menuCard(
             title: ValoraI18n.tr(section.menuTitle ?? section.title),
             subtitle: ValoraI18n.tr(section.description),
-            color: ValoraAppearance.instance.colorFor(section.title),
+            color: section.title == 'WANTED LIST' ? const Color(0xFFB8BEC6) : ValoraAppearance.instance.colorFor(section.title),
             icon: section.icon,
             onTap: () => setState(() => selectedSection = section),
           )).toList(),
@@ -398,6 +398,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
 
   String _sectionBackgroundAsset(String section) {
     const assets = <String, String>{
+      'WANTED LIST': 'assets/menu_sections/file_0000000075d4821097855c8736518ab9.png',
       'VENDITE': 'assets/menu_sections/01_VENDITE.jpg',
       'ACQUISTI': 'assets/menu_sections/02_ACQUISTI.jpg',
       'RICERCHE': 'assets/menu_sections/a_vibrant_neon_cyber_desk_scene_matching_the_app_s.png',
@@ -412,12 +413,15 @@ class _HomeDashboardState extends State<HomeDashboard> {
   Widget buildSection(DashboardSection section) {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     final appearance = ValoraAppearance.instance;
+    final sectionAccent = section.title == 'WANTED LIST'
+        ? const Color(0xFFB8BEC6)
+        : appearance.colorFor(section.title);
     return DashboardSectionContent(
       background: const SizedBox.shrink(),
       header: DashboardSectionHeader(
         title: section.title,
         description: ValoraI18n.tr(section.description),
-        accentColor: appearance.colorFor(section.title),
+        accentColor: sectionAccent,
         secondaryTextColor: appearance.textSecondary,
       ),
       showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE'].contains(section.title),
@@ -426,7 +430,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
             procedure: procedure,
             title: ValoraI18n.tr(procedure.title),
             description: ValoraI18n.tr(procedure.description),
-            accentColor: appearance.colorFor(section.title),
+            accentColor: sectionAccent,
             textPrimary: appearance.textPrimary,
             textFaint: appearance.textFaint,
             neutralOverlay: appearance.neutralOverlay,
