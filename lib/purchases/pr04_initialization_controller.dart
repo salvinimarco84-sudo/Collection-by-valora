@@ -21,8 +21,8 @@ extension _Pr04InitializationController on _Pr04PageState {
       _categoriesLoading = false;
     }
   }
-}
 
+  
 String? _nonEmptyMetadata(dynamic value) {
     final text = value?.toString().trim() ?? '';
     return text.isEmpty ? null : text;
