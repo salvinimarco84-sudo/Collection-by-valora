@@ -106,7 +106,7 @@ class PreorderRepository {
     if (existing.payments.isNotEmpty && agreedPriceCents != existing.agreedPriceCents) {
       throw StateError('Il prezzo concordato non può cambiare dopo il primo pagamento.');
     }
-    await _client.schema('collection').from(_masterTable).update({
+    final updated = await _client.schema('collection').from(_masterTable).update({
       'descrizione_oggetto': description.trim(),
       'fornitore': supplier.trim(),
       'data_prenotazione': _date(orderDate),
