@@ -14,7 +14,7 @@ class PreorderRecord {
     required this.id, required this.description, required this.supplier,
     required this.orderDate, this.expectedReleaseDate,
     required this.agreedPriceCents, this.category = '', this.imageReference,
-    this.notes = '', this.payments = const [],
+    this.notes = '', this.orderReference = '', this.payments = const [],
     this.status = PreorderStatus.reserved, this.purchaseId,
   });
 
@@ -27,6 +27,7 @@ class PreorderRecord {
   final String category;
   final String? imageReference;
   final String notes;
+  final String orderReference;
   final List<PreorderPayment> payments;
   final PreorderStatus status;
   final String? purchaseId;
@@ -83,7 +84,8 @@ class PreorderRecord {
         id: id, description: description, supplier: supplier, orderDate: orderDate,
         expectedReleaseDate: expectedReleaseDate, agreedPriceCents: agreedPriceCents,
         category: category, imageReference: imageReference, notes: notes,
-        payments: payments ?? this.payments, status: status ?? this.status,
+        orderReference: orderReference, payments: payments ?? this.payments,
+        status: status ?? this.status,
         purchaseId: purchaseId ?? this.purchaseId,
       );
 }
