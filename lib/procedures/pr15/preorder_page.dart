@@ -46,6 +46,7 @@ class _Pr15PreorderPageState extends State<Pr15PreorderPage> {
         expectedReleaseDate: result['expectedDate'] as DateTime?,
         agreedPriceCents: result['priceCents'] as int,
         category: result['category'] as String,
+        orderReference: result['reference'] as String,
         notes: result['notes'] as String,
       );
       await _load();
@@ -255,6 +256,7 @@ class _Pr15EditDialogState extends State<_Pr15EditDialog> {
     _supplier = TextEditingController(text: r.supplier);
     _category = TextEditingController(text: r.category);
     _price = TextEditingController(text: (r.agreedPriceCents / 100).toStringAsFixed(2));
+    _reference = TextEditingController(text: r.orderReference);
     _notes = TextEditingController(text: r.notes);
     _orderDate = r.orderDate;
     _expectedDate = r.expectedReleaseDate;
@@ -311,6 +313,7 @@ class _Pr15EditDialogState extends State<_Pr15EditDialog> {
             helperText: widget.record.payments.isNotEmpty
               ? 'Bloccato perché sono già presenti pagamenti.' : null,
           )),
+        TextField(controller: _reference, decoration: const InputDecoration(labelText: 'Riferimento ordine')),
         TextField(controller: _notes, maxLines: 2, decoration: const InputDecoration(labelText: 'Note')),
         const SizedBox(height: 10),
         ListTile(contentPadding: EdgeInsets.zero, title: const Text('Data prenotazione'),
