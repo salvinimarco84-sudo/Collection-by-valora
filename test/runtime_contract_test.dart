@@ -72,7 +72,7 @@ void main() {
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
   final writeProcedureActionPanelSource = File('lib/procedures/write_procedure_action_panel.dart').readAsStringSync();
-  final purchaseRuntimeSource = '$source\\n${File('lib/purchases/pr04_draft_controller.dart').readAsStringSync()}\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
+  final purchaseRuntimeSource = '$source\\n${File('lib/purchases/pr04_draft_controller.dart').readAsStringSync()}\\n$pr04QueueControllerSource\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
@@ -761,8 +761,10 @@ void main() {
       expect(state, isNot(contains('Future<void> _loadCollectionCategories()')));
       expect(pr04CategoryControllerSource, contains('Future<void> _loadCollectionCategories()'));
       expect(draftController, contains('extension _Pr04DraftController'));
-      expect(draftController, contains('void _queueCurrentAndStartNext()'));
-      expect(draftController, contains('Map<String, dynamic> _payload('));
+      expect(draftController, isNot(contains('void _queueCurrentAndStartNext()')));
+      expect(draftController, isNot(contains('Map<String, dynamic> _payload(')));
+      expect(pr04QueueControllerSource, contains('void _queueCurrentAndStartNext()'));
+      expect(pr04QueueControllerSource, contains('Map<String, dynamic> _payload('));
       expect(runtime, isNot(contains('void _queueCurrentAndStartNext()')));
       expect(pr04LockControllerSource, contains('extension _Pr04LockController'));
       expect(pr04LockControllerSource, contains("call('acquire_lock'"));
