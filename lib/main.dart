@@ -6439,10 +6439,11 @@ class _PurchaseItemDraft {
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
 
 class NewPurchasePage extends StatefulWidget {
-  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.valoraMode = false});
+  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.valoraMode = false, this.preorderConversion = false});
   final Map<String, dynamic>? initialMetadata;
   final double? suggestedMarketValue;
   final bool valoraMode;
+  final bool preorderConversion;
   @override
   State<NewPurchasePage> createState() => _NewPurchasePageState();
 }
@@ -6469,6 +6470,10 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     if (metadata != null) {
       final item = _items.first;
       item.description.text = (metadata['descrizione'] ?? '').toString();
+      if (widget.preorderConversion && metadata['prezzo_acquisto_preorder'] is num) {
+        item.price.text = (metadata['prezzo_acquisto_preorder'] as num).toStringAsFixed(2);
+        item.notes.text = 'Conversione da PR-15 PREORDER #${metadata['codice_preordine']}';
+      }
       item.metadataProducer = _nonEmptyMetadata(metadata['produttore']);
       item.metadataCode = _nonEmptyMetadata(metadata['codice_prodotto']);
       item.metadataYear = metadata['anno_uscita'] is num
