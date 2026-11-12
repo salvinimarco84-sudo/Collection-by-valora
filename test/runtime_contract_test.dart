@@ -13,6 +13,7 @@ void main() {
   final pr04CategoryControllerSource = File('lib/purchases/pr04_category_controller.dart').readAsStringSync();
   final pr04MetadataControllerSource = File('lib/purchases/pr04_metadata_controller.dart').readAsStringSync();
   final pr04ItemDraftSource = File('lib/purchases/pr04_item_draft.dart').readAsStringSync();
+  final pr04DraftControllerSource = File('lib/purchases/pr04_draft_controller.dart').readAsStringSync();
   final pr04QueueControllerSource = File('lib/purchases/pr04_queue_controller.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
