@@ -946,7 +946,7 @@ void main() {
 
     test('ACQUISTI usa il layout del CATALOGO senza duplicare il titolo incorporato nello sfondo', () {
       expect(dashboardHomeCoordinatorSource,
-        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE'].contains(section.title)"));
+        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE', 'WANTED LIST'].contains(section.title)"));
       expect(dashboardHomeCoordinatorSource,
         contains("'ACQUISTI': 'assets/menu_sections/02_ACQUISTI.jpg'"));
     });
@@ -955,7 +955,7 @@ void main() {
       expect(dashboardHomeCoordinatorSource,
         contains("'VENDITE': 'assets/menu_sections/01_VENDITE.jpg'"));
       expect(dashboardHomeCoordinatorSource,
-        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE'].contains(section.title)"));
+        contains("showHeader: !['CATALOGO', 'ACQUISTI', 'VENDITE', 'VALUTAZIONI', 'REPORT', 'RICERCHE', 'WANTED LIST'].contains(section.title)"));
     });
 
     test('le schermate delle sezioni ripristinano gli sfondi locali dedicati', () {
@@ -966,6 +966,7 @@ void main() {
         'assets/menu_sections/VALORA_VALUTAZIONI_GIALLO.jpg',
         'assets/menu_sections/05_CATALOGO.jpg',
         'assets/menu_sections/06_REPORT.jpg',
+        'assets/menu_sections/file_0000000075d4821097855c8736518ab9.png',
       ]) {
         expect(dashboardRuntimeSource, contains(asset));
       }
