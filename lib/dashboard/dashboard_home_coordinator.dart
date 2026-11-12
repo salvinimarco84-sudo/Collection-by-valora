@@ -415,7 +415,8 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final appearance = ValoraAppearance.instance;
     return DashboardSectionContent(
       background: DashboardSectionBackground(
-        customImage: appearance.imageUrls[section.title],
+        // WANTED LIST usa sempre lo sfondo ufficiale del gruppo: evita override personalizzati non validi.
+        customImage: section.title == 'WANTED LIST' ? null : appearance.imageUrls[section.title],
         backgroundAsset: _sectionBackgroundAsset(section.title),
         backgroundColor: appearance.background,
         imageUrlResolver: _valoraImageProxyUrl,
