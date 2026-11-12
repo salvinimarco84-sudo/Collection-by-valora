@@ -13,6 +13,7 @@ class DashboardSection {
 
 const List<DashboardSection> dashboardSections = [
   DashboardSection(title: 'CATALOGO', description: 'Consulta e gestisci gli oggetti', icon: Icons.inventory_2_outlined, color: Color(0xFF3978C5)),
+  DashboardSection(title: 'WANTED LIST', description: 'Gestisci desideri, obiettivi di acquisto, offerte e storico.', icon: Icons.bookmark_outline, color: Color(0xFFB8BEC6)),
   DashboardSection(title: 'ACQUISTI', description: 'Gestione acquisti e allocazioni', icon: Icons.shopping_cart_outlined, color: Color(0xFFC74444)),
   DashboardSection(title: 'VENDITE', menuTitle: 'VENDITE E INSERZIONI', description: 'Vendite e inserzioni', icon: Icons.sell_outlined, color: Color(0xFF39875B)),
   DashboardSection(title: 'VALUTAZIONI', description: 'VALORA e valore collezione', icon: Icons.query_stats, color: Color(0xFF8556C7)),
@@ -32,6 +33,14 @@ class ProcedureEntry {
 }
 
 const Map<String, List<ProcedureEntry>> sectionProcedures = {
+  'WANTED LIST': [
+    ProcedureEntry(title: 'NUOVO DESIDERIO', description: 'Inserisci un oggetto che desideri acquistare.', apiCode: 'WANTED-NEW', readOnly: false),
+    ProcedureEntry(title: 'LISTA DEI DESIDERI', description: 'Consulta gli oggetti ancora da acquistare.', apiCode: 'WANTED-ACTIVE'),
+    ProcedureEntry(title: 'OBIETTIVI DI ACQUISTO', description: 'Organizza gli obiettivi per tema e priorità, senza dati economici.', apiCode: 'WANTED-GOALS', readOnly: false),
+    ProcedureEntry(title: 'ACQUISTO WANTED LIST', description: 'Avvia l'acquisto del desiderio tramite la procedura PR-04.', apiCode: 'WANTED-PURCHASE', readOnly: false),
+    ProcedureEntry(title: 'RICERCA OFFERTE', description: 'Usa PR-12 per cercare offerte sul desiderio selezionato e salvare i candidati da verificare.', apiCode: 'WANTED-OFFERS'),
+    ProcedureEntry(title: 'STORICO WANTED LIST', description: 'Consulta desideri conclusi, offerte salvate e collegamento agli oggetti acquistati.', apiCode: 'WANTED-HISTORY'),
+  ],
   'CATALOGO': [
     ProcedureEntry(title: 'Nuovo oggetto', description: 'Crea un oggetto e prepara i metadati per la ricerca.', apiCode: 'PR-01', readOnly: false),
     ProcedureEntry(title: 'Modifica oggetto', description: 'Carica la scheda completa prima di modificarla.', apiCode: 'PR-02', readOnly: false),
