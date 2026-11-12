@@ -273,7 +273,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   Image.asset(
                     selectedSection == null
                         ? valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)
-                        : _sectionBackgroundAsset(selectedSection!.title),
+                        : '',
                     fit: BoxFit.cover,
                     alignment: Alignment.center,
                     errorBuilder: (_, __, ___) => const ColoredBox(color: backgroundColor),
@@ -281,7 +281,7 @@ class _HomeDashboardState extends State<HomeDashboard> {
                   Image.asset(
                     selectedSection == null
                         ? valoraThemeAsset(ValoraAppearance.instance.selectedThemeId)
-                        : _sectionBackgroundAsset(selectedSection!.title),
+                        : '',
                     fit: BoxFit.contain,
                     alignment: Alignment.center,
                     errorBuilder: (_, __, ___) => const SizedBox.shrink(),
@@ -414,7 +414,12 @@ class _HomeDashboardState extends State<HomeDashboard> {
     final procedures = sectionProcedures[section.title] ?? const <ProcedureEntry>[];
     final appearance = ValoraAppearance.instance;
     return DashboardSectionContent(
-      background: const SizedBox.shrink(),
+      background: DashboardSectionBackground(
+        customImage: appearance.imageUrls[section.title],
+        backgroundAsset: _sectionBackgroundAsset(section.title),
+        backgroundColor: appearance.background,
+        imageUrlResolver: _valoraImageProxyUrl,
+      ),
       header: DashboardSectionHeader(
         title: section.title,
         description: ValoraI18n.tr(section.description),
