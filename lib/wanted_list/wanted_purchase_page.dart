@@ -41,7 +41,6 @@ class _WantedPurchasePageState extends State<WantedPurchasePage> {
   Future<void> _startPurchase(Map<String, dynamic> desire) async {
     final result = await Navigator.of(context).push<bool>(MaterialPageRoute(
       builder: (_) => NewPurchasePage(
-        wantedDesireId: desire['id'].toString(),
         initialMetadata: {'descrizione': desire['descrizione']},
       ),
     ));
