@@ -113,8 +113,12 @@ class PreorderRepository {
       'data_uscita_prevista': expectedReleaseDate == null ? null : _date(expectedReleaseDate),
       'prezzo_concordato': _money(agreedPriceCents),
       'categoria': category.trim().isEmpty ? null : category.trim(),
+      'riferimento_ordine': orderReference?.trim().isEmpty ?? true ? null : orderReference!.trim(),
       'note': notes.trim().isEmpty ? null : notes.trim(),
-    }).eq('codice_preordine', code);
+    }).eq('codice_preordine', code).select('codice_preordine').maybeSingle();
+    if (updated == null) {
+      throw StateError('Preorder non aggiornato: record non trovato o permessi insufficienti.');
+    }
     return get(id);
   }
 
@@ -239,6 +243,7 @@ class PreorderRepository {
       category: (row['categoria'] ?? '').toString(),
       imageReference: row['immagine_riferimento']?.toString(),
       notes: (row['note'] ?? '').toString(),
+      orderReference: (row['riferimento_ordine'] ?? '').toString(),
       payments: payments,
       status: _statusFromDb(row['stato']?.toString()),
       purchaseId: row['codice_acquisto_convertito']?.toString(),
