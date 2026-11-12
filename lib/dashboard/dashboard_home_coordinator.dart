@@ -472,7 +472,9 @@ class _HomeDashboardState extends State<HomeDashboard> {
                                         ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ValoraServicePage()))
                                         : procedure.apiCode == 'LAUNCH-COLLECTION-VALUE'
                                             ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CollectionValuePage()))
-                                            : procedure.apiCode == 'WRITE-PR-04'
+                                            : procedure.apiCode == 'PR-15-PREORDER'
+                                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Pr15PreorderPage()))
+                                                : procedure.apiCode == 'WRITE-PR-04'
                                                 ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewPurchasePage()))
                                                 : procedure.apiCode == 'WRITE-PR-05'
                                                     ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EditPurchasePage()))
