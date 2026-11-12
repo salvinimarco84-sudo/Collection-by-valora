@@ -66,7 +66,6 @@ part 'procedures/pr01_runtime_procedure.dart';
 part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
 part 'purchases/pr04_draft_controller.dart';
-part 'purchases/pr04_validation_controller.dart';
 part 'purchases/pr04_queue_controller.dart';
 part 'purchases/pr04_lock_controller.dart';
 part 'purchases/pr04_wanted_link_controller.dart';

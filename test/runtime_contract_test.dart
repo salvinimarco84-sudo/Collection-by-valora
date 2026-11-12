@@ -14,7 +14,6 @@ void main() {
   final pr04MetadataControllerSource = File('lib/purchases/pr04_metadata_controller.dart').readAsStringSync();
   final pr04ItemDraftSource = File('lib/purchases/pr04_item_draft.dart').readAsStringSync();
   final pr04DraftControllerSource = File('lib/purchases/pr04_draft_controller.dart').readAsStringSync();
-  final pr04ValidationControllerSource = File('lib/purchases/pr04_validation_controller.dart').readAsStringSync();
   final pr04QueueControllerSource = File('lib/purchases/pr04_queue_controller.dart').readAsStringSync();
   final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
@@ -73,7 +72,7 @@ void main() {
   final pr08OpenSaleCardSource = File('lib/procedures/pr08_open_sale_card.dart').readAsStringSync();
   final pr08SalesPreviewCardSource = File('lib/procedures/pr08_sales_preview_card.dart').readAsStringSync();
   final writeProcedureActionPanelSource = File('lib/procedures/write_procedure_action_panel.dart').readAsStringSync();
-  final purchaseRuntimeSource = '$source\\n${File('lib/purchases/pr04_draft_controller.dart').readAsStringSync()}\\n$pr04QueueControllerSource\\n$pr04ValidationControllerSource\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
+  final purchaseRuntimeSource = '$source\\n${File('lib/purchases/pr04_draft_controller.dart').readAsStringSync()}\\n$pr04QueueControllerSource\\n$pr04RuntimeProcedureSource\\n$pr05RuntimeProcedureSource\\n$pr04StepContentSource';
   final valoraI18nSource = File('lib/localization/valora_i18n.dart').readAsStringSync();
   final startupFailurePageSource = File('lib/startup/startup_failure_page.dart').readAsStringSync();
   final startupLoadingPageSource = File('lib/startup/startup_loading_page.dart').readAsStringSync();
@@ -1715,12 +1714,9 @@ void main() {
 
   test('PR-04 separa la coda acquisti e il payload dalla validazione bozza', () {
     expect(source, contains("part 'purchases/pr04_queue_controller.dart';"));
-    expect(source, contains("part 'purchases/pr04_validation_controller.dart';"));
     expect(pr04DraftControllerSource, isNot(contains('_currentPurchaseOperation')));
     expect(pr04DraftControllerSource, isNot(contains('_queueCurrentAndStartNext')));
-    expect(pr04DraftControllerSource, isNot(contains('bool _valid()')));
-    expect(pr04ValidationControllerSource, contains('extension _Pr04ValidationController'));
-    expect(pr04ValidationControllerSource, contains('bool _valid()'));
+    expect(pr04DraftControllerSource, contains('bool _valid()'));
     expect(pr04QueueControllerSource, contains('extension _Pr04QueueController on _NewPurchasePageState'));
     expect(pr04QueueControllerSource, contains('_currentPurchaseOperation'));
     expect(pr04QueueControllerSource, contains("'operazioni': [..._pendingPurchases, _currentPurchaseOperation()]" ));
