@@ -437,6 +437,18 @@ class _HomeDashboardState extends State<HomeDashboard> {
                 : procedure.apiCode == 'PR-21-SEARCH'
                     ? () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const CategoryObjectSearchPage()))
+                    : procedure.apiCode == 'WANTED-NEW'
+                        ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedNewDesirePage()))
+                        : procedure.apiCode == 'WANTED-ACTIVE'
+                            ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedActiveDesiresPage()))
+                            : procedure.apiCode == 'WANTED-GOALS'
+                                ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedPurchaseObjectivesPage()))
+                                : procedure.apiCode == 'WANTED-PURCHASE'
+                                    ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedPurchasePage()))
+                                    : procedure.apiCode == 'WANTED-OFFERS'
+                                        ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedOffersPage()))
+                                        : procedure.apiCode == 'WANTED-HISTORY'
+                                            ? () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const WantedHistoryPage()))
                     : (procedure.apiCode == 'OBJECT-IMPORT' || procedure.apiCode == 'OBJECT-EXPORT')
                         ? () => Navigator.of(context).push(MaterialPageRoute(
                               builder: (_) => ObjectTransferPage(importMode: procedure.apiCode == 'OBJECT-IMPORT')))
