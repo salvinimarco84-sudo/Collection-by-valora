@@ -3,6 +3,24 @@ part of '../main.dart';
 extension _Pr04DraftController on _NewPurchasePageState {
   void _invalidate() { _preview = null; _dataConfirmed = false; }
 
+  Future<void> _pickDate() async {
+    final d = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(1990),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      helpText: 'DATA DELL’ACQUISTO',
+      cancelText: 'ANNULLA',
+      confirmText: 'CONFERMA DATA',
+    );
+    if (d != null && mounted) {
+      setState(() {
+        _date = d;
+        _invalidate();
+      });
+    }
+  }
+
   void _resize(int n) {
     while (_items.length < n) { _items.add(_PurchaseItemDraft()); }
     while (_items.length > n) { _items.removeLast().dispose(); }

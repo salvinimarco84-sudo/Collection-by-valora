@@ -71,7 +71,6 @@ part 'purchases/pr04_lock_controller.dart';
 part 'purchases/pr04_wanted_link_controller.dart';
 part 'purchases/pr04_save_controller.dart';
 part 'purchases/pr04_runtime_procedure.dart';
-part 'purchases/pr04_data_controller.dart';
 part 'purchases/pr04_category_controller.dart';
 part 'purchases/pr04_metadata_controller.dart';
 part 'purchases/pr04_item_draft.dart';

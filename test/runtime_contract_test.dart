@@ -15,7 +15,6 @@ void main() {
   final pr04ItemDraftSource = File('lib/purchases/pr04_item_draft.dart').readAsStringSync();
   final pr04DraftControllerSource = File('lib/purchases/pr04_draft_controller.dart').readAsStringSync();
   final pr04QueueControllerSource = File('lib/purchases/pr04_queue_controller.dart').readAsStringSync();
-  final pr04DataControllerSource = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
   final pr04PhotoControllerSource = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
   final pr04PhotoRecognitionControllerSource = File('lib/purchases/pr04_photo_recognition_controller.dart').readAsStringSync();
   final pr04PagePresentationSource = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
@@ -732,7 +731,6 @@ void main() {
 
     test('PR-04 mantiene la pagina sottile e separa stato, dati, foto e presentazione', () {
       expect(source, contains("part 'purchases/pr04_page_state.dart';"));
-      expect(source, contains("part 'purchases/pr04_data_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_draft_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_lock_controller.dart';"));
       expect(source, contains("part 'purchases/pr04_photo_controller.dart';"));
@@ -750,7 +748,6 @@ void main() {
       final state = File('lib/purchases/pr04_page_state.dart').readAsStringSync();
       final draftController = File('lib/purchases/pr04_draft_controller.dart').readAsStringSync();
       final runtime = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
-      final data = File('lib/purchases/pr04_data_controller.dart').readAsStringSync();
       final photo = File('lib/purchases/pr04_photo_controller.dart').readAsStringSync();
       final photoRecognition = File('lib/purchases/pr04_photo_recognition_controller.dart').readAsStringSync();
       final presentation = File('lib/purchases/pr04_page_presentation.dart').readAsStringSync();
@@ -761,6 +758,8 @@ void main() {
       expect(state, isNot(contains('Future<void> _loadCollectionCategories()')));
       expect(pr04CategoryControllerSource, contains('Future<void> _loadCollectionCategories()'));
       expect(draftController, contains('extension _Pr04DraftController'));
+      expect(draftController, contains('Future<void> _pickDate()'));
+      expect(draftController, contains('DATA DELL’ACQUISTO'));
       expect(draftController, isNot(contains('void _queueCurrentAndStartNext()')));
       expect(draftController, isNot(contains('Map<String, dynamic> _payload(')));
       expect(pr04QueueControllerSource, contains('void _queueCurrentAndStartNext()'));
