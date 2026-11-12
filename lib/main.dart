@@ -21,6 +21,8 @@ import 'startup/startup_failure_page.dart';
 import 'startup/startup_loading_page.dart';
 import 'authentication/authentication_gate.dart';
 import 'procedures/procedure_registry.dart';
+import 'procedures/pr15/preorder_domain.dart';
+import 'procedures/pr15/preorder_repository.dart';
 import 'purchases/purchase_comparison_page.dart';
 import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
@@ -148,6 +150,7 @@ part 'procedures/valora_catalog_objects_controller.dart';
 part 'procedures/collection_value_page.dart';
 part 'procedures/collection_value_presentation.dart';
 part 'procedures/pr12_batch_page.dart';
+part 'procedures/pr15/preorder_page.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
