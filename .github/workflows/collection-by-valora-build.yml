@@ -58,8 +58,8 @@ jobs:
           cp valora_logo.png assets/valora_logo.png
           python apply_valora_logo.py
           WRAPPER=android/gradle/wrapper/gradle-wrapper.properties
-          sed -E -i 's#^distributionUrl=.*#distributionUrl=https://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip#' "$WRAPPER"
-          grep -Fq 'distributionUrl=https://downloads.gradle.org/distributions/gradle-9.3.1-bin.zip' "$WRAPPER"
+          sed -E -i 's#^distributionUrl=.*#distributionUrl=https://downloads.gradle.org/distributions/gradle-9.5.0-bin.zip#' "$WRAPPER"
+          grep -Fq 'distributionUrl=https://downloads.gradle.org/distributions/gradle-9.5.0-bin.zip' "$WRAPPER"
           rm -f test/widget_test.dart widget_test.dart main.dart
 
       - name: Verify Android Internet permission
