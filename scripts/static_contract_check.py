@@ -12,6 +12,7 @@ main = (root / "lib" / "main.dart").read_text(encoding="utf-8")
 pr06_page_state = (root / "lib" / "procedures" / "pr06_page_state.dart").read_text(encoding="utf-8")
 pr02_runtime = (root / "lib" / "procedures" / "pr02_runtime_procedure.dart").read_text(encoding="utf-8")
 pr02_save = (root / "lib" / "procedures" / "pr02_save_workflow.dart").read_text(encoding="utf-8")
+object_search = (root / "lib" / "procedures" / "object_search_workflow.dart").read_text(encoding="utf-8")
 pubspec = (root / "pubspec.yaml").read_text(encoding="utf-8")
 workflow_path = root / ".github" / "workflows" / "collection-valora-ci.yml"
 workflow = workflow_path.read_text(encoding="utf-8") if workflow_path.exists() else ""
@@ -21,6 +22,10 @@ checks = {
     "put-for-sale action is wired": "METTI IN VENDITA" in main and "Future<void> _putObjectForSale()" in main,
     "new sale screen exists": "class NewSalePage" in pr06_page_state,
     "new sale can preselect the requested object": "NewSalePage(initialObjectCode: id)" in main and "final int? initialObjectCode;" in pr06_page_state,
+    "shared object search workflow is extracted": "Future<void> _searchPr02Objects() async" in object_search and "Future<void> _searchPr02Objects() async" not in main,
+    "shared object search keeps PR-02 and PR-21 RPC routing": "'pr_02_ricerca_oggetti'" in object_search and "'pr_21_ricerca_schede'" in object_search,
+    "shared object search keeps direct catalog fallback": "from('master_oggetti')" in object_search and "fallback ricerca diretta catalogo" in object_search,
+    "shared object search keeps other procedure consumers": "widget.apiCode == 'PR-03'" in object_search and "widget.apiCode == 'OBJECT_MASTER'" in object_search and "widget.apiCode == 'EXPLORE_RECORDS'" in object_search,
     "PR-02 loads editable collection categories": "widget.apiCode == 'PR-02'" in main and "_loadCollectionCategories();" in main and "_collectionCategoryField()" in (root / "lib" / "procedures" / "pr02_page_workflow.dart").read_text(encoding="utf-8"),
     "PR-02 collection category is selected": "_selectedCollectionCategory" in main and "categoria_collezione_selezionata" in main,
     "PR-02 removes technical category from object payload": "oggetto_collezione_categoria" in pr02_save and "_savePr02PendingChanges" in pr02_save,
