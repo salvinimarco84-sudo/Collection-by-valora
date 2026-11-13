@@ -8,7 +8,6 @@ class Pr02Page extends StatelessWidget {
     required this.sectionColor,
     required this.userLabel,
     required this.lockHeld,
-    required this.loading,
     required this.content,
     required this.status,
     required this.scrollController,
@@ -17,7 +16,6 @@ class Pr02Page extends StatelessWidget {
   final Color sectionColor;
   final String userLabel;
   final bool lockHeld;
-  final bool loading;
   final Widget content;
   final String status;
   final ScrollController scrollController;
@@ -27,7 +25,7 @@ class Pr02Page extends StatelessWidget {
     appBar: AppBar(title: const Text('PR-02 · MODIFICA OGGETTO')),
     body: ListView(
       controller: scrollController,
-      key: const PageStorageKey<String>('pr02-dedicated-screen'),
+      key: const PageStorageKey<String>('pr02-replacement-screen'),
       padding: const EdgeInsets.all(16),
       children: [
         Card(
@@ -40,14 +38,11 @@ class Pr02Page extends StatelessWidget {
             ),
           ),
         ),
-        if (loading) const LinearProgressIndicator(),
         content,
         if (status.isNotEmpty)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: SelectableText(status, style: const TextStyle(fontSize: 13)),
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Text(status),
           ),
       ],
     ),
