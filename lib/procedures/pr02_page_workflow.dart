@@ -7,7 +7,6 @@ extension _Pr02PageWorkflow on _ObjectRuntimePageState {
       sectionColor: sectionColor,
       userLabel: Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata',
       lockHeld: _lockHeld,
-      loading: _loading,
       status: _output,
       scrollController: _pr02ScrollController,
       content: Column(
