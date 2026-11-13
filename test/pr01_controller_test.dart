@@ -102,6 +102,7 @@ void main() {
     expect(buildPayload, throwsA(isA<Exception>()));
   });
 
+  // Copre il percorso positivo completo del lotto PR-01.
   test('salva il blocco solo dopo preview e review e persiste ogni oggetto', () async {
     controller.pendingObjects.add({
       'oggetto': {'descrizione': 'Set di prova', 'quantita': 2},
