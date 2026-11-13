@@ -3272,8 +3272,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     throw Exception('Procedura di scrittura non riconosciuta.');
   }
 
-  }
-
   Future<void> _selectHistoryObject(Map<String, dynamic> item) async {
     final id=int.tryParse(item['codice_oggetto']?.toString()??'');
     if(id==null||id<=0)throw Exception('Il risultato non contiene un codice oggetto valido.');
