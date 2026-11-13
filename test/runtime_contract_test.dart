@@ -78,6 +78,7 @@ void main() {
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
   final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
   final pr01PageWorkflowSource = File('lib/procedures/pr01_page_workflow.dart').readAsStringSync();
+  final pr01ConfirmationWorkflowSource = File('lib/procedures/pr01_confirmation_workflow.dart').readAsStringSync();
   final pr01SaveWorkflowSource = File('lib/procedures/pr01_save_workflow.dart').readAsStringSync();
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
@@ -883,7 +884,7 @@ void main() {
       expect(pr01PageWorkflowSource, contains('Widget _buildPr01Page()'));
       expect(pr01PageWorkflowSource, contains('Pr01Page('));
       expect(pr01PageWorkflowSource, contains('Pr01FormContent('));
-      expect(pr01PageWorkflowSource, contains('_confirmAndSaveNewObject'));
+      expect(pr01ConfirmationWorkflowSource, contains('_confirmAndSaveNewObject'));
       expect(pr01PageWorkflowSource, contains('_releaseLock'));
       expect(pr01PageWorkflowSource, contains('_initializePr01Page()'));
       expect(pr01PageWorkflowSource, contains('_disposePr01Page()'));
@@ -917,11 +918,15 @@ void main() {
     });
 
     test('PR-01 accoda gli oggetti e salva il blocco solo dopo la scelta finale', () {
-      expect(pr01SaveWorkflowSource, contains('_pr01PendingObjects.add({'));
-      expect(pr01SaveWorkflowSource, contains('await _savePr01PendingObjects();'));
-      expect(pr01SaveWorkflowSource, contains('NO, SALVA IL BLOCCO'));
+      expect(source, contains("part 'procedures/pr01_confirmation_workflow.dart';"));
+      expect(pr01ConfirmationWorkflowSource, contains('extension _Pr01ConfirmationWorkflow'));
+      expect(pr01ConfirmationWorkflowSource, contains('_pr01PendingObjects.add({'));
+      expect(pr01ConfirmationWorkflowSource, contains('await _savePr01PendingObjects();'));
+      expect(pr01ConfirmationWorkflowSource, contains('NO, SALVA IL BLOCCO'));
+      expect(pr01ConfirmationWorkflowSource, contains('Future<void> _confirmAndSaveNewObject() async'));
+      expect(pr01SaveWorkflowSource, contains('extension _Pr01SaveWorkflow'));
       expect(pr01SaveWorkflowSource, contains('Future<void> _savePr01PendingObjects() async'));
-      expect(pr01SaveWorkflowSource, contains('Future<void> _confirmAndSaveNewObject() async'));
+      expect(pr01ConfirmationWorkflowSource, isNot(contains('Future<void> _savePr01PendingObjects() async')));
       expect(pr01PageWorkflowSource, contains('_run(_confirmAndSaveNewObject)'));
       expect(pr01ControllerSource, contains('Seleziona una categoria COLLEZIONE valida.'));
     });
