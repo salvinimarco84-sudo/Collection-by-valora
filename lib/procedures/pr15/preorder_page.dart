@@ -344,6 +344,7 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
   List<Map<String, dynamic>> _history = [];
   bool _busy = false;
   String? _error;
+  String? _imageUrl;
 
   @override
   void initState() { super.initState(); _load(); }
@@ -353,7 +354,17 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
     try {
       final record = await _repository.get(widget.preorderId);
       final history = await _repository.history(widget.preorderId);
-      if (mounted) setState(() { _record = record; _history = history; });
+      String? imageUrl;
+      final imageResponse = await Supabase.instance.client.functions.invoke(
+        'collection-object-images-test',
+        body: {'action': 'get', 'target_type': 'preorder', 'codice_preordine': int.parse(widget.preorderId)},
+      );
+      final imageData = imageResponse.data;
+      if (imageData is Map && imageData['ok'] == true) {
+        final candidate = (imageData['signed_url'] ?? '').toString().trim();
+        if (candidate.startsWith('https://') || candidate.startsWith('http://')) imageUrl = candidate;
+      }
+      if (mounted) setState(() { _record = record; _history = history; _imageUrl = imageUrl; });
     } catch (e) {
       if (mounted) setState(() => _error = 'Lettura preorder non riuscita: $e');
     } finally { if (mounted) setState(() => _busy = false); }
@@ -361,6 +372,119 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
 
   String _money(int cents) => '€ ${(cents / 100).toStringAsFixed(2).replaceAll('.', ',')}';
   String _date(DateTime? d) => d == null ? 'Non indicata' : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+  Future<void> _searchImage() async {
+    final urlController = TextEditingController();
+    final query = _record!.description.trim();
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('RICERCA IMMAGINE PREORDER'),
+        content: SizedBox(width: 520, child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Cerca un’immagine del prodotto, poi incolla qui il collegamento diretto al file immagine. La ricerca non utilizza crediti AI.'),
+            const SizedBox(height: 12),
+            SizedBox(width: double.infinity, child: OutlinedButton.icon(
+              onPressed: () async {
+                final uri = Uri.https('www.google.com', '/search', {'tbm': 'isch', 'q': query});
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              },
+              icon: const Icon(Icons.image_search_outlined),
+              label: const Text('APRI RICERCA IMMAGINI'),
+            )),
+            const SizedBox(height: 8),
+            TextField(
+              controller: urlController,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: 'URL diretto dell’immagine',
+                hintText: 'https://.../immagine.jpg',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text('Sono accettati file JPEG, PNG e WebP fino a 10 MB.',
+              style: TextStyle(fontSize: 12, color: ValoraAppearance.instance.textSecondary)),
+          ],
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ANNULLA')),
+          FilledButton(
+            onPressed: () {
+              final value = urlController.text.trim();
+              final uri = Uri.tryParse(value);
+              if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('Inserisci un URL HTTPS diretto e valido.')),
+                );
+                return;
+              }
+              Navigator.pop(dialogContext, value);
+            },
+            child: const Text('IMPORTA IMMAGINE'),
+          ),
+        ],
+      ),
+    );
+    urlController.dispose();
+    if (result == null || !mounted) return;
+
+    try {
+      setState(() => _busy = true);
+      final uri = Uri.parse(result);
+      final response = await http.get(uri).timeout(const Duration(seconds: 25));
+      if (response.statusCode != 200) throw Exception('Il sito ha risposto con HTTP ${response.statusCode}.');
+      final mime = (response.headers['content-type'] ?? '').split(';').first.trim().toLowerCase();
+      const allowed = {'image/jpeg', 'image/png', 'image/webp'};
+      if (!allowed.contains(mime)) throw Exception('Il collegamento non restituisce un’immagine JPEG, PNG o WebP.');
+      if (response.bodyBytes.isEmpty || response.bodyBytes.length > 10 * 1024 * 1024) {
+        throw Exception('Immagine vuota o superiore a 10 MB.');
+      }
+      final extension = mime == 'image/png' ? 'png' : mime == 'image/webp' ? 'webp' : 'jpg';
+      final fileName = 'preorder_${widget.preorderId}_${DateTime.now().microsecondsSinceEpoch}.$extension';
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) throw Exception('Sessione utente non disponibile.');
+      final path = '$userId/${widget.preorderId}/$fileName';
+      await Supabase.instance.client.storage.from('pr01-foto-temporanee').uploadBinary(
+        path,
+        response.bodyBytes,
+        fileOptions: FileOptions(contentType: mime, upsert: false),
+      );
+      try {
+        final registered = await Supabase.instance.client.functions.invoke(
+          'collection-object-images-test',
+          body: {
+            'action': 'register',
+            'target_type': 'preorder',
+            'codice_preordine': int.parse(widget.preorderId),
+            'path': path,
+            'file_name': fileName,
+            'modalita_acquisizione': 'RICERCA_CATALOGO',
+            'procedura_origine': 'PREORDER',
+          },
+        );
+        final data = registered.data;
+        if (data is! Map || data['ok'] != true) {
+          throw Exception(data is Map ? (data['error'] ?? 'Registrazione immagine non riuscita') : 'Risposta non valida dal servizio immagini.');
+        }
+      } catch (e) {
+        await Supabase.instance.client.storage.from('pr01-foto-temporanee').remove([path]);
+        rethrow;
+      }
+      await _load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Immagine associata al preorder.')),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ricerca/importazione immagine non riuscita: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _edit(PreorderRecord record) async {
     final result = await showDialog<Map<String, dynamic>>(
@@ -509,6 +633,30 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
           : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: [
             Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(r.description, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 12),
+              if (_imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(_imageUrl!, height: 190, width: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const SizedBox(height: 100,
+                      child: Center(child: Icon(Icons.broken_image_outlined, size: 36)))),
+                )
+              else
+                Container(height: 112, width: double.infinity,
+                  decoration: BoxDecoration(color: ValoraAppearance.instance.card,
+                    borderRadius: BorderRadius.circular(12)),
+                  child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.image_search_outlined, size: 30),
+                    SizedBox(height: 6),
+                    Text('Nessuna immagine associata'),
+                  ])),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                onPressed: _busy ? null : _searchImage,
+                icon: const Icon(Icons.image_search_outlined),
+                label: Text(_imageUrl == null ? 'CERCA IMMAGINE' : 'CAMBIA IMMAGINE'),
+              )),
               const SizedBox(height: 8),
               Text('Fornitore: ${r.supplier}'),
               Text('Categoria: ${r.category.isEmpty ? 'Non indicata' : r.category}'),
