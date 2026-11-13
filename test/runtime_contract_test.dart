@@ -891,7 +891,7 @@ void main() {
       expect(pr03ControllerBindingsSource, contains('set _closeReason(String value)'));
       expect(source, isNot(contains('get _pr03PendingClosures =>')));
       expect(source, isNot(contains("final List<Map<String, dynamic>> _pr03PendingClosures = []")));
-      expect(pr03RuntimeProcedureSource, contains('_savePr03PendingClosures()'));
+      expect(pr03ClosureConfirmationSource, contains('_savePr03PendingClosures()'));
       expect(pr03RuntimeProcedureSource, isNot(contains("_ValoraRuntimeApi.procedure('PR-03'")));
       expect(source, contains("part 'procedures/pr03_runtime_procedure.dart';"));
       expect(source, contains("part 'procedures/pr03_closure_confirmation.dart';"));
