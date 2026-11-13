@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,6 +13,13 @@ class Pr01Controller {
   List<Map<String, dynamic>> collectionCategories = <Map<String, dynamic>>[];
   String? selectedCollectionCategory;
   bool categoriesLoading = false;
+
+  // Stato fotografico condiviso dal flusso PR-01 e dalla scheda oggetto.
+  Uint8List? selectedImageBytes;
+  String? selectedImageName;
+  String imageAcquisition = 'CARICAMENTO_FILE';
+  String? existingImageUrl;
+  String imageStatus = 'Nessuna immagine selezionata.';
 
   final List<Map<String, dynamic>> pendingObjects = <Map<String, dynamic>>[];
   String? pendingRequestId;
