@@ -36,44 +36,20 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
           .toList();
       final ids = rows.map((r) => r['id'].toString()).toList();
       if (ids.isNotEmpty) {
-        final shared = await Supabase.instance.client.schema('collection')
-            .from('immagini_oggetto')
-            .select('wanted_id, url_fonte, riferimento_immagine, immagine_principale, data_registrazione')
-            .inFilter('wanted_id', ids)
-            .order('immagine_principale', ascending: false)
-            .order('data_registrazione', ascending: false);
-        final best = <String, Map<String, dynamic>>{};
-        for (final item in (shared as List).whereType<Map>()) {
-          final image = Map<String, dynamic>.from(item);
-          final id = image['wanted_id']?.toString();
-          if (id != null && !best.containsKey(id)) best[id] = image;
+        final response = await Supabase.instance.client.functions.invoke(
+          'collection-object-images-test',
+          body: {'action': 'get_wanted_batch', 'target_type': 'wanted', 'wanted_ids': ids},
+        );
+        if (response.status < 200 || response.status >= 300 || response.data is! Map ||
+            (response.data as Map)['ok'] != true) {
+          throw StateError('Impossibile caricare le immagini condivise della Wanted List.');
         }
+        final imageMap = Map<String, dynamic>.from((response.data as Map)['images'] as Map? ?? const {});
         for (final row in rows) {
-          final id = row['id'].toString();
-          final image = best[id];
-          if (image != null) {
-            final source = (image['url_fonte'] ?? '').toString();
-            const prefix = 'storage://pr01-foto-temporanee/';
-            if (source.startsWith(prefix)) {
-              try {
-                row['immagine_url'] = await Supabase.instance.client.storage
-                    .from('pr01-foto-temporanee')
-                    .createSignedUrl(source.substring(prefix.length), 3600);
-                row['immagine_path'] = source.substring(prefix.length);
-                row['immagine_fonte'] = 'ARCHIVIO CONDIVISO';
-              } catch (_) { row['immagine_url'] = null; }
-            } else if (source.startsWith('https://') || source.startsWith('http://')) {
-              row['immagine_url'] = source;
-            }
-          }
-          if (row['immagine_url'] == null) {
-            final legacyPath = row['immagine_path']?.toString();
-            if (legacyPath != null && legacyPath.isNotEmpty) {
-              try {
-                row['immagine_url'] = await Supabase.instance.client.storage
-                    .from('wanted-list-images-test').createSignedUrl(legacyPath, 3600);
-              } catch (_) { row['immagine_url'] = null; }
-            }
+          final url = imageMap[row['id'].toString()];
+          if (url is String && url.isNotEmpty) {
+            row['immagine_url'] = url;
+            row['immagine_fonte'] = 'ARCHIVIO CONDIVISO';
           }
         }
       }
