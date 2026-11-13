@@ -344,7 +344,7 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
                                     Wrap(spacing: 8, children: [
                                       TextButton.icon(onPressed: () => _changeImage(row),
                                         icon: const Icon(Icons.add_photo_alternate_outlined),
-                                        label: Text(row['immagine_path'] == null ? 'AGGIUNGI IMMAGINE' : 'CAMBIA IMMAGINE')),
+                                        label: Text(row['immagine_url'] == null ? 'AGGIUNGI IMMAGINE' : 'CAMBIA IMMAGINE')),
                                       TextButton.icon(onPressed: () => _searchAndImportImage(row),
                                         icon: const Icon(Icons.auto_awesome_outlined),
                                         label: const Text('CERCA IMMAGINE CON PR-12')),
