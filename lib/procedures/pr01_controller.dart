@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Stato e regole di dominio della procedura PR-01.
 /// La pagina runtime fornisce solo i campi condivisi e i servizi di persistenza.
@@ -13,6 +14,24 @@ class Pr01Controller {
 
   final List<Map<String, dynamic>> pendingObjects = <Map<String, dynamic>>[];
   String? pendingRequestId;
+
+  Future<List<Map<String, dynamic>>> loadCategories(SupabaseClient client) async {
+    categoriesLoading = true;
+    try {
+      final rows = await client.schema('collection')
+          .from('master_categorie_collezione')
+          .select('codice_categoria, descrizione, ordine_menu, visibile')
+          .eq('visibile', true)
+          .order('ordine_menu')
+          .order('descrizione');
+      return (rows as List)
+          .whereType<Map>()
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList();
+    } finally {
+      categoriesLoading = false;
+    }
+  }
 
   String? calculateTotal({required String quantity, required String unitPrice}) {
     final parsedQuantity = int.tryParse(quantity.trim());
