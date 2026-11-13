@@ -941,7 +941,7 @@ void main() {
     test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
       final categoryAssignmentSources = '$pr01SaveWorkflowSource\n$pr02RuntimeProcedureSource';
       expect(pr01SaveWorkflowSource, contains("'fonte_assegnazione': 'MANUALE'"));
-      expect(pr02RuntimeProcedureSource, contains("'fonte_assegnazione': 'MANUALE'"));
+      expect(pr02SaveWorkflowSource, contains("'fonte_assegnazione': 'MANUALE'"));
       expect(categoryAssignmentSources, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
       expect(categoryAssignmentSources, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
     });
