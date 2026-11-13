@@ -24,6 +24,13 @@ import 'procedures/procedure_registry.dart';
 import 'purchases/purchase_comparison_page.dart';
 import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
+import 'procedures/pr01_page.dart';
+import 'procedures/pr01_image_field.dart';
+import 'procedures/pr01_controller.dart';
+import 'services/pr01_image_manager.dart';
+
+
+
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
@@ -62,7 +69,11 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 part 'dashboard/dashboard_home_coordinator.dart';
 part 'dashboard/dashboard_collection_content.dart';
-part 'procedures/pr01_runtime_procedure.dart';
+part 'procedures/pr01_confirmation_workflow.dart';
+part 'procedures/pr01_save_workflow.dart';
+part 'procedures/pr01_data_workflow.dart';
+part 'procedures/pr01_page_workflow.dart';
+part 'procedures/pr01_image_workflow.dart';
 part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
 part 'purchases/pr04_runtime_procedure.dart';
@@ -2798,6 +2809,24 @@ class ObjectRuntimePage extends StatefulWidget {
 }
 
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
+  final Pr01Controller _pr01Controller = Pr01Controller();
+
+  String get _condition => _pr01Controller.condition;
+  set _condition(String value) => _pr01Controller.condition = value;
+  String get _completeness => _pr01Controller.completeness;
+  set _completeness(String value) => _pr01Controller.completeness = value;
+  String get _destination => _pr01Controller.destination;
+  set _destination(String value) => _pr01Controller.destination = value;
+  List<Map<String, dynamic>> get _collectionCategories => _pr01Controller.collectionCategories;
+  set _collectionCategories(List<Map<String, dynamic>> value) => _pr01Controller.collectionCategories = value;
+  String? get _selectedCollectionCategory => _pr01Controller.selectedCollectionCategory;
+  set _selectedCollectionCategory(String? value) => _pr01Controller.selectedCollectionCategory = value;
+  bool get _categoriesLoading => _pr01Controller.categoriesLoading;
+  set _categoriesLoading(bool value) => _pr01Controller.categoriesLoading = value;
+  List<Map<String, dynamic>> get _pr01PendingObjects => _pr01Controller.pendingObjects;
+  String? get _pr01PendingRequestId => _pr01Controller.pendingRequestId;
+  set _pr01PendingRequestId(String? value) => _pr01Controller.pendingRequestId = value;
+
   Color get sectionColor => sectionColorForApiCode(widget.apiCode);
   final _search = TextEditingController();
   final _description = TextEditingController();
@@ -2811,11 +2840,17 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _producer = TextEditingController();
   final _line = TextEditingController();
   final _family = TextEditingController();
-  Uint8List? _selectedImageBytes;
-  String? _selectedImageName;
-  String _imageAcquisition = 'CARICAMENTO_FILE';
-  String? _existingImageUrl;
-  String _imageStatus = 'Nessuna immagine selezionata.';
+  final Pr01ImageManager _pr01ImageManager = Pr01ImageManager();
+  Uint8List? get _selectedImageBytes => _pr01Controller.selectedImageBytes;
+  set _selectedImageBytes(Uint8List? value) => _pr01Controller.selectedImageBytes = value;
+  String? get _selectedImageName => _pr01Controller.selectedImageName;
+  set _selectedImageName(String? value) => _pr01Controller.selectedImageName = value;
+  String get _imageAcquisition => _pr01Controller.imageAcquisition;
+  set _imageAcquisition(String value) => _pr01Controller.imageAcquisition = value;
+  String? get _existingImageUrl => _pr01Controller.existingImageUrl;
+  set _existingImageUrl(String? value) => _pr01Controller.existingImageUrl = value;
+  String get _imageStatus => _pr01Controller.imageStatus;
+  set _imageStatus(String value) => _pr01Controller.imageStatus = value;
   final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
 
   final String _sessionId = _uuid.v4();
@@ -2828,12 +2863,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   bool _dataConfirmed = false;
   bool _finalReady = false;
   int? _loadedObjectId;
-  String _condition = 'USATO';
-  String _completeness = 'COMPLETO';
-  String _destination = 'COLLEZIONE';
-  List<Map<String, dynamic>> _collectionCategories = [];
-  String? _selectedCollectionCategory;
-  bool _categoriesLoading = false;
   String _closeReason = 'SMARRITO';
   String _output = 'Pronto. Le consultazioni sono in sola lettura.';
   Map<String, dynamic>? _lastResult;
@@ -2863,8 +2892,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
   bool _pr02AwaitingNextChoice = false;
   final ScrollController _pr02ScrollController = ScrollController();
-  final List<Map<String, dynamic>> _pr01PendingObjects = [];
-  String? _pr01PendingRequestId;
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
@@ -3089,10 +3116,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       // when opening an existing object so its saved category is visible/editable.
       _loadCollectionCategories();
     }
-    if (widget.apiCode == 'PR-01') {
-      _quantity.addListener(_recalculateTotal);
-      _unitPrice.addListener(_recalculateTotal);
-    }
+    _initializePr01Page();
     if (_isActiveListingsReport || widget.apiCode == 'OBJECTS_AVAILABLE') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _run(_consult);
@@ -3112,23 +3136,22 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Future<void> _loadCollectionCategories() async {
     _categoriesLoading = true;
+    if (mounted) setState(() {});
     try {
-      final rows = await Supabase.instance.client.schema('collection').from('master_categorie_collezione')
-          .select('codice_categoria, descrizione, ordine_menu, visibile').eq('visibile', true)
-          .order('ordine_menu').order('descrizione');
+      final categories = await _pr01Controller.loadCategories(
+        Supabase.instance.client,
+      );
       if (!mounted) return;
-      setState(() => _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
-    } catch (e) { if (mounted) setState(() => _output = 'Errore caricamento categorie COLLEZIONE: $e'); }
-    finally { _categoriesLoading = false; }
+      setState(() => _collectionCategories = categories);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _output = 'Errore caricamento categorie COLLEZIONE: $e');
+      }
+    } finally {
+      _categoriesLoading = false;
+      if (mounted) setState(() {});
+    }
   }
-
-  Widget _collectionCategoryField() => Padding(padding: const EdgeInsets.only(bottom: 12), child: DropdownButtonFormField<String>(
-    key: ValueKey('collection-category-${_selectedCollectionCategory ?? 'none'}-${_collectionCategories.length}-$_categoriesLoading'),
-    value: _collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory) ? _selectedCollectionCategory : null,
-    decoration: InputDecoration(labelText: 'Categoria COLLEZIONE *', helperText: _categoriesLoading ? 'Caricamento categorie…' : 'Seleziona la categoria principale.'),
-    items: _collectionCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria'].toString(), child: Text((e['descrizione'] ?? e['codice_categoria']).toString()))).toList(),
-    onChanged: _categoriesLoading ? null : (v) => setState(() => _selectedCollectionCategory = v),
-  ));
 
   void _onPr11SearchFocusChanged() {
     if (widget.apiCode != 'OBJECT_MASTER' || _pr11SearchFocusNode.hasFocus || _loading) return;
@@ -3136,24 +3159,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     if (query.length < 2 || query == _lastPr11SearchQuery) return;
     _lastPr11SearchQuery = query;
     _run(_searchPr02Objects);
-  }
-
-  void _recalculateTotal() {
-    if (widget.apiCode != 'PR-01') return;
-    final quantity = int.tryParse(_quantity.text.trim());
-    final unitText = _unitPrice.text.trim();
-    if (quantity == null || quantity < 1 || unitText.isEmpty) {
-      if (_totalValue.text.isNotEmpty) _totalValue.clear();
-      return;
-    }
-    final unitPrice = double.tryParse(unitText.replaceAll(',', '.'));
-    if (unitPrice == null || unitPrice < 0) {
-      if (_totalValue.text.isNotEmpty) _totalValue.clear();
-      return;
-    }
-    final totalCents = (unitPrice * 100 * quantity).round();
-    final total = (totalCents / 100).toStringAsFixed(2);
-    if (_totalValue.text != total) _totalValue.text = total;
   }
 
   Future<void> _releaseOwnedLockSilently() async {
@@ -3166,6 +3171,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   @override
   void dispose() {
+    _disposePr01Page();
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
@@ -3234,38 +3240,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Map<String, dynamic> _payload() {
     final id = int.tryParse(_code.text.trim());
-    if (widget.apiCode == 'PR-01') {
-      if (_description.text.trim().isEmpty) throw Exception('La descrizione è obbligatoria.');
-      if (_destination == 'COLLEZIONE' && (_selectedCollectionCategory == null || !_collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory))) throw Exception('Seleziona una categoria COLLEZIONE valida.');
-      final q = int.tryParse(_quantity.text.trim());
-      if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
-      final unitPriceText = _unitPrice.text.trim();
-      final double? unitPrice = unitPriceText.isEmpty
-          ? null
-          : _parseNonNegativeValue(unitPriceText, 'Prezzo unitario');
-      final double? totalValue = unitPrice == null
-          ? null
-          : ((unitPrice * 100 * q).round() / 100.0);
-      _recalculateTotal();
-      return {'oggetti': [{
-        'descrizione': _description.text.trim(),
-        'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
-        'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
-        'codice_prodotto': _family.text.trim().isEmpty ? null : _family.text.trim(),
-        if (_hasAnyMetadata)
-          'fonte_dati_prodotto': (_metadataSourceUrl?.trim().isNotEmpty == true)
-              ? _metadataSourceUrl!.trim()
-              : (_metadataSearchExecuted
-                  ? 'RICERCA_ESEGUITA_NESSUNA_FONTE_SELEZIONATA'
-                  : 'RICERCA_NON_ESEGUITA'),
-        if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
-        'condizione': _condition, 'completezza': _completeness,
-        'destinazione': _destination, 'quantita': q,
-        if (_destination == 'COLLEZIONE') 'codice_categoria_collezione': _selectedCollectionCategory,
-        if (totalValue != null) 'valore_oggetto': totalValue,
-        'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-      }]};
-    }
+    if (widget.apiCode == 'PR-01') return _buildPr01Payload();
     if (id == null || id <= 0) throw Exception('Inserisci un codice oggetto valido.');
     if (widget.apiCode == 'PR-02') {
       if (_loadedObjectId != id) throw Exception('Carica la scheda completa del codice selezionato prima di procedere.');
@@ -3712,332 +3687,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ]),
       ),
     );
-  }
-
-  Future<void> _pickImageFile() async {
-    try {
-      final picked = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false, withData: true);
-      if (picked == null || picked.files.isEmpty) return;
-      final file = picked.files.single;
-      final bytes = file.bytes;
-      final extension = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
-      if (!const ['jpg','jpeg','png','webp','heic','heif'].contains(extension)) {
-        throw Exception('Formato non supportato. Usa JPG, PNG, WEBP, HEIC o HEIF.');
-      }
-      if (bytes == null || bytes.isEmpty) throw Exception('Il file selezionato non contiene dati leggibili.');
-      if (bytes.length > 10 * 1024 * 1024) throw Exception('L’immagine supera il limite di 10 MB.');
-      setState(() {
-        _selectedImageBytes = bytes; _selectedImageName = file.name;
-        _imageAcquisition = 'CARICAMENTO_FILE';
-        _imageStatus = 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
-      });
-    } catch (e) {
-      if (mounted) setState(() => _imageStatus = 'Caricamento immagine non riuscito: $e');
-    }
-  }
-
-  Future<void> _captureImage() async {
-    try {
-      final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
-      if (picked == null) return;
-      final bytes = await picked.readAsBytes();
-      if (bytes.isEmpty) throw Exception('La fotocamera non ha restituito un’immagine valida.');
-      if (bytes.length > 10 * 1024 * 1024) throw Exception('La foto supera il limite di 10 MB.');
-      setState(() {
-        _selectedImageBytes = bytes; _selectedImageName = picked.name.isNotEmpty ? picked.name : 'foto_valora.jpg';
-        _imageAcquisition = 'FOTOCAMERA'; _imageStatus = 'Foto pronta. Avvia il riconoscimento per passare a PR-12.';
-      });
-    } catch (e) {
-      if (mounted) setState(() => _imageStatus = 'Scatto foto non riuscito: $e');
-    }
-  }
-
-  Future<void> _startAssistantPhoto() async {
-    if (_loading) return;
-    setState(() {
-      _selectedImageBytes = null;
-      _selectedImageName = null;
-      _imageStatus = 'Apro la fotocamera…';
-    });
-    await _captureImage();
-    if (!mounted) return;
-    if (_selectedImageBytes == null || _selectedImageBytes!.isEmpty) {
-      setState(() => _imageStatus = 'Nessuna foto acquisita. Premi ASSISTENTE VALORA per riprovare.');
-      return;
-    }
-    await _recognizeSelectedPhoto();
-  }
-
-  Future<void> _recognizeSelectedPhoto() async {
-    final bytes = _selectedImageBytes;
-    if (bytes == null || bytes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Scatta prima una foto dell’oggetto.')));
-      return;
-    }
-    setState(() { _loading = true; _imageStatus = 'Sto riconoscendo l’oggetto e cercando fonti con PR-12…'; });
-    try {
-      final mime = (_selectedImageName ?? '').toLowerCase().endsWith('.png') ? 'image/png'
-          : ((_selectedImageName ?? '').toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
-      final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
-        'azione': 'ANALIZZA_FOTO',
-        'modalita_ia': 'TEST',
-        'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}',
-        'mercato': 'Italia',
-      });
-      final data = response.data;
-      if (data is! Map || data['ok'] != true) {
-        throw Exception(data is Map ? (data['error'] ?? 'Riconoscimento non riuscito').toString() : 'Risposta PR-12 non valida');
-      }
-      final clues = data['identificazione'] is Map ? Map<String,dynamic>.from(data['identificazione']) : <String,dynamic>{};
-      final results = data['risultati'] is List ? (data['risultati'] as List).whereType<Map>().map((v)=>Map<String,dynamic>.from(v)).toList() : <Map<String,dynamic>>[];
-      if (!mounted) return;
-      final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
-      final maker = (clues['marchio'] ?? '').toString().trim();
-      final code = (clues['codice_prodotto'] ?? '').toString().trim();
-      final category = (clues['categoria'] ?? '').toString().trim();
-      setState(() {
-        if (description.isNotEmpty) _description.text = description;
-        if (maker.isNotEmpty) _producer.text = maker;
-        if (code.isNotEmpty) _family.text = code;
-        if (category.isNotEmpty) _line.text = category;
-        if (_description.text.trim().isEmpty && results.isNotEmpty) {
-          final title = (results.first['title'] ?? '').toString().trim();
-          if (title.isNotEmpty) _description.text = title;
-        }
-        _metadataSearchExecuted = true;
-        _metadataResult = results.isEmpty
-          ? 'Riconoscimento completato. Nessuna corrispondenza online affidabile: verifica e completa i dati.'
-          : 'Riconoscimento completato. PR-12 ha trovato ${results.length} risultati da verificare.';
-        final uncertainty = clues['incertezze'] is List ? (clues['incertezze'] as List).join(' · ') : '';
-        _imageStatus = 'Assistente VALORA: campi compilati con le informazioni disponibili. ${uncertainty.isNotEmpty ? "Da verificare: $uncertainty. " : ""}Controlla i dati prima di salvare.';
-      });
-      if (mounted) {
-        final details = <String>[
-          if (description.isNotEmpty) 'Descrizione',
-          if (maker.isNotEmpty) 'Marca',
-          if (code.isNotEmpty) 'Codice prodotto',
-          if (category.isNotEmpty) 'Categoria',
-        ];
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(details.isEmpty
-            ? 'Ricerca terminata. Completa manualmente i campi non riconosciuti.'
-            : 'Maschera compilata: ${details.join(", ")}. Verifica i risultati PR-12 e completa il record.'),
-          duration: const Duration(seconds: 5),
-        ));
-      }
-    } catch (e) {
-      if (mounted) setState(() => _imageStatus = 'Assistente non disponibile: $e. Puoi comunque compilare la maschera manualmente.');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  Widget _imageField() {
-    final hasSelected = _selectedImageBytes != null;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.auto_awesome, color: sectionColor, size: 26),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(ValoraI18n.tr('ASSISTENTE VALORA'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 3),
-              Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.',
-                style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
-            ])),
-          ]),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _loading ? null : _startAssistantPhoto,
-              icon: _loading
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.mic),
-              label: Text(_loading ? 'ASSISTENTE AL LAVORO…' : 'ASSISTENTE VALORA · SCATTA E CERCA'),
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-            ),
-          ),
-          if (hasSelected) ...[
-            const SizedBox(height: 10),
-            ClipRRect(borderRadius: BorderRadius.circular(10),
-              child: Image.memory(_selectedImageBytes!, height: 180, width: double.infinity, fit: BoxFit.contain)),
-          ] else if (_existingImageUrl != null && _existingImageUrl!.startsWith('http')) ...[
-            const SizedBox(height: 10),
-            ClipRRect(borderRadius: BorderRadius.circular(10),
-              child: Image.network(_valoraImageProxyUrl(_existingImageUrl!), height: 160, width: double.infinity, fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => _imagePlaceholder(size: 100))),
-          ],
-          const SizedBox(height: 8),
-          Text(_imageStatus, style: TextStyle(
-            color: _imageStatus.startsWith('Assistente non disponibile') || _imageStatus.startsWith('Scatto')
-              ? Colors.orangeAccent : ValoraAppearance.instance.textSecondary,
-            fontSize: 12)),
-          const SizedBox(height: 4),
-          Align(alignment: Alignment.centerRight, child: TextButton.icon(
-            onPressed: _loading ? null : _pickImageFile,
-            icon: const Icon(Icons.photo_library_outlined),
-            label: const Text('Scegli invece una foto dalla galleria'),
-          )),
-        ]),
-      ),
-    );
-  }
-
-  Widget _readOnlyImageCard() {
-    final imageUrl = _existingImageUrl;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('IMMAGINE OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 10),
-          if (imageUrl != null && imageUrl.startsWith('http'))
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                _valoraImageProxyUrl(imageUrl),
-                width: double.infinity,
-                height: 240,
-                fit: BoxFit.contain,
-                loadingBuilder: (context, child, progress) => progress == null
-                  ? child
-                  : SizedBox(height: 180, child: Center(child: CircularProgressIndicator(value: progress.expectedTotalBytes == null ? null : progress.cumulativeBytesLoaded / progress.expectedTotalBytes!))),
-                errorBuilder: (_, __, ___) => Column(children: [
-                  Icon(Icons.broken_image_outlined, size: 42, color: ValoraAppearance.instance.textFaint),
-                  const SizedBox(height: 6),
-                  Text('Immagine registrata, ma anteprima non disponibile.', style: TextStyle(color: ValoraAppearance.instance.textSecondary)),
-                ]),
-              ),
-            )
-          else
-            Row(children: [
-              Icon(Icons.image_outlined, size: 30, color: ValoraAppearance.instance.textFaint),
-              const SizedBox(width: 10),
-              Expanded(child: Text(
-                _imageStatus == 'Verifica immagine associata…' ? 'Caricamento immagine…' :
-                _imageStatus == 'Immagine già associata all’oggetto.' ? 'Immagine associata, ma URL non disponibile.' :
-                'Nessuna immagine associata a questo oggetto.',
-                style: TextStyle(color: ValoraAppearance.instance.textSecondary),
-              )),
-            ]),
-        ]),
-      ),
-    );
-  }
-
-  Future<String> _uploadAndRegisterImage({
-    required int objectId, required Uint8List bytes, required String fileName,
-    required String acquisition, required String procedure,
-  }) async {
-    final client = Supabase.instance.client;
-    final user = client.auth.currentUser;
-    final session = client.auth.currentSession;
-    if (user == null || session == null) throw Exception('Sessione non valida per caricare l’immagine.');
-    if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Immagine vuota o superiore a 10 MB.');
-    final safeName = fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
-    final extRaw = safeName.contains('.') ? safeName.split('.').last.toLowerCase() : 'jpg';
-    if (!const ['jpg','jpeg','png','webp','heic','heif'].contains(extRaw)) {
-      throw Exception('Formato non supportato. Usa JPG, PNG, WEBP, HEIC o HEIF.');
-    }
-    final ext = extRaw;
-    final mime = switch (ext) {
-      'png' => 'image/png', 'webp' => 'image/webp', 'heic' => 'image/heic',
-      'heif' => 'image/heif', _ => 'image/jpeg',
-    };
-    final path = '${user.id}/$objectId/${_uuid.v4()}.$ext';
-    await client.storage.from('pr01-foto-temporanee').uploadBinary(
-      path, bytes, fileOptions: FileOptions(contentType: mime, upsert: false));
-    final response = await client.functions.invoke(
-      'collection-object-images-test',
-      headers: {'Authorization': 'Bearer ${session.accessToken}'},
-      body: {'action':'register','codice_oggetto':objectId,'path':path,'file_name':safeName,
-        'modalita_acquisizione':acquisition,'procedura_origine':procedure},
-    );
-    if (response.status < 200 || response.status >= 300 || response.data is! Map) {
-      throw Exception('Registrazione immagine non confermata: ${response.data}');
-    }
-    final data = Map<String, dynamic>.from(response.data as Map);
-    if (data['ok'] != true) throw Exception(data['error'] ?? 'Registrazione immagine non confermata.');
-    final signedUrl = (data['signed_url'] ?? '').toString();
-    if (signedUrl.isEmpty) throw Exception('Immagine registrata ma anteprima non disponibile.');
-    return signedUrl;
-  }
-
-  Future<void> _loadExistingImage(int objectId) async {
-    String? imageUrl;
-    bool isHttpUrl(String value) =>
-        value.startsWith('https://') || value.startsWith('http://');
-
-    // 1) Archivio immagini applicativo: preferisce l'immagine principale confermata.
-    try {
-      final rows = await Supabase.instance.client
-          .schema('collection')
-          .from('immagini_oggetto')
-          .select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')
-          .eq('codice_oggetto', objectId)
-          .order('immagine_principale', ascending: false)
-          .limit(10);
-      for (final row in rows) {
-        // riferimento_immagine contiene l'URL diretto dell'immagine;
-        // url_fonte identifica invece la pagina sorgente del prodotto.
-        final candidate = (row['riferimento_immagine'] ?? '').toString().trim();
-        if (isHttpUrl(candidate)) {
-          imageUrl = candidate;
-          break;
-        }
-      }
-    } catch (e) {
-      debugPrint('VALORA: tabella immagini non disponibile per $objectId: $e');
-    }
-
-    // 2) Endpoint immagini: può trasformare un percorso Storage in URL firmato.
-    if (imageUrl == null) {
-      try {
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          final response = await Supabase.instance.client.functions.invoke(
-            'collection-object-images-test',
-            headers: {'Authorization': 'Bearer ${session.accessToken}'},
-            body: {'action':'get','codice_oggetto':objectId},
-          );
-          if (response.status >= 200 && response.status < 300 && response.data is Map) {
-            final data = Map<String, dynamic>.from(response.data as Map);
-            final signed = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
-            if (isHttpUrl(signed)) imageUrl = signed;
-          }
-        }
-      } catch (e) {
-        debugPrint('VALORA: endpoint immagini non disponibile per $objectId: $e');
-      }
-    }
-
-    // 3) Fallback ai metadati catalografici salvati da PR-12.
-    if (imageUrl == null) {
-      try {
-        final metadata = await Supabase.instance.client
-            .schema('collection')
-            .from('master_metadati')
-            .select('url_immagine')
-            .eq('codice_oggetto', objectId)
-            .maybeSingle();
-        final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
-        if (isHttpUrl(candidate)) imageUrl = candidate;
-      } catch (e) {
-        debugPrint('VALORA: URL immagine catalogo non disponibile per $objectId: $e');
-      }
-    }
-
-    if (!mounted || _loadedObjectId != objectId) return;
-    setState(() {
-      _existingImageUrl = imageUrl;
-      _imageStatus = imageUrl != null
-          ? 'Immagine associata alla scheda.'
-          : 'Nessuna immagine associata a questo oggetto.';
-    });
   }
 
   Future<void> _loadObject() async {
@@ -5359,6 +5008,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.apiCode == 'PR-01') return _buildPr01Page();
     if (widget.apiCode == 'PR-02') return _buildPr02Screen();
     final code = widget.apiCode;
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
@@ -5642,42 +5292,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
               style: TextStyle(color: sectionColor)),
           )),
-        if (_isWrite && code == 'PR-01') ...[
-          Pr01FormContent(
-            sectionColor: sectionColor,
-            descriptionField: _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
-            imageField: _imageField(),
-            producerField: _field(_producer, 'Produttore (facoltativo)'),
-            yearField: _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
-            productCodeField: _field(_family, 'Codice prodotto (facoltativo)'),
-            conditionField: _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-            completenessField: _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','COMPLETO CON ISTRUZIONI','COMPLETO CON SCATOLA E ISTRUZIONI','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
-            destinationField: _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() { _destination = v!; if (_destination != 'COLLEZIONE') _selectedCollectionCategory = null; })),
-            collectionCategoryField: _destination == 'COLLEZIONE' ? _collectionCategoryField() : null,
-            quantityField: _field(_quantity, 'Quantità', type: TextInputType.number),
-            unitPriceField: _field(_unitPrice, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
-            totalValueField: TextField(
-              controller: _totalValue,
-              readOnly: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Valore totale calcolato (€)',
-                helperText: 'Quantità × prezzo unitario. Il totale viene registrato in valore_oggetto.',
-              ),
-            ),
-            notesField: _field(_notes, 'Note', lines: 2),
-            marketValueField: TextField(
-              controller: _marketValue,
-              readOnly: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                hintText: '0,00',
-                helperText: 'Valore restituito dalla procedura di valutazione. 0,00 finché non è disponibile una stima.',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-        ],
         if (_isWrite && code == 'PR-02') ...[
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
@@ -5857,16 +5471,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ],
         if ((!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport && !_isActiveListingsReport)
           _field(_search, 'Cerca'),
-        if (_isWrite && code == 'PR-01') ...[
-          FilledButton.icon(
-            onPressed: _loading ? null : () => _run(_confirmAndSaveNewObject),
-            icon: Icon(Icons.save_outlined),
-            label: Text(_loading ? 'SALVATAGGIO IN CORSO…' : 'CONFERMA E SALVA OGGETTO'),
-          ),
-          const SizedBox(height: 8),
-          if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
-            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
-        ] else if (_isWrite && code == 'PR-02') ...[
+        if (_isWrite && code == 'PR-02') ...[
           FilledButton.icon(
             onPressed: _loading || _currentObject == null ? null : () => _run(_confirmPr02Changes),
             icon: Icon(Icons.verified_outlined),
@@ -5874,7 +5479,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ),
         ] else if (_isWrite && code == 'PR-03') ...[
           const SizedBox.shrink(),
-        ] else if (_isWrite) ...[
+        ] else if (_isWrite && code != 'PR-01') ...[
           WriteProcedureActionPanel(
             loading: _loading,
             hasPreview: _lastResult != null,
@@ -6357,38 +5962,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() => _lockHeld = false);
     } else {
       throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
-    }
-    if (widget.apiCode == 'PR-01') {
-      final savedRows = result['risultati'];
-      final savedRow = savedRows is List && savedRows.isNotEmpty && savedRows.first is Map
-        ? Map<String, dynamic>.from(savedRows.first as Map) : <String, dynamic>{};
-      final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
-      if (savedId != null && _destination == 'COLLEZIONE' && _selectedCollectionCategory != null) {
-        await Supabase.instance.client.schema('collection').from('oggetto_collezione_categoria').upsert({
-          'codice_oggetto': savedId, 'codice_categoria': _selectedCollectionCategory,
-          'fonte_assegnazione': 'MANUALE', 'stato_verifica': 'VERIFICATO',
-          'aggiornato_il': DateTime.now().toIso8601String(),
-        }, onConflict: 'codice_oggetto');
-      }
-      if (_selectedImageBytes != null && _selectedImageName != null && savedId != null) {
-        try {
-          final signedUrl = await _uploadAndRegisterImage(
-            objectId: savedId, bytes: Uint8List.fromList(_selectedImageBytes!), fileName: _selectedImageName!,
-            acquisition: _imageAcquisition, procedure: 'PR-01');
-          if (mounted) setState(() {
-            _existingImageUrl = signedUrl; _selectedImageBytes = null; _selectedImageName = null;
-            _imageStatus = 'Immagine caricata e associata all’oggetto #$savedId.';
-          });
-        } catch (e) {
-          if (mounted) setState(() {
-            _selectedImageBytes = null; _selectedImageName = null;
-            _imageStatus = 'Oggetto #$savedId salvato, ma immagine non associata: $e. Puoi riprovare caricandola da PR-02.';
-          });
-        }
-      }
-      _description.clear(); _producer.clear(); _line.clear(); _family.clear();
-      _notes.clear(); _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear();
-      _selectedCollectionCategory = null;
     }
   }
 }
