@@ -15,44 +15,37 @@ extension _Pr02PageWorkflow on _ObjectRuntimePageState {
         children: [
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('RICERCA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
+                  Text('1 · CERCA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: _search,
                     focusNode: _searchFocusNode,
                     textInputAction: TextInputAction.search,
                     onSubmitted: (_) => _run(_searchPr02Objects),
                     decoration: InputDecoration(
-                      labelText: 'Parola, parte della descrizione o codice',
-                      hintText: 'Es. Batman',
+                      labelText: 'Codice oggetto o descrizione',
+                      hintText: 'Codice esatto o parte della descrizione',
+                      border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         tooltip: 'Cerca',
                         onPressed: _loading ? null : () => _run(_searchPr02Objects),
-                        icon: Icon(Icons.search, color: sectionColor),
+                        icon: const Icon(Icons.search),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.',
-                    style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12),
-                  ),
-                  if (_pr02SearchCompleted)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        _pr02SearchResults.isEmpty
-                            ? 'Nessun risultato trovato.'
-                            : 'Risultati mostrati: ${_pr02SearchResults.length}',
-                        style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12),
-                      ),
+                  if (_loading) const LinearProgressIndicator(),
+                  if (_pr02SearchCompleted && _pr02SearchResults.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text('Nessun risultato. Verifica il codice o prova una descrizione più breve.'),
                     ),
                   if (_pr02SearchResults.isNotEmpty) ...[
                     const SizedBox(height: 8),
+                    Text('Risultati: ${_pr02SearchResults.length}. Tocca il record da modificare.'),
                     ..._pr02SearchResults.map((item) => Card(
                       margin: const EdgeInsets.only(top: 6),
                       child: ListTile(
@@ -73,79 +66,101 @@ extension _Pr02PageWorkflow on _ObjectRuntimePageState {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Text(
-                  'Modifiche confermate: ${_pr02PendingChanges.length}',
+                  'Blocco provvisorio: ${_pr02PendingChanges.length} oggetti confermati',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-          if (_currentObject != null) ...[
-            const SizedBox(height: 12),
-            _pr02MetadataCard(_currentObject!),
-            if (_destination == 'COLLEZIONE')
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: _collectionCategoryField(),
-              ),
+          if (_currentObject != null && !_pr02AwaitingNextChoice) ...[
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Row(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: !_showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
-                          foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
-                        ),
-                        onPressed: () => setState(() => _showPr02TechnicalTab = false),
-                        child: const Text('SCHEDA OGGETTO'),
-                      ),
+                    Text('2 · DATI OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    _pr02MetadataCard(_currentObject!),
+                    if (_destination == 'COLLEZIONE') _collectionCategoryField(),
+                    const SizedBox(height: 8),
+                    SegmentedButton<bool>(
+                      segments: const [
+                        ButtonSegment(value: false, label: Text('SCHEDA OGGETTO'), icon: Icon(Icons.edit_note)),
+                        ButtonSegment(value: true, label: Text('DATI TECNICI'), icon: Icon(Icons.info_outline)),
+                      ],
+                      selected: {_showPr02TechnicalTab},
+                      onSelectionChanged: (value) => setState(() => _showPr02TechnicalTab = value.first),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
-                          foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
-                        ),
-                        onPressed: () => setState(() => _showPr02TechnicalTab = true),
-                        child: const Text('DATI TECNICI'),
+                    const SizedBox(height: 10),
+                    if (_showPr02TechnicalTab)
+                      _pr02TechnicalCard(_currentObject!)
+                    else
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (constraints.maxWidth < 620) {
+                            return Column(
+                              children: [
+                                _pr02Side(oldValues: true),
+                                _pr02Side(oldValues: false),
+                              ],
+                            );
+                          }
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: _pr02Side(oldValues: true)),
+                              const SizedBox(width: 12),
+                              Expanded(child: _pr02Side(oldValues: false)),
+                            ],
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _loading ? null : () => _run(_confirmPr02Changes),
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('CONFERMA DATI E AGGIUNGI AL BLOCCO'),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            if (!_showPr02TechnicalTab)
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 620) {
-                    return Column(
-                      children: [
-                        _pr02Side(oldValues: true),
-                        _pr02Side(oldValues: false),
-                      ],
-                    );
-                  }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _pr02Side(oldValues: true)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _pr02Side(oldValues: false)),
-                    ],
-                  );
-                },
-              )
-            else
-              _pr02TechnicalCard(_currentObject!),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: _loading ? null : () => _run(_confirmPr02Changes),
-              icon: const Icon(Icons.verified_outlined),
-              label: const Text('CONFERMA DATI'),
-            ),
           ],
+          if (_pr02AwaitingNextChoice)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('3 · MODIFICA CONFERMATA', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text('Ultima modifica salvata e verificata. Modifiche in attesa: ${_pr02PendingChanges.length}.'),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _loading ? null : _continuePr02WithAnotherObject,
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('SÌ, MODIFICA UN ALTRO OGGETTO'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _loading ? null : () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: const Text('NO, TERMINA'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
