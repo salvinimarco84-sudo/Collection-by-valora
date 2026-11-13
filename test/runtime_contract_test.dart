@@ -920,9 +920,9 @@ void main() {
       expect(pr01SaveWorkflowSource, contains('await _savePr01PendingObjects();'));
       expect(pr01SaveWorkflowSource, contains('NO, SALVA IL BLOCCO'));
       expect(pr01SaveWorkflowSource, contains('Future<void> _savePr01PendingObjects() async'));
-      expect(source, contains('_confirmAndSaveNewObject'));
-      expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
-      expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
+      expect(pr01SaveWorkflowSource, contains('Future<void> _confirmAndSaveNewObject() async'));
+      expect(pr01PageWorkflowSource, contains('_run(_confirmAndSaveNewObject)'));
+      expect(pr01ControllerSource, contains('Seleziona una categoria COLLEZIONE valida.'));
     });
 
     test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
