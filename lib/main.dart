@@ -27,6 +27,7 @@ import 'procedures/pr01_form_content.dart';
 import 'procedures/pr01_page.dart';
 import 'procedures/pr01_controller.dart';
 import 'services/object_image_service.dart';
+import 'services/pr01_image_assistant_service.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
@@ -3769,20 +3770,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     setState(() { _loading = true; _imageStatus = 'Sto riconoscendo l’oggetto e cercando fonti con PR-12…'; });
     try {
-      final mime = (_selectedImageName ?? '').toLowerCase().endsWith('.png') ? 'image/png'
-          : ((_selectedImageName ?? '').toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
-      final response = await Supabase.instance.client.functions.invoke('pr-12-engine-test', body: {
-        'azione': 'ANALIZZA_FOTO',
-        'modalita_ia': 'TEST',
-        'image_data_url': 'data:$mime;base64,${base64Encode(bytes)}',
-        'mercato': 'Italia',
-      });
-      final data = response.data;
-      if (data is! Map || data['ok'] != true) {
-        throw Exception(data is Map ? (data['error'] ?? 'Riconoscimento non riuscito').toString() : 'Risposta PR-12 non valida');
-      }
-      final clues = data['identificazione'] is Map ? Map<String,dynamic>.from(data['identificazione']) : <String,dynamic>{};
-      final results = data['risultati'] is List ? (data['risultati'] as List).whereType<Map>().map((v)=>Map<String,dynamic>.from(v)).toList() : <Map<String,dynamic>>[];
+      final recognition = await const Pr01ImageAssistantService().recognize(
+        bytes: bytes,
+        fileName: _selectedImageName,
+      );
+      final clues = recognition['identificazione'] as Map<String, dynamic>;
+      final results = recognition['risultati'] as List<Map<String, dynamic>>;
       if (!mounted) return;
       final description = (clues['descrizione_provvisoria'] ?? '').toString().trim();
       final maker = (clues['marchio'] ?? '').toString().trim();
