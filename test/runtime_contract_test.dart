@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final pr01ImageManagerSource = File('lib/services/pr01_image_manager.dart').readAsStringSync();
+  final pr01ImageWorkflowSource = File('lib/procedures/pr01_image_workflow.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
@@ -857,6 +858,30 @@ void main() {
       expect(pr01FormContentSource, contains('marketValueField'));
     });
 
+
+    test('PR-01 raccoglie tutto il flusso immagine in un modulo dedicato', () {
+      expect(source, contains("part 'procedures/pr01_image_workflow.dart';"));
+      expect(source, isNot(contains('Future<void> _pickImageFile() async')));
+      expect(source, isNot(contains('Future<void> _recognizeSelectedPhoto() async')));
+      expect(source, isNot(contains('Widget _readOnlyImageCard()')));
+      expect(pr01ImageWorkflowSource, contains('extension _Pr01ImageWorkflow'));
+      for (final operation in [
+        'Future<void> _pickImageFile() async',
+        'Future<void> _captureImage() async',
+        'Future<void> _startAssistantPhoto() async',
+        'Future<void> _recognizeSelectedPhoto() async',
+        'Widget _imageField()',
+        'Widget _readOnlyImageCard()',
+        'Future<String> _uploadAndRegisterImage(',
+        'Future<void> _loadExistingImage(int objectId) async',
+      ]) {
+        expect(pr01ImageWorkflowSource, contains(operation), reason: operation);
+      }
+      expect(pr01ImageWorkflowSource, contains('_pr01ImageManager.recognize('));
+      expect(pr01ImageWorkflowSource, contains('_pr01ImageManager.uploadAndRegister('));
+      expect(pr01ImageWorkflowSource, contains('_pr01ImageManager.loadExistingImage(objectId)'));
+    });
+
     test('PR-01 accoda gli oggetti e salva il blocco solo dopo la scelta finale', () {
       expect(pr01RuntimeProcedureSource, contains('_pr01PendingObjects.add({'));
       expect(pr01RuntimeProcedureSource, contains('await _savePr01PendingObjects();'));
@@ -909,7 +934,7 @@ void main() {
     });
 
     test('Visualizza scheda risolve l’immagine usando url_fonte e non il nome file', () {
-      expect(source, contains('_pr01ImageManager.loadExistingImage(objectId)'));
+      expect(pr01ImageWorkflowSource, contains('_pr01ImageManager.loadExistingImage(objectId)'));
       expect(pr01ImageManagerSource, contains("select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')"));
       expect(pr01ImageManagerSource, contains("row['riferimento_immagine']"));
       expect(pr01ImageManagerSource, contains("'action': 'get'"));
