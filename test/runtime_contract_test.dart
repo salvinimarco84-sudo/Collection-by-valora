@@ -87,7 +87,6 @@ void main() {
   final pr01PageWorkflowSource = File('lib/procedures/pr01_page_workflow.dart').readAsStringSync();
   final pr01ConfirmationWorkflowSource = File('lib/procedures/pr01_confirmation_workflow.dart').readAsStringSync();
   final pr01SaveWorkflowSource = File('lib/procedures/pr01_save_workflow.dart').readAsStringSync();
-  final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final pr02SaveWorkflowSource = File('lib/procedures/pr02_save_workflow.dart').readAsStringSync();
   final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_confirmation_workflow.dart').readAsStringSync();
   final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
