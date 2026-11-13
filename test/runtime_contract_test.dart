@@ -845,7 +845,7 @@ void main() {
 
     test('la maschera PR-01 è separata e mantiene tutti i campi originali', () {
       expect(source, contains("import 'procedures/pr01_form_content.dart';"));
-      expect(source, contains('Pr01FormContent('));
+      expect(pr01PageWorkflowSource, contains('Pr01FormContent('));
       expect(pr01FormContentSource, contains('class Pr01FormContent extends StatelessWidget'));
       for (final label in [
         'IDENTIFICAZIONE OGGETTO',
@@ -926,9 +926,11 @@ void main() {
     });
 
     test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
-      expect(source, contains("'fonte_assegnazione': 'MANUALE'"));
-      expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
-      expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
+      final categoryAssignmentSources = '$pr01SaveWorkflowSource\n$pr02RuntimeProcedureSource';
+      expect(pr01SaveWorkflowSource, contains("'fonte_assegnazione': 'MANUALE'"));
+      expect(pr02RuntimeProcedureSource, contains("'fonte_assegnazione': 'MANUALE'"));
+      expect(categoryAssignmentSources, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
+      expect(categoryAssignmentSources, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
     });
 
     test('Le schede elenco e cronologia restano nel componente di presentazione dedicato', () {
@@ -1645,7 +1647,8 @@ void main() {
 
 
   test('PR-01 non conserva UI o persistenza nel runtime generico', () {
-    expect(source, isNot(contains("if (_isWrite && code == 'PR-01') ...[")));
+    expect(source, isNot(contains("if (_isWrite && code == 'PR-01')")));
+    expect(source, contains("else if (_isWrite && code != 'PR-01') ...["));
     final genericSaveStart = source.indexOf('Future<void> _save() async');
     final genericSaveEnd = source.indexOf('class _PurchaseItemDraft', genericSaveStart);
     expect(genericSaveStart, isNonNegative);
