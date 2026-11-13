@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 /// Stato e regole di dominio della procedura PR-01.
 /// La pagina runtime fornisce solo i campi condivisi e i servizi di persistenza.
@@ -130,4 +131,103 @@ class Pr01Controller {
       ],
     };
   }
+
+  /// Salva in modo transazionale-logico il blocco PR-01 già confermato.
+  /// La UI fornisce soltanto le operazioni runtime e la persistenza degli allegati.
+  Future<void> savePendingObjects({
+    required String sessionId,
+    required Future<void> Function() acquireLock,
+    required Future<void> Function() releaseLock,
+    required bool Function() isLockHeld,
+    required Future<Map<String, dynamic>> Function(
+      String action,
+      Map<String, dynamic> payload,
+      String? requestId,
+    ) executeProcedure,
+    required Future<void> Function(Map<String, dynamic> entry, int objectId)
+        persistObjectExtras,
+    required void Function() onLockReleased,
+    required void Function(String message) onStatus,
+  }) async {
+    if (pendingObjects.isEmpty) {
+      throw Exception('Il blocco PR-01 è vuoto: nessun oggetto da salvare.');
+    }
+
+    final pending = List<Map<String, dynamic>>.from(pendingObjects);
+    final payload = <String, dynamic>{
+      'oggetti': pending
+          .map((entry) => Map<String, dynamic>.from(entry['oggetto'] as Map))
+          .toList(),
+      'dati_confermati': true,
+      'altra_operazione': false,
+      'conferma_finale': true,
+    };
+
+    await acquireLock();
+    try {
+      final preview = await executeProcedure('preview', payload, null);
+      if (preview['errore'] != null) {
+        throw Exception(preview['errore'].toString());
+      }
+
+      final review = await executeProcedure('review', payload, null);
+      if (review['errore'] != null) {
+        throw Exception(review['errore'].toString());
+      }
+
+      final requestId = pendingRequestId ??= const Uuid().v4();
+      final result = await executeProcedure('save', payload, requestId);
+      if (result['scrittura_eseguita'] != true) {
+        throw Exception(
+          'Il runtime non ha confermato il salvataggio del blocco PR-01.',
+        );
+      }
+      if (result['blocco_rilasciato_automaticamente'] != true) {
+        throw Exception(
+          'Blocco salvato, ma il rilascio del blocco non è stato confermato.',
+        );
+      }
+      onLockReleased();
+
+      final savedRows = result['risultati'];
+      if (savedRows is! List || savedRows.length != pending.length) {
+        throw Exception(
+          'Il runtime non ha restituito tutti i codici oggetto del blocco.',
+        );
+      }
+
+      for (var index = 0; index < pending.length; index++) {
+        final savedRow = savedRows[index] is Map
+            ? Map<String, dynamic>.from(savedRows[index] as Map)
+            : <String, dynamic>{};
+        final savedId = int.tryParse(
+          (savedRow['codice_oggetto'] ?? '').toString(),
+        );
+        if (savedId == null) {
+          throw Exception(
+            'Codice oggetto mancante nell’elemento ${index + 1}.',
+          );
+        }
+        await persistObjectExtras(pending[index], savedId);
+      }
+
+      pendingObjects.clear();
+      pendingRequestId = null;
+      onStatus('Blocco PR-01 salvato e verificato: ${pending.length} oggetti.');
+    } catch (error) {
+      if (isLockHeld()) {
+        try {
+          await releaseLock();
+        } catch (_) {
+          // Conserva l'errore originale; il rilascio può essere ritentato.
+        }
+      }
+      onStatus(
+        'ERRORE nel salvataggio del blocco PR-01. '
+        'Gli oggetti restano in attesa: $error',
+      );
+      rethrow;
+    }
+  }
+
 }

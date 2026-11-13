@@ -121,84 +121,73 @@ extension _Pr01RuntimeProcedure on _ObjectRuntimePageState {
   }
 
   Future<void> _savePr01PendingObjects() async {
-    if (_pr01PendingObjects.isEmpty) {
-      throw Exception('Il blocco PR-01 è vuoto: nessun oggetto da salvare.');
-    }
-    final pending = List<Map<String, dynamic>>.from(_pr01PendingObjects);
-    final payload = <String, dynamic>{
-      'oggetti': pending.map((entry) =>
-        Map<String, dynamic>.from(entry['oggetto'] as Map)).toList(),
-      'dati_confermati': true,
-      'altra_operazione': false,
-      'conferma_finale': true,
-    };
-    await _acquireLock();
-    try {
-      final preview = await _ValoraRuntimeApi.procedure(
-        'PR-01', 'preview', payload, sessionId: _sessionId);
-      if (preview['errore'] != null) throw Exception(preview['errore'].toString());
-      final review = await _ValoraRuntimeApi.procedure(
-        'PR-01', 'review', payload, sessionId: _sessionId);
-      if (review['errore'] != null) throw Exception(review['errore'].toString());
-      final result = await _ValoraRuntimeApi.procedure(
-        'PR-01', 'save', payload, sessionId: _sessionId,
-        requestId: _pr01PendingRequestId ??= _uuid.v4());
-      if (result['scrittura_eseguita'] != true) {
-        throw Exception('Il runtime non ha confermato il salvataggio del blocco PR-01.');
-      }
-      if (result['blocco_rilasciato_automaticamente'] == true) {
-        setState(() => _lockHeld = false);
-      } else {
-        throw Exception('Blocco salvato, ma il rilascio del blocco non è stato confermato.');
-      }
-      final savedRows = result['risultati'];
-      if (savedRows is! List || savedRows.length != pending.length) {
-        throw Exception('Il runtime non ha restituito tutti i codici oggetto del blocco.');
-      }
-      for (var index = 0; index < pending.length; index++) {
-        final savedRow = savedRows[index] is Map
-          ? Map<String, dynamic>.from(savedRows[index] as Map)
-          : <String, dynamic>{};
-        final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
-        if (savedId == null) throw Exception('Codice oggetto mancante nell’elemento ${index + 1}.');
-        final category = pending[index]['categoria']?.toString();
+    await _pr01Controller.savePendingObjects(
+      sessionId: _sessionId,
+      acquireLock: _acquireLock,
+      releaseLock: _releaseLock,
+      isLockHeld: () => _lockHeld,
+      executeProcedure: (action, payload, requestId) =>
+          _ValoraRuntimeApi.procedure(
+        'PR-01',
+        action,
+        payload,
+        sessionId: _sessionId,
+        requestId: requestId,
+      ),
+      persistObjectExtras: (entry, objectId) async {
+        final category = entry['categoria']?.toString();
         if (category != null && category.isNotEmpty) {
-          await Supabase.instance.client.schema('collection')
-            .from('oggetto_collezione_categoria').upsert({
-              'codice_oggetto': savedId,
-              'codice_categoria': category,
-              'fonte_assegnazione': 'MANUALE',
-              'stato_verifica': 'VERIFICATO',
-              'aggiornato_il': DateTime.now().toIso8601String(),
-            }, onConflict: 'codice_oggetto');
+          await Supabase.instance.client
+              .schema('collection')
+              .from('oggetto_collezione_categoria')
+              .upsert({
+            'codice_oggetto': objectId,
+            'codice_categoria': category,
+            'fonte_assegnazione': 'MANUALE',
+            'stato_verifica': 'VERIFICATO',
+            'aggiornato_il': DateTime.now().toIso8601String(),
+          }, onConflict: 'codice_oggetto');
         }
-        final bytes = pending[index]['image_bytes'];
-        final name = pending[index]['image_name'];
+
+        final bytes = entry['image_bytes'];
+        final name = entry['image_name'];
         if (bytes is Uint8List && name is String && name.isNotEmpty) {
           await _uploadAndRegisterImage(
-            objectId: savedId,
+            objectId: objectId,
             bytes: bytes,
             fileName: name,
-            acquisition: pending[index]['image_acquisition'] as String? ?? _imageAcquisition,
+            acquisition: entry['image_acquisition'] as String? ??
+                _imageAcquisition,
             procedure: 'PR-01',
           );
         }
-      }
-      _pr01PendingObjects.clear();
-      _pr01PendingRequestId = null;
-      if (mounted) setState(() {
-        _description.clear(); _producer.clear(); _line.clear(); _family.clear();
-        _notes.clear(); _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear();
-        _value.clear(); _marketValue.text = '0.00'; _selectedCollectionCategory = null;
-        _selectedImageBytes = null; _selectedImageName = null;
-        _imageStatus = 'Nessuna immagine selezionata.';
-        _output = 'Blocco PR-01 salvato e verificato: ${pending.length} oggetti.';
-      });
-    } catch (e) {
-      if (_lockHeld) { try { await _releaseLock(); } catch (_) {} }
-      if (mounted) setState(() => _output =
-        'ERRORE nel salvataggio del blocco PR-01. Gli oggetti restano in attesa: $e');
-      rethrow;
-    }
+      },
+      onLockReleased: () {
+        if (mounted) setState(() => _lockHeld = false);
+      },
+      onStatus: (message) {
+        if (mounted) {
+          setState(() {
+            _output = message;
+            if (message.startsWith('Blocco PR-01 salvato')) {
+              _description.clear();
+              _producer.clear();
+              _line.clear();
+              _family.clear();
+              _notes.clear();
+              _quantity.text = '1';
+              _unitPrice.clear();
+              _totalValue.clear();
+              _value.clear();
+              _marketValue.text = '0.00';
+              _selectedCollectionCategory = null;
+              _selectedImageBytes = null;
+              _selectedImageName = null;
+              _imageStatus = 'Nessuna immagine selezionata.';
+            }
+          });
+        }
+      },
+    );
   }
 }
