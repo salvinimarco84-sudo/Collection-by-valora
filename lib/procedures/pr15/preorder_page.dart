@@ -541,7 +541,7 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
                 child: FilledButton.icon(onPressed: _busy ? null : () => _convertToPurchase(r),
                   icon: const Icon(Icons.shopping_bag_outlined), label: const Text('CONVERTI IN ACQUISTO ORDINARIO · PR-04')))),
             if (r.isActive) Wrap(spacing: 8, runSpacing: 8, children: [
-              if (r.status != PreorderStatus.received && r.status != PreorderStatus.shipped)
+              if (r.status != PreorderStatus.shipped && r.remainingCents > 0)
                 _action('REGISTRA PAGAMENTO', Icons.payments_outlined, _payment),
               if ({PreorderStatus.reserved, PreorderStatus.partiallyPaid, PreorderStatus.fullyPaid}.contains(r.status))
                 _action('DISPONIBILE', Icons.inventory_2_outlined, () => _changeStatus(_repository.markAvailable, 'Aggiornamento')),
