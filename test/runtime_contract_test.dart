@@ -1677,9 +1677,9 @@ void main() {
   test('PR-02 delega lo stato della pagina al controller dedicato', () {
     expect(source, contains("import 'procedures/pr02_controller.dart';"));
     expect(source, contains('final Pr02Controller _pr02Controller = Pr02Controller();'));
-    expect(source, contains('_pr02Controller.searchResults'));
-    expect(source, contains('_pr02Controller.pendingChanges'));
-    expect(source, contains('_pr02Controller.pendingImages'));
+    expect(pr02ControllerBindingsSource, contains('_pr02Controller.searchResults'));
+    expect(pr02ControllerBindingsSource, contains('_pr02Controller.pendingChanges'));
+    expect(pr02ControllerBindingsSource, contains('_pr02Controller.pendingImages'));
     expect(source, contains('_pr02Controller.dispose();'));
     expect(pr02ControllerSource, contains('class Pr02Controller'));
     expect(source, contains("part 'procedures/pr02_controller_bindings.dart';"));
