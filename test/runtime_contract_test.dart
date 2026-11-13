@@ -999,9 +999,9 @@ void main() {
     });
 
     test('Visualizza scheda cerca anche il codice numerico direttamente nel master', () {
-      expect(source, contains(".from('master_oggetti')"));
-      expect(source, contains(".eq('codice_oggetto', exactCode)"));
-      expect(source, contains('codeOf(item) == phrase.trim()'));
+      expect(objectSearchWorkflowSource, contains(".from('master_oggetti')"));
+      expect(objectSearchWorkflowSource, contains(".eq('codice_oggetto', exactCode)"));
+      expect(objectSearchWorkflowSource, contains('codeOf(item) == phrase.trim()'));
     });
 
     test('PR-02 conferma in linea senza dialoghi o chiamate preview/review intermedie', () {
