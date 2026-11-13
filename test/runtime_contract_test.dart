@@ -834,8 +834,7 @@ void main() {
       expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
       expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
-      expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
-      expect(pr02RuntimeProcedureSource, contains('oggetto_collezione_categoria'));
+      expect(pr02SaveWorkflowSource, contains('oggetto_collezione_categoria'));
     });
 
     test('PR-03 mantiene selezione, conferma e salvataggio nel runtime estratto', () {
