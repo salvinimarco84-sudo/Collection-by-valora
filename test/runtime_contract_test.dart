@@ -79,6 +79,7 @@ void main() {
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
   final pr02PageSource = File('lib/procedures/pr02_page.dart').readAsStringSync();
   final pr02PageWorkflowSource = File('lib/procedures/pr02_page_workflow.dart').readAsStringSync();
+  final pr02ObjectPresentationSource = File('lib/procedures/pr02_object_presentation.dart').readAsStringSync();
   final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
   final pr01PageWorkflowSource = File('lib/procedures/pr01_page_workflow.dart').readAsStringSync();
   final pr01ConfirmationWorkflowSource = File('lib/procedures/pr01_confirmation_workflow.dart').readAsStringSync();
@@ -1666,6 +1667,11 @@ void main() {
     expect(pr02PageWorkflowSource, contains('_searchPr02Objects'));
     expect(pr02PageWorkflowSource, contains('_selectPr02Object(item)'));
     expect(pr02PageWorkflowSource, contains('_pr02MetadataCard(_currentObject!)'));
+    expect(source, contains("part 'procedures/pr02_object_presentation.dart';"));
+    expect(pr02ObjectPresentationSource, contains('Widget _pr02MetadataCard(Map<String, dynamic> object)'));
+    expect(pr02ObjectPresentationSource, contains('Widget _pr02TechnicalCard(Map<String, dynamic> object)'));
+    expect(pr02ObjectPresentationSource, contains('Widget _pr02Side({required bool oldValues})'));
+    expect(pr02ObjectPresentationSource, contains('Widget _metadataValue(String label, String value)'));
     expect(pr02PageWorkflowSource, contains('_pr02Side(oldValues: true)'));
     expect(pr02PageWorkflowSource, contains('_pr02Side(oldValues: false)'));
     expect(pr02PageWorkflowSource, contains('_confirmPr02Changes'));
