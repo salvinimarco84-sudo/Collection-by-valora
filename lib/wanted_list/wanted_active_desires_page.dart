@@ -26,7 +26,7 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
       final response = await Supabase.instance.client
           .schema('collection')
           .from('wanted_desideri')
-          .select('id, descrizione, categoria, condizione_desiderata, completezza_desiderata, note, data_creazione')
+          .select('id, descrizione, categoria, condizione_desiderata, completezza_desiderata, note, data_creazione, immagine_path, immagine_fonte')
           .eq('user_id', user.id)
           .eq('stato', 'ATTIVO')
           .order('data_creazione', ascending: false);
@@ -141,23 +141,27 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
         ),
       );
       if (confirmed != true || !mounted) return;
-      final imported = await Supabase.instance.client.functions.invoke(
-        'collection-shared-image-import-test',
-        body: {
-          'target_type': 'wanted',
-          'wanted_id': desireId,
-          'image_url': choice['image_url'],
-          'match_confirmed': true,
-        },
-      );
-      final data = imported.data;
-      if (imported.status < 200 || imported.status >= 300 || data is! Map || data['ok'] != true) {
-        throw StateError(data is Map
-          ? (data['error'] ?? 'Importazione immagine non riuscita').toString()
-          : 'Risposta non valida dal servizio immagini condiviso.');
+      final imageUrl = choice['image_url'].toString().trim();
+      final uri = Uri.tryParse(imageUrl);
+      if (uri == null || !uri.hasAuthority || !['http', 'https'].contains(uri.scheme)) {
+        throw StateError('URL immagine non valido.');
       }
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw StateError('Sessione non valida. Accedi nuovamente.');
+      final saved = await Supabase.instance.client.schema('collection')
+          .from('wanted_desideri')
+          .update({
+            'immagine_path': imageUrl,
+            'immagine_fonte': (choice['url'] ?? choice['motore'] ?? 'PR-12').toString(),
+            'data_immagine': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', desireId)
+          .eq('user_id', user.id)
+          .select('id')
+          .maybeSingle();
+      if (saved == null) throw StateError('Link immagine non salvato: desiderio non trovato o permessi insufficienti.');
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Immagine importata nell’archivio condiviso.')),
+        const SnackBar(content: Text('Link immagine PR-12 salvato.')),
       );
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -242,6 +246,23 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
                                         Expanded(child: Text(description, style: Theme.of(context).textTheme.titleMedium)),
                                       ],
                                     ),
+                                    if ((row['immagine_path'] ?? '').toString().startsWith('http'))
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 10),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.network(
+                                            row['immagine_path'].toString(),
+                                            height: 150,
+                                            width: double.infinity,
+                                            fit: BoxFit.contain,
+                                            errorBuilder: (_, __, ___) => const SizedBox(
+                                              height: 60,
+                                              child: Center(child: Icon(Icons.broken_image_outlined)),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     if (category.trim().isNotEmpty)
                                       _detail('Categoria / tema', category),
                                     _detail('Condizione', row['condizione_desiderata']?.toString()),
