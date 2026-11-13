@@ -16,8 +16,7 @@ extension _Pr01PageWorkflow on _ObjectRuntimePageState {
   }
 
   Widget _buildPr01Page() {
-        if (widget.apiCode == 'PR-01') {
-      return Pr01Page(
+    return Pr01Page(
         title: widget.title,
         sectionColor: sectionColor,
         userLabel: Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata',
@@ -61,6 +60,5 @@ extension _Pr01PageWorkflow on _ObjectRuntimePageState {
         onSave: _loading ? null : () => _run(_confirmAndSaveNewObject),
         onReleaseLock: _loading || !_lockHeld ? null : () => _run(_releaseLock),
       );
-    }
   }
 }
