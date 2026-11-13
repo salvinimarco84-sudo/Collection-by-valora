@@ -8,7 +8,7 @@ void main() {
   final pr01ImageManagerSource = File('lib/services/pr01_image_manager.dart').readAsStringSync();
   final pr01ImageWorkflowSource = File('lib/procedures/pr01_image_workflow.dart').readAsStringSync();
   final pr01ControllerSource = File('lib/procedures/pr01_controller.dart').readAsStringSync();
-  final pr02PayloadWorkflowSource = File('lib/procedures/pr02_payload_workflow.dart').readAsStringSync();
+  final pr02PayloadWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
@@ -80,16 +80,16 @@ void main() {
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
   final pr02PageSource = File('lib/procedures/pr02_page.dart').readAsStringSync();
   final pr02ControllerSource = File('lib/procedures/pr02_controller.dart').readAsStringSync();
-  final pr02ControllerBindingsSource = File('lib/procedures/pr02_controller_bindings.dart').readAsStringSync();
-  final pr02PageWorkflowSource = File('lib/procedures/pr02_page_workflow.dart').readAsStringSync();
-  final pr02ObjectPresentationSource = File('lib/procedures/pr02_object_presentation.dart').readAsStringSync();
-  final pr02SelectionWorkflowSource = File('lib/procedures/pr02_selection_workflow.dart').readAsStringSync();
+  final pr02ControllerBindingsSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr02PageWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr02ObjectPresentationSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr02SelectionWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
   final pr01PageWorkflowSource = File('lib/procedures/pr01_page_workflow.dart').readAsStringSync();
   final pr01ConfirmationWorkflowSource = File('lib/procedures/pr01_confirmation_workflow.dart').readAsStringSync();
   final pr01SaveWorkflowSource = File('lib/procedures/pr01_save_workflow.dart').readAsStringSync();
-  final pr02SaveWorkflowSource = File('lib/procedures/pr02_save_workflow.dart').readAsStringSync();
-  final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_confirmation_workflow.dart').readAsStringSync();
+  final pr02SaveWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
@@ -942,7 +942,7 @@ void main() {
     });
 
     test('PR-02 payload e validazioni sono isolati nel workflow dedicato', () {
-      expect(source, contains("part 'procedures/pr02_payload_workflow.dart';"));
+      expect(source, contains("part 'procedures/pr02_object_management.dart';"));
       expect(source, contains("if (widget.apiCode == 'PR-02') return _buildPr02Payload();"));
       expect(source, isNot(contains("if (widget.apiCode == 'PR-02') {")));
       expect(pr02PayloadWorkflowSource, contains('Map<String, dynamic> _buildPr02Payload()'));
@@ -1682,7 +1682,7 @@ void main() {
     expect(pr02ControllerBindingsSource, contains('_pr02Controller.pendingImages'));
     expect(source, contains('_pr02Controller.dispose();'));
     expect(pr02ControllerSource, contains('class Pr02Controller'));
-    expect(source, contains("part 'procedures/pr02_controller_bindings.dart';"));
+    expect(source, contains("part 'procedures/pr02_object_management.dart';"));
     expect(source, isNot(contains('get _pr02SearchResults =>')));
     expect(pr02ControllerBindingsSource, contains('extension _Pr02ControllerBindings'));
     expect(pr02ControllerBindingsSource, contains('get _pr02SearchResults'));
@@ -1695,7 +1695,7 @@ void main() {
 
   test('PR-02 usa una pagina dedicata e mantiene ricerca, scheda e conferma', () {
     expect(source, contains("import 'procedures/pr02_page.dart';"));
-    expect(source, contains("part 'procedures/pr02_page_workflow.dart';"));
+    expect(source, contains("part 'procedures/pr02_object_management.dart';"));
     expect(source, contains("if (widget.apiCode == 'PR-02') return _buildPr02Page();"));
     expect(source, isNot(contains('Widget _buildPr02Screen()')));
     expect(pr02PageSource, contains('class Pr02Page extends StatelessWidget'));
@@ -1715,11 +1715,11 @@ void main() {
     expect(objectSearchWorkflowSource, contains('matchesPhrase'));
     expect(objectSearchWorkflowSource, contains('results.sort'));
     expect(pr02PageWorkflowSource, contains('_selectPr02Object(item)'));
-    expect(source, contains("part 'procedures/pr02_selection_workflow.dart';"));
+    expect(source, contains("part 'procedures/pr02_object_management.dart';"));
     expect(pr02SelectionWorkflowSource, contains('Future<void> _selectPr02Object(Map<String, dynamic> item) async'));
     expect(pr02SelectionWorkflowSource, contains('await _loadObject();'));
     expect(pr02PageWorkflowSource, contains('_pr02MetadataCard(_currentObject!)'));
-    expect(source, contains("part 'procedures/pr02_object_presentation.dart';"));
+    expect(source, contains("part 'procedures/pr02_object_management.dart';"));
     expect(pr02ObjectPresentationSource, contains('Widget _pr02MetadataCard(Map<String, dynamic> object)'));
     expect(pr02ObjectPresentationSource, contains('Widget _pr02TechnicalCard(Map<String, dynamic> object)'));
     expect(pr02ObjectPresentationSource, contains('Widget _pr02Side({required bool oldValues})'));
