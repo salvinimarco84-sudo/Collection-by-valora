@@ -846,6 +846,9 @@ void main() {
       expect(pr03RuntimeProcedureSource, contains('Future<void> _confirmPr03Closure() async'));
       expect(pr03RuntimeProcedureSource, contains('Future<void> _savePr03PendingClosures() async'));
       expect(pr03RuntimeProcedureSource, contains('List<Widget> _buildPr03ClosureSection()'));
+      expect(pr03RuntimeProcedureSource, contains('Map<String, dynamic> _buildPr03ClosurePayload()'));
+      expect(pr03RuntimeProcedureSource, contains("Per PR-03 carica prima la scheda completa del codice selezionato."));
+      expect(source, contains("if (widget.apiCode == 'PR-03') return _buildPr03ClosurePayload();"));
       expect(pr03RuntimeProcedureSource, contains('CERCA E SELEZIONA OGGETTO'));
       expect(source, isNot(contains("CERCA OGGETTO PER DESCRIZIONE O CODICE")));
       expect(pr03RuntimeProcedureSource, contains('_pr03PendingClosures.add({'));
