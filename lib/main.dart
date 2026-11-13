@@ -80,6 +80,7 @@ part 'procedures/pr01_page_workflow.dart';
 part 'procedures/pr01_image_workflow.dart';
 part 'procedures/object_search_workflow.dart';
 part 'procedures/pr03_runtime_procedure.dart';
+part 'procedures/pr03_controller_bindings.dart';
 part 'purchases/pr04_runtime_procedure.dart';
 part 'wanted_list/wanted_new_desire_page.dart';
 part 'wanted_list/wanted_active_desires_page.dart';
@@ -2816,9 +2817,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final Pr01Controller _pr01Controller = Pr01Controller();
   final Pr02Controller _pr02Controller = Pr02Controller();
   final Pr03Controller _pr03Controller = Pr03Controller();
-  List<Map<String, dynamic>> get _pr03PendingClosures => _pr03Controller.pendingClosures;
-  String get _closeReason => _pr03Controller.closeReason;
-  set _closeReason(String value) => _pr03Controller.closeReason = value;
 
 
 
