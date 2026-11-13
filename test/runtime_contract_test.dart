@@ -858,6 +858,13 @@ void main() {
       expect(source, contains('final Pr03Controller _pr03Controller = Pr03Controller();'));
       expect(pr03ControllerSource, contains('final List<Map<String, dynamic>> pendingClosures'));
       expect(pr03ControllerSource, contains("String closeReason = 'SMARRITO';"));
+      expect(pr03ControllerSource, contains('bool containsClosure(int objectId)'));
+      expect(pr03ControllerSource, contains('void addPendingClosure(Map<String, dynamic> closure)'));
+      expect(pr03ControllerSource, contains('pendingClosuresSnapshot()'));
+      expect(pr03RuntimeProcedureSource, contains('_pr03Controller.addPendingClosure({'));
+      expect(pr03RuntimeProcedureSource, contains('_pr03Controller.pendingClosuresSnapshot()'));
+      expect(pr03RuntimeProcedureSource, contains('_pr03Controller.clearPendingClosures()'));
+      expect(pr03RuntimeProcedureSource, isNot(contains('_pr03PendingClosures.add(')));
       expect(source, contains("part 'procedures/pr03_controller_bindings.dart';"));
       expect(pr03ControllerBindingsSource, contains('extension _Pr03ControllerBindings'));
       expect(pr03ControllerBindingsSource, contains('get _pr03PendingClosures'));
