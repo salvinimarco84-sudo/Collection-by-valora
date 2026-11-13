@@ -474,57 +474,25 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
       );
       if (confirmed != true || !mounted) return;
 
-      final imageUri = Uri.tryParse(choice['image_url'].toString());
-      if (imageUri == null || imageUri.scheme != 'https' || imageUri.host.isEmpty) {
-        throw StateError('URL immagine PR-12 non valido.');
-      }
-      final imageResponse = await http.get(imageUri).timeout(const Duration(seconds: 25));
-      if (imageResponse.statusCode != 200) {
-        throw StateError('Download immagine non riuscito (HTTP ${imageResponse.statusCode}).');
-      }
-      final mime = (imageResponse.headers['content-type'] ?? '').split(';').first.trim().toLowerCase();
-      const allowed = {'image/jpeg', 'image/png', 'image/webp'};
-      if (!allowed.contains(mime)) throw StateError('Il candidato non è JPEG, PNG o WebP.');
-      if (imageResponse.bodyBytes.isEmpty || imageResponse.bodyBytes.length > 10 * 1024 * 1024) {
-        throw StateError('Immagine vuota o superiore a 10 MB.');
-      }
-      final extension = mime == 'image/png' ? 'png' : mime == 'image/webp' ? 'webp' : 'jpg';
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) throw StateError('Sessione utente non disponibile.');
-      final fileName = 'preorder_${widget.preorderId}_${DateTime.now().microsecondsSinceEpoch}.$extension';
-      final path = '$userId/${widget.preorderId}/$fileName';
-      final storage = Supabase.instance.client.storage.from('pr01-foto-temporanee');
-      await storage.uploadBinary(
-        path, imageResponse.bodyBytes,
-        fileOptions: FileOptions(contentType: mime, upsert: false),
+      final imported = await Supabase.instance.client.functions.invoke(
+        'collection-shared-image-import-test',
+        body: {
+          'target_type': 'preorder',
+          'codice_preordine': int.parse(widget.preorderId),
+          'image_url': choice['image_url'],
+          'match_confirmed': true,
+        },
       );
-      try {
-        final registered = await Supabase.instance.client.functions.invoke(
-          'collection-object-images-test',
-          body: {
-            'action': 'register',
-            'target_type': 'preorder',
-            'codice_preordine': int.parse(widget.preorderId),
-            'path': path,
-            'file_name': fileName,
-            'modalita_acquisizione': 'RICERCA_CATALOGO',
-            'procedura_origine': 'PREORDER',
-          },
-        );
-        final data = registered.data;
-        if (registered.status < 200 || registered.status >= 300 ||
-            data is! Map || data['ok'] != true) {
-          throw StateError(data is Map
-            ? (data['error'] ?? 'Registrazione immagine non riuscita').toString()
-            : 'Risposta non valida dal servizio immagini.');
-        }
-      } catch (_) {
-        try { await storage.remove([path]); } catch (_) {}
-        rethrow;
+      final importedData = imported.data;
+      if (imported.status < 200 || imported.status >= 300 ||
+          importedData is! Map || importedData['ok'] != true) {
+        throw StateError(importedData is Map
+          ? (importedData['error'] ?? 'Importazione immagine non riuscita').toString()
+          : 'Risposta non valida dal servizio immagini condiviso.');
       }
       await _load();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Immagine PR-12 associata al preorder.')),
+        const SnackBar(content: Text('Immagine PR-12 importata nell’archivio condiviso.')),
       );
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
