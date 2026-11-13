@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final pr01ImageManagerSource = File('lib/services/pr01_image_manager.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
@@ -908,9 +909,11 @@ void main() {
     });
 
     test('Visualizza scheda risolve l’immagine usando url_fonte e non il nome file', () {
-      expect(source, contains("select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')"));
-      expect(source, contains("row['riferimento_immagine']"));
-      expect(source, contains("body: {'action':'get','codice_oggetto':objectId}"));
+      expect(source, contains('_pr01ImageManager.loadExistingImage(objectId)'));
+      expect(pr01ImageManagerSource, contains("select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')"));
+      expect(pr01ImageManagerSource, contains("row['riferimento_immagine']"));
+      expect(pr01ImageManagerSource, contains("'action': 'get'"));
+      expect(pr01ImageManagerSource, contains("'codice_oggetto': objectId"));
     });
 
     test('Visualizza scheda mostra il prezzo di acquisto associato all’oggetto', () {
