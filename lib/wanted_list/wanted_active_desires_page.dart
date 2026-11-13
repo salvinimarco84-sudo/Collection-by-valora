@@ -26,7 +26,7 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
       final response = await Supabase.instance.client
           .schema('collection')
           .from('wanted_desideri')
-          .select('id, descrizione, categoria, condizione_desiderata, completezza_desiderata, note, data_creazione')
+          .select('id, descrizione, categoria, condizione_desiderata, completezza_desiderata, note, data_creazione, immagine_path, immagine_fonte')
           .eq('user_id', user.id)
           .eq('stato', 'ATTIVO')
           .order('data_creazione', ascending: false);
@@ -34,12 +34,74 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
+      for (final row in rows) {
+        final path = row['immagine_path']?.toString();
+        if (path != null && path.isNotEmpty) {
+          try {
+            row['immagine_url'] = await Supabase.instance.client.storage
+                .from('wanted-list-images-test').createSignedUrl(path, 3600);
+          } catch (_) {
+            row['immagine_url'] = null;
+          }
+        }
+      }
       if (!mounted) return;
       setState(() { _rows = rows; _loading = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  Future<void> _changeImage(Map<String, dynamic> row) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) { _message('Sessione non valida. Accedi nuovamente.'); return; }
+    try {
+      final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1600);
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.toLowerCase().split('.').last;
+      final safeExt = ['png', 'webp'].contains(ext) ? ext : 'jpg';
+      final mime = safeExt == 'png' ? 'image/png' : safeExt == 'webp' ? 'image/webp' : 'image/jpeg';
+      final id = row['id'].toString();
+      final path = '${user.id}/$id/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
+      final storage = Supabase.instance.client.storage.from('wanted-list-images-test');
+      await storage.uploadBinary(path, bytes, fileOptions: FileOptions(contentType: mime));
+      await Supabase.instance.client.schema('collection').from('wanted_desideri').update({
+        'immagine_path': path,
+        'immagine_fonte': 'CARICATA',
+        'data_immagine': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', id).eq('user_id', user.id);
+      final oldPath = row['immagine_path']?.toString();
+      if (oldPath != null && oldPath.isNotEmpty) { try { await storage.remove([oldPath]); } catch (_) {} }
+      if (mounted) _message('Immagine aggiornata e salvata.');
+      await _load();
+    } catch (e) {
+      _message('Caricamento immagine non riuscito: $e');
+    }
+  }
+
+  Future<void> _removeImage(Map<String, dynamic> row) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) { _message('Sessione non valida. Accedi nuovamente.'); return; }
+    try {
+      final path = row['immagine_path']?.toString();
+      await Supabase.instance.client.schema('collection').from('wanted_desideri').update({
+        'immagine_path': null, 'immagine_fonte': null, 'data_immagine': null,
+      }).eq('id', row['id'].toString()).eq('user_id', user.id);
+      if (path != null && path.isNotEmpty) {
+        await Supabase.instance.client.storage.from('wanted-list-images-test').remove([path]);
+      }
+      if (mounted) _message('Immagine rimossa.');
+      await _load();
+    } catch (e) {
+      _message('Rimozione immagine non riuscita: $e');
+    }
+  }
+
+  void _message(String value) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
   }
 
   String _dateLabel(dynamic value) {
@@ -126,9 +188,23 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
                                     Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Icon(Icons.bookmark, color: silver),
-                                        const SizedBox(width: 10),
-                                        Expanded(child: Text(description, style: Theme.of(context).textTheme.titleMedium)),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: (row['immagine_url'] is String)
+                                            ? Image.network(row['immagine_url'] as String, width: 104, height: 104, fit: BoxFit.contain,
+                                                errorBuilder: (_, __, ___) => Container(width: 104, height: 104,
+                                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                  child: const Icon(Icons.broken_image_outlined, size: 34)))
+                                            : Container(width: 104, height: 104,
+                                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                child: const Icon(Icons.image_outlined, size: 34, color: silver)),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                          Text(description, style: Theme.of(context).textTheme.titleMedium),
+                                          if ((row['immagine_fonte'] ?? '').toString().isNotEmpty)
+                                            Text('Immagine: ${row['immagine_fonte']}', style: Theme.of(context).textTheme.labelSmall),
+                                        ])),
                                       ],
                                     ),
                                     if (category.trim().isNotEmpty)
@@ -137,6 +213,14 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
                                     _detail('Completezza', row['completezza_desiderata']?.toString()),
                                     _detail('Note', row['note']?.toString()),
                                     const SizedBox(height: 8),
+                                    Wrap(spacing: 8, children: [
+                                      TextButton.icon(onPressed: () => _changeImage(row),
+                                        icon: const Icon(Icons.add_photo_alternate_outlined),
+                                        label: Text(row['immagine_path'] == null ? 'AGGIUNGI IMMAGINE' : 'CAMBIA IMMAGINE')),
+                                      if (row['immagine_path'] != null)
+                                        TextButton.icon(onPressed: () => _removeImage(row),
+                                          icon: const Icon(Icons.delete_outline), label: const Text('RIMUOVI')),
+                                    ]),
                                     Align(
                                       alignment: Alignment.centerRight,
                                       child: Text('Inserito il ${_dateLabel(row['data_creazione'])}', style: Theme.of(context).textTheme.labelSmall),
