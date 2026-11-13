@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart:convert';
+import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Isola la chiamata di riconoscimento fotografico PR-12 usata dall'assistente PR-01.
