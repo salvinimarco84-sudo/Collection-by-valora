@@ -42,6 +42,9 @@ class PreorderRecord {
     if (payments.any((entry) => entry.id == payment.id)) throw StateError('Pagamento duplicato.');
     if (paidCents + payment.amountCents > agreedPriceCents) throw StateError('Importo superiore al residuo.');
     final next = List<PreorderPayment>.unmodifiable([...payments, payment]);
+    // La ricezione è uno stato logistico: un saldo pagato dopo la consegna
+    // non deve riportare il preorder a PAGATO/PAGAMENTO_PARZIALE.
+    if (status == PreorderStatus.received) return _copy(payments: next);
     return _copy(payments: next, status: paidCents + payment.amountCents == agreedPriceCents
         ? PreorderStatus.fullyPaid : PreorderStatus.partiallyPaid);
   }
