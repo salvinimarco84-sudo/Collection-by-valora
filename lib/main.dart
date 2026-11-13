@@ -3124,14 +3124,21 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Future<void> _loadCollectionCategories() async {
     _categoriesLoading = true;
+    if (mounted) setState(() {});
     try {
-      final rows = await Supabase.instance.client.schema('collection').from('master_categorie_collezione')
-          .select('codice_categoria, descrizione, ordine_menu, visibile').eq('visibile', true)
-          .order('ordine_menu').order('descrizione');
+      final categories = await _pr01Controller.loadCategories(
+        Supabase.instance.client,
+      );
       if (!mounted) return;
-      setState(() => _collectionCategories = (rows as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
-    } catch (e) { if (mounted) setState(() => _output = 'Errore caricamento categorie COLLEZIONE: $e'); }
-    finally { _categoriesLoading = false; }
+      setState(() => _collectionCategories = categories);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _output = 'Errore caricamento categorie COLLEZIONE: $e');
+      }
+    } finally {
+      _categoriesLoading = false;
+      if (mounted) setState(() {});
+    }
   }
 
   Widget _collectionCategoryField() => Padding(padding: const EdgeInsets.only(bottom: 12), child: DropdownButtonFormField<String>(
