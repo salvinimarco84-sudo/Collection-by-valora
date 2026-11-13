@@ -25,6 +25,7 @@ import 'purchases/purchase_comparison_page.dart';
 import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
 import 'procedures/pr01_page.dart';
+import 'procedures/pr01_image_field.dart';
 import 'procedures/pr01_controller.dart';
 import 'services/object_image_service.dart';
 import 'services/pr01_image_assistant_service.dart';
@@ -3819,56 +3820,27 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Widget _imageField() {
-    final hasSelected = _selectedImageBytes != null;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Icon(Icons.auto_awesome, color: sectionColor, size: 26),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(ValoraI18n.tr('ASSISTENTE VALORA'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 3),
-              Text('Scatta una foto: riconosco l’oggetto, cerco con PR-12 e compilo i campi disponibili. Poi controlli e completi tu.',
-                style: TextStyle(color: ValoraAppearance.instance.textSecondary, fontSize: 13)),
-            ])),
-          ]),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _loading ? null : _startAssistantPhoto,
-              icon: _loading
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.mic),
-              label: Text(_loading ? 'ASSISTENTE AL LAVORO…' : 'ASSISTENTE VALORA · SCATTA E CERCA'),
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+    final imageUrl = _existingImageUrl;
+    final existingPreview = imageUrl != null && imageUrl.startsWith('http')
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              _valoraImageProxyUrl(imageUrl),
+              height: 160,
+              width: double.infinity,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => _imagePlaceholder(size: 100),
             ),
-          ),
-          if (hasSelected) ...[
-            const SizedBox(height: 10),
-            ClipRRect(borderRadius: BorderRadius.circular(10),
-              child: Image.memory(_selectedImageBytes!, height: 180, width: double.infinity, fit: BoxFit.contain)),
-          ] else if (_existingImageUrl != null && _existingImageUrl!.startsWith('http')) ...[
-            const SizedBox(height: 10),
-            ClipRRect(borderRadius: BorderRadius.circular(10),
-              child: Image.network(_valoraImageProxyUrl(_existingImageUrl!), height: 160, width: double.infinity, fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => _imagePlaceholder(size: 100))),
-          ],
-          const SizedBox(height: 8),
-          Text(_imageStatus, style: TextStyle(
-            color: _imageStatus.startsWith('Assistente non disponibile') || _imageStatus.startsWith('Scatto')
-              ? Colors.orangeAccent : ValoraAppearance.instance.textSecondary,
-            fontSize: 12)),
-          const SizedBox(height: 4),
-          Align(alignment: Alignment.centerRight, child: TextButton.icon(
-            onPressed: _loading ? null : _pickImageFile,
-            icon: const Icon(Icons.photo_library_outlined),
-            label: const Text('Scegli invece una foto dalla galleria'),
-          )),
-        ]),
-      ),
+          )
+        : null;
+    return Pr01ImageField(
+      sectionColor: sectionColor,
+      selectedImageBytes: _selectedImageBytes,
+      existingImagePreview: existingPreview,
+      status: _imageStatus,
+      loading: _loading,
+      onAssistant: _startAssistantPhoto,
+      onGallery: _pickImageFile,
     );
   }
 
