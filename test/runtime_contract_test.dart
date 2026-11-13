@@ -832,7 +832,7 @@ void main() {
       expect(pr02SaveWorkflowSource, contains('categoria_collezione_selezionata'));
       expect(source, contains('_pr02AwaitingNextChoice'));
       expect(pr02ConfirmationWorkflowSource, contains('_continuePr02WithAnotherObject'));
-      expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
+      expect(pr02ConfirmationWorkflowSource, contains('_pr02PendingChanges.add'));
       expect(pr02ConfirmationWorkflowSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(pr02SaveWorkflowSource, contains('oggetto_collezione_categoria'));
@@ -1017,7 +1017,7 @@ void main() {
     });
 
     test('PR-02 salva e verifica la modifica prima della scelta successiva', () {
-      expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(pr02ConfirmationWorkflowSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(pr02ConfirmationWorkflowSource, contains('salvato e verificato'));
     });
