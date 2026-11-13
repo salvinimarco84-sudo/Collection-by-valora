@@ -89,6 +89,7 @@ void main() {
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final pr02SaveWorkflowSource = File('lib/procedures/pr02_save_workflow.dart').readAsStringSync();
   final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_confirmation_workflow.dart').readAsStringSync();
+  final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
@@ -1683,6 +1684,18 @@ void main() {
     expect(pr02PageSource, contains('PR-02 · MODIFICA OGGETTO'));
     expect(pr02PageWorkflowSource, contains('Widget _buildPr02Page()'));
     expect(pr02PageWorkflowSource, contains('_searchPr02Objects'));
+    expect(source, contains("part 'procedures/object_search_workflow.dart';"));
+    expect(source, isNot(contains('Future<void> _searchPr02Objects() async')));
+    expect(objectSearchWorkflowSource, contains('extension _ObjectSearchWorkflow on _ObjectRuntimePageState'));
+    expect(objectSearchWorkflowSource, contains('Future<void> _searchPr02Objects() async'));
+    expect(objectSearchWorkflowSource, contains("'pr_02_ricerca_oggetti'"));
+    expect(objectSearchWorkflowSource, contains("'pr_21_ricerca_schede'"));
+    expect(objectSearchWorkflowSource, contains("from('master_oggetti')"));
+    expect(objectSearchWorkflowSource, contains("widget.apiCode == 'PR-03'"));
+    expect(objectSearchWorkflowSource, contains("widget.apiCode == 'OBJECT_MASTER'"));
+    expect(objectSearchWorkflowSource, contains("widget.apiCode == 'EXPLORE_RECORDS'"));
+    expect(objectSearchWorkflowSource, contains('matchesPhrase'));
+    expect(objectSearchWorkflowSource, contains('results.sort'));
     expect(pr02PageWorkflowSource, contains('_selectPr02Object(item)'));
     expect(source, contains("part 'procedures/pr02_selection_workflow.dart';"));
     expect(pr02SelectionWorkflowSource, contains('Future<void> _selectPr02Object(Map<String, dynamic> item) async'));
