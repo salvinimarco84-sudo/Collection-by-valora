@@ -28,6 +28,7 @@ import 'procedures/pr01_page.dart';
 import 'procedures/pr02_page.dart';
 import 'procedures/pr02_controller.dart';
 import 'procedures/pr03_controller.dart';
+import 'procedures/pr03_closure_section.dart';
 import 'procedures/pr01_image_field.dart';
 import 'procedures/pr01_controller.dart';
 import 'services/pr01_image_manager.dart';
@@ -79,7 +80,6 @@ part 'procedures/pr01_data_workflow.dart';
 part 'procedures/pr01_page_workflow.dart';
 part 'procedures/pr01_image_workflow.dart';
 part 'procedures/object_search_workflow.dart';
-part 'procedures/pr03_runtime_procedure.dart';
 part 'procedures/pr03_closure_save.dart';
 part 'procedures/pr03_closure_confirmation.dart';
 part 'procedures/pr03_closure_payload.dart';
@@ -4783,7 +4783,19 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
               style: TextStyle(color: sectionColor)),
           )),
-        if (_isWrite && widget.apiCode == 'PR-03') ..._buildPr03ClosureSection(),
+        if (_isWrite && widget.apiCode == 'PR-03')
+          Pr03ClosureSection(
+            searchController: _search,
+            notesController: _notes,
+            pendingCount: _pr03PendingClosures.length,
+            hasSelectedObject: _currentObject != null,
+            closeReason: _closeReason,
+            onCloseReasonChanged: (value) => setState(() => _closeReason = value),
+            loading: _loading,
+            sectionColor: sectionColor,
+            onSearch: () => _run(_searchPr02Objects),
+            onConfirm: () => _run(_confirmPr03Closure),
+          ),
         if (!_isWrite && isHistory) ...[
           TextField(controller:_search,textInputAction:TextInputAction.search,
             onSubmitted:(_)=>_run(_searchPr02Objects),
