@@ -27,9 +27,10 @@ import 'procedures/pr01_form_content.dart';
 import 'procedures/pr01_page.dart';
 import 'procedures/pr01_image_field.dart';
 import 'procedures/pr01_controller.dart';
-import 'services/object_image_service.dart';
-import 'services/pr01_image_assistant_service.dart';
-import 'services/pr01_image_input_service.dart';
+import 'services/pr01_image_manager.dart';
+
+
+
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
@@ -2835,7 +2836,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _producer = TextEditingController();
   final _line = TextEditingController();
   final _family = TextEditingController();
-  final Pr01ImageInputService _pr01ImageInputService = const Pr01ImageInputService();
+  final Pr01ImageManager _pr01ImageManager = Pr01ImageManager();
   Uint8List? get _selectedImageBytes => _pr01Controller.selectedImageBytes;
   set _selectedImageBytes(Uint8List? value) => _pr01Controller.selectedImageBytes = value;
   String? get _selectedImageName => _pr01Controller.selectedImageName;
@@ -3718,7 +3719,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Future<void> _pickImageFile() async {
     try {
-      final selection = await _pr01ImageInputService.pickFromGallery();
+      final selection = await _pr01ImageManager.pickFromGallery();
       if (selection == null) return;
       setState(() {
         _selectedImageBytes = selection.bytes;
@@ -3733,7 +3734,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Future<void> _captureImage() async {
     try {
-      final selection = await _pr01ImageInputService.capturePhoto();
+      final selection = await _pr01ImageManager.capturePhoto();
       if (selection == null) return;
       setState(() {
         _selectedImageBytes = selection.bytes;
@@ -3770,7 +3771,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
     setState(() { _loading = true; _imageStatus = 'Sto riconoscendo l’oggetto e cercando fonti con PR-12…'; });
     try {
-      final recognition = await const Pr01ImageAssistantService().recognize(
+      final recognition = await _pr01ImageManager.recognize(
         bytes: bytes,
         fileName: _selectedImageName,
       );
@@ -3890,7 +3891,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     required int objectId, required Uint8List bytes, required String fileName,
     required String acquisition, required String procedure,
   }) {
-    return ObjectImageService().uploadAndRegister(
+    return _pr01ImageManager.uploadAndRegister(
       objectId: objectId,
       bytes: bytes,
       fileName: fileName,
@@ -3900,69 +3901,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   }
 
   Future<void> _loadExistingImage(int objectId) async {
-    String? imageUrl;
-    bool isHttpUrl(String value) =>
-        value.startsWith('https://') || value.startsWith('http://');
-
-    // 1) Archivio immagini applicativo: preferisce l'immagine principale confermata.
-    try {
-      final rows = await Supabase.instance.client
-          .schema('collection')
-          .from('immagini_oggetto')
-          .select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')
-          .eq('codice_oggetto', objectId)
-          .order('immagine_principale', ascending: false)
-          .limit(10);
-      for (final row in rows) {
-        // riferimento_immagine contiene l'URL diretto dell'immagine;
-        // url_fonte identifica invece la pagina sorgente del prodotto.
-        final candidate = (row['riferimento_immagine'] ?? '').toString().trim();
-        if (isHttpUrl(candidate)) {
-          imageUrl = candidate;
-          break;
-        }
-      }
-    } catch (e) {
-      debugPrint('VALORA: tabella immagini non disponibile per $objectId: $e');
-    }
-
-    // 2) Endpoint immagini: può trasformare un percorso Storage in URL firmato.
-    if (imageUrl == null) {
-      try {
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          final response = await Supabase.instance.client.functions.invoke(
-            'collection-object-images-test',
-            headers: {'Authorization': 'Bearer ${session.accessToken}'},
-            body: {'action':'get','codice_oggetto':objectId},
-          );
-          if (response.status >= 200 && response.status < 300 && response.data is Map) {
-            final data = Map<String, dynamic>.from(response.data as Map);
-            final signed = (data['signed_url'] ?? data['url'] ?? data['image_url'] ?? '').toString().trim();
-            if (isHttpUrl(signed)) imageUrl = signed;
-          }
-        }
-      } catch (e) {
-        debugPrint('VALORA: endpoint immagini non disponibile per $objectId: $e');
-      }
-    }
-
-    // 3) Fallback ai metadati catalografici salvati da PR-12.
-    if (imageUrl == null) {
-      try {
-        final metadata = await Supabase.instance.client
-            .schema('collection')
-            .from('master_metadati')
-            .select('url_immagine')
-            .eq('codice_oggetto', objectId)
-            .maybeSingle();
-        final candidate = (metadata?['url_immagine'] ?? '').toString().trim();
-        if (isHttpUrl(candidate)) imageUrl = candidate;
-      } catch (e) {
-        debugPrint('VALORA: URL immagine catalogo non disponibile per $objectId: $e');
-      }
-    }
-
+    final imageUrl = await _pr01ImageManager.loadExistingImage(objectId);
     if (!mounted || _loadedObjectId != objectId) return;
     setState(() {
       _existingImageUrl = imageUrl;
