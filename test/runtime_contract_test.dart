@@ -81,6 +81,7 @@ void main() {
   final pr02ControllerSource = File('lib/procedures/pr02_controller.dart').readAsStringSync();
   final pr02PageWorkflowSource = File('lib/procedures/pr02_page_workflow.dart').readAsStringSync();
   final pr02ObjectPresentationSource = File('lib/procedures/pr02_object_presentation.dart').readAsStringSync();
+  final pr02SelectionWorkflowSource = File('lib/procedures/pr02_selection_workflow.dart').readAsStringSync();
   final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
   final pr01PageWorkflowSource = File('lib/procedures/pr01_page_workflow.dart').readAsStringSync();
   final pr01ConfirmationWorkflowSource = File('lib/procedures/pr01_confirmation_workflow.dart').readAsStringSync();
@@ -1680,6 +1681,9 @@ void main() {
     expect(pr02PageWorkflowSource, contains('Widget _buildPr02Page()'));
     expect(pr02PageWorkflowSource, contains('_searchPr02Objects'));
     expect(pr02PageWorkflowSource, contains('_selectPr02Object(item)'));
+    expect(source, contains("part 'procedures/pr02_selection_workflow.dart';"));
+    expect(pr02SelectionWorkflowSource, contains('Future<void> _selectPr02Object(Map<String, dynamic> item) async'));
+    expect(pr02SelectionWorkflowSource, contains('await _loadObject();'));
     expect(pr02PageWorkflowSource, contains('_pr02MetadataCard(_currentObject!)'));
     expect(source, contains("part 'procedures/pr02_object_presentation.dart';"));
     expect(pr02ObjectPresentationSource, contains('Widget _pr02MetadataCard(Map<String, dynamic> object)'));
