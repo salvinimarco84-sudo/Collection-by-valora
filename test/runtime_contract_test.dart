@@ -1115,7 +1115,7 @@ void main() {
     test('PR-02 carica il master categorie prima di mostrare il selettore modificabile', () {
       expect(source, contains("if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER')"));
       expect(source, contains("_loadCollectionCategories();"));
-      expect(source, contains("if (_destination == 'COLLEZIONE') _collectionCategoryField()"));
+      expect(pr02PageWorkflowSource, contains("if (_destination == 'COLLEZIONE') _collectionCategoryField()"));
     });
 
     test('la AppBar dashboard conserva titolo, pulsanti e callback di navigazione', () {
