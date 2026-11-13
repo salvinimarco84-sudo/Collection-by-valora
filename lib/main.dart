@@ -21,6 +21,8 @@ import 'startup/startup_failure_page.dart';
 import 'startup/startup_loading_page.dart';
 import 'authentication/authentication_gate.dart';
 import 'procedures/procedure_registry.dart';
+import 'procedures/pr15/preorder_domain.dart';
+import 'procedures/pr15/preorder_repository.dart';
 import 'purchases/purchase_comparison_page.dart';
 import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
@@ -148,6 +150,7 @@ part 'procedures/valora_catalog_objects_controller.dart';
 part 'procedures/collection_value_page.dart';
 part 'procedures/collection_value_presentation.dart';
 part 'procedures/pr12_batch_page.dart';
+part 'procedures/pr15/preorder_page.dart';
 
 const String supabaseUrl = 'https://eeiekkflpnkummxtvljy.supabase.co';
 const String publishableKey = 'sb_publishable_a2TYRwP1XCAqgE5mXh8yZw_vIZiaFNz';
@@ -6436,10 +6439,11 @@ class _PurchaseItemDraft {
 /// PR-04: una transazione sola; un record oggetto distinto per ogni elemento.
 
 class NewPurchasePage extends StatefulWidget {
-  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.valoraMode = false});
+  const NewPurchasePage({super.key, this.initialMetadata, this.suggestedMarketValue, this.valoraMode = false, this.preorderConversion = false});
   final Map<String, dynamic>? initialMetadata;
   final double? suggestedMarketValue;
   final bool valoraMode;
+  final bool preorderConversion;
   @override
   State<NewPurchasePage> createState() => _NewPurchasePageState();
 }
@@ -6466,6 +6470,10 @@ class _NewPurchasePageState extends State<NewPurchasePage> {
     if (metadata != null) {
       final item = _items.first;
       item.description.text = (metadata['descrizione'] ?? '').toString();
+      if (widget.preorderConversion && metadata['prezzo_acquisto_preorder'] is num) {
+        item.price.text = (metadata['prezzo_acquisto_preorder'] as num).toStringAsFixed(2);
+        item.notes.text = 'Conversione da PR-15 PREORDER #${metadata['codice_preordine']}';
+      }
       item.metadataProducer = _nonEmptyMetadata(metadata['produttore']);
       item.metadataCode = _nonEmptyMetadata(metadata['codice_prodotto']);
       item.metadataYear = metadata['anno_uscita'] is num

@@ -122,7 +122,10 @@ extension _Pr04RuntimeProcedure on _NewPurchasePageState {
           : 'Salvataggio NON concluso: attesi $expectedPurchases acquisti, riletture ricevute $rereadCount. La coda e la bozza restano disponibili.';
       });
       if (saved && mounted) {
-        Navigator.of(context).pop();
+        final first = reread is List && reread.isNotEmpty && reread.first is Map
+            ? Map<String, dynamic>.from(reread.first as Map) : <String, dynamic>{};
+        final purchaseId = first['codice_acquisto']?.toString();
+        Navigator.of(context).pop(widget.preorderConversion ? purchaseId : null);
       }
     } catch (e) {
       if (mounted) setState(() => _status = 'Salvataggio non confermato: ' + e.toString());
