@@ -69,7 +69,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 part 'dashboard/dashboard_home_coordinator.dart';
 part 'dashboard/dashboard_collection_content.dart';
-part 'procedures/pr01_runtime_procedure.dart';
+part 'procedures/pr01_save_workflow.dart';
 part 'procedures/pr01_image_workflow.dart';
 part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';

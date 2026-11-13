@@ -1,6 +1,7 @@
 part of '../main.dart';
 
-extension _Pr01RuntimeProcedure on _ObjectRuntimePageState {
+/// Conferma, accodamento e persistenza del lotto PR-01 in un unico flusso.
+extension _Pr01SaveWorkflow on _ObjectRuntimePageState {
   Future<void> _confirmAndSaveNewObject() async {
     // La validazione e la costruzione del payload sono responsabilità del controller PR-01.
     _payload();
