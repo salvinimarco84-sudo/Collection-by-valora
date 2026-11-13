@@ -122,6 +122,28 @@ class PreorderRepository {
     return get(id);
   }
 
+  /// Salva il link diretto all'immagine di catalogo, come per master_metadati.url_immagine.
+  Future<PreorderRecord> updateImageReference({
+    required String id,
+    required String imageReference,
+  }) async {
+    final code = _parseId(id);
+    final url = imageReference.trim();
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasAuthority || !['http', 'https'].contains(uri.scheme)) {
+      throw ArgumentError.value(imageReference, 'imageReference', 'URL immagine non valido.');
+    }
+    final updated = await _client.schema('collection').from(_masterTable)
+        .update({'immagine_riferimento': url})
+        .eq('codice_preordine', code)
+        .select('codice_preordine')
+        .maybeSingle();
+    if (updated == null) {
+      throw StateError('Riferimento immagine non salvato: preorder non trovato o permessi insufficienti.');
+    }
+    return get(id);
+  }
+
   Future<PreorderRecord> addPayment({
     required String id,
     required int amountCents,
