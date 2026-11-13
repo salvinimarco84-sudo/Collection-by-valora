@@ -25,6 +25,7 @@ import 'purchases/purchase_comparison_page.dart';
 import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
 import 'procedures/pr01_page.dart';
+import 'procedures/pr02_page.dart';
 import 'procedures/pr01_image_field.dart';
 import 'procedures/pr01_controller.dart';
 import 'services/pr01_image_manager.dart';
@@ -70,6 +71,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 part 'dashboard/dashboard_home_coordinator.dart';
 part 'dashboard/dashboard_collection_content.dart';
 part 'procedures/pr01_confirmation_workflow.dart';
+part 'procedures/pr02_page_workflow.dart';
 part 'procedures/pr01_save_workflow.dart';
 part 'procedures/pr01_data_workflow.dart';
 part 'procedures/pr01_page_workflow.dart';
@@ -5009,7 +5011,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   @override
   Widget build(BuildContext context) {
     if (widget.apiCode == 'PR-01') return _buildPr01Page();
-    if (widget.apiCode == 'PR-02') return _buildPr02Screen();
+    if (widget.apiCode == 'PR-02') return _buildPr02Page();
     final code = widget.apiCode;
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
     final availablePageCount = (_rows.length / _availablePageSize).ceil();
@@ -5292,89 +5294,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
               style: TextStyle(color: sectionColor)),
           )),
-        if (_isWrite && code == 'PR-02') ...[
-          Card(child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('RICERCA OGGETTO', style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _search,
-                focusNode: _searchFocusNode,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _run(_searchPr02Objects),
-                decoration: InputDecoration(
-                  labelText: 'Parola, parte della descrizione o codice',
-                  hintText: 'Es. Batman',
-                  suffixIcon: IconButton(
-                    tooltip: 'Cerca',
-                    onPressed: _loading ? null : () => _run(_searchPr02Objects),
-                    icon: Icon(Icons.search),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text('La ricerca trova i record contenenti il termine, senza distinzione tra maiuscole e minuscole.', style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12)),
-              if (_pr02SearchCompleted)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    _pr02SearchResults.isEmpty
-                      ? 'Nessun risultato trovato.'
-                      : 'Risultati mostrati nella finestra sovrapposta: ' + _pr02SearchResults.length.toString(),
-                    style: TextStyle(color: ValoraAppearance.instance.textMuted, fontSize: 12),
-                  ),
-                ),
-            ]),
-          )),
-          if (_currentObject != null) ...[
-            const SizedBox(height: 12),
-            _pr02MetadataCard(_currentObject!),
-            if (_destination == 'COLLEZIONE') Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: _collectionCategoryField(),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Row(children: [
-                  Expanded(
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: !_showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
-                        foregroundColor: !_showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
-                      ),
-                      onPressed: () => setState(() => _showPr02TechnicalTab = false),
-                      child: Text('SCHEDA OGGETTO'),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: _showPr02TechnicalTab ? sectionColor : ValoraAppearance.instance.card,
-                        foregroundColor: _showPr02TechnicalTab ? Colors.black : ValoraAppearance.instance.textPrimary,
-                      ),
-                      onPressed: () => setState(() => _showPr02TechnicalTab = true),
-                      child: Text('DATI TECNICI'),
-                    ),
-                  ),
-                ]),
-              ),
-            ),
-            if (!_showPr02TechnicalTab)
-              LayoutBuilder(builder: (context, constraints) {
-                return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(child: _pr02Side(oldValues: true)),
-                  const SizedBox(width: 8),
-                  Expanded(child: _pr02Side(oldValues: false)),
-                ]);
-              })
-            else
-              _pr02TechnicalCard(_currentObject!),
-          ],
-        ],
         if (_isWrite && code == 'PR-03') ...[
           _field(_search, 'Cerca oggetto per descrizione o codice'),
           FilledButton.icon(
@@ -5471,13 +5390,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ],
         if ((!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport && !_isActiveListingsReport)
           _field(_search, 'Cerca'),
-        if (_isWrite && code == 'PR-02') ...[
-          FilledButton.icon(
-            onPressed: _loading || _currentObject == null ? null : () => _run(_confirmPr02Changes),
-            icon: Icon(Icons.verified_outlined),
-            label: Text('CONFERMA DATI'),
-          ),
-        ] else if (_isWrite && code == 'PR-03') ...[
+        if (_isWrite && code == 'PR-03') ...[
           const SizedBox.shrink(),
         ] else if (_isWrite && code != 'PR-01') ...[
           WriteProcedureActionPanel(
