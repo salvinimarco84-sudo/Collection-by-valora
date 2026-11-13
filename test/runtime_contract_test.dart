@@ -92,6 +92,7 @@ void main() {
   final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
+  final pr03ControllerSource = File('lib/procedures/pr03_controller.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
   final reportSummaryPanelSource = File('lib/reports/report_summary_panel.dart').readAsStringSync();
@@ -852,6 +853,11 @@ void main() {
       expect(pr03RuntimeProcedureSource, contains('CERCA E SELEZIONA OGGETTO'));
       expect(source, isNot(contains("CERCA OGGETTO PER DESCRIZIONE O CODICE")));
       expect(pr03RuntimeProcedureSource, contains('_pr03PendingClosures.add({'));
+      expect(source, contains("import 'procedures/pr03_controller.dart';"));
+      expect(source, contains('final Pr03Controller _pr03Controller = Pr03Controller();'));
+      expect(pr03ControllerSource, contains('final List<Map<String, dynamic>> pendingClosures'));
+      expect(pr03ControllerSource, contains("String closeReason = 'SMARRITO';"));
+      expect(source, isNot(contains("final List<Map<String, dynamic>> _pr03PendingClosures = []")));
       expect(pr03RuntimeProcedureSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'preview'"));
       expect(pr03RuntimeProcedureSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'review'"));
       expect(pr03RuntimeProcedureSource, contains("'PR-03', 'save'"));
