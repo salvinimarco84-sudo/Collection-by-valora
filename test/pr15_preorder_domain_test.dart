@@ -24,6 +24,19 @@ void main() {
       )), throwsStateError);
     });
 
+    test('consente di saldare dopo la ricezione senza perdere lo stato logistico', () {
+      final received = ordered
+          .addPayment(PreorderPayment(id: 'PAY-1', amountCents: 5000, date: DateTime(2026, 11, 11)))
+          .markReceived();
+      final settled = received.addPayment(PreorderPayment(
+        id: 'PAY-2', amountCents: 15000, date: DateTime(2026, 11, 12),
+      ));
+      expect(settled.status, PreorderStatus.received);
+      expect(settled.paidCents, 20000);
+      expect(settled.remainingCents, 0);
+      expect(settled.preparePurchase().acquisitionCostCents, 20000);
+    });
+
     test('impedisce pagamenti duplicati', () {
       final withDeposit = ordered.addPayment(PreorderPayment(
         id: 'PAY-1', amountCents: 5000, date: DateTime(2026, 11, 11),
