@@ -26,6 +26,7 @@ import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
 import 'procedures/pr01_page.dart';
 import 'procedures/pr01_controller.dart';
+import 'services/object_image_service.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
@@ -3924,39 +3925,14 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Future<String> _uploadAndRegisterImage({
     required int objectId, required Uint8List bytes, required String fileName,
     required String acquisition, required String procedure,
-  }) async {
-    final client = Supabase.instance.client;
-    final user = client.auth.currentUser;
-    final session = client.auth.currentSession;
-    if (user == null || session == null) throw Exception('Sessione non valida per caricare l’immagine.');
-    if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) throw Exception('Immagine vuota o superiore a 10 MB.');
-    final safeName = fileName.replaceAll(RegExp(r'[^A-Za-z0-9._-]+'), '_');
-    final extRaw = safeName.contains('.') ? safeName.split('.').last.toLowerCase() : 'jpg';
-    if (!const ['jpg','jpeg','png','webp','heic','heif'].contains(extRaw)) {
-      throw Exception('Formato non supportato. Usa JPG, PNG, WEBP, HEIC o HEIF.');
-    }
-    final ext = extRaw;
-    final mime = switch (ext) {
-      'png' => 'image/png', 'webp' => 'image/webp', 'heic' => 'image/heic',
-      'heif' => 'image/heif', _ => 'image/jpeg',
-    };
-    final path = '${user.id}/$objectId/${_uuid.v4()}.$ext';
-    await client.storage.from('pr01-foto-temporanee').uploadBinary(
-      path, bytes, fileOptions: FileOptions(contentType: mime, upsert: false));
-    final response = await client.functions.invoke(
-      'collection-object-images-test',
-      headers: {'Authorization': 'Bearer ${session.accessToken}'},
-      body: {'action':'register','codice_oggetto':objectId,'path':path,'file_name':safeName,
-        'modalita_acquisizione':acquisition,'procedura_origine':procedure},
+  }) {
+    return ObjectImageService().uploadAndRegister(
+      objectId: objectId,
+      bytes: bytes,
+      fileName: fileName,
+      acquisition: acquisition,
+      procedure: procedure,
     );
-    if (response.status < 200 || response.status >= 300 || response.data is! Map) {
-      throw Exception('Registrazione immagine non confermata: ${response.data}');
-    }
-    final data = Map<String, dynamic>.from(response.data as Map);
-    if (data['ok'] != true) throw Exception(data['error'] ?? 'Registrazione immagine non confermata.');
-    final signedUrl = (data['signed_url'] ?? '').toString();
-    if (signedUrl.isEmpty) throw Exception('Immagine registrata ma anteprima non disponibile.');
-    return signedUrl;
   }
 
   Future<void> _loadExistingImage(int objectId) async {
