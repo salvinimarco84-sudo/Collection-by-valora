@@ -20,7 +20,7 @@ checks = {
     "put-for-sale action is wired": "METTI IN VENDITA" in main and "Future<void> _putObjectForSale()" in main,
     "new sale screen exists": "class NewSalePage" in pr06_page_state,
     "new sale can preselect the requested object": "NewSalePage(initialObjectCode: id)" in main and "final int? initialObjectCode;" in pr06_page_state,
-    "PR-02 loads editable collection categories": "widget.apiCode == 'PR-02'" in main and "_loadCollectionCategories();" in main and "_collectionCategoryField()" in main,
+    "PR-02 loads editable collection categories": "widget.apiCode == 'PR-02'" in main and "_loadCollectionCategories();" in main and "_collectionCategoryField()" in (root / "lib" / "procedures" / "pr02_page_workflow.dart").read_text(encoding="utf-8"),
     "PR-02 collection category is selected": "_selectedCollectionCategory" in main and "categoria_collezione_selezionata" in main,
     "PR-02 removes technical category from object payload": "oggetto_collezione_categoria" in pr02_runtime and "_savePr02PendingChanges" in pr02_runtime,
     "PR-01 validates collection category": "Seleziona una categoria COLLEZIONE valida." in main,
