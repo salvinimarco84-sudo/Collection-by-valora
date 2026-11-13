@@ -101,4 +101,96 @@ void main() {
     controller.selectedCollectionCategory = null;
     expect(buildPayload, throwsA(isA<Exception>()));
   });
+
+  test('salva il blocco solo dopo preview e review e persiste ogni oggetto', () async {
+    controller.pendingObjects.add({
+      'oggetto': {'descrizione': 'Set di prova', 'quantita': 2},
+      'categoria': 'LEGO',
+    });
+    final actions = <String>[];
+    final persistedIds = <int>[];
+    final statuses = <String>[];
+    var lockHeld = false;
+    var lockReleasedByRuntime = false;
+
+    await controller.savePendingObjects(
+      sessionId: 'session-test',
+      acquireLock: () async { lockHeld = true; },
+      releaseLock: () async { lockHeld = false; },
+      isLockHeld: () => lockHeld,
+      executeProcedure: (action, payload, requestId) async {
+        actions.add(action);
+        expect(payload['conferma_finale'], isTrue);
+        expect(payload['dati_confermati'], isTrue);
+        if (action == 'save') {
+          expect(requestId, isNotNull);
+          return {
+            'scrittura_eseguita': true,
+            'blocco_rilasciato_automaticamente': true,
+            'risultati': [
+              {'codice_oggetto': 101},
+            ],
+          };
+        }
+        return {'errore': null};
+      },
+      persistObjectExtras: (entry, objectId) async {
+        persistedIds.add(objectId);
+      },
+      onLockReleased: () {
+        lockHeld = false;
+        lockReleasedByRuntime = true;
+      },
+      onStatus: statuses.add,
+    );
+
+    expect(actions, ['preview', 'review', 'save']);
+    expect(persistedIds, [101]);
+    expect(lockReleasedByRuntime, isTrue);
+    expect(lockHeld, isFalse);
+    expect(controller.pendingObjects, isEmpty);
+    expect(controller.pendingRequestId, isNull);
+    expect(statuses.single, contains('1 oggetti'));
+  });
+
+  test('mantiene il blocco in coda e rilascia il lock se il runtime non conferma', () async {
+    controller.pendingObjects.add({
+      'oggetto': {'descrizione': 'Set da salvare'},
+      'categoria': 'LEGO',
+    });
+    var lockHeld = false;
+    var releaseCount = 0;
+    final statuses = <String>[];
+
+    await expectLater(
+      controller.savePendingObjects(
+        sessionId: 'session-test',
+        acquireLock: () async { lockHeld = true; },
+        releaseLock: () async {
+          releaseCount++;
+          lockHeld = false;
+        },
+        isLockHeld: () => lockHeld,
+        executeProcedure: (action, payload, requestId) async {
+          if (action == 'save') {
+            return {
+              'scrittura_eseguita': false,
+              'blocco_rilasciato_automaticamente': false,
+            };
+          }
+          return {'errore': null};
+        },
+        persistObjectExtras: (entry, objectId) async {},
+        onLockReleased: () {},
+        onStatus: statuses.add,
+      ),
+      throwsA(isA<Exception>()),
+    );
+
+    expect(releaseCount, 1);
+    expect(lockHeld, isFalse);
+    expect(controller.pendingObjects, hasLength(1));
+    expect(controller.pendingRequestId, isNotNull);
+    expect(statuses.single, contains('Gli oggetti restano in attesa'));
+  });
 }
