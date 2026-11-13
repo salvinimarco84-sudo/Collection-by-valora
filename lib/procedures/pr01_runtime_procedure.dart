@@ -2,16 +2,8 @@ part of '../main.dart';
 
 extension _Pr01RuntimeProcedure on _ObjectRuntimePageState {
   Future<void> _confirmAndSaveNewObject() async {
-    if (_description.text.trim().isEmpty) throw Exception('La descrizione oggetto è obbligatoria.');
-    final yearText = _line.text.trim();
-    if (yearText.isNotEmpty) {
-      final year = int.tryParse(yearText);
-      if (year == null || year < 1000 || year > DateTime.now().year + 2) {
-        throw Exception('Anno di uscita non valido. Inserisci un anno plausibile oppure lascia il campo vuoto.');
-      }
-    }
-    final qty = int.tryParse(_quantity.text.trim());
-    if (qty == null || qty < 1) throw Exception('La quantità deve essere un numero intero maggiore di zero.');
+    // La validazione e la costruzione del payload sono responsabilità del controller PR-01.
+    _payload();
 
     final unitPriceLabel = _unitPrice.text.trim().isEmpty
         ? 'Non indicato'
