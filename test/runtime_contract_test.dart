@@ -76,6 +76,7 @@ void main() {
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
   final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
+  final pr01PageWorkflowSource = File('lib/procedures/pr01_page_workflow.dart').readAsStringSync();
   final pr01SaveWorkflowSource = File('lib/procedures/pr01_save_workflow.dart').readAsStringSync();
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
@@ -871,6 +872,24 @@ void main() {
       expect(pr01DataWorkflowSource, contains('Map<String, dynamic> _buildPr01Payload()'));
       expect(pr01DataWorkflowSource, contains('_pr01Controller.buildObjectPayload('));
       expect(source, contains("if (widget.apiCode == 'PR-01') return _buildPr01Payload();"));
+    });
+
+    test('PR-01 separa composizione pagina e lifecycle senza isolare il caricamento categorie condiviso', () {
+      expect(source, contains("part 'procedures/pr01_page_workflow.dart';"));
+      expect(source, contains("if (widget.apiCode == 'PR-01') return _buildPr01Page();"));
+      expect(source, isNot(contains('return Pr01Page(')));
+      expect(pr01PageWorkflowSource, contains('extension _Pr01PageWorkflow'));
+      expect(pr01PageWorkflowSource, contains('Widget _buildPr01Page()'));
+      expect(pr01PageWorkflowSource, contains('Pr01Page('));
+      expect(pr01PageWorkflowSource, contains('Pr01FormContent('));
+      expect(pr01PageWorkflowSource, contains('_confirmAndSaveNewObject'));
+      expect(pr01PageWorkflowSource, contains('_releaseLock'));
+      expect(pr01PageWorkflowSource, contains('_initializePr01Page()'));
+      expect(pr01PageWorkflowSource, contains('_disposePr01Page()'));
+      expect(pr01PageWorkflowSource, contains('_quantity.addListener(_recalculateTotal)'));
+      expect(pr01PageWorkflowSource, contains('_quantity.removeListener(_recalculateTotal)'));
+      expect(source, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER'"));
+      expect(source, contains('Future<void> _loadCollectionCategories() async'));
     });
 
     test('PR-01 raccoglie tutto il flusso immagine in un modulo dedicato', () {

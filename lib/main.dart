@@ -71,6 +71,7 @@ part 'dashboard/dashboard_home_coordinator.dart';
 part 'dashboard/dashboard_collection_content.dart';
 part 'procedures/pr01_save_workflow.dart';
 part 'procedures/pr01_data_workflow.dart';
+part 'procedures/pr01_page_workflow.dart';
 part 'procedures/pr01_image_workflow.dart';
 part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
@@ -3114,10 +3115,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       // when opening an existing object so its saved category is visible/editable.
       _loadCollectionCategories();
     }
-    if (widget.apiCode == 'PR-01') {
-      _quantity.addListener(_recalculateTotal);
-      _unitPrice.addListener(_recalculateTotal);
-    }
+    _initializePr01Page();
     if (_isActiveListingsReport || widget.apiCode == 'OBJECTS_AVAILABLE') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _run(_consult);
@@ -3172,6 +3170,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   @override
   void dispose() {
+    _disposePr01Page();
     if (_lockHeld) {
       _releaseOwnedLockSilently();
     }
@@ -5008,52 +5007,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.apiCode == 'PR-01') {
-      return Pr01Page(
-        title: widget.title,
-        sectionColor: sectionColor,
-        userLabel: Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata',
-        lockHeld: _lockHeld,
-        loading: _loading,
-        status: _output,
-        form: Pr01FormContent(
-          sectionColor: sectionColor,
-          descriptionField: _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
-          imageField: _imageField(),
-          producerField: _field(_producer, 'Produttore (facoltativo)'),
-          yearField: _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
-          productCodeField: _field(_family, 'Codice prodotto (facoltativo)'),
-          conditionField: _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-          completenessField: _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','COMPLETO CON ISTRUZIONI','COMPLETO CON SCATOLA E ISTRUZIONI','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
-          destinationField: _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() { _destination = v!; if (_destination != 'COLLEZIONE') _selectedCollectionCategory = null; })),
-          collectionCategoryField: _destination == 'COLLEZIONE' ? _collectionCategoryField() : null,
-          quantityField: _field(_quantity, 'Quantità', type: TextInputType.number),
-          unitPriceField: _field(_unitPrice, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
-          totalValueField: TextField(
-            controller: _totalValue,
-            readOnly: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Valore totale calcolato (€)',
-              helperText: 'Quantità × prezzo unitario. Il totale viene registrato in valore_oggetto.',
-            ),
-          ),
-          notesField: _field(_notes, 'Note', lines: 2),
-          marketValueField: TextField(
-            controller: _marketValue,
-            readOnly: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              hintText: '0,00',
-              helperText: 'Valore restituito dalla procedura di valutazione. 0,00 finché non è disponibile una stima.',
-              border: OutlineInputBorder(),
-            ),
-          ),
-        ),
-        onSave: _loading ? null : () => _run(_confirmAndSaveNewObject),
-        onReleaseLock: _loading || !_lockHeld ? null : () => _run(_releaseLock),
-      );
-    }
+    if (widget.apiCode == 'PR-01') return _buildPr01Page();
     if (widget.apiCode == 'PR-02') return _buildPr02Screen();
     final code = widget.apiCode;
     final isAvailableList = code == 'OBJECTS_AVAILABLE';
