@@ -78,6 +78,7 @@ void main() {
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
   final pr02PageSource = File('lib/procedures/pr02_page.dart').readAsStringSync();
+  final pr02ControllerSource = File('lib/procedures/pr02_controller.dart').readAsStringSync();
   final pr02PageWorkflowSource = File('lib/procedures/pr02_page_workflow.dart').readAsStringSync();
   final pr02ObjectPresentationSource = File('lib/procedures/pr02_object_presentation.dart').readAsStringSync();
   final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
@@ -1655,6 +1656,19 @@ void main() {
     expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
 
+
+  test('PR-02 delega lo stato della pagina al controller dedicato', () {
+    expect(source, contains("import 'procedures/pr02_controller.dart';"));
+    expect(source, contains('final Pr02Controller _pr02Controller = Pr02Controller();'));
+    expect(source, contains('_pr02Controller.searchResults'));
+    expect(source, contains('_pr02Controller.pendingChanges'));
+    expect(source, contains('_pr02Controller.pendingImages'));
+    expect(source, contains('_pr02Controller.dispose();'));
+    expect(pr02ControllerSource, contains('class Pr02Controller'));
+    expect(pr02ControllerSource, contains('ScrollController scrollController'));
+    expect(pr02ControllerSource, contains('pendingChanges'));
+    expect(pr02ControllerSource, contains('pendingImages'));
+  });
 
   test('PR-02 usa una pagina dedicata e mantiene ricerca, scheda e conferma', () {
     expect(source, contains("import 'procedures/pr02_page.dart';"));
