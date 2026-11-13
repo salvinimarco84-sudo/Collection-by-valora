@@ -133,7 +133,7 @@ class PreorderRepository {
     final code = _parseId(id);
     if (amountCents <= 0) throw ArgumentError('Il pagamento deve essere maggiore di zero.');
     final record = await get(id);
-    if (!record.isActive || record.status == PreorderStatus.received) {
+    if (!record.isActive || record.status == PreorderStatus.shipped) {
       throw StateError('Il preorder non accetta altri pagamenti in questo stato.');
     }
     if (amountCents > record.remainingCents) {
