@@ -73,7 +73,6 @@ part 'dashboard/dashboard_home_coordinator.dart';
 part 'dashboard/dashboard_collection_content.dart';
 part 'procedures/pr01_confirmation_workflow.dart';
 part 'procedures/pr02_page_workflow.dart';
-part 'procedures/pr02_controller_workflow.dart';
 part 'procedures/pr02_object_presentation.dart';
 part 'procedures/pr01_save_workflow.dart';
 part 'procedures/pr01_data_workflow.dart';
