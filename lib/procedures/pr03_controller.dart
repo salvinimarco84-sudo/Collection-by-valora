@@ -4,5 +4,22 @@ class Pr03Controller {
       <Map<String, dynamic>>[];
   String closeReason = 'SMARRITO';
 
+  bool containsClosure(int objectId) =>
+      pendingClosures.any((entry) => entry['codice_oggetto'] == objectId);
+
+  void addPendingClosure(Map<String, dynamic> closure) {
+    final id = int.tryParse(closure['codice_oggetto']?.toString() ?? '');
+    if (id == null || id <= 0) {
+      throw ArgumentError('Codice oggetto non valido per la coda PR-03.');
+    }
+    if (containsClosure(id)) {
+      throw StateError('L’oggetto $id è già presente nella coda PR-03.');
+    }
+    pendingClosures.add(Map<String, dynamic>.unmodifiable(closure));
+  }
+
+  List<Map<String, dynamic>> pendingClosuresSnapshot() =>
+      List<Map<String, dynamic>>.unmodifiable(pendingClosures);
+
   void clearPendingClosures() => pendingClosures.clear();
 }
