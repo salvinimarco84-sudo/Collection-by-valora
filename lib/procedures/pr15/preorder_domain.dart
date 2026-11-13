@@ -37,7 +37,7 @@ class PreorderRecord {
   bool get isActive => !{PreorderStatus.converted, PreorderStatus.cancelled, PreorderStatus.refunded}.contains(status);
 
   PreorderRecord addPayment(PreorderPayment payment) {
-    if (!isActive || status == PreorderStatus.received) throw StateError('Preorder non pagabile.');
+    if (!isActive || status == PreorderStatus.shipped) throw StateError('Preorder non pagabile.');
     if (payment.amountCents <= 0 || agreedPriceCents <= 0) throw ArgumentError('Importo non valido.');
     if (payments.any((entry) => entry.id == payment.id)) throw StateError('Pagamento duplicato.');
     if (paidCents + payment.amountCents > agreedPriceCents) throw StateError('Importo superiore al residuo.');
