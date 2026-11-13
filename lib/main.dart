@@ -81,6 +81,7 @@ part 'procedures/pr01_image_workflow.dart';
 part 'procedures/object_search_workflow.dart';
 part 'procedures/pr03_runtime_procedure.dart';
 part 'procedures/pr03_closure_save.dart';
+part 'procedures/pr03_closure_confirmation.dart';
 part 'procedures/pr03_closure_payload.dart';
 part 'procedures/pr03_object_selection.dart';
 part 'procedures/pr03_controller_bindings.dart';
