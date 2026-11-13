@@ -845,6 +845,9 @@ void main() {
       expect(pr03RuntimeProcedureSource, contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async'));
       expect(pr03RuntimeProcedureSource, contains('Future<void> _confirmPr03Closure() async'));
       expect(pr03RuntimeProcedureSource, contains('Future<void> _savePr03PendingClosures() async'));
+      expect(pr03RuntimeProcedureSource, contains('List<Widget> _buildPr03ClosureSection()'));
+      expect(pr03RuntimeProcedureSource, contains('CERCA E SELEZIONA OGGETTO'));
+      expect(source, isNot(contains("CERCA OGGETTO PER DESCRIZIONE O CODICE")));
       expect(pr03RuntimeProcedureSource, contains('_pr03PendingClosures.add({'));
       expect(pr03RuntimeProcedureSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'preview'"));
       expect(pr03RuntimeProcedureSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'review'"));
