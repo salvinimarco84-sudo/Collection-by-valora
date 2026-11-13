@@ -80,6 +80,7 @@ part 'procedures/pr01_data_workflow.dart';
 part 'procedures/pr01_page_workflow.dart';
 part 'procedures/pr01_image_workflow.dart';
 part 'procedures/pr02_runtime_procedure.dart';
+part 'procedures/pr02_save_workflow.dart';
 part 'procedures/pr03_runtime_procedure.dart';
 part 'purchases/pr04_runtime_procedure.dart';
 part 'wanted_list/wanted_new_desire_page.dart';
