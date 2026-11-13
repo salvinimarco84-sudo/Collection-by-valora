@@ -5470,16 +5470,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
         ],
         if ((!_isWrite || code == 'PR-08' || code == 'PR-07' || code == 'PR-09') && !isMaster && !isHistory && !isAvailableList && !_isPeriodReport && !_isActiveListingsReport)
           _field(_search, 'Cerca'),
-        if (_isWrite && code == 'PR-01') ...[
-          FilledButton.icon(
-            onPressed: _loading ? null : () => _run(_confirmAndSaveNewObject),
-            icon: Icon(Icons.save_outlined),
-            label: Text(_loading ? 'SALVATAGGIO IN CORSO…' : 'CONFERMA E SALVA OGGETTO'),
-          ),
-          const SizedBox(height: 8),
-          if (_lockHeld) OutlinedButton.icon(onPressed: _loading ? null : () => _run(_releaseLock),
-            icon: Icon(Icons.lock_open), label: Text('RILASCIA BLOCCO ARCHIVIO')),
-        ] else if (_isWrite && code == 'PR-02') ...[
+        if (_isWrite && code == 'PR-02') ...[
           FilledButton.icon(
             onPressed: _loading || _currentObject == null ? null : () => _run(_confirmPr02Changes),
             icon: Icon(Icons.verified_outlined),
@@ -5487,7 +5478,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
           ),
         ] else if (_isWrite && code == 'PR-03') ...[
           const SizedBox.shrink(),
-        ] else if (_isWrite) ...[
+        ] else if (_isWrite && code != 'PR-01') ...[
           WriteProcedureActionPanel(
             loading: _loading,
             hasPreview: _lastResult != null,
