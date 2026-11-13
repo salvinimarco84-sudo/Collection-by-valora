@@ -8,6 +8,7 @@ void main() {
   final pr01ImageManagerSource = File('lib/services/pr01_image_manager.dart').readAsStringSync();
   final pr01ImageWorkflowSource = File('lib/procedures/pr01_image_workflow.dart').readAsStringSync();
   final pr01ControllerSource = File('lib/procedures/pr01_controller.dart').readAsStringSync();
+  final pr02PayloadWorkflowSource = File('lib/procedures/pr02_payload_workflow.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
@@ -938,6 +939,17 @@ void main() {
       expect(pr01ConfirmationWorkflowSource, isNot(contains('Future<void> _savePr01PendingObjects() async')));
       expect(pr01PageWorkflowSource, contains('_run(_confirmAndSaveNewObject)'));
       expect(pr01ControllerSource, contains('Seleziona una categoria COLLEZIONE valida.'));
+    });
+
+    test('PR-02 payload e validazioni sono isolati nel workflow dedicato', () {
+      expect(source, contains("part 'procedures/pr02_payload_workflow.dart';"));
+      expect(source, contains("if (widget.apiCode == 'PR-02') return _buildPr02Payload();"));
+      expect(source, isNot(contains("if (widget.apiCode == 'PR-02') {")));
+      expect(pr02PayloadWorkflowSource, contains('Map<String, dynamic> _buildPr02Payload()'));
+      expect(pr02PayloadWorkflowSource, contains('Seleziona una categoria COLLEZIONE valida.'));
+      expect(pr02PayloadWorkflowSource, contains('Nessuna modifica rilevata.'));
+      expect(pr02PayloadWorkflowSource, contains('Valore oggetto non valido.'));
+      expect(pr02PayloadWorkflowSource, contains("'categoria_collezione_selezionata'"));
     });
 
     test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
