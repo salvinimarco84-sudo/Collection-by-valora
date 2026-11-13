@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../lib/procedures/pr01_controller.dart';
@@ -49,6 +51,28 @@ void main() {
     metadataSourceUrl: null,
     metadataSearchExecuted: false,
   );
+
+  test('mantiene lo stato delle immagini nel controller PR-01', () {
+    final bytes = Uint8List.fromList([1, 2, 3]);
+    expect(controller.selectedImageBytes, isNull);
+    expect(controller.selectedImageName, isNull);
+    expect(controller.imageAcquisition, 'CARICAMENTO_FILE');
+    expect(controller.existingImageUrl, isNull);
+    expect(controller.imageStatus, 'Nessuna immagine selezionata.');
+
+    controller
+      ..selectedImageBytes = bytes
+      ..selectedImageName = 'foto.jpg'
+      ..imageAcquisition = 'FOTOCAMERA'
+      ..existingImageUrl = 'https://example.test/foto.jpg'
+      ..imageStatus = 'Foto pronta.';
+
+    expect(controller.selectedImageBytes, bytes);
+    expect(controller.selectedImageName, 'foto.jpg');
+    expect(controller.imageAcquisition, 'FOTOCAMERA');
+    expect(controller.existingImageUrl, 'https://example.test/foto.jpg');
+    expect(controller.imageStatus, 'Foto pronta.');
+  });
 
   test('calcola il totale quantità per prezzo unitario', () {
     expect(controller.calculateTotal(quantity: '2', unitPrice: '12,50'), '25.00');
