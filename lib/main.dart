@@ -27,6 +27,7 @@ import 'procedures/pr01_form_content.dart';
 import 'procedures/pr01_page.dart';
 import 'procedures/pr02_page.dart';
 import 'procedures/pr02_controller.dart';
+import 'procedures/pr03_controller.dart';
 import 'procedures/pr01_image_field.dart';
 import 'procedures/pr01_controller.dart';
 import 'services/pr01_image_manager.dart';
@@ -2814,6 +2815,10 @@ class ObjectRuntimePage extends StatefulWidget {
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final Pr01Controller _pr01Controller = Pr01Controller();
   final Pr02Controller _pr02Controller = Pr02Controller();
+  final Pr03Controller _pr03Controller = Pr03Controller();
+  List<Map<String, dynamic>> get _pr03PendingClosures => _pr03Controller.pendingClosures;
+  String get _closeReason => _pr03Controller.closeReason;
+  set _closeReason(String value) => _pr03Controller.closeReason = value;
 
 
 
@@ -2870,7 +2875,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   bool _dataConfirmed = false;
   bool _finalReady = false;
   int? _loadedObjectId;
-  String _closeReason = 'SMARRITO';
   String _output = 'Pronto. Le consultazioni sono in sola lettura.';
   Map<String, dynamic>? _lastResult;
   List<dynamic> _rows = [];
@@ -2893,7 +2897,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<Map<String, dynamic>> _pr11CategoryFieldDefinitions = [];
   Map<String, dynamic> _pr11CategoryValues = {};
   String? _pr11CategoryCode;
-  final List<Map<String, dynamic>> _pr03PendingClosures = [];
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
   String _lastPr11SearchQuery = '';
