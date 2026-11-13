@@ -70,6 +70,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 part 'dashboard/dashboard_home_coordinator.dart';
 part 'dashboard/dashboard_collection_content.dart';
 part 'procedures/pr01_save_workflow.dart';
+part 'procedures/pr01_data_workflow.dart';
 part 'procedures/pr01_image_workflow.dart';
 part 'procedures/pr02_runtime_procedure.dart';
 part 'procedures/pr03_runtime_procedure.dart';
@@ -3153,29 +3154,12 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     }
   }
 
-  Widget _collectionCategoryField() => Padding(padding: const EdgeInsets.only(bottom: 12), child: DropdownButtonFormField<String>(
-    key: ValueKey('collection-category-${_selectedCollectionCategory ?? 'none'}-${_collectionCategories.length}-$_categoriesLoading'),
-    value: _collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory) ? _selectedCollectionCategory : null,
-    decoration: InputDecoration(labelText: 'Categoria COLLEZIONE *', helperText: _categoriesLoading ? 'Caricamento categorie…' : 'Seleziona la categoria principale.'),
-    items: _collectionCategories.map((e) => DropdownMenuItem<String>(value: e['codice_categoria'].toString(), child: Text((e['descrizione'] ?? e['codice_categoria']).toString()))).toList(),
-    onChanged: _categoriesLoading ? null : (v) => setState(() => _selectedCollectionCategory = v),
-  ));
-
   void _onPr11SearchFocusChanged() {
     if (widget.apiCode != 'OBJECT_MASTER' || _pr11SearchFocusNode.hasFocus || _loading) return;
     final query = _search.text.trim();
     if (query.length < 2 || query == _lastPr11SearchQuery) return;
     _lastPr11SearchQuery = query;
     _run(_searchPr02Objects);
-  }
-
-  void _recalculateTotal() {
-    if (widget.apiCode != 'PR-01') return;
-    final total = _pr01Controller.calculateTotal(
-      quantity: _quantity.text,
-      unitPrice: _unitPrice.text,
-    );
-    if (_totalValue.text != (total ?? '')) _totalValue.text = total ?? '';
   }
 
   Future<void> _releaseOwnedLockSilently() async {
@@ -3256,20 +3240,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Map<String, dynamic> _payload() {
     final id = int.tryParse(_code.text.trim());
-    if (widget.apiCode == 'PR-01') {
-      return _pr01Controller.buildObjectPayload(
-        description: _description,
-        producer: _producer,
-        year: _line,
-        productCode: _family,
-        quantity: _quantity,
-        unitPrice: _unitPrice,
-        notes: _notes,
-        hasMetadata: _hasAnyMetadata,
-        metadataSourceUrl: _metadataSourceUrl,
-        metadataSearchExecuted: _metadataSearchExecuted,
-      );
-    }
+    if (widget.apiCode == 'PR-01') return _buildPr01Payload();
     if (id == null || id <= 0) throw Exception('Inserisci un codice oggetto valido.');
     if (widget.apiCode == 'PR-02') {
       if (_loadedObjectId != id) throw Exception('Carica la scheda completa del codice selezionato prima di procedere.');

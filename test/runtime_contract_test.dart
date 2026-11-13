@@ -75,6 +75,7 @@ void main() {
   // relativi agli import e alla direttiva part restano verificati su main.dart.
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
+  final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
   final pr01SaveWorkflowSource = File('lib/procedures/pr01_save_workflow.dart').readAsStringSync();
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
@@ -858,6 +859,18 @@ void main() {
       expect(pr01FormContentSource, contains('marketValueField'));
     });
 
+
+    test('PR-01 raggruppa campi, calcolo e payload dati in un unico workflow', () {
+      expect(source, contains("part 'procedures/pr01_data_workflow.dart';"));
+      expect(source, isNot(contains('void _recalculateTotal()')));
+      expect(source, isNot(contains('Widget _collectionCategoryField()')));
+      expect(pr01DataWorkflowSource, contains('extension _Pr01DataWorkflow'));
+      expect(pr01DataWorkflowSource, contains('Widget _collectionCategoryField()'));
+      expect(pr01DataWorkflowSource, contains('void _recalculateTotal()'));
+      expect(pr01DataWorkflowSource, contains('Map<String, dynamic> _buildPr01Payload()'));
+      expect(pr01DataWorkflowSource, contains('_pr01Controller.buildObjectPayload('));
+      expect(source, contains("if (widget.apiCode == 'PR-01') return _buildPr01Payload();"));
+    });
 
     test('PR-01 raccoglie tutto il flusso immagine in un modulo dedicato', () {
       expect(source, contains("part 'procedures/pr01_image_workflow.dart';"));
