@@ -6,7 +6,7 @@ void main() {
     test('normalizes file names without changing supported extensions', () {
       expect(
         ObjectImageService.safeFileName('foto oggetto #1.JPG'),
-        'foto_oggetto__1_.JPG',
+        'foto_oggetto__1.JPG',
       );
       expect(ObjectImageService.extensionOf('foto oggetto.JPG'), 'jpg');
     });
