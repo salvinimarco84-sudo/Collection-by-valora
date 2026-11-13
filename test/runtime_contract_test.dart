@@ -87,6 +87,7 @@ void main() {
   final pr01ConfirmationWorkflowSource = File('lib/procedures/pr01_confirmation_workflow.dart').readAsStringSync();
   final pr01SaveWorkflowSource = File('lib/procedures/pr01_save_workflow.dart').readAsStringSync();
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
+  final pr02SaveWorkflowSource = File('lib/procedures/pr02_save_workflow.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
@@ -832,7 +833,8 @@ void main() {
       expect(pr02RuntimeProcedureSource, contains('_continuePr02WithAnotherObject'));
       expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
       expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
-      expect(pr02RuntimeProcedureSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
+      expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
+      expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(pr02RuntimeProcedureSource, contains('oggetto_collezione_categoria'));
     });
 
@@ -1016,6 +1018,7 @@ void main() {
 
     test('PR-02 salva e verifica la modifica prima della scelta successiva', () {
       expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(pr02RuntimeProcedureSource, contains('salvato e verificato'));
     });
 
