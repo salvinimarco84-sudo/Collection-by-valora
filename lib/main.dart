@@ -3242,17 +3242,9 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Map<String, dynamic> _payload() {
     if (widget.apiCode == 'PR-01') return _buildPr01Payload();
     if (widget.apiCode == 'PR-02') return _buildPr02Payload();
+    if (widget.apiCode == 'PR-03') return _buildPr03ClosurePayload();
     final id = int.tryParse(_code.text.trim());
     if (id == null || id <= 0) throw Exception('Inserisci un codice oggetto valido.');
-    if (widget.apiCode == 'PR-03') {
-      if (_loadedObjectId != id || _currentObject == null) {
-        throw Exception('Per PR-03 carica prima la scheda completa del codice selezionato.');
-      }
-      return {'oggetti': [{
-        'codice_oggetto': id, 'motivo_chiusura': _closeReason,
-        'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-      }]};
-    }
     throw Exception('Procedura di scrittura non riconosciuta.');
   }
 
