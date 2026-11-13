@@ -33,7 +33,7 @@ extension _Pr03RuntimeProcedure on _ObjectRuntimePageState {
       throw Exception('Cerca e seleziona prima l’oggetto da chiudere.');
     }
     final id = _loadedObjectId!;
-    if (_pr03PendingClosures.any((entry) => entry['codice_oggetto'] == id)) {
+    if (_pr03Controller.containsClosure(id)) {
       throw Exception('L’oggetto $id è già presente nell’elenco delle chiusure da confermare.');
     }
     final reason = _closeReason;
@@ -54,7 +54,7 @@ extension _Pr03RuntimeProcedure on _ObjectRuntimePageState {
     );
     if (confirmed != true || !mounted) return;
     setState(() {
-      _pr03PendingClosures.add({
+      _pr03Controller.addPendingClosure({
         'codice_oggetto': id,
         'motivo_chiusura': reason,
         'note': notes.isEmpty ? null : notes,
@@ -113,7 +113,7 @@ extension _Pr03RuntimeProcedure on _ObjectRuntimePageState {
     );
     if (finalConfirmed != true) return;
     final saved = <int>[];
-    for (final item in List<Map<String, dynamic>>.from(_pr03PendingClosures)) {
+    for (final item in _pr03Controller.pendingClosuresSnapshot()) {
       final id = int.parse(item['codice_oggetto'].toString());
       final payload = <String, dynamic>{
         'oggetti': [{
@@ -151,7 +151,7 @@ extension _Pr03RuntimeProcedure on _ObjectRuntimePageState {
     }
     if (!mounted) return;
     setState(() {
-      _pr03PendingClosures.clear();
+      _pr03Controller.clearPendingClosures();
       _currentObject = null;
       _loadedObjectId = null;
       _code.clear();
