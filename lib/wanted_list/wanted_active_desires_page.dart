@@ -34,14 +34,46 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
-      for (final row in rows) {
-        final path = row['immagine_path']?.toString();
-        if (path != null && path.isNotEmpty) {
-          try {
-            row['immagine_url'] = await Supabase.instance.client.storage
-                .from('wanted-list-images-test').createSignedUrl(path, 3600);
-          } catch (_) {
-            row['immagine_url'] = null;
+      final ids = rows.map((r) => r['id'].toString()).toList();
+      if (ids.isNotEmpty) {
+        final shared = await Supabase.instance.client.schema('collection')
+            .from('immagini_oggetto')
+            .select('wanted_id, url_fonte, riferimento_immagine, immagine_principale, data_registrazione')
+            .inFilter('wanted_id', ids)
+            .order('immagine_principale', ascending: false)
+            .order('data_registrazione', ascending: false);
+        final best = <String, Map<String, dynamic>>{};
+        for (final item in (shared as List).whereType<Map>()) {
+          final image = Map<String, dynamic>.from(item);
+          final id = image['wanted_id']?.toString();
+          if (id != null && !best.containsKey(id)) best[id] = image;
+        }
+        for (final row in rows) {
+          final id = row['id'].toString();
+          final image = best[id];
+          if (image != null) {
+            final source = (image['url_fonte'] ?? '').toString();
+            const prefix = 'storage://pr01-foto-temporanee/';
+            if (source.startsWith(prefix)) {
+              try {
+                row['immagine_url'] = await Supabase.instance.client.storage
+                    .from('pr01-foto-temporanee')
+                    .createSignedUrl(source.substring(prefix.length), 3600);
+                row['immagine_path'] = source.substring(prefix.length);
+                row['immagine_fonte'] = 'ARCHIVIO CONDIVISO';
+              } catch (_) { row['immagine_url'] = null; }
+            } else if (source.startsWith('https://') || source.startsWith('http://')) {
+              row['immagine_url'] = source;
+            }
+          }
+          if (row['immagine_url'] == null) {
+            final legacyPath = row['immagine_path']?.toString();
+            if (legacyPath != null && legacyPath.isNotEmpty) {
+              try {
+                row['immagine_url'] = await Supabase.instance.client.storage
+                    .from('wanted-list-images-test').createSignedUrl(legacyPath, 3600);
+              } catch (_) { row['immagine_url'] = null; }
+            }
           }
         }
       }
@@ -56,6 +88,7 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
   Future<void> _changeImage(Map<String, dynamic> row) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) { _message('Sessione non valida. Accedi nuovamente.'); return; }
+    String? uploadedPath;
     try {
       final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1600);
       if (picked == null) return;
@@ -64,19 +97,32 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
       final safeExt = ['png', 'webp'].contains(ext) ? ext : 'jpg';
       final mime = safeExt == 'png' ? 'image/png' : safeExt == 'webp' ? 'image/webp' : 'image/jpeg';
       final id = row['id'].toString();
-      final path = '${user.id}/$id/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
-      final storage = Supabase.instance.client.storage.from('wanted-list-images-test');
-      await storage.uploadBinary(path, bytes, fileOptions: FileOptions(contentType: mime));
-      await Supabase.instance.client.schema('collection').from('wanted_desideri').update({
-        'immagine_path': path,
-        'immagine_fonte': 'CARICATA',
-        'data_immagine': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', id).eq('user_id', user.id);
-      final oldPath = row['immagine_path']?.toString();
-      if (oldPath != null && oldPath.isNotEmpty) { try { await storage.remove([oldPath]); } catch (_) {} }
-      if (mounted) _message('Immagine aggiornata e salvata.');
+      uploadedPath = '${user.id}/${id}/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
+      final storage = Supabase.instance.client.storage.from('pr01-foto-temporanee');
+      await storage.uploadBinary(uploadedPath!, bytes, fileOptions: FileOptions(contentType: mime));
+      final registered = await Supabase.instance.client.functions.invoke(
+        'collection-object-images-test',
+        body: {
+          'action': 'register',
+          'target_type': 'wanted',
+          'wanted_id': id,
+          'path': uploadedPath,
+          'file_name': picked.name,
+          'modalita_acquisizione': 'CARICAMENTO_FILE',
+          'procedura_origine': 'WANTED-LIST',
+        },
+      );
+      if (registered.status < 200 || registered.status >= 300 ||
+          registered.data is! Map || (registered.data as Map)['ok'] != true) {
+        final detail = registered.data is Map ? (registered.data as Map)['error'] : null;
+        throw StateError((detail ?? 'Registrazione immagine non riuscita').toString());
+      }
+      if (mounted) _message('Immagine salvata nell’archivio condiviso.'); 
       await _load();
     } catch (e) {
+      if (uploadedPath != null) {
+        try { await Supabase.instance.client.storage.from('pr01-foto-temporanee').remove([uploadedPath]); } catch (_) {}
+      }
       _message('Caricamento immagine non riuscito: $e');
     }
   }
