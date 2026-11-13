@@ -92,6 +92,7 @@ void main() {
   final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
+  final pr03ClosureSectionSource = File('lib/procedures/pr03_closure_section.dart').readAsStringSync();
   final pr03ClosureConfirmationSource = File('lib/procedures/pr03_closure_confirmation.dart').readAsStringSync();
   final pr03ClosureSaveSource = File('lib/procedures/pr03_closure_save.dart').readAsStringSync();
   final pr03ClosurePayloadSource = File('lib/procedures/pr03_closure_payload.dart').readAsStringSync();
@@ -863,7 +864,13 @@ void main() {
       expect(pr03ClosureSaveSource, contains('_pr03Controller.clearPendingClosures()'));
       expect(pr03ClosureSaveSource, contains("part of '../main.dart';"));
       expect(source, contains("part 'procedures/pr03_closure_save.dart';"));
-      expect(pr03RuntimeProcedureSource, contains('List<Widget> _buildPr03ClosureSection()'));
+      expect(source, contains("import 'procedures/pr03_closure_section.dart';"));
+      expect(source, contains('Pr03ClosureSection('));
+      expect(pr03ClosureSectionSource, contains('class Pr03ClosureSection extends StatelessWidget'));
+      expect(pr03ClosureSectionSource, contains('CERCA E SELEZIONA OGGETTO'));
+      expect(pr03ClosureSectionSource, contains('CONFERMA CHIUSURA'));
+      expect(pr03ClosureSectionSource, contains('Chiusure confermate in attesa'));
+      expect(pr03RuntimeProcedureSource, isNot(contains('List<Widget> _buildPr03ClosureSection()')));
       expect(pr03ClosurePayloadSource, contains('Map<String, dynamic> _buildPr03ClosurePayload()'));
       expect(pr03ClosurePayloadSource, contains("part of '../main.dart';"));
       expect(pr03RuntimeProcedureSource, isNot(contains('Map<String, dynamic> _buildPr03ClosurePayload()')));
