@@ -1653,8 +1653,8 @@ void main() {
     expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
 
-}
 
+  test('PR-01 pagina, lifecycle e categorie restano nel modulo dedicato', () {
       expect(source, contains("part 'procedures/pr01_page_workflow.dart';"));
       expect(source, contains("if (widget.apiCode == 'PR-01') return _buildPr01Page();"));
       expect(source, isNot(contains('return Pr01Page(')));
@@ -2423,4 +2423,6 @@ void main() {
     expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
 
+}
+  });
 }
