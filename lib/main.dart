@@ -25,6 +25,7 @@ import 'purchases/purchase_comparison_page.dart';
 import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
 import 'procedures/pr01_page.dart';
+import 'procedures/pr01_controller.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
@@ -2799,6 +2800,24 @@ class ObjectRuntimePage extends StatefulWidget {
 }
 
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
+  final Pr01Controller _pr01Controller = Pr01Controller();
+
+  String get _condition => _pr01Controller.condition;
+  set _condition(String value) => _pr01Controller.condition = value;
+  String get _completeness => _pr01Controller.completeness;
+  set _completeness(String value) => _pr01Controller.completeness = value;
+  String get _destination => _pr01Controller.destination;
+  set _destination(String value) => _pr01Controller.destination = value;
+  List<Map<String, dynamic>> get _collectionCategories => _pr01Controller.collectionCategories;
+  set _collectionCategories(List<Map<String, dynamic>> value) => _pr01Controller.collectionCategories = value;
+  String? get _selectedCollectionCategory => _pr01Controller.selectedCollectionCategory;
+  set _selectedCollectionCategory(String? value) => _pr01Controller.selectedCollectionCategory = value;
+  bool get _categoriesLoading => _pr01Controller.categoriesLoading;
+  set _categoriesLoading(bool value) => _pr01Controller.categoriesLoading = value;
+  List<Map<String, dynamic>> get _pr01PendingObjects => _pr01Controller.pendingObjects;
+  String? get _pr01PendingRequestId => _pr01Controller.pendingRequestId;
+  set _pr01PendingRequestId(String? value) => _pr01Controller.pendingRequestId = value;
+
   Color get sectionColor => sectionColorForApiCode(widget.apiCode);
   final _search = TextEditingController();
   final _description = TextEditingController();
@@ -2829,12 +2848,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   bool _dataConfirmed = false;
   bool _finalReady = false;
   int? _loadedObjectId;
-  String _condition = 'USATO';
-  String _completeness = 'COMPLETO';
-  String _destination = 'COLLEZIONE';
-  List<Map<String, dynamic>> _collectionCategories = [];
-  String? _selectedCollectionCategory;
-  bool _categoriesLoading = false;
   String _closeReason = 'SMARRITO';
   String _output = 'Pronto. Le consultazioni sono in sola lettura.';
   Map<String, dynamic>? _lastResult;
@@ -2864,8 +2877,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final List<Map<String, dynamic>> _pr02PendingChanges = [];
   bool _pr02AwaitingNextChoice = false;
   final ScrollController _pr02ScrollController = ScrollController();
-  final List<Map<String, dynamic>> _pr01PendingObjects = [];
-  String? _pr01PendingRequestId;
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
@@ -3141,20 +3152,11 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   void _recalculateTotal() {
     if (widget.apiCode != 'PR-01') return;
-    final quantity = int.tryParse(_quantity.text.trim());
-    final unitText = _unitPrice.text.trim();
-    if (quantity == null || quantity < 1 || unitText.isEmpty) {
-      if (_totalValue.text.isNotEmpty) _totalValue.clear();
-      return;
-    }
-    final unitPrice = double.tryParse(unitText.replaceAll(',', '.'));
-    if (unitPrice == null || unitPrice < 0) {
-      if (_totalValue.text.isNotEmpty) _totalValue.clear();
-      return;
-    }
-    final totalCents = (unitPrice * 100 * quantity).round();
-    final total = (totalCents / 100).toStringAsFixed(2);
-    if (_totalValue.text != total) _totalValue.text = total;
+    final total = _pr01Controller.calculateTotal(
+      quantity: _quantity.text,
+      unitPrice: _unitPrice.text,
+    );
+    if (_totalValue.text != (total ?? '')) _totalValue.text = total ?? '';
   }
 
   Future<void> _releaseOwnedLockSilently() async {
@@ -3236,36 +3238,18 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   Map<String, dynamic> _payload() {
     final id = int.tryParse(_code.text.trim());
     if (widget.apiCode == 'PR-01') {
-      if (_description.text.trim().isEmpty) throw Exception('La descrizione è obbligatoria.');
-      if (_destination == 'COLLEZIONE' && (_selectedCollectionCategory == null || !_collectionCategories.any((e) => e['codice_categoria'] == _selectedCollectionCategory))) throw Exception('Seleziona una categoria COLLEZIONE valida.');
-      final q = int.tryParse(_quantity.text.trim());
-      if (q == null || q <= 0) throw Exception('La quantità deve essere un intero positivo.');
-      final unitPriceText = _unitPrice.text.trim();
-      final double? unitPrice = unitPriceText.isEmpty
-          ? null
-          : _parseNonNegativeValue(unitPriceText, 'Prezzo unitario');
-      final double? totalValue = unitPrice == null
-          ? null
-          : ((unitPrice * 100 * q).round() / 100.0);
-      _recalculateTotal();
-      return {'oggetti': [{
-        'descrizione': _description.text.trim(),
-        'produttore': _producer.text.trim().isEmpty ? null : _producer.text.trim(),
-        'anno_uscita': _line.text.trim().isEmpty ? null : int.tryParse(_line.text.trim()),
-        'codice_prodotto': _family.text.trim().isEmpty ? null : _family.text.trim(),
-        if (_hasAnyMetadata)
-          'fonte_dati_prodotto': (_metadataSourceUrl?.trim().isNotEmpty == true)
-              ? _metadataSourceUrl!.trim()
-              : (_metadataSearchExecuted
-                  ? 'RICERCA_ESEGUITA_NESSUNA_FONTE_SELEZIONATA'
-                  : 'RICERCA_NON_ESEGUITA'),
-        if (_hasAnyMetadata) 'stato_verifica_dati': 'DA_VERIFICARE',
-        'condizione': _condition, 'completezza': _completeness,
-        'destinazione': _destination, 'quantita': q,
-        if (_destination == 'COLLEZIONE') 'codice_categoria_collezione': _selectedCollectionCategory,
-        if (totalValue != null) 'valore_oggetto': totalValue,
-        'note': _notes.text.trim().isEmpty ? null : _notes.text.trim(),
-      }]};
+      return _pr01Controller.buildObjectPayload(
+        description: _description,
+        producer: _producer,
+        year: _line,
+        productCode: _family,
+        quantity: _quantity,
+        unitPrice: _unitPrice,
+        notes: _notes,
+        hasMetadata: _hasAnyMetadata,
+        metadataSourceUrl: _metadataSourceUrl,
+        metadataSearchExecuted: _metadataSearchExecuted,
+      );
     }
     if (id == null || id <= 0) throw Exception('Inserisci un codice oggetto valido.');
     if (widget.apiCode == 'PR-02') {
