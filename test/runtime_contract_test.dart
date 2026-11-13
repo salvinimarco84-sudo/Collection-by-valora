@@ -77,6 +77,8 @@ void main() {
   // relativi agli import e alla direttiva part restano verificati su main.dart.
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
+  final pr02PageSource = File('lib/procedures/pr02_page.dart').readAsStringSync();
+  final pr02PageWorkflowSource = File('lib/procedures/pr02_page_workflow.dart').readAsStringSync();
   final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
   final pr01PageWorkflowSource = File('lib/procedures/pr01_page_workflow.dart').readAsStringSync();
   final pr01ConfirmationWorkflowSource = File('lib/procedures/pr01_confirmation_workflow.dart').readAsStringSync();
@@ -1652,6 +1654,21 @@ void main() {
     expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
 
+
+  test('PR-02 usa una pagina dedicata e mantiene ricerca, scheda e conferma', () {
+    expect(source, contains("import 'procedures/pr02_page.dart';"));
+    expect(source, contains("part 'procedures/pr02_page_workflow.dart';"));
+    expect(source, contains("if (widget.apiCode == 'PR-02') return _buildPr02Page();"));
+    expect(pr02PageSource, contains('class Pr02Page extends StatelessWidget'));
+    expect(pr02PageSource, contains('PR-02 · MODIFICA OGGETTO'));
+    expect(pr02PageWorkflowSource, contains('Widget _buildPr02Page()'));
+    expect(pr02PageWorkflowSource, contains('_searchPr02Objects'));
+    expect(pr02PageWorkflowSource, contains('_selectPr02Object(item)'));
+    expect(pr02PageWorkflowSource, contains('_pr02MetadataCard(_currentObject!)'));
+    expect(pr02PageWorkflowSource, contains('_pr02Side(oldValues: true)'));
+    expect(pr02PageWorkflowSource, contains('_pr02Side(oldValues: false)'));
+    expect(pr02PageWorkflowSource, contains('_confirmPr02Changes'));
+  });
 
   test('PR-01 non conserva UI o persistenza nel runtime generico', () {
     expect(source, isNot(contains("if (_isWrite && code == 'PR-01')")));
