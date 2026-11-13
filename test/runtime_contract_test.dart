@@ -853,7 +853,7 @@ void main() {
       expect(source, contains("if (widget.apiCode == 'PR-03') return _buildPr03ClosurePayload();"));
       expect(pr03RuntimeProcedureSource, contains('CERCA E SELEZIONA OGGETTO'));
       expect(source, isNot(contains("CERCA OGGETTO PER DESCRIZIONE O CODICE")));
-      expect(pr03RuntimeProcedureSource, contains('_pr03PendingClosures.add({'));
+      expect(pr03RuntimeProcedureSource, contains('_pr03Controller.addPendingClosure({'));
       expect(source, contains("import 'procedures/pr03_controller.dart';"));
       expect(source, contains('final Pr03Controller _pr03Controller = Pr03Controller();'));
       expect(pr03ControllerSource, contains('final List<Map<String, dynamic>> pendingClosures'));
