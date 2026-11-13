@@ -828,7 +828,7 @@ void main() {
 
     test('PR-02 accumula le modifiche fino alla risposta finale e mantiene separata la categoria', () {
       expect(source, contains('_selectedCollectionCategory'));
-      expect(pr02RuntimeProcedureSource, contains('categoria_collezione_selezionata'));
+      expect(pr02SaveWorkflowSource, contains('categoria_collezione_selezionata'));
       expect(source, contains('_pr02AwaitingNextChoice'));
       expect(pr02RuntimeProcedureSource, contains('_continuePr02WithAnotherObject'));
       expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
