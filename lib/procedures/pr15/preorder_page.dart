@@ -355,14 +355,18 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
       final record = await _repository.get(widget.preorderId);
       final history = await _repository.history(widget.preorderId);
       String? imageUrl;
-      final imageResponse = await Supabase.instance.client.functions.invoke(
-        'collection-object-images-test',
-        body: {'action': 'get', 'target_type': 'preorder', 'codice_preordine': int.parse(widget.preorderId)},
-      );
-      final imageData = imageResponse.data;
-      if (imageData is Map && imageData['ok'] == true) {
-        final candidate = (imageData['signed_url'] ?? '').toString().trim();
-        if (candidate.startsWith('https://') || candidate.startsWith('http://')) imageUrl = candidate;
+      try {
+        final imageResponse = await Supabase.instance.client.functions.invoke(
+          'collection-object-images-test',
+          body: {'action': 'get', 'target_type': 'preorder', 'codice_preordine': int.parse(widget.preorderId)},
+        );
+        final imageData = imageResponse.data;
+        if (imageData is Map && imageData['ok'] == true) {
+          final candidate = (imageData['signed_url'] ?? '').toString().trim();
+          if (candidate.startsWith('https://') || candidate.startsWith('http://')) imageUrl = candidate;
+        }
+      } catch (_) {
+        // Il caricamento della scheda e dello storico non dipende dal servizio immagini.
       }
       if (mounted) setState(() { _record = record; _history = history; _imageUrl = imageUrl; });
     } catch (e) {
