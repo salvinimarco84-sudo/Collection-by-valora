@@ -2422,7 +2422,5 @@ void main() {
     expect(pr07DataSource, isNot(contains("procedure('PR-06'")));
     expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
-
-}
   });
 }
