@@ -26,6 +26,7 @@ import 'procedures/procedure_card.dart';
 import 'procedures/pr01_form_content.dart';
 import 'procedures/pr01_page.dart';
 import 'procedures/pr02_page.dart';
+import 'procedures/pr02_controller.dart';
 import 'procedures/pr01_image_field.dart';
 import 'procedures/pr01_controller.dart';
 import 'services/pr01_image_manager.dart';
@@ -72,6 +73,7 @@ part 'dashboard/dashboard_home_coordinator.dart';
 part 'dashboard/dashboard_collection_content.dart';
 part 'procedures/pr01_confirmation_workflow.dart';
 part 'procedures/pr02_page_workflow.dart';
+part 'procedures/pr02_controller_workflow.dart';
 part 'procedures/pr02_object_presentation.dart';
 part 'procedures/pr01_save_workflow.dart';
 part 'procedures/pr01_data_workflow.dart';
@@ -2813,6 +2815,21 @@ class ObjectRuntimePage extends StatefulWidget {
 
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final Pr01Controller _pr01Controller = Pr01Controller();
+  final Pr02Controller _pr02Controller = Pr02Controller();
+
+  List<Map<String, dynamic>> get _pr02SearchResults => _pr02Controller.searchResults;
+  set _pr02SearchResults(List<Map<String, dynamic>> value) => _pr02Controller.searchResults = value;
+  bool get _showPr02TechnicalTab => _pr02Controller.showTechnicalTab;
+  set _showPr02TechnicalTab(bool value) => _pr02Controller.showTechnicalTab = value;
+  bool get _pr02SearchCompleted => _pr02Controller.searchCompleted;
+  set _pr02SearchCompleted(bool value) => _pr02Controller.searchCompleted = value;
+  List<Map<String, dynamic>> get _pr02PendingChanges => _pr02Controller.pendingChanges;
+  bool get _pr02AwaitingNextChoice => _pr02Controller.awaitingNextChoice;
+  set _pr02AwaitingNextChoice(bool value) => _pr02Controller.awaitingNextChoice = value;
+  ScrollController get _pr02ScrollController => _pr02Controller.scrollController;
+  Map<String, Map<String, dynamic>> get _pr02PendingImages => _pr02Controller.pendingImages;
+
+
 
   String get _condition => _pr01Controller.condition;
   set _condition(String value) => _pr01Controller.condition = value;
@@ -2854,7 +2871,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   set _existingImageUrl(String? value) => _pr01Controller.existingImageUrl = value;
   String get _imageStatus => _pr01Controller.imageStatus;
   set _imageStatus(String value) => _pr01Controller.imageStatus = value;
-  final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
 
   final String _sessionId = _uuid.v4();
   final FocusNode _descriptionFocus = FocusNode();
@@ -2875,7 +2891,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final Map<int, String> _activeReportImageUrls = <int, String>{};
   final Map<String, int> _reportImageObjectIdsByDescription = <String, int>{};
   Map<String, dynamic>? _currentObject;
-  List<Map<String, dynamic>> _pr02SearchResults = [];
   List<Map<String, dynamic>> _pr12IncompleteRecords = [];
   int _pr12NextBatchOffset = 0;
   int _pr12QueuePage = 0;
@@ -2886,15 +2901,10 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   List<Map<String, dynamic>> _pr12UnresolvedRecords = [];
   final Map<String, int> _pr12SelectedCandidates = {};
   bool _pr12RetryRunning = false;
-  bool _showPr02TechnicalTab = false;
   int _pr11MasterTabIndex = 0;
   List<Map<String, dynamic>> _pr11CategoryFieldDefinitions = [];
   Map<String, dynamic> _pr11CategoryValues = {};
   String? _pr11CategoryCode;
-  bool _pr02SearchCompleted = false;
-  final List<Map<String, dynamic>> _pr02PendingChanges = [];
-  bool _pr02AwaitingNextChoice = false;
-  final ScrollController _pr02ScrollController = ScrollController();
   final List<Map<String, dynamic>> _pr03PendingClosures = [];
   final FocusNode _searchFocusNode = FocusNode();
   final FocusNode _pr11SearchFocusNode = FocusNode();
@@ -3182,7 +3192,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     _pr11SearchFocusNode.dispose();
     _descriptionFocus.dispose();
     _searchFocusNode.dispose();
-    _pr02ScrollController.dispose();
+    _pr02Controller.dispose();
     _search.dispose(); _description.dispose(); _notes.dispose(); _code.dispose();
     _quantity.dispose(); _unitPrice.dispose(); _totalValue.dispose(); _value.dispose(); _marketValue.dispose(); _producer.dispose(); _line.dispose(); _family.dispose();
     super.dispose();
