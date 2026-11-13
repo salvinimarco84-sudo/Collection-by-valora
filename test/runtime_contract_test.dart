@@ -92,6 +92,7 @@ void main() {
   final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
+  final pr03ClosureConfirmationSource = File('lib/procedures/pr03_closure_confirmation.dart').readAsStringSync();
   final pr03ClosureSaveSource = File('lib/procedures/pr03_closure_save.dart').readAsStringSync();
   final pr03ClosurePayloadSource = File('lib/procedures/pr03_closure_payload.dart').readAsStringSync();
   final pr03ObjectSelectionSource = File('lib/procedures/pr03_object_selection.dart').readAsStringSync();
@@ -851,7 +852,8 @@ void main() {
       expect(pr03ObjectSelectionSource, contains("part of '../main.dart';"));
       expect(pr03RuntimeProcedureSource, isNot(contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async')));
       expect(source, contains("part 'procedures/pr03_object_selection.dart';"));
-      expect(pr03RuntimeProcedureSource, contains('Future<void> _confirmPr03Closure() async'));
+      expect(pr03ClosureConfirmationSource, contains('Future<void> _confirmPr03Closure() async'));
+      expect(pr03ClosureConfirmationSource, contains('extension _Pr03ClosureConfirmation'));
       expect(pr03ClosureSaveSource, contains('Future<void> _savePr03PendingClosures() async'));
       expect(pr03ClosureSaveSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'preview'"));
       expect(pr03ClosureSaveSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'review'"));
@@ -870,7 +872,7 @@ void main() {
       expect(source, contains("if (widget.apiCode == 'PR-03') return _buildPr03ClosurePayload();"));
       expect(pr03RuntimeProcedureSource, contains('CERCA E SELEZIONA OGGETTO'));
       expect(source, isNot(contains("CERCA OGGETTO PER DESCRIZIONE O CODICE")));
-      expect(pr03RuntimeProcedureSource, contains('_pr03Controller.addPendingClosure({'));
+      expect(pr03ClosureConfirmationSource, contains('_pr03Controller.addPendingClosure({'));
       expect(source, contains("import 'procedures/pr03_controller.dart';"));
       expect(source, contains('final Pr03Controller _pr03Controller = Pr03Controller();'));
       expect(pr03ControllerSource, contains('final List<Map<String, dynamic>> pendingClosures'));
@@ -892,6 +894,8 @@ void main() {
       expect(pr03RuntimeProcedureSource, contains('_savePr03PendingClosures()'));
       expect(pr03RuntimeProcedureSource, isNot(contains("_ValoraRuntimeApi.procedure('PR-03'")));
       expect(source, contains("part 'procedures/pr03_runtime_procedure.dart';"));
+      expect(source, contains("part 'procedures/pr03_closure_confirmation.dart';"));
+      expect(pr03RuntimeProcedureSource, isNot(contains('Future<void> _confirmPr03Closure() async')));
       expect(source, isNot(contains('Future<void> _confirmPr03Closure() async')));
       expect(source, isNot(contains('Future<void> _savePr03PendingClosures() async')));
     });
