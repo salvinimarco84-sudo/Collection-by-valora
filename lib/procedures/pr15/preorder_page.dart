@@ -378,82 +378,124 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
   String _date(DateTime? d) => d == null ? 'Non indicata' : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   Future<void> _searchImage() async {
-    final urlController = TextEditingController();
-    final query = _record!.description.trim();
-    final result = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('RICERCA IMMAGINE PREORDER'),
-        content: SizedBox(width: 520, child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Cerca un’immagine del prodotto, poi incolla qui il collegamento diretto al file immagine. La ricerca non utilizza crediti AI.'),
-            const SizedBox(height: 12),
-            SizedBox(width: double.infinity, child: OutlinedButton.icon(
-              onPressed: () async {
-                final uri = Uri.https('www.google.com', '/search', {'tbm': 'isch', 'q': query});
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              },
-              icon: const Icon(Icons.image_search_outlined),
-              label: const Text('APRI RICERCA IMMAGINI'),
-            )),
-            const SizedBox(height: 8),
-            TextField(
-              controller: urlController,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: 'URL diretto dell’immagine',
-                hintText: 'https://.../immagine.jpg',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text('Sono accettati file JPEG, PNG e WebP fino a 10 MB.',
-              style: TextStyle(fontSize: 12, color: ValoraAppearance.instance.textSecondary)),
-          ],
-        )),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ANNULLA')),
-          FilledButton(
-            onPressed: () {
-              final value = urlController.text.trim();
-              final uri = Uri.tryParse(value);
-              if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
-                ScaffoldMessenger.of(dialogContext).showSnackBar(
-                  const SnackBar(content: Text('Inserisci un URL HTTPS diretto e valido.')),
-                );
-                return;
-              }
-              Navigator.pop(dialogContext, value);
-            },
-            child: const Text('IMPORTA IMMAGINE'),
-          ),
-        ],
-      ),
-    );
-    urlController.dispose();
-    if (result == null || !mounted) return;
-
+    final record = _record;
+    if (record == null) return;
+    final description = record.description.trim();
+    final category = record.category.trim();
     try {
       setState(() => _busy = true);
-      final uri = Uri.parse(result);
-      final response = await http.get(uri).timeout(const Duration(seconds: 25));
-      if (response.statusCode != 200) throw Exception('Il sito ha risposto con HTTP ${response.statusCode}.');
-      final mime = (response.headers['content-type'] ?? '').split(';').first.trim().toLowerCase();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PR-12: ricerca immagini in corso…')),
+      );
+      final response = await Supabase.instance.client.functions.invoke(
+        'pr-12-web-search-test',
+        body: {
+          'descrizione': description,
+          'categoria': category,
+          'tema': description,
+          'mercato': 'Italia',
+        },
+      );
+      if (response.status < 200 || response.status >= 300 || response.data is! Map) {
+        throw StateError('Risposta PR-12 non valida (HTTP ${response.status}).');
+      }
+      final payload = Map<String, dynamic>.from(response.data as Map);
+      if (payload['ok'] != true) {
+        throw StateError((payload['error'] ?? 'Ricerca PR-12 non riuscita').toString());
+      }
+      final candidates = (payload['risultati'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .where((e) => (e['image_url'] ?? '').toString().startsWith('https://'))
+          .toList();
+      if (!mounted) return;
+      if (candidates.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PR-12 non ha trovato immagini dirette. Nessuna modifica effettuata.')),
+        );
+        return;
+      }
+      int selected = 0;
+      final choice = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('CANDIDATI IMMAGINE PR-12'),
+            content: SizedBox(
+              width: 520,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(description, style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  for (int i = 0; i < candidates.length; i++)
+                    RadioListTile<int>(
+                      value: i,
+                      groupValue: selected,
+                      onChanged: (v) => setDialogState(() => selected = v ?? 0),
+                      title: Text((candidates[i]['title'] ?? 'Immagine candidata').toString()),
+                      subtitle: Text((candidates[i]['motore'] ?? candidates[i]['url'] ?? '').toString(),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                      secondary: SizedBox(
+                        width: 64, height: 64,
+                        child: Image.network(
+                          candidates[i]['image_url'].toString(),
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  const Text('Seleziona solo l’immagine che corrisponde esattamente al modello e alla variante.'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ANNULLA')),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, candidates[selected]),
+                child: const Text('CONFERMA IMMAGINE'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (choice == null || !mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('CONFERMA CORRISPONDENZA'),
+          content: Text('Confermi che l’immagine selezionata rappresenta esattamente:\n\n$description\n\nVerrà collegata al preorder ${record.id} nell’archivio immagini condiviso TEST.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('INDIETRO')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, IMPORTA')),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
+      final imageUri = Uri.tryParse(choice['image_url'].toString());
+      if (imageUri == null || imageUri.scheme != 'https' || imageUri.host.isEmpty) {
+        throw StateError('URL immagine PR-12 non valido.');
+      }
+      final imageResponse = await http.get(imageUri).timeout(const Duration(seconds: 25));
+      if (imageResponse.statusCode != 200) {
+        throw StateError('Download immagine non riuscito (HTTP ${imageResponse.statusCode}).');
+      }
+      final mime = (imageResponse.headers['content-type'] ?? '').split(';').first.trim().toLowerCase();
       const allowed = {'image/jpeg', 'image/png', 'image/webp'};
-      if (!allowed.contains(mime)) throw Exception('Il collegamento non restituisce un’immagine JPEG, PNG o WebP.');
-      if (response.bodyBytes.isEmpty || response.bodyBytes.length > 10 * 1024 * 1024) {
-        throw Exception('Immagine vuota o superiore a 10 MB.');
+      if (!allowed.contains(mime)) throw StateError('Il candidato non è JPEG, PNG o WebP.');
+      if (imageResponse.bodyBytes.isEmpty || imageResponse.bodyBytes.length > 10 * 1024 * 1024) {
+        throw StateError('Immagine vuota o superiore a 10 MB.');
       }
       final extension = mime == 'image/png' ? 'png' : mime == 'image/webp' ? 'webp' : 'jpg';
-      final fileName = 'preorder_${widget.preorderId}_${DateTime.now().microsecondsSinceEpoch}.$extension';
       final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) throw Exception('Sessione utente non disponibile.');
+      if (userId == null) throw StateError('Sessione utente non disponibile.');
+      final fileName = 'preorder_${widget.preorderId}_${DateTime.now().microsecondsSinceEpoch}.$extension';
       final path = '$userId/${widget.preorderId}/$fileName';
-      await Supabase.instance.client.storage.from('pr01-foto-temporanee').uploadBinary(
-        path,
-        response.bodyBytes,
+      final storage = Supabase.instance.client.storage.from('pr01-foto-temporanee');
+      await storage.uploadBinary(
+        path, imageResponse.bodyBytes,
         fileOptions: FileOptions(contentType: mime, upsert: false),
       );
       try {
@@ -470,20 +512,23 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
           },
         );
         final data = registered.data;
-        if (data is! Map || data['ok'] != true) {
-          throw Exception(data is Map ? (data['error'] ?? 'Registrazione immagine non riuscita') : 'Risposta non valida dal servizio immagini.');
+        if (registered.status < 200 || registered.status >= 300 ||
+            data is! Map || data['ok'] != true) {
+          throw StateError(data is Map
+            ? (data['error'] ?? 'Registrazione immagine non riuscita').toString()
+            : 'Risposta non valida dal servizio immagini.');
         }
-      } catch (e) {
-        await Supabase.instance.client.storage.from('pr01-foto-temporanee').remove([path]);
+      } catch (_) {
+        try { await storage.remove([path]); } catch (_) {}
         rethrow;
       }
       await _load();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Immagine associata al preorder.')),
+        const SnackBar(content: Text('Immagine PR-12 associata al preorder.')),
       );
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ricerca/importazione immagine non riuscita: $e')),
+        SnackBar(content: Text('Ricerca/importazione PR-12 non riuscita: $e')),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
