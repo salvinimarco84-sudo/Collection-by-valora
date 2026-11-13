@@ -92,6 +92,7 @@ void main() {
   final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
+  final pr03ObjectSelectionSource = File('lib/procedures/pr03_object_selection.dart').readAsStringSync();
   final pr03ControllerSource = File('lib/procedures/pr03_controller.dart').readAsStringSync();
   final pr03ControllerBindingsSource = File('lib/procedures/pr03_controller_bindings.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
@@ -844,7 +845,10 @@ void main() {
 
     test('PR-03 mantiene selezione, conferma e salvataggio nel runtime estratto', () {
       expect(pr03RuntimeProcedureSource, contains("part of '../main.dart';"));
-      expect(pr03RuntimeProcedureSource, contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async'));
+      expect(pr03ObjectSelectionSource, contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async'));
+      expect(pr03ObjectSelectionSource, contains("part of '../main.dart';"));
+      expect(pr03RuntimeProcedureSource, isNot(contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async')));
+      expect(source, contains("part 'procedures/pr03_object_selection.dart';"));
       expect(pr03RuntimeProcedureSource, contains('Future<void> _confirmPr03Closure() async'));
       expect(pr03RuntimeProcedureSource, contains('Future<void> _savePr03PendingClosures() async'));
       expect(pr03RuntimeProcedureSource, contains('List<Widget> _buildPr03ClosureSection()'));
