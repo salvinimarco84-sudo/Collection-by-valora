@@ -857,7 +857,7 @@ void main() {
       expect(pr03ClosurePayloadSource, contains("part of '../main.dart';"));
       expect(pr03RuntimeProcedureSource, isNot(contains('Map<String, dynamic> _buildPr03ClosurePayload()')));
       expect(source, contains("part 'procedures/pr03_closure_payload.dart';"));
-      expect(pr03RuntimeProcedureSource, contains("Per PR-03 carica prima la scheda completa del codice selezionato."));
+      expect(pr03ClosurePayloadSource, contains("Per PR-03 carica prima la scheda completa del codice selezionato."));
       expect(source, contains("if (widget.apiCode == 'PR-03') return _buildPr03ClosurePayload();"));
       expect(pr03RuntimeProcedureSource, contains('CERCA E SELEZIONA OGGETTO'));
       expect(source, isNot(contains("CERCA OGGETTO PER DESCRIZIONE O CODICE")));
