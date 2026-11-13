@@ -6,6 +6,7 @@ void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final pr01ImageManagerSource = File('lib/services/pr01_image_manager.dart').readAsStringSync();
   final pr01ImageWorkflowSource = File('lib/procedures/pr01_image_workflow.dart').readAsStringSync();
+  final pr01ControllerSource = File('lib/procedures/pr01_controller.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
