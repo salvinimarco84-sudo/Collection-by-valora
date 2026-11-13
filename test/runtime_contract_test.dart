@@ -826,7 +826,7 @@ void main() {
       expect(source, contains('_selectedCollectionCategory'));
       expect(pr02RuntimeProcedureSource, contains('categoria_collezione_selezionata'));
       expect(source, contains('_pr02AwaitingNextChoice'));
-      expect(source, contains('_continuePr02WithAnotherObject'));
+      expect(pr02RuntimeProcedureSource, contains('_continuePr02WithAnotherObject'));
       expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
       expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02RuntimeProcedureSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
@@ -1659,6 +1659,7 @@ void main() {
     expect(source, contains("import 'procedures/pr02_page.dart';"));
     expect(source, contains("part 'procedures/pr02_page_workflow.dart';"));
     expect(source, contains("if (widget.apiCode == 'PR-02') return _buildPr02Page();"));
+    expect(source, isNot(contains('Widget _buildPr02Screen()')));
     expect(pr02PageSource, contains('class Pr02Page extends StatelessWidget'));
     expect(pr02PageSource, contains('PR-02 · MODIFICA OGGETTO'));
     expect(pr02PageWorkflowSource, contains('Widget _buildPr02Page()'));
