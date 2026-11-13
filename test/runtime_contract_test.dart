@@ -813,7 +813,7 @@ void main() {
       expect(pr01DataWorkflowSource, contains("'collection-category-"));
       expect(source, contains("from('oggetto_collezione_categoria').select('codice_categoria')"));
       expect(source, contains('_selectedCollectionCategory = assignedCollectionCategory'));
-      expect(source, contains('collection-category-'));
+      expect(pr01DataWorkflowSource, contains('collection-category-'));
     });
 
     test('PR-02 accumula le modifiche fino alla risposta finale e mantiene separata la categoria', () {
