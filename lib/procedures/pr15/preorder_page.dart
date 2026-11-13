@@ -354,20 +354,9 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
     try {
       final record = await _repository.get(widget.preorderId);
       final history = await _repository.history(widget.preorderId);
-      String? imageUrl;
-      try {
-        final imageResponse = await Supabase.instance.client.functions.invoke(
-          'collection-object-images-test',
-          body: {'action': 'get', 'target_type': 'preorder', 'codice_preordine': int.parse(widget.preorderId)},
-        );
-        final imageData = imageResponse.data;
-        if (imageData is Map && imageData['ok'] == true) {
-          final candidate = (imageData['signed_url'] ?? '').toString().trim();
-          if (candidate.startsWith('https://') || candidate.startsWith('http://')) imageUrl = candidate;
-        }
-      } catch (_) {
-        // Il caricamento della scheda e dello storico non dipende dal servizio immagini.
-      }
+      final imageCandidate = (record.imageReference ?? '').trim();
+      final imageUrl = (imageCandidate.startsWith('https://') || imageCandidate.startsWith('http://'))
+          ? imageCandidate : null;
       if (mounted) setState(() { _record = record; _history = history; _imageUrl = imageUrl; });
     } catch (e) {
       if (mounted) setState(() => _error = 'Lettura preorder non riuscita: $e');
@@ -474,25 +463,13 @@ class _Pr15PreorderDetailPageState extends State<Pr15PreorderDetailPage> {
       );
       if (confirmed != true || !mounted) return;
 
-      final imported = await Supabase.instance.client.functions.invoke(
-        'collection-shared-image-import-test',
-        body: {
-          'target_type': 'preorder',
-          'codice_preordine': int.parse(widget.preorderId),
-          'image_url': choice['image_url'],
-          'match_confirmed': true,
-        },
+      await _repository.updateImageReference(
+        id: widget.preorderId,
+        imageReference: choice['image_url'].toString(),
       );
-      final importedData = imported.data;
-      if (imported.status < 200 || imported.status >= 300 ||
-          importedData is! Map || importedData['ok'] != true) {
-        throw StateError(importedData is Map
-          ? (importedData['error'] ?? 'Importazione immagine non riuscita').toString()
-          : 'Risposta non valida dal servizio immagini condiviso.');
-      }
       await _load();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Immagine PR-12 importata nell’archivio condiviso.')),
+        const SnackBar(content: Text('Riferimento immagine PR-12 salvato.')),
       );
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
