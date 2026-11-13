@@ -880,7 +880,7 @@ void main() {
       expect(pr03ControllerSource, contains('bool containsClosure(int objectId)'));
       expect(pr03ControllerSource, contains('void addPendingClosure(Map<String, dynamic> closure)'));
       expect(pr03ControllerSource, contains('pendingClosuresSnapshot()'));
-      expect(pr03RuntimeProcedureSource, contains('_pr03Controller.addPendingClosure({'));
+      expect(pr03ClosureConfirmationSource, contains('_pr03Controller.addPendingClosure({'));
       expect(pr03ClosureSaveSource, contains('_pr03Controller.pendingClosuresSnapshot()'));
       expect(pr03ClosureSaveSource, contains('_pr03Controller.clearPendingClosures()'));
       expect(pr03RuntimeProcedureSource, isNot(contains('_pr03PendingClosures.add(')));
