@@ -10,7 +10,6 @@ import sys
 root = Path(__file__).resolve().parents[1]
 main = (root / "lib" / "main.dart").read_text(encoding="utf-8")
 pr06_page_state = (root / "lib" / "procedures" / "pr06_page_state.dart").read_text(encoding="utf-8")
-pr02_runtime = (root / "lib" / "procedures" / "pr02_runtime_procedure.dart").read_text(encoding="utf-8")
 pr02_save = (root / "lib" / "procedures" / "pr02_save_workflow.dart").read_text(encoding="utf-8")
 object_search = (root / "lib" / "procedures" / "object_search_workflow.dart").read_text(encoding="utf-8")
 pr02_payload = (root / "lib" / "procedures" / "pr02_payload_workflow.dart").read_text(encoding="utf-8")
