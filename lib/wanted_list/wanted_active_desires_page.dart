@@ -81,6 +81,112 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
     }
   }
 
+  Future<void> _searchAndImportImage(Map<String, dynamic> row) async {
+    final desireId = row['id'].toString();
+    final description = (row['descrizione'] ?? '').toString();
+    final category = (row['categoria'] ?? '').toString();
+    try {
+      _message('PR-12: ricerca immagini in corso…');
+      final response = await Supabase.instance.client.functions.invoke(
+        'pr-12-web-search-test',
+        body: {
+          'descrizione': description,
+          'categoria': category,
+          'tema': description,
+          'mercato': 'Italia',
+        },
+      );
+      if (response.status < 200 || response.status >= 300 || response.data is! Map) {
+        throw StateError('Risposta PR-12 non valida (HTTP ${response.status}).');
+      }
+      final payload = Map<String, dynamic>.from(response.data as Map);
+      if (payload['ok'] != true) throw StateError((payload['error'] ?? 'Ricerca PR-12 non riuscita').toString());
+      final candidates = (payload['risultati'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .where((e) => (e['image_url'] ?? '').toString().startsWith('https://'))
+          .toList();
+      if (!mounted) return;
+      if (candidates.isEmpty) {
+        _message('PR-12 non ha restituito immagini dirette per questo oggetto. Nessuna modifica effettuata.');
+        return;
+      }
+      int selected = 0;
+      final choice = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('CANDIDATI IMMAGINE PR-12'),
+            content: SizedBox(
+              width: 520,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(description, style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  for (int i = 0; i < candidates.length; i++)
+                    RadioListTile<int>(
+                      value: i,
+                      groupValue: selected,
+                      onChanged: (v) => setDialogState(() => selected = v ?? 0),
+                      title: Text((candidates[i]['title'] ?? 'Immagine candidata').toString()),
+                      subtitle: Text((candidates[i]['motore'] ?? candidates[i]['url'] ?? '').toString(),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                      secondary: SizedBox(
+                        width: 64, height: 64,
+                        child: Image.network(
+                          candidates[i]['image_url'].toString(),
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  const Text('Seleziona solo l’immagine che corrisponde esattamente al modello e alla variante.'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ANNULLA')),
+              FilledButton(onPressed: () => Navigator.pop(dialogContext, candidates[selected]), child: const Text('CONFERMA IMMAGINE')),
+            ],
+          ),
+        ),
+      );
+      if (choice == null || !mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('CONFERMA CORRISPONDENZA'),
+          content: Text('Confermi che l’immagine selezionata rappresenta esattamente:\n\n$description\n\nL’immagine verrà copiata nello spazio privato TEST della Wanted List.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('INDIETRO')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, IMPORTA')),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      final imported = await Supabase.instance.client.functions.invoke(
+        'wanted-list-image-import-test',
+        body: {
+          'id': desireId,
+          'image_url': choice['image_url'],
+          'confidence': 0.95,
+          'match_confirmed': true,
+        },
+      );
+      if (imported.status < 200 || imported.status >= 300 || imported.data is! Map ||
+          (imported.data as Map)['ok'] != true) {
+        final detail = imported.data is Map ? (imported.data as Map)['error'] : null;
+        throw StateError((detail ?? 'Importazione immagine non riuscita (HTTP ${imported.status})').toString());
+      }
+      _message('Immagine importata e collegata al desiderio in TEST.');
+      await _load();
+    } catch (e) {
+      _message('Ricerca/importazione immagine non riuscita: $e');
+    }
+  }
+
   Future<void> _removeImage(Map<String, dynamic> row) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) { _message('Sessione non valida. Accedi nuovamente.'); return; }
@@ -217,6 +323,9 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
                                       TextButton.icon(onPressed: () => _changeImage(row),
                                         icon: const Icon(Icons.add_photo_alternate_outlined),
                                         label: Text(row['immagine_path'] == null ? 'AGGIUNGI IMMAGINE' : 'CAMBIA IMMAGINE')),
+                                      TextButton.icon(onPressed: () => _searchAndImportImage(row),
+                                        icon: const Icon(Icons.auto_awesome_outlined),
+                                        label: const Text('CERCA IMMAGINE CON PR-12')),
                                       if (row['immagine_path'] != null)
                                         TextButton.icon(onPressed: () => _removeImage(row),
                                           icon: const Icon(Icons.delete_outline), label: const Text('RIMUOVI')),
