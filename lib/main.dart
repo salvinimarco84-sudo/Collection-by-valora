@@ -2836,11 +2836,16 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _line = TextEditingController();
   final _family = TextEditingController();
   final Pr01ImageInputService _pr01ImageInputService = const Pr01ImageInputService();
-  Uint8List? _selectedImageBytes;
-  String? _selectedImageName;
-  String _imageAcquisition = 'CARICAMENTO_FILE';
-  String? _existingImageUrl;
-  String _imageStatus = 'Nessuna immagine selezionata.';
+  Uint8List? get _selectedImageBytes => _pr01Controller.selectedImageBytes;
+  set _selectedImageBytes(Uint8List? value) => _pr01Controller.selectedImageBytes = value;
+  String? get _selectedImageName => _pr01Controller.selectedImageName;
+  set _selectedImageName(String? value) => _pr01Controller.selectedImageName = value;
+  String get _imageAcquisition => _pr01Controller.imageAcquisition;
+  set _imageAcquisition(String value) => _pr01Controller.imageAcquisition = value;
+  String? get _existingImageUrl => _pr01Controller.existingImageUrl;
+  set _existingImageUrl(String? value) => _pr01Controller.existingImageUrl = value;
+  String get _imageStatus => _pr01Controller.imageStatus;
+  set _imageStatus(String value) => _pr01Controller.imageStatus = value;
   final Map<String, Map<String, dynamic>> _pr02PendingImages = {};
 
   final String _sessionId = _uuid.v4();
