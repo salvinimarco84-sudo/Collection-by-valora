@@ -3,7 +3,9 @@ part of '../main.dart';
 /// Costruzione e validazione del payload di modifica PR-02.
 extension _Pr02PayloadWorkflow on _ObjectRuntimePageState {
   Map<String, dynamic> _buildPr02Payload() {
-  if (_loadedObjectId != id) throw Exception('Carica la scheda completa del codice selezionato prima di procedere.');
+    final id = int.tryParse(_code.text.trim());
+    if (id == null || id <= 0) throw Exception('Inserisci un codice oggetto valido.');
+    if (_loadedObjectId != id) throw Exception('Carica la scheda completa del codice selezionato prima di procedere.');
   final item = <String, dynamic>{'codice_oggetto': id};
   if (_description.text.trim() != (_currentObject?['descrizione_oggetto'] ?? _currentObject?['descrizione'] ?? '').toString()) {
     item['descrizione'] = _description.text.trim();
