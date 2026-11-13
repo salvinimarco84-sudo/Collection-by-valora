@@ -88,6 +88,7 @@ void main() {
   final pr01SaveWorkflowSource = File('lib/procedures/pr01_save_workflow.dart').readAsStringSync();
   final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
   final pr02SaveWorkflowSource = File('lib/procedures/pr02_save_workflow.dart').readAsStringSync();
+  final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_confirmation_workflow.dart').readAsStringSync();
   final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
@@ -830,9 +831,9 @@ void main() {
       expect(source, contains('_selectedCollectionCategory'));
       expect(pr02SaveWorkflowSource, contains('categoria_collezione_selezionata'));
       expect(source, contains('_pr02AwaitingNextChoice'));
-      expect(pr02RuntimeProcedureSource, contains('_continuePr02WithAnotherObject'));
+      expect(pr02ConfirmationWorkflowSource, contains('_continuePr02WithAnotherObject'));
       expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
-      expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(pr02ConfirmationWorkflowSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
       expect(pr02SaveWorkflowSource, contains('oggetto_collezione_categoria'));
     });
@@ -1003,11 +1004,11 @@ void main() {
     });
 
     test('PR-02 conferma in linea senza dialoghi o chiamate preview/review intermedie', () {
-      final start = pr02RuntimeProcedureSource.indexOf('Future<void> _confirmPr02Changes() async {');
-      final end = pr02RuntimeProcedureSource.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
+      final start = pr02ConfirmationWorkflowSource.indexOf('Future<void> _confirmPr02Changes() async {');
+      final end = pr02ConfirmationWorkflowSource.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
       expect(start, isNonNegative);
       expect(end, greaterThan(start));
-      final confirmFlow = pr02RuntimeProcedureSource.substring(start, end);
+      final confirmFlow = pr02ConfirmationWorkflowSource.substring(start, end);
       expect(confirmFlow, contains('_pr02PendingChanges.add'));
       expect(confirmFlow, contains('_pr02AwaitingNextChoice = true'));
       expect(confirmFlow, isNot(contains('showDialog')));
@@ -1018,7 +1019,7 @@ void main() {
     test('PR-02 salva e verifica la modifica prima della scelta successiva', () {
       expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
       expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
-      expect(pr02RuntimeProcedureSource, contains('salvato e verificato'));
+      expect(pr02ConfirmationWorkflowSource, contains('salvato e verificato'));
     });
 
     test('ACQUISTI usa il layout del CATALOGO senza duplicare il titolo incorporato nello sfondo', () {
