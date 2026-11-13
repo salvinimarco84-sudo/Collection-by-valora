@@ -74,6 +74,7 @@ part 'dashboard/dashboard_collection_content.dart';
 part 'procedures/pr01_confirmation_workflow.dart';
 part 'procedures/pr02_page_workflow.dart';
 part 'procedures/pr02_object_presentation.dart';
+part 'procedures/pr02_selection_workflow.dart';
 part 'procedures/pr01_save_workflow.dart';
 part 'procedures/pr01_data_workflow.dart';
 part 'procedures/pr01_page_workflow.dart';
@@ -3549,18 +3550,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
     setState(() {
       _search.text = description;
       _output = 'Scheda completa caricata in sola lettura · codice $id.';
-    });
-  }
-
-  Future<void> _selectPr02Object(Map<String, dynamic> item) async {
-    final id = int.tryParse(item['codice_oggetto']?.toString() ?? '');
-    if (id == null) throw Exception('Il risultato non contiene un codice oggetto valido.');
-    _code.text = id.toString();
-    _showPr02TechnicalTab = false;
-    await _loadObject();
-    if (!mounted || _currentObject == null) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) FocusScope.of(context).requestFocus(_descriptionFocus);
     });
   }
 
