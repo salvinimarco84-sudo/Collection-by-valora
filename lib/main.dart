@@ -4786,29 +4786,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
               style: TextStyle(color: sectionColor)),
           )),
-        if (_isWrite && code == 'PR-03') ...[
-          _field(_search, 'Cerca oggetto per descrizione o codice'),
-          FilledButton.icon(
-            onPressed: _loading ? null : () => _run(_searchPr02Objects),
-            icon: Icon(Icons.search),
-            label: Text('CERCA E SELEZIONA OGGETTO'),
-          ),
-          if (_pr03PendingClosures.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text('Chiusure confermate in attesa: ${_pr03PendingClosures.length}',
-                style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold)),
-            ),
-          if (_currentObject != null) ...[
-            _dropdown('Motivo chiusura', _closeReason, const ['SMARRITO','DISTRUTTO','DATO VIA'], (v) => setState(() => _closeReason = v!)),
-            _field(_notes, 'Note', lines: 2),
-            FilledButton.icon(
-              onPressed: _loading ? null : () => _run(_confirmPr03Closure),
-              icon: Icon(Icons.verified_outlined),
-              label: Text('CONFERMA CHIUSURA'),
-            ),
-          ],
-        ],
+        if (_isWrite && widget.apiCode == 'PR-03') ..._buildPr03ClosureSection(),
         if (!_isWrite && isHistory) ...[
           TextField(controller:_search,textInputAction:TextInputAction.search,
             onSubmitted:(_)=>_run(_searchPr02Objects),
