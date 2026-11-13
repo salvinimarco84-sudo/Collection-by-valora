@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+// Contratti aggiornati per la separazione conferma/persistenza di PR-01.
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
   final pr01ImageManagerSource = File('lib/services/pr01_image_manager.dart').readAsStringSync();
