@@ -5291,42 +5291,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
             child: Text('COLLECTION by VALORA\nUtente: ${Supabase.instance.client.auth.currentUser?.email ?? 'sessione autenticata'}\n${_lockHeld ? 'Blocco archivio: ATTIVO' : 'Blocco archivio: non acquisito'}',
               style: TextStyle(color: sectionColor)),
           )),
-        if (_isWrite && code == 'PR-01') ...[
-          Pr01FormContent(
-            sectionColor: sectionColor,
-            descriptionField: _field(_description, 'Descrizione oggetto *', lines: 2, focusNode: _descriptionFocus),
-            imageField: _imageField(),
-            producerField: _field(_producer, 'Produttore (facoltativo)'),
-            yearField: _field(_line, 'Anno di uscita (facoltativo)', type: TextInputType.number),
-            productCodeField: _field(_family, 'Codice prodotto (facoltativo)'),
-            conditionField: _dropdown('Condizione *', _condition, const ['NUOVO','COME NUOVO','OTTIMO','BUONO','DISCRETO','USATO','USATO CON SEGNI','DA RESTAURARE','DANNEGGIATO'], (v) => setState(() => _condition = v!)),
-            completenessField: _dropdown('Completezza *', _completeness, const ['SIGILLATO','COMPLETO','COMPLETO CON ISTRUZIONI','COMPLETO CON SCATOLA E ISTRUZIONI','INCOMPLETO'], (v) => setState(() => _completeness = v!)),
-            destinationField: _dropdown('Destinazione *', _destination, const ['COLLEZIONE','RIVENDITA','ALTRO'], (v) => setState(() { _destination = v!; if (_destination != 'COLLEZIONE') _selectedCollectionCategory = null; })),
-            collectionCategoryField: _destination == 'COLLEZIONE' ? _collectionCategoryField() : null,
-            quantityField: _field(_quantity, 'Quantità', type: TextInputType.number),
-            unitPriceField: _field(_unitPrice, 'Prezzo unitario (€)', type: const TextInputType.numberWithOptions(decimal: true)),
-            totalValueField: TextField(
-              controller: _totalValue,
-              readOnly: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Valore totale calcolato (€)',
-                helperText: 'Quantità × prezzo unitario. Il totale viene registrato in valore_oggetto.',
-              ),
-            ),
-            notesField: _field(_notes, 'Note', lines: 2),
-            marketValueField: TextField(
-              controller: _marketValue,
-              readOnly: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                hintText: '0,00',
-                helperText: 'Valore restituito dalla procedura di valutazione. 0,00 finché non è disponibile una stima.',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-        ],
         if (_isWrite && code == 'PR-02') ...[
           Card(child: Padding(
             padding: const EdgeInsets.all(12),
@@ -6006,38 +5970,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
       setState(() => _lockHeld = false);
     } else {
       throw Exception('Scrittura verificata ma il runtime non ha confermato il rilascio automatico del blocco.');
-    }
-    if (widget.apiCode == 'PR-01') {
-      final savedRows = result['risultati'];
-      final savedRow = savedRows is List && savedRows.isNotEmpty && savedRows.first is Map
-        ? Map<String, dynamic>.from(savedRows.first as Map) : <String, dynamic>{};
-      final savedId = int.tryParse((savedRow['codice_oggetto'] ?? '').toString());
-      if (savedId != null && _destination == 'COLLEZIONE' && _selectedCollectionCategory != null) {
-        await Supabase.instance.client.schema('collection').from('oggetto_collezione_categoria').upsert({
-          'codice_oggetto': savedId, 'codice_categoria': _selectedCollectionCategory,
-          'fonte_assegnazione': 'MANUALE', 'stato_verifica': 'VERIFICATO',
-          'aggiornato_il': DateTime.now().toIso8601String(),
-        }, onConflict: 'codice_oggetto');
-      }
-      if (_selectedImageBytes != null && _selectedImageName != null && savedId != null) {
-        try {
-          final signedUrl = await _uploadAndRegisterImage(
-            objectId: savedId, bytes: Uint8List.fromList(_selectedImageBytes!), fileName: _selectedImageName!,
-            acquisition: _imageAcquisition, procedure: 'PR-01');
-          if (mounted) setState(() {
-            _existingImageUrl = signedUrl; _selectedImageBytes = null; _selectedImageName = null;
-            _imageStatus = 'Immagine caricata e associata all’oggetto #$savedId.';
-          });
-        } catch (e) {
-          if (mounted) setState(() {
-            _selectedImageBytes = null; _selectedImageName = null;
-            _imageStatus = 'Oggetto #$savedId salvato, ma immagine non associata: $e. Puoi riprovare caricandola da PR-02.';
-          });
-        }
-      }
-      _description.clear(); _producer.clear(); _line.clear(); _family.clear();
-      _notes.clear(); _quantity.text = '1'; _unitPrice.clear(); _totalValue.clear();
-      _selectedCollectionCategory = null;
     }
   }
 }
