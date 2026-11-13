@@ -69,7 +69,7 @@ void main() {
       final result = await service.capturePhoto();
 
       expect(result?.bytes, bytes);
-      expect(result?.fileName, 'scatto.jpg');
+      expect(result?.fileName, 'foto_valora.jpg');
       expect(result?.acquisition, 'FOTOCAMERA');
     });
 
