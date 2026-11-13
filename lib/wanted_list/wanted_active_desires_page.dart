@@ -34,12 +34,202 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
           .whereType<Map>()
           .map((row) => Map<String, dynamic>.from(row))
           .toList();
+      final ids = rows.map((r) => r['id'].toString()).toList();
+      if (ids.isNotEmpty) {
+        final response = await Supabase.instance.client.functions.invoke(
+          'collection-object-images-test',
+          body: {'action': 'get_wanted_batch', 'target_type': 'wanted', 'wanted_ids': ids},
+        );
+        if (response.status < 200 || response.status >= 300 || response.data is! Map ||
+            (response.data as Map)['ok'] != true) {
+          throw StateError('Impossibile caricare le immagini condivise della Wanted List.');
+        }
+        final imageMap = Map<String, dynamic>.from((response.data as Map)['images'] as Map? ?? const {});
+        for (final row in rows) {
+          final url = imageMap[row['id'].toString()];
+          if (url is String && url.isNotEmpty) {
+            row['immagine_url'] = url;
+            row['immagine_fonte'] = 'ARCHIVIO CONDIVISO';
+          }
+        }
+      }
       if (!mounted) return;
       setState(() { _rows = rows; _loading = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  Future<void> _changeImage(Map<String, dynamic> row) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) { _message('Sessione non valida. Accedi nuovamente.'); return; }
+    String? uploadedPath;
+    try {
+      final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 1600);
+      if (picked == null) return;
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.toLowerCase().split('.').last;
+      final safeExt = ['png', 'webp'].contains(ext) ? ext : 'jpg';
+      final mime = safeExt == 'png' ? 'image/png' : safeExt == 'webp' ? 'image/webp' : 'image/jpeg';
+      final id = row['id'].toString();
+      uploadedPath = '${user.id}/${id}/${DateTime.now().millisecondsSinceEpoch}.$safeExt';
+      final storage = Supabase.instance.client.storage.from('pr01-foto-temporanee');
+      await storage.uploadBinary(uploadedPath!, bytes, fileOptions: FileOptions(contentType: mime));
+      final registered = await Supabase.instance.client.functions.invoke(
+        'collection-object-images-test',
+        body: {
+          'action': 'register',
+          'target_type': 'wanted',
+          'wanted_id': id,
+          'path': uploadedPath,
+          'file_name': picked.name,
+          'modalita_acquisizione': 'CARICAMENTO_FILE',
+          'procedura_origine': 'WANTED-LIST',
+        },
+      );
+      if (registered.status < 200 || registered.status >= 300 ||
+          registered.data is! Map || (registered.data as Map)['ok'] != true) {
+        final detail = registered.data is Map ? (registered.data as Map)['error'] : null;
+        throw StateError((detail ?? 'Registrazione immagine non riuscita').toString());
+      }
+      if (mounted) _message('Immagine salvata nell’archivio condiviso.'); 
+      await _load();
+    } catch (e) {
+      if (uploadedPath != null) {
+        try { await Supabase.instance.client.storage.from('pr01-foto-temporanee').remove([uploadedPath]); } catch (_) {}
+      }
+      _message('Caricamento immagine non riuscito: $e');
+    }
+  }
+
+  Future<void> _searchAndImportImage(Map<String, dynamic> row) async {
+    final desireId = row['id'].toString();
+    final description = (row['descrizione'] ?? '').toString();
+    final category = (row['categoria'] ?? '').toString();
+    try {
+      _message('PR-12: ricerca immagini in corso…');
+      final response = await Supabase.instance.client.functions.invoke(
+        'pr-12-web-search-test',
+        body: {
+          'descrizione': description,
+          'categoria': category,
+          'tema': description,
+          'mercato': 'Italia',
+        },
+      );
+      if (response.status < 200 || response.status >= 300 || response.data is! Map) {
+        throw StateError('Risposta PR-12 non valida (HTTP ${response.status}).');
+      }
+      final payload = Map<String, dynamic>.from(response.data as Map);
+      if (payload['ok'] != true) throw StateError((payload['error'] ?? 'Ricerca PR-12 non riuscita').toString());
+      final candidates = (payload['risultati'] as List? ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .where((e) => (e['image_url'] ?? '').toString().startsWith('https://'))
+          .toList();
+      if (!mounted) return;
+      if (candidates.isEmpty) {
+        _message('PR-12 non ha restituito immagini dirette per questo oggetto. Nessuna modifica effettuata.');
+        return;
+      }
+      int selected = 0;
+      final choice = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('CANDIDATI IMMAGINE PR-12'),
+            content: SizedBox(
+              width: 520,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  Text(description, style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: 8),
+                  for (int i = 0; i < candidates.length; i++)
+                    RadioListTile<int>(
+                      value: i,
+                      groupValue: selected,
+                      onChanged: (v) => setDialogState(() => selected = v ?? 0),
+                      title: Text((candidates[i]['title'] ?? 'Immagine candidata').toString()),
+                      subtitle: Text((candidates[i]['motore'] ?? candidates[i]['url'] ?? '').toString(),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                      secondary: SizedBox(
+                        width: 64, height: 64,
+                        child: Image.network(
+                          candidates[i]['image_url'].toString(),
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 6),
+                  const Text('Seleziona solo l’immagine che corrisponde esattamente al modello e alla variante.'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ANNULLA')),
+              FilledButton(onPressed: () => Navigator.pop(dialogContext, candidates[selected]), child: const Text('CONFERMA IMMAGINE')),
+            ],
+          ),
+        ),
+      );
+      if (choice == null || !mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('CONFERMA CORRISPONDENZA'),
+          content: Text('Confermi che l’immagine selezionata rappresenta esattamente:\n\n$description\n\nL’immagine verrà copiata nello spazio privato TEST della Wanted List.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('INDIETRO')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, IMPORTA')),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+      final imported = await Supabase.instance.client.functions.invoke(
+        'wanted-list-image-import-test',
+        body: {
+          'id': desireId,
+          'image_url': choice['image_url'],
+          'confidence': 0.95,
+          'match_confirmed': true,
+        },
+      );
+      if (imported.status < 200 || imported.status >= 300 || imported.data is! Map ||
+          (imported.data as Map)['ok'] != true) {
+        final detail = imported.data is Map ? (imported.data as Map)['error'] : null;
+        throw StateError((detail ?? 'Importazione immagine non riuscita (HTTP ${imported.status})').toString());
+      }
+      _message('Immagine importata e collegata al desiderio in TEST.');
+      await _load();
+    } catch (e) {
+      _message('Ricerca/importazione immagine non riuscita: $e');
+    }
+  }
+
+  Future<void> _removeImage(Map<String, dynamic> row) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) { _message('Sessione non valida. Accedi nuovamente.'); return; }
+    try {
+      final path = row['immagine_path']?.toString();
+      await Supabase.instance.client.schema('collection').from('wanted_desideri').update({
+        'immagine_path': null, 'immagine_fonte': null, 'data_immagine': null,
+      }).eq('id', row['id'].toString()).eq('user_id', user.id);
+      if (path != null && path.isNotEmpty) {
+        await Supabase.instance.client.storage.from('wanted-list-images-test').remove([path]);
+      }
+      if (mounted) _message('Immagine rimossa.');
+      await _load();
+    } catch (e) {
+      _message('Rimozione immagine non riuscita: $e');
+    }
+  }
+
+  void _message(String value) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
   }
 
   String _dateLabel(dynamic value) {
@@ -56,121 +246,6 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
       padding: const EdgeInsets.only(top: 5),
       child: Text('$label: $value', style: Theme.of(context).textTheme.bodySmall),
     );
-  }
-
-  Future<void> _searchAndImportImage(Map<String, dynamic> row) async {
-    final desireId = (row['id'] ?? '').toString();
-    final description = (row['descrizione'] ?? '').toString().trim();
-    final category = (row['categoria'] ?? '').toString().trim();
-    if (desireId.isEmpty || description.isEmpty) return;
-    try {
-      setState(() => _loading = true);
-      final response = await Supabase.instance.client.functions.invoke(
-        'pr-12-web-search-test',
-        body: {
-          'descrizione': description,
-          'categoria': category,
-          'tema': description,
-          'mercato': 'Italia',
-        },
-      );
-      if (response.status < 200 || response.status >= 300 || response.data is! Map) {
-        throw StateError('Risposta PR-12 non valida (HTTP ${response.status}).');
-      }
-      final payload = Map<String, dynamic>.from(response.data as Map);
-      if (payload['ok'] != true) {
-        throw StateError((payload['error'] ?? 'Ricerca PR-12 non riuscita').toString());
-      }
-      final candidates = (payload['risultati'] as List? ?? const [])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .where((e) => (e['image_url'] ?? '').toString().startsWith('https://'))
-          .toList();
-      if (!mounted) return;
-      if (candidates.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nessuna immagine diretta trovata. Nessuna modifica effettuata.')),
-        );
-        return;
-      }
-      int selected = 0;
-      final choice = await showDialog<Map<String, dynamic>>(
-        context: context,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
-            title: const Text('CANDIDATI IMMAGINE PR-12'),
-            content: SizedBox(
-              width: 520,
-              child: ListView(shrinkWrap: true, children: [
-                Text(description, style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 8),
-                for (int i = 0; i < candidates.length; i++)
-                  RadioListTile<int>(
-                    value: i,
-                    groupValue: selected,
-                    onChanged: (v) => setDialogState(() => selected = v ?? 0),
-                    title: Text((candidates[i]['title'] ?? 'Immagine candidata').toString()),
-                    subtitle: Text((candidates[i]['motore'] ?? candidates[i]['url'] ?? '').toString(),
-                      maxLines: 2, overflow: TextOverflow.ellipsis),
-                    secondary: SizedBox(width: 64, height: 64,
-                      child: Image.network(candidates[i]['image_url'].toString(),
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined))),
-                  ),
-                const Text('Verifica che immagine, modello e variante coincidano esattamente.'),
-              ]),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ANNULLA')),
-              FilledButton(onPressed: () => Navigator.pop(dialogContext, candidates[selected]),
-                child: const Text('SELEZIONA')),
-            ],
-          ),
-        ),
-      );
-      if (choice == null || !mounted) return;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('CONFERMA CORRISPONDENZA'),
-          content: Text('Confermi che questa immagine rappresenta esattamente:\\n\\n$description\\n\\nSarà salvata nell’archivio immagini condiviso TEST.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('INDIETRO')),
-            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('SÌ, IMPORTA')),
-          ],
-        ),
-      );
-      if (confirmed != true || !mounted) return;
-      final imageUrl = choice['image_url'].toString().trim();
-      final uri = Uri.tryParse(imageUrl);
-      if (uri == null || !uri.hasAuthority || !['http', 'https'].contains(uri.scheme)) {
-        throw StateError('URL immagine non valido.');
-      }
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) throw StateError('Sessione non valida. Accedi nuovamente.');
-      final saved = await Supabase.instance.client.schema('collection')
-          .from('wanted_desideri')
-          .update({
-            'immagine_path': imageUrl,
-            'immagine_fonte': (choice['url'] ?? choice['motore'] ?? 'PR-12').toString(),
-            'data_immagine': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('id', desireId)
-          .eq('user_id', user.id)
-          .select('id')
-          .maybeSingle();
-      if (saved == null) throw StateError('Link immagine non salvato: desiderio non trovato o permessi insufficienti.');
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Link immagine PR-12 salvato.')),
-      );
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ricerca/importazione immagine non riuscita: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _loading = false);
-      if (mounted) await _load();
-    }
   }
 
   @override
@@ -241,42 +316,42 @@ class _WantedActiveDesiresPageState extends State<WantedActiveDesiresPage> {
                                     Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Icon(Icons.bookmark, color: silver),
-                                        const SizedBox(width: 10),
-                                        Expanded(child: Text(description, style: Theme.of(context).textTheme.titleMedium)),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: (row['immagine_url'] is String)
+                                            ? Image.network(row['immagine_url'] as String, width: 104, height: 104, fit: BoxFit.contain,
+                                                errorBuilder: (_, __, ___) => Container(width: 104, height: 104,
+                                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                  child: const Icon(Icons.broken_image_outlined, size: 34)))
+                                            : Container(width: 104, height: 104,
+                                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                                child: const Icon(Icons.image_outlined, size: 34, color: silver)),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                          Text(description, style: Theme.of(context).textTheme.titleMedium),
+                                          if ((row['immagine_fonte'] ?? '').toString().isNotEmpty)
+                                            Text('Immagine: ${row['immagine_fonte']}', style: Theme.of(context).textTheme.labelSmall),
+                                        ])),
                                       ],
                                     ),
-                                    if ((row['immagine_path'] ?? '').toString().startsWith('http'))
-                                      Padding(
-                                        padding: const EdgeInsets.only(top: 10),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Image.network(
-                                            row['immagine_path'].toString(),
-                                            height: 150,
-                                            width: double.infinity,
-                                            fit: BoxFit.contain,
-                                            errorBuilder: (_, __, ___) => const SizedBox(
-                                              height: 60,
-                                              child: Center(child: Icon(Icons.broken_image_outlined)),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                     if (category.trim().isNotEmpty)
                                       _detail('Categoria / tema', category),
                                     _detail('Condizione', row['condizione_desiderata']?.toString()),
                                     _detail('Completezza', row['completezza_desiderata']?.toString()),
                                     _detail('Note', row['note']?.toString()),
                                     const SizedBox(height: 8),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: OutlinedButton.icon(
-                                        onPressed: _loading ? null : () => _searchAndImportImage(row),
-                                        icon: const Icon(Icons.image_search),
-                                        label: const Text('CERCA / IMPORTA IMMAGINE'),
-                                      ),
-                                    ),
+                                    Wrap(spacing: 8, children: [
+                                      TextButton.icon(onPressed: () => _changeImage(row),
+                                        icon: const Icon(Icons.add_photo_alternate_outlined),
+                                        label: Text(row['immagine_url'] == null ? 'AGGIUNGI IMMAGINE' : 'CAMBIA IMMAGINE')),
+                                      TextButton.icon(onPressed: () => _searchAndImportImage(row),
+                                        icon: const Icon(Icons.auto_awesome_outlined),
+                                        label: const Text('CERCA IMMAGINE CON PR-12')),
+                                      if (row['immagine_path'] != null)
+                                        TextButton.icon(onPressed: () => _removeImage(row),
+                                          icon: const Icon(Icons.delete_outline), label: const Text('RIMUOVI')),
+                                    ]),
                                     Align(
                                       alignment: Alignment.centerRight,
                                       child: Text('Inserito il ${_dateLabel(row['data_creazione'])}', style: Theme.of(context).textTheme.labelSmall),
