@@ -29,6 +29,7 @@ import 'procedures/pr01_image_field.dart';
 import 'procedures/pr01_controller.dart';
 import 'services/object_image_service.dart';
 import 'services/pr01_image_assistant_service.dart';
+import 'services/pr01_image_input_service.dart';
 import 'dashboard/dashboard_section_background.dart';
 import 'dashboard/dashboard_collection_category_card.dart';
 import 'dashboard/dashboard_collection_header.dart';
@@ -2834,6 +2835,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
   final _producer = TextEditingController();
   final _line = TextEditingController();
   final _family = TextEditingController();
+  final Pr01ImageInputService _pr01ImageInputService = const Pr01ImageInputService();
   Uint8List? _selectedImageBytes;
   String? _selectedImageName;
   String _imageAcquisition = 'CARICAMENTO_FILE';
@@ -3711,20 +3713,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Future<void> _pickImageFile() async {
     try {
-      final picked = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false, withData: true);
-      if (picked == null || picked.files.isEmpty) return;
-      final file = picked.files.single;
-      final bytes = file.bytes;
-      final extension = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
-      if (!const ['jpg','jpeg','png','webp','heic','heif'].contains(extension)) {
-        throw Exception('Formato non supportato. Usa JPG, PNG, WEBP, HEIC o HEIF.');
-      }
-      if (bytes == null || bytes.isEmpty) throw Exception('Il file selezionato non contiene dati leggibili.');
-      if (bytes.length > 10 * 1024 * 1024) throw Exception('L’immagine supera il limite di 10 MB.');
+      final selection = await _pr01ImageInputService.pickFromGallery();
+      if (selection == null) return;
       setState(() {
-        _selectedImageBytes = bytes; _selectedImageName = file.name;
-        _imageAcquisition = 'CARICAMENTO_FILE';
-        _imageStatus = 'Immagine pronta: ${file.name}. Verrà associata dopo il salvataggio.';
+        _selectedImageBytes = selection.bytes;
+        _selectedImageName = selection.fileName;
+        _imageAcquisition = selection.acquisition;
+        _imageStatus = 'Immagine pronta: ${selection.fileName}. Verrà associata dopo il salvataggio.';
       });
     } catch (e) {
       if (mounted) setState(() => _imageStatus = 'Caricamento immagine non riuscito: $e');
@@ -3733,14 +3728,13 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
 
   Future<void> _captureImage() async {
     try {
-      final picked = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000, maxHeight: 2000);
-      if (picked == null) return;
-      final bytes = await picked.readAsBytes();
-      if (bytes.isEmpty) throw Exception('La fotocamera non ha restituito un’immagine valida.');
-      if (bytes.length > 10 * 1024 * 1024) throw Exception('La foto supera il limite di 10 MB.');
+      final selection = await _pr01ImageInputService.capturePhoto();
+      if (selection == null) return;
       setState(() {
-        _selectedImageBytes = bytes; _selectedImageName = picked.name.isNotEmpty ? picked.name : 'foto_valora.jpg';
-        _imageAcquisition = 'FOTOCAMERA'; _imageStatus = 'Foto pronta. Avvia il riconoscimento per passare a PR-12.';
+        _selectedImageBytes = selection.bytes;
+        _selectedImageName = selection.fileName;
+        _imageAcquisition = selection.acquisition;
+        _imageStatus = 'Foto pronta. Avvia il riconoscimento per passare a PR-12.';
       });
     } catch (e) {
       if (mounted) setState(() => _imageStatus = 'Scatto foto non riuscito: $e');
