@@ -1291,7 +1291,6 @@ void main() {
       expect(source, contains("import 'dashboard/dashboard_section_content.dart';"));
       expect(dashboardRuntimeSource, contains('DashboardSectionContent('));
     });
-  });
   test('Acquisti comparati confronta solo prodotti identificati ed è in sola lettura', () {
     final page = File('lib/purchases/purchase_comparison_page.dart').readAsStringSync();
     expect(page, contains("from('acquisti_oggetti')"));
