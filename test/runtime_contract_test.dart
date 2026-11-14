@@ -851,6 +851,10 @@ void main() {
       expect(pr03ObjectSelectionSource, contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async'));
       expect(pr03ObjectSelectionSource, contains('_currentObject = null;'));
       expect(pr03ObjectSelectionSource, contains('_loadedObjectId = null;'));
+      expect(pr03ObjectSelectionSource, contains('final requestId = ++_pr03SelectionRequestId;'));
+      expect(pr03ObjectSelectionSource, contains('await _loadObject(pr03SelectionRequestId: requestId);'));
+      expect(source, contains('int _pr03SelectionRequestId = 0;'));
+      expect(source, contains('pr03SelectionRequestId != _pr03SelectionRequestId) return;'));
       expect(pr03ObjectSelectionSource, contains('_notes.clear();'));
       expect(pr03ObjectSelectionSource, contains('if (_loadedObjectId != id || _currentObject == null)'));
       expect(pr03ObjectSelectionSource, contains('La scheda caricata non corrisponde all’oggetto selezionato'));
