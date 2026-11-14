@@ -3,6 +3,8 @@ part of '../main.dart';
 /// Conferma singola chiusura, accodamento e scelta dell'oggetto successivo.
 extension _Pr03ClosureConfirmation on _ObjectRuntimePageState {
   Future<void> _confirmPr03Closure() async {
+    if (!_pr03Controller.beginClosureConfirmation()) return;
+    try {
     if (_currentObject == null || _loadedObjectId == null ||
         _loadedObjectId != int.tryParse(_code.text.trim())) {
       throw Exception('Cerca e seleziona prima l’oggetto da chiudere.');
@@ -66,5 +68,8 @@ extension _Pr03ClosureConfirmation on _ObjectRuntimePageState {
       return;
     }
     await _savePr03PendingClosures();
+    } finally {
+      _pr03Controller.endClosureConfirmation();
+    }
   }
 }
