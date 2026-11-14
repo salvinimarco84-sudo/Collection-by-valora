@@ -60,7 +60,21 @@ extension _Pr03ClosureSave on _ObjectRuntimePageState {
         _lockHeld = false;
         if (mounted) setState(() { _lastResult = result; _output = _pretty(result); });
       } catch (error) {
-        if (mounted) setState(() => _output = 'Salvate: ${saved.join(', ')}. Errore sull’oggetto $id: $error. Le restanti chiusure restano non elaborate.');
+        var releaseError;
+        if (_lockHeld) {
+          try {
+            await _releaseLock();
+          } catch (caughtReleaseError) {
+            releaseError = caughtReleaseError;
+          }
+        }
+        if (mounted) {
+          final lockMessage = releaseError == null
+              ? ''
+              : ' Anche il rilascio del blocco non è riuscito: $releaseError.';
+          setState(() => _output =
+              'Salvate: ${saved.join(', ')}. Errore sull’oggetto $id: $error.$lockMessage Le restanti chiusure restano non elaborate.');
+        }
         rethrow;
       }
     }
