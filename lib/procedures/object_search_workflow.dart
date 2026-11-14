@@ -198,13 +198,12 @@ extension _ObjectSearchWorkflow on _ObjectRuntimePageState {
     );
     if (!_isCurrentPr03SearchRequest(pr03SearchRequestId)) return;
     if (selected != null && mounted) {
-      if (widget.apiCode == 'PR-03') {
-        await _selectPr03Object(selected);
-      } else if (widget.apiCode == 'OBJECT_MASTER') {
+      final handledByPr03 = await _selectPr03SearchResultIfNeeded(selected);
+      if (!handledByPr03 && widget.apiCode == 'OBJECT_MASTER') {
         await _selectPr11Object(selected);
-      } else if (widget.apiCode == 'EXPLORE_RECORDS') {
+      } else if (!handledByPr03 && widget.apiCode == 'EXPLORE_RECORDS') {
         await _selectHistoryObject(selected);
-      } else {
+      } else if (!handledByPr03) {
         await _selectPr02Object(selected);
       }
     }
