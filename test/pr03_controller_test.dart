@@ -72,5 +72,30 @@ void main() {
       expect(snapshot, hasLength(2));
       expect(controller.containsClosure(2581), isFalse);
     });
+
+    test('impedisce conferme e salvataggi duplicati e rilascia i guard dopo il flusso', () {
+      final controller = Pr03Controller();
+
+      expect(controller.beginClosureConfirmation(), isTrue);
+      expect(controller.beginClosureConfirmation(), isFalse);
+      expect(controller.isConfirmingClosure, isTrue);
+
+      // Il salvataggio può partire dal flusso di conferma corrente.
+      expect(controller.beginSavingClosures(), isTrue);
+      expect(controller.beginSavingClosures(), isFalse);
+      expect(controller.isSavingClosures, isTrue);
+
+      controller.endSavingClosures();
+      expect(controller.isSavingClosures, isFalse);
+      controller.endClosureConfirmation();
+      expect(controller.isConfirmingClosure, isFalse);
+
+      // Dopo il completamento, una nuova operazione è consentita.
+      expect(controller.beginClosureConfirmation(), isTrue);
+      controller.endClosureConfirmation();
+      expect(controller.beginSavingClosures(), isTrue);
+      expect(controller.beginClosureConfirmation(), isFalse);
+      controller.endSavingClosures();
+    });
   });
 }
