@@ -96,6 +96,7 @@ void main() {
   final pr03ClosureSaveSource = File('lib/procedures/pr03_closure_save.dart').readAsStringSync();
   final pr03ClosurePayloadSource = File('lib/procedures/pr03_closure_payload.dart').readAsStringSync();
   final pr03ObjectSelectionSource = File('lib/procedures/pr03_object_selection.dart').readAsStringSync();
+  final objectLoadWorkflowSource = File('lib/procedures/object_load_workflow.dart').readAsStringSync();
   final pr03ControllerSource = File('lib/procedures/pr03_controller.dart').readAsStringSync();
   final pr03ControllerOwnerSource = File('lib/procedures/pr03_controller_owner.dart').readAsStringSync();
   final pr03ControllerBindingsSource = File('lib/procedures/pr03_controller_bindings.dart').readAsStringSync();
@@ -852,14 +853,17 @@ void main() {
       expect(pr03ObjectSelectionSource, contains('_currentObject = null;'));
       expect(pr03ObjectSelectionSource, contains('_loadedObjectId = null;'));
       expect(pr03ObjectSelectionSource, contains('final requestId = _pr03Controller.nextSelectionRequestId();'));
-      expect(pr03ObjectSelectionSource, contains('await _loadObject(pr03SelectionRequestId: requestId);'));
+      expect(pr03ObjectSelectionSource, contains('await this._loadObject(pr03SelectionRequestId: requestId);'));
+      expect(objectLoadWorkflowSource, contains('Future<void> _loadObject({int? pr03SelectionRequestId}) async'));
+      expect(objectLoadWorkflowSource, contains('!_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId)'));
+      expect(source, contains("part 'procedures/object_load_workflow.dart';"));
       expect(pr03ControllerSource, contains('nextSelectionRequestId()'));
       expect(pr03ControllerSource, contains('nextSearchRequestId()'));
       expect(pr03ControllerSource, contains('isCurrentSelectionRequest(int requestId)'));
       expect(pr03ControllerSource, contains('isCurrentSearchRequest(int requestId)'));
       expect(objectSearchWorkflowSource, contains('_pr03Controller.nextSearchRequestId()'));
       expect(objectSearchWorkflowSource, contains('pr03SearchRequestId != null && !_pr03Controller.isCurrentSearchRequest(pr03SearchRequestId)) return;'));
-      expect(source, contains('pr03SelectionRequestId != null &&\n        !_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId)) return;'));
+      expect(objectLoadWorkflowSource, contains('pr03SelectionRequestId != null &&\n        !_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId)) return;'));
       expect(pr03ObjectSelectionSource, contains('_notes.clear();'));
       expect(pr03ObjectSelectionSource, contains('if (_loadedObjectId != id || _currentObject == null)'));
       expect(pr03ObjectSelectionSource, contains('La scheda caricata non corrisponde all’oggetto selezionato'));
