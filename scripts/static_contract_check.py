@@ -12,6 +12,7 @@ main = (root / "lib" / "main.dart").read_text(encoding="utf-8")
 pr06_page_state = (root / "lib" / "procedures" / "pr06_page_state.dart").read_text(encoding="utf-8")
 pr02_management = (root / "lib" / "procedures" / "pr02_object_management.dart").read_text(encoding="utf-8")
 object_search = (root / "lib" / "procedures" / "object_search_workflow.dart").read_text(encoding="utf-8")
+pr03_search_selection = (root / "lib" / "procedures" / "pr03_search_result_selection.dart").read_text(encoding="utf-8")
 
 pubspec = (root / "pubspec.yaml").read_text(encoding="utf-8")
 workflow_path = root / ".github" / "workflows" / "collection-valora-ci.yml"
@@ -25,7 +26,7 @@ checks = {
     "shared object search workflow is extracted": "Future<void> _searchPr02Objects() async" in object_search and "Future<void> _searchPr02Objects() async" not in main,
     "shared object search keeps PR-02 and PR-21 RPC routing": "'pr_02_ricerca_oggetti'" in object_search and "'pr_21_ricerca_schede'" in object_search,
     "shared object search keeps direct catalog fallback": "from('master_oggetti')" in object_search and "fallback ricerca diretta catalogo" in object_search,
-    "shared object search keeps other procedure consumers": "widget.apiCode == 'PR-03'" in object_search and "widget.apiCode == 'OBJECT_MASTER'" in object_search and "widget.apiCode == 'EXPLORE_RECORDS'" in object_search,
+    "shared object search keeps other procedure consumers": "widget.apiCode != 'PR-03'" in pr03_search_selection and "widget.apiCode == 'OBJECT_MASTER'" in object_search and "widget.apiCode == 'EXPLORE_RECORDS'" in object_search,
     "PR-02 loads editable collection categories": "widget.apiCode == 'PR-02'" in main and "_loadCollectionCategories();" in main and "_collectionCategoryField()" in (root / "lib" / "procedures" / "pr02_object_management.dart").read_text(encoding="utf-8"),
     "PR-02 collection category is selected": "_selectedCollectionCategory" in pr02_management and "categoria_collezione_selezionata" in pr02_management,
     "PR-02 payload is extracted from main runtime": "part 'procedures/pr02_object_management.dart';" in main and "_buildPr02Payload()" in main and "Map<String, dynamic> _buildPr02Payload()" in pr02_management and "Seleziona una categoria COLLEZIONE valida." in pr02_management,
