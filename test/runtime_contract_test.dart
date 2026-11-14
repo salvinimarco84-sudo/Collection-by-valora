@@ -895,7 +895,8 @@ void main() {
       expect(source, contains('with _Pr03ControllerOwner'));
       expect(pr03ControllerOwnerSource, contains('late final Pr03Controller _pr03Controller = Pr03Controller();'));
       expect(pr03ControllerOwnerSource, contains('mixin _Pr03ControllerOwner'));
-      expect(pr03ControllerSource, contains('final List<Map<String, dynamic>> pendingClosures'));
+      expect(pr03ControllerSource, contains('final List<Map<String, dynamic>> _pendingClosures')); 
+      expect(pr03ControllerSource, contains('List<Map<String, dynamic>> get pendingClosures'));
       expect(pr03ControllerSource, contains("String closeReason = 'SMARRITO';"));
       expect(pr03ControllerSource, contains('bool containsClosure(int objectId)'));
       expect(pr03ControllerSource, contains('void addPendingClosure(Map<String, dynamic> closure)'));
