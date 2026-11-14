@@ -48,10 +48,13 @@ extension _Pr03ClosureSave on _ObjectRuntimePageState {
         if (result['scrittura_eseguita'] != true) {
           throw Exception('Il runtime non ha confermato la scrittura per l’oggetto $id.');
         }
-        if (result['blocco_rilasciato_automaticamente'] != true) {
-          throw Exception('Il runtime non ha confermato il rilascio del blocco per l’oggetto $id.');
-        }
+        // La scrittura è già avvenuta: rimuovi subito l'elemento dalla coda,
+        // così un errore successivo non lo ripropone al tentativo seguente.
+        _pr03Controller.removePendingClosure(id);
         saved.add(id);
+        if (result['blocco_rilasciato_automaticamente'] != true) {
+          throw Exception('Scrittura eseguita, ma rilascio del blocco non confermato per l’oggetto $id.');
+        }
         if (mounted) setState(() { _lastResult = result; _output = _pretty(result); });
       } catch (error) {
         if (mounted) setState(() => _output = 'Salvate: ${saved.join(', ')}. Errore sull’oggetto $id: $error. Le restanti chiusure restano non elaborate.');
