@@ -849,6 +849,11 @@ void main() {
 
     test('PR-03 mantiene selezione, conferma e salvataggio nel runtime estratto', () {
       expect(pr03ObjectSelectionSource, contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async'));
+      expect(pr03ObjectSelectionSource, contains('_currentObject = null;'));
+      expect(pr03ObjectSelectionSource, contains('_loadedObjectId = null;'));
+      expect(pr03ObjectSelectionSource, contains('_notes.clear();'));
+      expect(pr03ObjectSelectionSource, contains('if (_loadedObjectId != id || _currentObject == null)'));
+      expect(pr03ObjectSelectionSource, contains('La scheda caricata non corrisponde all’oggetto selezionato'));
       expect(pr03ObjectSelectionSource, contains("part of '../main.dart';"));
       expect(source, contains("part 'procedures/pr03_object_selection.dart';"));
       expect(pr03ClosureConfirmationSource, contains('Future<void> _confirmPr03Closure() async'));
