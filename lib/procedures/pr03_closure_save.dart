@@ -3,6 +3,8 @@ part of '../main.dart';
 /// Conferma riepilogo e persistenza delle chiusure accodate in PR-03.
 extension _Pr03ClosureSave on _ObjectRuntimePageState {
   Future<void> _savePr03PendingClosures() async {
+    if (!_pr03Controller.beginSavingClosures()) return;
+    try {
     if (_pr03PendingClosures.isEmpty) throw Exception('Non ci sono chiusure confermate da salvare.');
     final summary = _pr03PendingClosures.map((item) =>
       '${item['codice_oggetto']} · ${item['descrizione']} · ${item['motivo_chiusura']}'
@@ -92,6 +94,9 @@ extension _Pr03ClosureSave on _ObjectRuntimePageState {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Chiusure salvate: ${saved.join(', ')}')),
     );
+    } finally {
+      _pr03Controller.endSavingClosures();
+    }
   }
 
 }
