@@ -91,6 +91,7 @@ void main() {
   final pr02SaveWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
+  final pr03SearchRequestWorkflowSource = File('lib/procedures/pr03_search_request.dart').readAsStringSync();
   final pr03ClosureSectionSource = File('lib/procedures/pr03_closure_section.dart').readAsStringSync();
   final pr03ClosureConfirmationSource = File('lib/procedures/pr03_closure_confirmation.dart').readAsStringSync();
   final pr03ClosureSaveSource = File('lib/procedures/pr03_closure_save.dart').readAsStringSync();
@@ -861,8 +862,11 @@ void main() {
       expect(pr03ControllerSource, contains('nextSearchRequestId()'));
       expect(pr03ControllerSource, contains('isCurrentSelectionRequest(int requestId)'));
       expect(pr03ControllerSource, contains('isCurrentSearchRequest(int requestId)'));
-      expect(objectSearchWorkflowSource, contains('_pr03Controller.nextSearchRequestId()'));
-      expect(objectSearchWorkflowSource, contains('pr03SearchRequestId != null && !_pr03Controller.isCurrentSearchRequest(pr03SearchRequestId)) return;'));
+      expect(pr03SearchRequestWorkflowSource, contains('_pr03Controller.nextSearchRequestId()'));
+      expect(pr03SearchRequestWorkflowSource, contains('_pr03Controller.isCurrentSearchRequest(requestId)'));
+      expect(objectSearchWorkflowSource, contains('final pr03SearchRequestId = _beginPr03SearchRequest();'));
+      expect(objectSearchWorkflowSource, contains('!_isCurrentPr03SearchRequest(pr03SearchRequestId) return;'));
+      expect(source, contains("part 'procedures/pr03_search_request.dart';"));
       expect(objectLoadWorkflowSource, contains('pr03SelectionRequestId != null &&\n        !_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId)) return;'));
       expect(pr03ObjectSelectionSource, contains('_notes.clear();'));
       expect(pr03ObjectSelectionSource, contains('if (_loadedObjectId != id || _currentObject == null)'));
