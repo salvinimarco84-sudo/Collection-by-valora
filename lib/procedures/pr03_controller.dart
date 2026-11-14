@@ -5,6 +5,16 @@ class Pr03Controller {
   String closeReason = 'SMARRITO';
   bool _confirmingClosure = false;
   bool _savingClosures = false;
+  int _selectionRequestSequence = 0;
+  int _searchRequestSequence = 0;
+
+  /// Identificatori progressivi per ignorare risposte di ricerca/caricamento obsolete.
+  int nextSelectionRequestId() => ++_selectionRequestSequence;
+  bool isCurrentSelectionRequest(int requestId) =>
+      requestId == _selectionRequestSequence;
+  int nextSearchRequestId() => ++_searchRequestSequence;
+  bool isCurrentSearchRequest(int requestId) =>
+      requestId == _searchRequestSequence;
 
   /// Espone la coda in sola lettura: ogni modifica passa dai metodi validati.
   List<Map<String, dynamic>> get pendingClosures =>
