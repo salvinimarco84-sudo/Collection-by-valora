@@ -4787,7 +4787,6 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> with _Pr03Control
           Pr03ClosureSection(
             searchController: _search,
             notesController: _notes,
-            pendingCount: _pr03PendingClosures.length,
             pendingClosures: _pr03PendingClosures,
             selectedObject: _currentObject,
             hasSelectedObject: _currentObject != null,
