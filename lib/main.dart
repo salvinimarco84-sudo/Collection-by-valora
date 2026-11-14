@@ -80,6 +80,7 @@ part 'procedures/pr01_data_workflow.dart';
 part 'procedures/pr01_page_workflow.dart';
 part 'procedures/pr01_image_workflow.dart';
 part 'procedures/object_search_workflow.dart';
+part 'procedures/pr03_search_request.dart';
 part 'procedures/object_load_workflow.dart';
 part 'procedures/pr03_closure_save.dart';
 part 'procedures/pr03_closure_confirmation.dart';
