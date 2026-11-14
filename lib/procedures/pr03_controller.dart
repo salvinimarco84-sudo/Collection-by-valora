@@ -18,6 +18,16 @@ class Pr03Controller {
     pendingClosures.add(Map<String, dynamic>.unmodifiable(closure));
   }
 
+  /// Rimuove dalla coda soltanto una chiusura già confermata dal runtime.
+  bool removePendingClosure(int objectId) {
+    final index = pendingClosures.indexWhere(
+      (entry) => entry['codice_oggetto'] == objectId,
+    );
+    if (index < 0) return false;
+    pendingClosures.removeAt(index);
+    return true;
+  }
+
   List<Map<String, dynamic>> pendingClosuresSnapshot() =>
       List<Map<String, dynamic>>.unmodifiable(pendingClosures);
 
