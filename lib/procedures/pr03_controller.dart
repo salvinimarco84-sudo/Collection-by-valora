@@ -1,10 +1,14 @@
 /// Stato isolato della procedura PR-03 (chiusura oggetti).
 class Pr03Controller {
-  final List<Map<String, dynamic>> pendingClosures =
+  final List<Map<String, dynamic>> _pendingClosures =
       <Map<String, dynamic>>[];
   String closeReason = 'SMARRITO';
   bool _confirmingClosure = false;
   bool _savingClosures = false;
+
+  /// Espone la coda in sola lettura: ogni modifica passa dai metodi validati.
+  List<Map<String, dynamic>> get pendingClosures =>
+      List<Map<String, dynamic>>.unmodifiable(_pendingClosures);
 
   bool beginClosureConfirmation() {
     if (_confirmingClosure || _savingClosures) return false;
@@ -30,7 +34,7 @@ class Pr03Controller {
   bool get isSavingClosures => _savingClosures;
 
   bool containsClosure(int objectId) =>
-      pendingClosures.any((entry) => entry['codice_oggetto'] == objectId);
+      _pendingClosures.any((entry) => entry['codice_oggetto'] == objectId);
 
   void addPendingClosure(Map<String, dynamic> closure) {
     final id = int.tryParse(closure['codice_oggetto']?.toString() ?? '');
@@ -40,21 +44,21 @@ class Pr03Controller {
     if (containsClosure(id)) {
       throw StateError('L’oggetto $id è già presente nella coda PR-03.');
     }
-    pendingClosures.add(Map<String, dynamic>.unmodifiable(closure));
+    _pendingClosures.add(Map<String, dynamic>.unmodifiable(closure));
   }
 
   /// Rimuove dalla coda soltanto una chiusura già confermata dal runtime.
   bool removePendingClosure(int objectId) {
-    final index = pendingClosures.indexWhere(
+    final index = _pendingClosures.indexWhere(
       (entry) => entry['codice_oggetto'] == objectId,
     );
     if (index < 0) return false;
-    pendingClosures.removeAt(index);
+    _pendingClosures.removeAt(index);
     return true;
   }
 
   List<Map<String, dynamic>> pendingClosuresSnapshot() =>
-      List<Map<String, dynamic>>.unmodifiable(pendingClosures);
+      List<Map<String, dynamic>>.unmodifiable(_pendingClosures);
 
-  void clearPendingClosures() => pendingClosures.clear();
+  void clearPendingClosures() => _pendingClosures.clear();
 }
