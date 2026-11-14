@@ -19,7 +19,7 @@ extension _Pr03ObjectSelection on _ObjectRuntimePageState {
       _metadataResult = '';
     });
 
-    await _loadObject(pr03SelectionRequestId: requestId);
+    await this._loadObject(pr03SelectionRequestId: requestId);
     if (!mounted || !_pr03Controller.isCurrentSelectionRequest(requestId)) return;
     if (_loadedObjectId != id || _currentObject == null) {
       throw Exception('La scheda caricata non corrisponde all’oggetto selezionato ($id).');
