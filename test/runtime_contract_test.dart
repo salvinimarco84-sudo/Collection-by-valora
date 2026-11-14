@@ -865,7 +865,7 @@ void main() {
       expect(pr03SearchRequestWorkflowSource, contains('_pr03Controller.nextSearchRequestId()'));
       expect(pr03SearchRequestWorkflowSource, contains('_pr03Controller.isCurrentSearchRequest(requestId)'));
       expect(objectSearchWorkflowSource, contains('final pr03SearchRequestId = _beginPr03SearchRequest();'));
-      expect(objectSearchWorkflowSource, contains('!_isCurrentPr03SearchRequest(pr03SearchRequestId) return;'));
+      expect(objectSearchWorkflowSource, contains('!_isCurrentPr03SearchRequest(pr03SearchRequestId)) return;'));
       expect(source, contains("part 'procedures/pr03_search_request.dart';"));
       expect(objectLoadWorkflowSource, contains('pr03SelectionRequestId != null &&\n        !_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId)) return;'));
       expect(pr03ObjectSelectionSource, contains('_notes.clear();'));
