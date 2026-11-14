@@ -867,7 +867,7 @@ void main() {
       expect(pr03ClosureSectionSource, contains('class Pr03ClosureSection extends StatelessWidget'));
       expect(pr03ClosureSectionSource, contains('CERCA E SELEZIONA OGGETTO'));
       expect(pr03ClosureSectionSource, contains('CONFERMA CHIUSURA'));
-      expect(pr03ClosureSectionSource, contains('Chiusure confermate in attesa'));
+      expect(pr03ClosureSectionSource, contains('CHIUSURE IN ATTESA'));
       expect(pr03ClosurePayloadSource, contains('Map<String, dynamic> _buildPr03ClosurePayload()'));
       expect(pr03ClosurePayloadSource, contains("part of '../main.dart';"));
       expect(source, contains("part 'procedures/pr03_closure_payload.dart';"));
