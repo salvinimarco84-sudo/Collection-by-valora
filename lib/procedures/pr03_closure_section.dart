@@ -7,6 +7,8 @@ class Pr03ClosureSection extends StatelessWidget {
     required this.searchController,
     required this.notesController,
     required this.pendingCount,
+    required this.pendingClosures,
+    required this.selectedObject,
     required this.hasSelectedObject,
     required this.closeReason,
     required this.onCloseReasonChanged,
@@ -19,6 +21,8 @@ class Pr03ClosureSection extends StatelessWidget {
   final TextEditingController searchController;
   final TextEditingController notesController;
   final int pendingCount;
+  final List<Map<String, dynamic>> pendingClosures;
+  final Map<String, dynamic>? selectedObject;
   final bool hasSelectedObject;
   final String closeReason;
   final ValueChanged<String> onCloseReasonChanged;
@@ -29,6 +33,7 @@ class Pr03ClosureSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _field(searchController, 'Cerca oggetto per descrizione o codice'),
       FilledButton.icon(
@@ -36,15 +41,16 @@ class Pr03ClosureSection extends StatelessWidget {
         icon: const Icon(Icons.search),
         label: const Text('CERCA E SELEZIONA OGGETTO'),
       ),
-      if (pendingCount > 0)
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            'Chiusure confermate in attesa: $pendingCount',
-            style: TextStyle(color: sectionColor, fontWeight: FontWeight.bold),
-          ),
-        ),
+      if (selectedObject != null) ...[
+        const SizedBox(height: 12),
+        _selectedObjectCard(selectedObject!),
+      ],
+      if (pendingClosures.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        _pendingClosuresCard(),
+      ],
       if (hasSelectedObject) ...[
+        const SizedBox(height: 12),
         _dropdown(
           'Motivo chiusura',
           closeReason,
@@ -61,6 +67,51 @@ class Pr03ClosureSection extends StatelessWidget {
         ),
       ],
     ],
+  );
+
+  Widget _selectedObjectCard(Map<String, dynamic> object) {
+    final id = object['codice_oggetto']?.toString() ?? 'Non disponibile';
+    final description = (object['descrizione_oggetto'] ??
+        object['descrizione'] ?? 'Descrizione non disponibile').toString();
+    final status = (object['stato'] ?? object['stato_oggetto'] ?? 'Non indicato').toString();
+    final quantity = (object['quantita'] ?? 'Non indicata').toString();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('OGGETTO SELEZIONATO', style: TextStyle(
+              color: sectionColor, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text('$id · $description', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Stato: $status · Quantità: $quantity'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pendingClosuresCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('CHIUSURE IN ATTESA · $pendingCount', style: TextStyle(
+            color: sectionColor, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          for (final closure in pendingClosures)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Text(
+                '${closure['codice_oggetto']} · ${closure['descrizione'] ?? 'Oggetto'} · ${closure['motivo_chiusura']}',
+              ),
+            ),
+        ],
+      ),
+    ),
   );
 
   Widget _field(TextEditingController controller, String label, {int lines = 1}) =>
