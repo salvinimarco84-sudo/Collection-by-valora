@@ -892,7 +892,8 @@ void main() {
       expect(source, isNot(contains('get _pr03PendingClosures =>')));
       expect(source, isNot(contains("final List<Map<String, dynamic>> _pr03PendingClosures = []")));
       expect(pr03ClosureConfirmationSource, contains('_savePr03PendingClosures()'));
-      expect(source, contains("part 'procedures/pr03_runtime_procedure.dart';"));
+      expect(source, contains("import 'procedures/pr03_closure_section.dart';"));
+      expect(source, isNot(contains("part 'procedures/pr03_runtime_procedure.dart';")));
       expect(source, contains("part 'procedures/pr03_closure_confirmation.dart';"));
       expect(source, isNot(contains('Future<void> _confirmPr03Closure() async')));
       expect(source, isNot(contains('Future<void> _savePr03PendingClosures() async')));
