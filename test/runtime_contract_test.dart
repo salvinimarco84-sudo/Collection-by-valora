@@ -1801,7 +1801,7 @@ void main() {
     expect(objectSearchWorkflowSource, contains("'pr_02_ricerca_oggetti'"));
     expect(objectSearchWorkflowSource, contains("'pr_21_ricerca_schede'"));
     expect(objectSearchWorkflowSource, contains("from('master_oggetti')"));
-    expect(objectSearchWorkflowSource, contains("widget.apiCode == 'PR-03'"));
+    expect(pr03SearchResultSelectionSource, contains("widget.apiCode != 'PR-03'"));
     expect(objectSearchWorkflowSource, contains("widget.apiCode == 'OBJECT_MASTER'"));
     expect(objectSearchWorkflowSource, contains("widget.apiCode == 'EXPLORE_RECORDS'"));
     expect(objectSearchWorkflowSource, contains('matchesPhrase'));
