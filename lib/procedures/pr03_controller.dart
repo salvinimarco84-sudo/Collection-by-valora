@@ -3,6 +3,31 @@ class Pr03Controller {
   final List<Map<String, dynamic>> pendingClosures =
       <Map<String, dynamic>>[];
   String closeReason = 'SMARRITO';
+  bool _confirmingClosure = false;
+  bool _savingClosures = false;
+
+  bool beginClosureConfirmation() {
+    if (_confirmingClosure || _savingClosures) return false;
+    _confirmingClosure = true;
+    return true;
+  }
+
+  void endClosureConfirmation() {
+    _confirmingClosure = false;
+  }
+
+  bool beginSavingClosures() {
+    if (_savingClosures) return false;
+    _savingClosures = true;
+    return true;
+  }
+
+  void endSavingClosures() {
+    _savingClosures = false;
+  }
+
+  bool get isConfirmingClosure => _confirmingClosure;
+  bool get isSavingClosures => _savingClosures;
 
   bool containsClosure(int objectId) =>
       pendingClosures.any((entry) => entry['codice_oggetto'] == objectId);
