@@ -854,6 +854,9 @@ void main() {
       expect(pr03ObjectSelectionSource, contains('final requestId = ++_pr03SelectionRequestId;'));
       expect(pr03ObjectSelectionSource, contains('await _loadObject(pr03SelectionRequestId: requestId);'));
       expect(source, contains('int _pr03SelectionRequestId = 0;'));
+      expect(source, contains('int _pr03SearchRequestId = 0;'));
+      expect(objectSearchWorkflowSource, contains('++_pr03SearchRequestId'));
+      expect(objectSearchWorkflowSource, contains('pr03SearchRequestId != _pr03SearchRequestId) return;'));
       expect(source, contains('pr03SelectionRequestId != _pr03SelectionRequestId) return;'));
       expect(pr03ObjectSelectionSource, contains('_notes.clear();'));
       expect(pr03ObjectSelectionSource, contains('if (_loadedObjectId != id || _currentObject == null)'));
