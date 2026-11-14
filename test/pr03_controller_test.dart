@@ -22,6 +22,10 @@ void main() {
         () => controller.pendingClosures.single['note'] = 'Modifica',
         throwsUnsupportedError,
       );
+      expect(
+        () => controller.pendingClosures.clear(),
+        throwsUnsupportedError,
+      );
     });
 
     test('rifiuta codici non validi e duplicati', () {
