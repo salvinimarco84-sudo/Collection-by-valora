@@ -85,6 +85,7 @@ part 'procedures/pr03_closure_confirmation.dart';
 part 'procedures/pr03_closure_payload.dart';
 part 'procedures/pr03_object_selection.dart';
 part 'procedures/pr03_controller_bindings.dart';
+part 'procedures/pr03_controller_owner.dart';
 part 'purchases/pr04_runtime_procedure.dart';
 part 'wanted_list/wanted_new_desire_page.dart';
 part 'wanted_list/wanted_active_desires_page.dart';
@@ -2817,10 +2818,9 @@ class ObjectRuntimePage extends StatefulWidget {
   State<ObjectRuntimePage> createState() => _ObjectRuntimePageState();
 }
 
-class _ObjectRuntimePageState extends State<ObjectRuntimePage> {
+class _ObjectRuntimePageState extends State<ObjectRuntimePage> with _Pr03ControllerOwner {
   final Pr01Controller _pr01Controller = Pr01Controller();
   final Pr02Controller _pr02Controller = Pr02Controller();
-  final Pr03Controller _pr03Controller = Pr03Controller();
 
 
 
