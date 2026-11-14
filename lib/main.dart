@@ -2819,6 +2819,7 @@ class ObjectRuntimePage extends StatefulWidget {
 }
 
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> with _Pr03ControllerOwner {
+  int _pr03SelectionRequestId = 0;
   final Pr01Controller _pr01Controller = Pr01Controller();
   final Pr02Controller _pr02Controller = Pr02Controller();
 
@@ -3286,7 +3287,7 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> with _Pr03Control
     });
   }
 
-  Future<void> _loadObject() async {
+  Future<void> _loadObject({int? pr03SelectionRequestId}) async {
     final id = int.tryParse(_code.text.trim());
     if (id == null || id <= 0) throw Exception('Inserisci un codice oggetto valido.');
     final response = await _ValoraRuntimeApi.call('consultation', {
@@ -3424,6 +3425,8 @@ class _ObjectRuntimePageState extends State<ObjectRuntimePage> with _Pr03Control
           .eq('codice_oggetto', id).maybeSingle();
       assignedCollectionCategory = assignment?['codice_categoria']?.toString();
     } catch (error) { debugPrint('VALORA: categoria COLLEZIONE non letta per $id: $error'); }
+    if (pr03SelectionRequestId != null &&
+        pr03SelectionRequestId != _pr03SelectionRequestId) return;
     setState(() {
       _pr11CategoryFieldDefinitions = categoryDefinitions;
       _pr11CategoryValues = categoryValues;
