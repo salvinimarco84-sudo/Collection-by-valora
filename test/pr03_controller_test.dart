@@ -77,6 +77,18 @@ void main() {
       expect(controller.containsClosure(2581), isFalse);
     });
 
+    test('invalida le richieste precedenti di selezione e ricerca', () {
+      final controller = Pr03Controller();
+      final firstSelection = controller.nextSelectionRequestId();
+      final secondSelection = controller.nextSelectionRequestId();
+      expect(controller.isCurrentSelectionRequest(firstSelection), isFalse);
+      expect(controller.isCurrentSelectionRequest(secondSelection), isTrue);
+      final firstSearch = controller.nextSearchRequestId();
+      final secondSearch = controller.nextSearchRequestId();
+      expect(controller.isCurrentSearchRequest(firstSearch), isFalse);
+      expect(controller.isCurrentSearchRequest(secondSearch), isTrue);
+    });
+
     test('impedisce conferme e salvataggi duplicati e rilascia i guard dopo il flusso', () {
       final controller = Pr03Controller();
 
