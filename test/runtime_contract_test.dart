@@ -862,6 +862,9 @@ void main() {
       expect(pr03ClosureSaveSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'preview'"));
       expect(pr03ClosureSaveSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'review'"));
       expect(pr03ClosureSaveSource, contains("'PR-03', 'save'"));
+      expect(pr03ClosureSaveSource, contains('if (_lockHeld) {'));
+      expect(pr03ClosureSaveSource, contains('await _releaseLock();'));
+      expect(pr03ClosureSaveSource, contains('Anche il rilascio del blocco non è riuscito'));
       expect(pr03ClosureSaveSource, contains("result['scrittura_eseguita'] != true"));
       expect(pr03ClosureSaveSource, contains('_pr03Controller.pendingClosuresSnapshot()'));
       expect(pr03ClosureSaveSource, contains('_pr03Controller.clearPendingClosures()'));
