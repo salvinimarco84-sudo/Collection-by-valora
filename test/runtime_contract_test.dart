@@ -92,6 +92,7 @@ void main() {
   final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
   final pr03SearchRequestWorkflowSource = File('lib/procedures/pr03_search_request.dart').readAsStringSync();
+  final pr03SearchResultSelectionSource = File('lib/procedures/pr03_search_result_selection.dart').readAsStringSync();
   final pr03ClosureSectionSource = File('lib/procedures/pr03_closure_section.dart').readAsStringSync();
   final pr03ClosureConfirmationSource = File('lib/procedures/pr03_closure_confirmation.dart').readAsStringSync();
   final pr03ClosureSaveSource = File('lib/procedures/pr03_closure_save.dart').readAsStringSync();
@@ -864,6 +865,12 @@ void main() {
       expect(pr03ControllerSource, contains('isCurrentSearchRequest(int requestId)'));
       expect(pr03SearchRequestWorkflowSource, contains('_pr03Controller.nextSearchRequestId()'));
       expect(pr03SearchRequestWorkflowSource, contains('_pr03Controller.isCurrentSearchRequest(requestId)'));
+      expect(pr03SearchResultSelectionSource, contains('Future<bool> _selectPr03SearchResultIfNeeded('));
+      expect(pr03SearchResultSelectionSource, contains("if (widget.apiCode != 'PR-03') return false;"));
+      expect(pr03SearchResultSelectionSource, contains('await _selectPr03Object(selected);'));
+      expect(objectSearchWorkflowSource, contains('final handledByPr03 = await _selectPr03SearchResultIfNeeded(selected);'));
+      expect(objectSearchWorkflowSource, isNot(contains("if (widget.apiCode == 'PR-03')")));
+      expect(source, contains("part 'procedures/pr03_search_result_selection.dart';"));
       expect(objectSearchWorkflowSource, contains('final pr03SearchRequestId = _beginPr03SearchRequest();'));
       expect(objectSearchWorkflowSource, contains('!_isCurrentPr03SearchRequest(pr03SearchRequestId)) return;'));
       expect(source, contains("part 'procedures/pr03_search_request.dart';"));
