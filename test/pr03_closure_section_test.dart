@@ -18,7 +18,6 @@ void main() {
           child: Pr03ClosureSection(
             searchController: search,
             notesController: notes,
-            pendingCount: 2,
             pendingClosures: const [
               {
                 'codice_oggetto': 2581,
@@ -67,4 +66,33 @@ void main() {
     search.dispose();
     notes.dispose();
   });
+
+  testWidgets('PR-03 non mostra il riepilogo quando la coda è vuota',
+      (tester) async {
+    final search = TextEditingController();
+    final notes = TextEditingController();
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: Pr03ClosureSection(
+          searchController: search,
+          notesController: notes,
+          pendingClosures: const [],
+          selectedObject: null,
+          hasSelectedObject: false,
+          closeReason: 'SMARRITO',
+          onCloseReasonChanged: (_) {},
+          loading: false,
+          sectionColor: Colors.amber,
+          onSearch: () {},
+          onConfirm: () {},
+        ),
+      ),
+    ));
+
+    expect(find.textContaining('CHIUSURE IN ATTESA'), findsNothing);
+    search.dispose();
+    notes.dispose();
+  });
+
 }
