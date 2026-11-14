@@ -44,6 +44,20 @@ void main() {
       expect(controller.pendingClosures, hasLength(1));
     });
 
+    test('rimuove solo la chiusura salvata e conserva le altre in coda', () {
+      final controller = Pr03Controller()
+        ..addPendingClosure({'codice_oggetto': 2581})
+        ..addPendingClosure({'codice_oggetto': 2582})
+        ..addPendingClosure({'codice_oggetto': 2583});
+
+      expect(controller.removePendingClosure(2582), isTrue);
+      expect(controller.pendingClosures.map((e) => e['codice_oggetto']),
+          [2581, 2583]);
+      expect(controller.removePendingClosure(9999), isFalse);
+      expect(controller.containsClosure(2582), isFalse);
+      expect(controller.containsClosure(2583), isTrue);
+    });
+
     test('espone uno snapshot non modificabile e svuota la coda', () {
       final controller = Pr03Controller()
         ..addPendingClosure({'codice_oggetto': 2581})
