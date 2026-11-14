@@ -1722,6 +1722,17 @@ void main() {
   });
 
 
+  test('PR-03 riallinea il blocco locale dopo il rilascio automatico confermato', () {
+    final save = File('lib/procedures/pr03_closure_save.dart').readAsStringSync();
+    final releaseCheck = save.indexOf("result['blocco_rilasciato_automaticamente'] != true");
+    final localRelease = save.indexOf('_lockHeld = false;', releaseCheck);
+    final nextStateUpdate = save.indexOf('if (mounted) setState', releaseCheck);
+    expect(releaseCheck, isNonNegative);
+    expect(localRelease, greaterThan(releaseCheck));
+    expect(nextStateUpdate, greaterThan(localRelease));
+    expect(save, contains('_pr03Controller.removePendingClosure(id)'));
+  });
+
   test('PR-02 delega lo stato della pagina al controller dedicato', () {
     expect(source, contains("import 'procedures/pr02_controller.dart';"));
     expect(source, contains('final Pr02Controller _pr02Controller = Pr02Controller();'));
