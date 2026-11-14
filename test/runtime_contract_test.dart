@@ -2,8 +2,13 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+// Contratti aggiornati per la separazione conferma/persistenza di PR-01.
 void main() {
   final source = File('lib/main.dart').readAsStringSync();
+  final pr01ImageManagerSource = File('lib/services/pr01_image_manager.dart').readAsStringSync();
+  final pr01ImageWorkflowSource = File('lib/procedures/pr01_image_workflow.dart').readAsStringSync();
+  final pr01ControllerSource = File('lib/procedures/pr01_controller.dart').readAsStringSync();
+  final pr02PayloadWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
   final pubspecSource = File('pubspec.yaml').readAsStringSync();
   final pr04RuntimeProcedureSource = File('lib/purchases/pr04_runtime_procedure.dart').readAsStringSync();
   final pr05RuntimeProcedureSource = File('lib/purchases/pr05_runtime_procedure.dart').readAsStringSync();
@@ -73,9 +78,30 @@ void main() {
   // relativi agli import e alla direttiva part restano verificati su main.dart.
   final dashboardRuntimeSource = '$source\n$dashboardHomeCoordinatorSource\n$dashboardCollectionContentSource';
   final pr01FormContentSource = File('lib/procedures/pr01_form_content.dart').readAsStringSync();
-  final pr01RuntimeProcedureSource = File('lib/procedures/pr01_runtime_procedure.dart').readAsStringSync();
-  final pr02RuntimeProcedureSource = File('lib/procedures/pr02_runtime_procedure.dart').readAsStringSync();
-  final pr03RuntimeProcedureSource = File('lib/procedures/pr03_runtime_procedure.dart').readAsStringSync();
+  final pr02PageSource = File('lib/procedures/pr02_page.dart').readAsStringSync();
+  final pr02ControllerSource = File('lib/procedures/pr02_controller.dart').readAsStringSync();
+  final pr02ControllerBindingsSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr02PageWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr02ObjectPresentationSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr02SelectionWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr01DataWorkflowSource = File('lib/procedures/pr01_data_workflow.dart').readAsStringSync();
+  final pr01PageWorkflowSource = File('lib/procedures/pr01_page_workflow.dart').readAsStringSync();
+  final pr01ConfirmationWorkflowSource = File('lib/procedures/pr01_confirmation_workflow.dart').readAsStringSync();
+  final pr01SaveWorkflowSource = File('lib/procedures/pr01_save_workflow.dart').readAsStringSync();
+  final pr02SaveWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final pr02ConfirmationWorkflowSource = File('lib/procedures/pr02_object_management.dart').readAsStringSync();
+  final objectSearchWorkflowSource = File('lib/procedures/object_search_workflow.dart').readAsStringSync();
+  final pr03SearchRequestWorkflowSource = File('lib/procedures/pr03_search_request.dart').readAsStringSync();
+  final pr03SearchResultSelectionSource = File('lib/procedures/pr03_search_result_selection.dart').readAsStringSync();
+  final pr03ClosureSectionSource = File('lib/procedures/pr03_closure_section.dart').readAsStringSync();
+  final pr03ClosureConfirmationSource = File('lib/procedures/pr03_closure_confirmation.dart').readAsStringSync();
+  final pr03ClosureSaveSource = File('lib/procedures/pr03_closure_save.dart').readAsStringSync();
+  final pr03ClosurePayloadSource = File('lib/procedures/pr03_closure_payload.dart').readAsStringSync();
+  final pr03ObjectSelectionSource = File('lib/procedures/pr03_object_selection.dart').readAsStringSync();
+  final objectLoadWorkflowSource = File('lib/procedures/object_load_workflow.dart').readAsStringSync();
+  final pr03ControllerSource = File('lib/procedures/pr03_controller.dart').readAsStringSync();
+  final pr03ControllerOwnerSource = File('lib/procedures/pr03_controller_owner.dart').readAsStringSync();
+  final pr03ControllerBindingsSource = File('lib/procedures/pr03_controller_bindings.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
   final reportSummaryPanelSource = File('lib/reports/report_summary_panel.dart').readAsStringSync();
@@ -806,41 +832,113 @@ void main() {
 
     test('PR-02 carica e preseleziona la categoria COLLEZIONE esistente', () {
       expect(source, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER'"));
-      expect(source, contains("key: ValueKey('collection-category-"));
-      expect(source, contains("from('oggetto_collezione_categoria').select('codice_categoria')"));
-      expect(source, contains('_selectedCollectionCategory = assignedCollectionCategory'));
-      expect(source, contains('collection-category-'));
+      expect(pr01DataWorkflowSource, contains("key: ValueKey("));
+      expect(pr01DataWorkflowSource, contains("'collection-category-"));
+      expect(objectLoadWorkflowSource, contains("from('oggetto_collezione_categoria').select('codice_categoria')"));
+      expect(objectLoadWorkflowSource, contains('_selectedCollectionCategory = assignedCollectionCategory'));
+      expect(pr01DataWorkflowSource, contains('collection-category-'));
     });
 
     test('PR-02 accumula le modifiche fino alla risposta finale e mantiene separata la categoria', () {
       expect(source, contains('_selectedCollectionCategory'));
-      expect(pr02RuntimeProcedureSource, contains('categoria_collezione_selezionata'));
-      expect(source, contains('_pr02AwaitingNextChoice'));
-      expect(source, contains('_continuePr02WithAnotherObject'));
-      expect(pr02RuntimeProcedureSource, contains('_pr02PendingChanges.add'));
-      expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
-      expect(pr02RuntimeProcedureSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
-      expect(pr02RuntimeProcedureSource, contains('oggetto_collezione_categoria'));
+      expect(pr02SaveWorkflowSource, contains('categoria_collezione_selezionata'));
+      expect(pr02ConfirmationWorkflowSource, contains('_pr02AwaitingNextChoice'));
+      expect(pr02ConfirmationWorkflowSource, contains('_continuePr02WithAnotherObject'));
+      expect(pr02ConfirmationWorkflowSource, contains('_pr02PendingChanges.add'));
+      expect(pr02ConfirmationWorkflowSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
+      expect(pr02SaveWorkflowSource, contains('oggetto_collezione_categoria'));
     });
 
     test('PR-03 mantiene selezione, conferma e salvataggio nel runtime estratto', () {
-      expect(pr03RuntimeProcedureSource, contains("part of '../main.dart';"));
-      expect(pr03RuntimeProcedureSource, contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async'));
-      expect(pr03RuntimeProcedureSource, contains('Future<void> _confirmPr03Closure() async'));
-      expect(pr03RuntimeProcedureSource, contains('Future<void> _savePr03PendingClosures() async'));
-      expect(pr03RuntimeProcedureSource, contains('_pr03PendingClosures.add({'));
-      expect(pr03RuntimeProcedureSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'preview'"));
-      expect(pr03RuntimeProcedureSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'review'"));
-      expect(pr03RuntimeProcedureSource, contains("'PR-03', 'save'"));
-      expect(pr03RuntimeProcedureSource, contains("result['scrittura_eseguita'] != true"));
-      expect(source, contains("part 'procedures/pr03_runtime_procedure.dart';"));
+      expect(pr03ObjectSelectionSource, contains('Future<void> _selectPr03Object(Map<String, dynamic> item) async'));
+      expect(pr03ObjectSelectionSource, contains('_currentObject = null;'));
+      expect(pr03ObjectSelectionSource, contains('_loadedObjectId = null;'));
+      expect(pr03ObjectSelectionSource, contains('final requestId = _pr03Controller.nextSelectionRequestId();'));
+      expect(pr03ObjectSelectionSource, contains('await this._loadObject(pr03SelectionRequestId: requestId);'));
+      expect(objectLoadWorkflowSource, contains('Future<void> _loadObject({int? pr03SelectionRequestId}) async'));
+      expect(objectLoadWorkflowSource, contains('!_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId)'));
+      expect(source, contains("part 'procedures/object_load_workflow.dart';"));
+      expect(pr03ControllerSource, contains('nextSelectionRequestId()'));
+      expect(pr03ControllerSource, contains('nextSearchRequestId()'));
+      expect(pr03ControllerSource, contains('isCurrentSelectionRequest(int requestId)'));
+      expect(pr03ControllerSource, contains('isCurrentSearchRequest(int requestId)'));
+      expect(pr03SearchRequestWorkflowSource, contains('_pr03Controller.nextSearchRequestId()'));
+      expect(pr03SearchRequestWorkflowSource, contains('_pr03Controller.isCurrentSearchRequest(requestId)'));
+      expect(pr03SearchResultSelectionSource, contains('Future<bool> _selectPr03SearchResultIfNeeded('));
+      expect(pr03SearchResultSelectionSource, contains("if (widget.apiCode != 'PR-03') return false;"));
+      expect(pr03SearchResultSelectionSource, contains('await _selectPr03Object(selected);'));
+      expect(objectSearchWorkflowSource, contains('final handledByPr03 = await _selectPr03SearchResultIfNeeded(selected);'));
+      expect(objectSearchWorkflowSource, isNot(contains("if (widget.apiCode == 'PR-03')")));
+      expect(source, contains("part 'procedures/pr03_search_result_selection.dart';"));
+      expect(objectSearchWorkflowSource, contains('final pr03SearchRequestId = _beginPr03SearchRequest();'));
+      expect(objectSearchWorkflowSource, contains('!_isCurrentPr03SearchRequest(pr03SearchRequestId)) return;'));
+      expect(source, contains("part 'procedures/pr03_search_request.dart';"));
+      expect(objectLoadWorkflowSource, contains('pr03SelectionRequestId != null &&\n        !_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId)) return;'));
+      expect(pr03ObjectSelectionSource, contains('_notes.clear();'));
+      expect(pr03ObjectSelectionSource, contains('if (_loadedObjectId != id || _currentObject == null)'));
+      expect(pr03ObjectSelectionSource, contains('La scheda caricata non corrisponde all’oggetto selezionato'));
+      expect(pr03ObjectSelectionSource, contains("part of '../main.dart';"));
+      expect(source, contains("part 'procedures/pr03_object_selection.dart';"));
+      expect(pr03ClosureConfirmationSource, contains('Future<void> _confirmPr03Closure() async'));
+      expect(pr03ClosureConfirmationSource, contains('extension _Pr03ClosureConfirmation'));
+      expect(pr03ClosureSaveSource, contains('Future<void> _savePr03PendingClosures() async'));
+      expect(pr03ClosureSaveSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'preview'"));
+      expect(pr03ClosureSaveSource, contains("_ValoraRuntimeApi.procedure('PR-03', 'review'"));
+      expect(pr03ClosureSaveSource, contains("'PR-03', 'save'"));
+      expect(pr03ClosureSaveSource, contains('if (_lockHeld) {'));
+      expect(pr03ClosureSaveSource, contains('await _releaseLock();'));
+      expect(pr03ClosureSaveSource, contains('Anche il rilascio del blocco non è riuscito'));
+      expect(pr03ClosureSaveSource, contains("result['scrittura_eseguita'] != true"));
+      expect(pr03ClosureSaveSource, contains('_pr03Controller.pendingClosuresSnapshot()'));
+      expect(pr03ClosureSaveSource, contains('_pr03Controller.clearPendingClosures()'));
+      expect(pr03ClosureSaveSource, contains("part of '../main.dart';"));
+      expect(source, contains("part 'procedures/pr03_closure_save.dart';"));
+      expect(source, contains("import 'procedures/pr03_closure_section.dart';"));
+      expect(source, contains('Pr03ClosureSection('));
+      expect(pr03ClosureSectionSource, contains('class Pr03ClosureSection extends StatelessWidget'));
+      expect(pr03ClosureSectionSource, contains('CERCA E SELEZIONA OGGETTO'));
+      expect(pr03ClosureSectionSource, contains('CONFERMA CHIUSURA'));
+      expect(pr03ClosureSectionSource, contains('CHIUSURE IN ATTESA'));
+      expect(pr03ClosurePayloadSource, contains('Map<String, dynamic> _buildPr03ClosurePayload()'));
+      expect(pr03ClosurePayloadSource, contains("part of '../main.dart';"));
+      expect(source, contains("part 'procedures/pr03_closure_payload.dart';"));
+      expect(pr03ClosurePayloadSource, contains("Per PR-03 carica prima la scheda completa del codice selezionato."));
+      expect(source, contains("if (widget.apiCode == 'PR-03') return _buildPr03ClosurePayload();"));
+      expect(source, isNot(contains("CERCA OGGETTO PER DESCRIZIONE O CODICE")));
+      expect(pr03ClosureConfirmationSource, contains('_pr03Controller.addPendingClosure({'));
+      expect(source, contains("import 'procedures/pr03_controller.dart';"));
+      expect(source, contains("part 'procedures/pr03_controller_owner.dart';"));
+      expect(source, contains('with _Pr03ControllerOwner'));
+      expect(pr03ControllerOwnerSource, contains('late final Pr03Controller _pr03Controller = Pr03Controller();'));
+      expect(pr03ControllerOwnerSource, contains('mixin _Pr03ControllerOwner'));
+      expect(pr03ControllerSource, contains('final List<Map<String, dynamic>> _pendingClosures')); 
+      expect(pr03ControllerSource, contains('List<Map<String, dynamic>> get pendingClosures'));
+      expect(pr03ControllerSource, contains("String closeReason = 'SMARRITO';"));
+      expect(pr03ControllerSource, contains('bool containsClosure(int objectId)'));
+      expect(pr03ControllerSource, contains('void addPendingClosure(Map<String, dynamic> closure)'));
+      expect(pr03ControllerSource, contains('pendingClosuresSnapshot()'));
+      expect(pr03ClosureConfirmationSource, contains('_pr03Controller.addPendingClosure({'));
+      expect(pr03ClosureSaveSource, contains('_pr03Controller.pendingClosuresSnapshot()'));
+      expect(pr03ClosureSaveSource, contains('_pr03Controller.clearPendingClosures()'));
+      expect(source, contains("part 'procedures/pr03_controller_bindings.dart';"));
+      expect(pr03ControllerBindingsSource, contains('extension _Pr03ControllerBindings'));
+      expect(pr03ControllerBindingsSource, contains('get _pr03PendingClosures'));
+      expect(pr03ControllerBindingsSource, contains('get _closeReason'));
+      expect(pr03ControllerBindingsSource, contains('set _closeReason(String value)'));
+      expect(source, isNot(contains('get _pr03PendingClosures =>')));
+      expect(source, isNot(contains("final List<Map<String, dynamic>> _pr03PendingClosures = []")));
+      expect(pr03ClosureConfirmationSource, contains('_savePr03PendingClosures()'));
+      expect(source, contains("import 'procedures/pr03_closure_section.dart';"));
+      expect(source, isNot(contains("part 'procedures/pr03_runtime_procedure.dart';")));
+      expect(source, contains("part 'procedures/pr03_closure_confirmation.dart';"));
       expect(source, isNot(contains('Future<void> _confirmPr03Closure() async')));
       expect(source, isNot(contains('Future<void> _savePr03PendingClosures() async')));
     });
 
     test('la maschera PR-01 è separata e mantiene tutti i campi originali', () {
       expect(source, contains("import 'procedures/pr01_form_content.dart';"));
-      expect(source, contains('Pr01FormContent('));
+      expect(pr01PageWorkflowSource, contains('Pr01FormContent('));
       expect(pr01FormContentSource, contains('class Pr01FormContent extends StatelessWidget'));
       for (final label in [
         'IDENTIFICAZIONE OGGETTO',
@@ -856,20 +954,91 @@ void main() {
       expect(pr01FormContentSource, contains('marketValueField'));
     });
 
+
+    test('PR-01 raggruppa campi, calcolo e payload dati in un unico workflow', () {
+      expect(source, contains("part 'procedures/pr01_data_workflow.dart';"));
+      expect(source, isNot(contains('void _recalculateTotal()')));
+      expect(source, isNot(contains('Widget _collectionCategoryField()')));
+      expect(pr01DataWorkflowSource, contains('extension _Pr01DataWorkflow'));
+      expect(pr01DataWorkflowSource, contains('Widget _collectionCategoryField()'));
+      expect(pr01DataWorkflowSource, contains('void _recalculateTotal()'));
+      expect(pr01DataWorkflowSource, contains('Map<String, dynamic> _buildPr01Payload()'));
+      expect(pr01DataWorkflowSource, contains('_pr01Controller.buildObjectPayload('));
+      expect(source, contains("if (widget.apiCode == 'PR-01') return _buildPr01Payload();"));
+    });
+
+    test('PR-01 separa composizione pagina e lifecycle senza isolare il caricamento categorie condiviso', () {
+      expect(source, contains("part 'procedures/pr01_page_workflow.dart';"));
+      expect(source, contains("if (widget.apiCode == 'PR-01') return _buildPr01Page();"));
+      expect(source, isNot(contains('return Pr01Page(')));
+      expect(pr01PageWorkflowSource, contains('extension _Pr01PageWorkflow'));
+      expect(pr01PageWorkflowSource, contains('Widget _buildPr01Page()'));
+      expect(pr01PageWorkflowSource, contains('Pr01Page('));
+      expect(pr01PageWorkflowSource, contains('Pr01FormContent('));
+      expect(pr01ConfirmationWorkflowSource, contains('_confirmAndSaveNewObject'));
+      expect(pr01PageWorkflowSource, contains('_releaseLock'));
+      expect(pr01PageWorkflowSource, contains('_initializePr01Page()'));
+      expect(pr01PageWorkflowSource, contains('_disposePr01Page()'));
+      expect(pr01PageWorkflowSource, contains('_quantity.addListener(_recalculateTotal)'));
+      expect(pr01PageWorkflowSource, contains('_quantity.removeListener(_recalculateTotal)'));
+      expect(source, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER'"));
+      expect(source, contains('Future<void> _loadCollectionCategories() async'));
+    });
+
+    test('PR-01 raccoglie tutto il flusso immagine in un modulo dedicato', () {
+      expect(source, contains("part 'procedures/pr01_image_workflow.dart';"));
+      expect(source, isNot(contains('Future<void> _pickImageFile() async')));
+      expect(source, isNot(contains('Future<void> _recognizeSelectedPhoto() async')));
+      expect(source, isNot(contains('Widget _readOnlyImageCard()')));
+      expect(pr01ImageWorkflowSource, contains('extension _Pr01ImageWorkflow'));
+      for (final operation in [
+        'Future<void> _pickImageFile() async',
+        'Future<void> _captureImage() async',
+        'Future<void> _startAssistantPhoto() async',
+        'Future<void> _recognizeSelectedPhoto() async',
+        'Widget _imageField()',
+        'Widget _readOnlyImageCard()',
+        'Future<String> _uploadAndRegisterImage(',
+        'Future<void> _loadExistingImage(int objectId) async',
+      ]) {
+        expect(pr01ImageWorkflowSource, contains(operation), reason: operation);
+      }
+      expect(pr01ImageWorkflowSource, contains('_pr01ImageManager.recognize('));
+      expect(pr01ImageWorkflowSource, contains('_pr01ImageManager.uploadAndRegister('));
+      expect(pr01ImageWorkflowSource, contains('_pr01ImageManager.loadExistingImage(objectId)'));
+    });
+
     test('PR-01 accoda gli oggetti e salva il blocco solo dopo la scelta finale', () {
-      expect(pr01RuntimeProcedureSource, contains('_pr01PendingObjects.add({'));
-      expect(pr01RuntimeProcedureSource, contains('await _savePr01PendingObjects();'));
-      expect(pr01RuntimeProcedureSource, contains('NO, SALVA IL BLOCCO'));
-      expect(pr01RuntimeProcedureSource, contains('Future<void> _savePr01PendingObjects() async'));
-      expect(source, contains('_confirmAndSaveNewObject'));
-      expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
-      expect(source, contains('Seleziona una categoria COLLEZIONE valida.'));
+      expect(source, contains("part 'procedures/pr01_confirmation_workflow.dart';"));
+      expect(pr01ConfirmationWorkflowSource, contains('extension _Pr01ConfirmationWorkflow'));
+      expect(pr01ConfirmationWorkflowSource, contains('_pr01PendingObjects.add({'));
+      expect(pr01ConfirmationWorkflowSource, contains('await _savePr01PendingObjects();'));
+      expect(pr01ConfirmationWorkflowSource, contains('NO, SALVA IL BLOCCO'));
+      expect(pr01ConfirmationWorkflowSource, contains('Future<void> _confirmAndSaveNewObject() async'));
+      expect(pr01SaveWorkflowSource, contains('extension _Pr01SaveWorkflow'));
+      expect(pr01SaveWorkflowSource, contains('Future<void> _savePr01PendingObjects() async'));
+      expect(pr01ConfirmationWorkflowSource, isNot(contains('Future<void> _savePr01PendingObjects() async')));
+      expect(pr01PageWorkflowSource, contains('_run(_confirmAndSaveNewObject)'));
+      expect(pr01ControllerSource, contains('Seleziona una categoria COLLEZIONE valida.'));
+    });
+
+    test('PR-02 payload e validazioni sono isolati nel workflow dedicato', () {
+      expect(source, contains("part 'procedures/pr02_object_management.dart';"));
+      expect(source, contains("if (widget.apiCode == 'PR-02') return _buildPr02Payload();"));
+      expect(source, isNot(contains("if (widget.apiCode == 'PR-02') {")));
+      expect(pr02PayloadWorkflowSource, contains('Map<String, dynamic> _buildPr02Payload()'));
+      expect(pr02PayloadWorkflowSource, contains('Seleziona una categoria COLLEZIONE valida.'));
+      expect(pr02PayloadWorkflowSource, contains('Nessuna modifica rilevata.'));
+      expect(pr02PayloadWorkflowSource, contains('Valore oggetto non valido.'));
+      expect(pr02PayloadWorkflowSource, contains("'categoria_collezione_selezionata'"));
     });
 
     test('PR-01 e PR-02 usano una fonte categoria ammessa dal vincolo SQL', () {
-      expect(source, contains("'fonte_assegnazione': 'MANUALE'"));
-      expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
-      expect(source, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
+      final categoryAssignmentSources = '$pr01SaveWorkflowSource\n$pr02SaveWorkflowSource';
+      expect(pr01SaveWorkflowSource, contains("'fonte_assegnazione': 'MANUALE'"));
+      expect(pr02SaveWorkflowSource, contains("'fonte_assegnazione': 'MANUALE'"));
+      expect(categoryAssignmentSources, isNot(contains("'fonte_assegnazione': 'UTENTE_PR01'")));
+      expect(categoryAssignmentSources, isNot(contains("'fonte_assegnazione': 'UTENTE_PR02'")));
     });
 
     test('Le schede elenco e cronologia restano nel componente di presentazione dedicato', () {
@@ -908,30 +1077,32 @@ void main() {
     });
 
     test('Visualizza scheda risolve l’immagine usando url_fonte e non il nome file', () {
-      expect(source, contains("select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')"));
-      expect(source, contains("row['riferimento_immagine']"));
-      expect(source, contains("body: {'action':'get','codice_oggetto':objectId}"));
+      expect(pr01ImageWorkflowSource, contains('_pr01ImageManager.loadExistingImage(objectId)'));
+      expect(pr01ImageManagerSource, contains("select('riferimento_immagine, url_fonte, tipo_immagine, immagine_principale, stato_verifica')"));
+      expect(pr01ImageManagerSource, contains("row['riferimento_immagine']"));
+      expect(pr01ImageManagerSource, contains("'action': 'get'"));
+      expect(pr01ImageManagerSource, contains("'codice_oggetto': objectId"));
     });
 
     test('Visualizza scheda mostra il prezzo di acquisto associato all’oggetto', () {
-      expect(source, contains(".from('acquisti_oggetti')"));
-      expect(source, contains("'valore_acquisto_oggetto'"));
-      expect(source, contains("m['prezzo_acquisto'] = purchase['valore_acquisto_oggetto']"));
+      expect(objectLoadWorkflowSource, contains(".from('acquisti_oggetti')"));
+      expect(objectLoadWorkflowSource, contains("'valore_acquisto_oggetto'"));
+      expect(objectLoadWorkflowSource, contains("m['prezzo_acquisto'] = purchase['valore_acquisto_oggetto']"));
       expect(source, contains("hasPurchasePrice ? 'Prezzo di acquisto' : 'Valore registrato'"));
     });
 
     test('Visualizza scheda cerca anche il codice numerico direttamente nel master', () {
-      expect(source, contains(".from('master_oggetti')"));
-      expect(source, contains(".eq('codice_oggetto', exactCode)"));
-      expect(source, contains('codeOf(item) == phrase.trim()'));
+      expect(objectSearchWorkflowSource, contains(".from('master_oggetti')"));
+      expect(objectSearchWorkflowSource, contains(".eq('codice_oggetto', exactCode)"));
+      expect(objectSearchWorkflowSource, contains('codeOf(item) == phrase.trim()'));
     });
 
     test('PR-02 conferma in linea senza dialoghi o chiamate preview/review intermedie', () {
-      final start = pr02RuntimeProcedureSource.indexOf('Future<void> _confirmPr02Changes() async {');
-      final end = pr02RuntimeProcedureSource.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
+      final start = pr02ConfirmationWorkflowSource.indexOf('Future<void> _confirmPr02Changes() async {');
+      final end = pr02ConfirmationWorkflowSource.indexOf('Future<void> _continuePr02WithAnotherObject()', start);
       expect(start, isNonNegative);
       expect(end, greaterThan(start));
-      final confirmFlow = pr02RuntimeProcedureSource.substring(start, end);
+      final confirmFlow = pr02ConfirmationWorkflowSource.substring(start, end);
       expect(confirmFlow, contains('_pr02PendingChanges.add'));
       expect(confirmFlow, contains('_pr02AwaitingNextChoice = true'));
       expect(confirmFlow, isNot(contains('showDialog')));
@@ -940,8 +1111,9 @@ void main() {
     });
 
     test('PR-02 salva e verifica la modifica prima della scelta successiva', () {
-      expect(pr02RuntimeProcedureSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
-      expect(pr02RuntimeProcedureSource, contains('salvato e verificato'));
+      expect(pr02ConfirmationWorkflowSource, contains('await _savePr02PendingChanges(closeOnComplete: false);'));
+      expect(pr02SaveWorkflowSource, contains('Future<void> _savePr02PendingChanges({bool closeOnComplete = true})'));
+      expect(pr02ConfirmationWorkflowSource, contains('salvato e verificato'));
     });
 
     test('ACQUISTI usa il layout del CATALOGO senza duplicare il titolo incorporato nello sfondo', () {
@@ -1040,7 +1212,7 @@ void main() {
     test('PR-02 carica il master categorie prima di mostrare il selettore modificabile', () {
       expect(source, contains("if (widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER')"));
       expect(source, contains("_loadCollectionCategories();"));
-      expect(source, contains("if (_destination == 'COLLEZIONE') _collectionCategoryField()"));
+      expect(pr02PageWorkflowSource, contains("if (_destination == 'COLLEZIONE') _collectionCategoryField()"));
     });
 
     test('la AppBar dashboard conserva titolo, pulsanti e callback di navigazione', () {
@@ -1582,4 +1754,82 @@ void main() {
     expect(pr07DataSource, isNot(contains("procedure('PR-08'")));
   });
 
+
+  test('PR-03 riallinea il blocco locale dopo il rilascio automatico confermato', () {
+    final save = File('lib/procedures/pr03_closure_save.dart').readAsStringSync();
+    final releaseCheck = save.indexOf("result['blocco_rilasciato_automaticamente'] != true");
+    final localRelease = save.indexOf('_lockHeld = false;', releaseCheck);
+    final nextStateUpdate = save.indexOf('if (mounted) setState', releaseCheck);
+    expect(releaseCheck, isNonNegative);
+    expect(localRelease, greaterThan(releaseCheck));
+    expect(nextStateUpdate, greaterThan(localRelease));
+    expect(save, contains('_pr03Controller.removePendingClosure(id)'));
+  });
+
+  test('PR-02 delega lo stato della pagina al controller dedicato', () {
+    expect(source, contains("import 'procedures/pr02_controller.dart';"));
+    expect(source, contains('final Pr02Controller _pr02Controller = Pr02Controller();'));
+    expect(pr02ControllerBindingsSource, contains('_pr02Controller.searchResults'));
+    expect(pr02ControllerBindingsSource, contains('_pr02Controller.pendingChanges'));
+    expect(pr02ControllerBindingsSource, contains('_pr02Controller.pendingImages'));
+    expect(source, contains('_pr02Controller.dispose();'));
+    expect(pr02ControllerSource, contains('class Pr02Controller'));
+    expect(source, contains("part 'procedures/pr02_object_management.dart';"));
+    expect(source, isNot(contains('get _pr02SearchResults =>')));
+    expect(pr02ControllerBindingsSource, contains('extension _Pr02ControllerBindings'));
+    expect(pr02ControllerBindingsSource, contains('get _pr02SearchResults'));
+    expect(pr02ControllerBindingsSource, contains('get _pr02PendingChanges'));
+    expect(pr02ControllerBindingsSource, contains('get _pr02PendingImages'));
+    expect(pr02ControllerSource, contains('ScrollController scrollController'));
+    expect(pr02ControllerSource, contains('pendingChanges'));
+    expect(pr02ControllerSource, contains('pendingImages'));
+  });
+
+  test('PR-02 usa una pagina dedicata e mantiene ricerca, scheda e conferma', () {
+    expect(source, contains("import 'procedures/pr02_page.dart';"));
+    expect(source, contains("part 'procedures/pr02_object_management.dart';"));
+    expect(source, contains("if (widget.apiCode == 'PR-02') return _buildPr02Page();"));
+    expect(source, isNot(contains('Widget _buildPr02Screen()')));
+    expect(pr02PageSource, contains('class Pr02Page extends StatelessWidget'));
+    expect(pr02PageSource, contains('PR-02 · MODIFICA OGGETTO'));
+    expect(pr02PageWorkflowSource, contains('Widget _buildPr02Page()'));
+    expect(pr02PageWorkflowSource, contains('_searchPr02Objects'));
+    expect(source, contains("part 'procedures/object_search_workflow.dart';"));
+    expect(source, isNot(contains('Future<void> _searchPr02Objects() async')));
+    expect(objectSearchWorkflowSource, contains('extension _ObjectSearchWorkflow on _ObjectRuntimePageState'));
+    expect(objectSearchWorkflowSource, contains('Future<void> _searchPr02Objects() async'));
+    expect(objectSearchWorkflowSource, contains("'pr_02_ricerca_oggetti'"));
+    expect(objectSearchWorkflowSource, contains("'pr_21_ricerca_schede'"));
+    expect(objectSearchWorkflowSource, contains("from('master_oggetti')"));
+    expect(pr03SearchResultSelectionSource, contains("widget.apiCode != 'PR-03'"));
+    expect(objectSearchWorkflowSource, contains("widget.apiCode == 'OBJECT_MASTER'"));
+    expect(objectSearchWorkflowSource, contains("widget.apiCode == 'EXPLORE_RECORDS'"));
+    expect(objectSearchWorkflowSource, contains('matchesPhrase'));
+    expect(objectSearchWorkflowSource, contains('results.sort'));
+    expect(pr02PageWorkflowSource, contains('_selectPr02Object(item)'));
+    expect(source, contains("part 'procedures/pr02_object_management.dart';"));
+    expect(pr02SelectionWorkflowSource, contains('Future<void> _selectPr02Object(Map<String, dynamic> item) async'));
+    expect(pr02SelectionWorkflowSource, contains('await _loadObject();'));
+    expect(pr02PageWorkflowSource, contains('_pr02MetadataCard(_currentObject!)'));
+    expect(source, contains("part 'procedures/pr02_object_management.dart';"));
+    expect(pr02ObjectPresentationSource, contains('Widget _pr02MetadataCard(Map<String, dynamic> object)'));
+    expect(pr02ObjectPresentationSource, contains('Widget _pr02TechnicalCard(Map<String, dynamic> object)'));
+    expect(pr02ObjectPresentationSource, contains('Widget _pr02Side({required bool oldValues})'));
+    expect(pr02ObjectPresentationSource, contains('Widget _metadataValue(String label, String value)'));
+    expect(pr02PageWorkflowSource, contains('_pr02Side(oldValues: true)'));
+    expect(pr02PageWorkflowSource, contains('_pr02Side(oldValues: false)'));
+    expect(pr02PageWorkflowSource, contains('_confirmPr02Changes'));
+  });
+
+  test('PR-01 non conserva UI o persistenza nel runtime generico', () {
+    expect(source, isNot(contains("if (_isWrite && code == 'PR-01')")));
+    expect(source, contains("else if (_isWrite && code != 'PR-01') ...["));
+    final genericSaveStart = source.indexOf('Future<void> _save() async');
+    final genericSaveEnd = source.indexOf('class _PurchaseItemDraft', genericSaveStart);
+    expect(genericSaveStart, isNonNegative);
+    expect(genericSaveEnd, greaterThan(genericSaveStart));
+    final genericSave = source.substring(genericSaveStart, genericSaveEnd);
+    expect(genericSave, isNot(contains("if (widget.apiCode == 'PR-01')")));
+    expect(genericSave, isNot(contains('_confirmAndSaveNewObject')));
+  });
 }
