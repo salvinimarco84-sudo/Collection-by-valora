@@ -97,6 +97,7 @@ void main() {
   final pr03ClosurePayloadSource = File('lib/procedures/pr03_closure_payload.dart').readAsStringSync();
   final pr03ObjectSelectionSource = File('lib/procedures/pr03_object_selection.dart').readAsStringSync();
   final pr03ControllerSource = File('lib/procedures/pr03_controller.dart').readAsStringSync();
+  final pr03ControllerOwnerSource = File('lib/procedures/pr03_controller_owner.dart').readAsStringSync();
   final pr03ControllerBindingsSource = File('lib/procedures/pr03_controller_bindings.dart').readAsStringSync();
   final objectMasterPresentationSource = File('lib/objects/object_master_presentation.dart').readAsStringSync();
   final objectCardsPresentationSource = File('lib/objects/object_cards_presentation.dart').readAsStringSync();
@@ -875,7 +876,10 @@ void main() {
       expect(source, isNot(contains("CERCA OGGETTO PER DESCRIZIONE O CODICE")));
       expect(pr03ClosureConfirmationSource, contains('_pr03Controller.addPendingClosure({'));
       expect(source, contains("import 'procedures/pr03_controller.dart';"));
-      expect(source, contains('final Pr03Controller _pr03Controller = Pr03Controller();'));
+      expect(source, contains("part 'procedures/pr03_controller_owner.dart';"));
+      expect(source, contains('with _Pr03ControllerOwner'));
+      expect(pr03ControllerOwnerSource, contains('late final Pr03Controller _pr03Controller = Pr03Controller();'));
+      expect(pr03ControllerOwnerSource, contains('mixin _Pr03ControllerOwner'));
       expect(pr03ControllerSource, contains('final List<Map<String, dynamic>> pendingClosures'));
       expect(pr03ControllerSource, contains("String closeReason = 'SMARRITO';"));
       expect(pr03ControllerSource, contains('bool containsClosure(int objectId)'));
