@@ -6,7 +6,6 @@ class Pr03ClosureSection extends StatelessWidget {
     super.key,
     required this.searchController,
     required this.notesController,
-    required this.pendingCount,
     required this.pendingClosures,
     required this.selectedObject,
     required this.hasSelectedObject,
@@ -20,7 +19,6 @@ class Pr03ClosureSection extends StatelessWidget {
 
   final TextEditingController searchController;
   final TextEditingController notesController;
-  final int pendingCount;
   final List<Map<String, dynamic>> pendingClosures;
   final Map<String, dynamic>? selectedObject;
   final bool hasSelectedObject;
@@ -99,7 +97,7 @@ class Pr03ClosureSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('CHIUSURE IN ATTESA · $pendingCount', style: TextStyle(
+          Text('CHIUSURE IN ATTESA · ${pendingClosures.length}', style: TextStyle(
             color: sectionColor, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           for (final closure in pendingClosures)
