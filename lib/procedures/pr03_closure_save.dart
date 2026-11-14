@@ -55,6 +55,9 @@ extension _Pr03ClosureSave on _ObjectRuntimePageState {
         if (result['blocco_rilasciato_automaticamente'] != true) {
           throw Exception('Scrittura eseguita, ma rilascio del blocco non confermato per l’oggetto $id.');
         }
+        // Il runtime ha confermato il rilascio automatico: riallinea anche
+        // lo stato locale prima di processare la chiusura successiva.
+        _lockHeld = false;
         if (mounted) setState(() { _lastResult = result; _output = _pretty(result); });
       } catch (error) {
         if (mounted) setState(() => _output = 'Salvate: ${saved.join(', ')}. Errore sull’oggetto $id: $error. Le restanti chiusure restano non elaborate.');
