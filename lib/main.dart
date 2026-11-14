@@ -2820,6 +2820,7 @@ class ObjectRuntimePage extends StatefulWidget {
 
 class _ObjectRuntimePageState extends State<ObjectRuntimePage> with _Pr03ControllerOwner {
   int _pr03SelectionRequestId = 0;
+  int _pr03SearchRequestId = 0;
   final Pr01Controller _pr01Controller = Pr01Controller();
   final Pr02Controller _pr02Controller = Pr02Controller();
 
