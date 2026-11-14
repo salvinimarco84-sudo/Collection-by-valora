@@ -832,8 +832,8 @@ void main() {
       expect(source, contains("widget.apiCode == 'PR-01' || widget.apiCode == 'PR-02' || widget.apiCode == 'OBJECT_MASTER'"));
       expect(pr01DataWorkflowSource, contains("key: ValueKey("));
       expect(pr01DataWorkflowSource, contains("'collection-category-"));
-      expect(source, contains("from('oggetto_collezione_categoria').select('codice_categoria')"));
-      expect(source, contains('_selectedCollectionCategory = assignedCollectionCategory'));
+      expect(objectLoadWorkflowSource, contains("from('oggetto_collezione_categoria').select('codice_categoria')"));
+      expect(objectLoadWorkflowSource, contains('_selectedCollectionCategory = assignedCollectionCategory'));
       expect(pr01DataWorkflowSource, contains('collection-category-'));
     });
 
@@ -1074,9 +1074,9 @@ void main() {
     });
 
     test('Visualizza scheda mostra il prezzo di acquisto associato all’oggetto', () {
-      expect(source, contains(".from('acquisti_oggetti')"));
-      expect(source, contains("'valore_acquisto_oggetto'"));
-      expect(source, contains("m['prezzo_acquisto'] = purchase['valore_acquisto_oggetto']"));
+      expect(objectLoadWorkflowSource, contains(".from('acquisti_oggetti')"));
+      expect(objectLoadWorkflowSource, contains("'valore_acquisto_oggetto'"));
+      expect(objectLoadWorkflowSource, contains("m['prezzo_acquisto'] = purchase['valore_acquisto_oggetto']"));
       expect(source, contains("hasPurchasePrice ? 'Prezzo di acquisto' : 'Valore registrato'"));
     });
 
