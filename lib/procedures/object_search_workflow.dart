@@ -4,7 +4,7 @@ extension _ObjectSearchWorkflow on _ObjectRuntimePageState {
   Future<void> _searchPr02Objects() async {
     final query = _search.text.trim();
     if (query.isEmpty) throw Exception('Inserisci una parola, parte della descrizione o un codice.');
-    final pr03SearchRequestId = widget.apiCode == 'PR-03' ? _pr03Controller.nextSearchRequestId() : null;
+    final pr03SearchRequestId = _beginPr03SearchRequest();
 
     String normalize(String value) => value
         .toLowerCase()
@@ -129,7 +129,7 @@ extension _ObjectSearchWorkflow on _ObjectRuntimePageState {
           .toList();
     }
 
-    if (pr03SearchRequestId != null && !_pr03Controller.isCurrentSearchRequest(pr03SearchRequestId)) return;
+    if (!_isCurrentPr03SearchRequest(pr03SearchRequestId)) return;
 
     // Prima le descrizioni identiche, poi le corrispondenze parziali pertinenti.
     final exact = results.where((item) => normalize(descriptionOf(item)) == normalizedQuery).toList();
@@ -137,7 +137,7 @@ extension _ObjectSearchWorkflow on _ObjectRuntimePageState {
 
     results.sort((a, b) =>
       (int.tryParse(codeOf(a)) ?? 0).compareTo(int.tryParse(codeOf(b)) ?? 0));
-    if (pr03SearchRequestId != null && !_pr03Controller.isCurrentSearchRequest(pr03SearchRequestId)) return;
+    if (!_isCurrentPr03SearchRequest(pr03SearchRequestId)) return;
     setState(() {
       _pr02SearchResults = results;
       _pr02SearchCompleted = true;
@@ -196,7 +196,7 @@ extension _ObjectSearchWorkflow on _ObjectRuntimePageState {
         ],
       ),
     );
-    if (pr03SearchRequestId != null && !_pr03Controller.isCurrentSearchRequest(pr03SearchRequestId)) return;
+    if (!_isCurrentPr03SearchRequest(pr03SearchRequestId)) return;
     if (selected != null && mounted) {
       if (widget.apiCode == 'PR-03') {
         await _selectPr03Object(selected);
