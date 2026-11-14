@@ -859,7 +859,7 @@ void main() {
       expect(pr03ControllerSource, contains('isCurrentSearchRequest(int requestId)'));
       expect(objectSearchWorkflowSource, contains('_pr03Controller.nextSearchRequestId()'));
       expect(objectSearchWorkflowSource, contains('pr03SearchRequestId != null && !_pr03Controller.isCurrentSearchRequest(pr03SearchRequestId)) return;'));
-      expect(source, contains('!_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId) return;'));
+      expect(source, contains('pr03SelectionRequestId != null &&\n        !_pr03Controller.isCurrentSelectionRequest(pr03SelectionRequestId)) return;'));
       expect(pr03ObjectSelectionSource, contains('_notes.clear();'));
       expect(pr03ObjectSelectionSource, contains('if (_loadedObjectId != id || _currentObject == null)'));
       expect(pr03ObjectSelectionSource, contains('La scheda caricata non corrisponde all’oggetto selezionato'));
