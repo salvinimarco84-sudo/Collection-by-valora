@@ -10,7 +10,7 @@ extension _Pr03ObjectSelection on _ObjectRuntimePageState {
 
     // Invalida subito la selezione precedente: se il caricamento del nuovo
     // record fallisce, PR-03 non deve poter chiudere per errore il vecchio.
-    final requestId = ++_pr03SelectionRequestId;
+    final requestId = _pr03Controller.nextSelectionRequestId();
     setState(() {
       _code.text = id.toString();
       _currentObject = null;
@@ -20,7 +20,7 @@ extension _Pr03ObjectSelection on _ObjectRuntimePageState {
     });
 
     await _loadObject(pr03SelectionRequestId: requestId);
-    if (!mounted || requestId != _pr03SelectionRequestId) return;
+    if (!mounted || !_pr03Controller.isCurrentSelectionRequest(requestId)) return;
     if (_loadedObjectId != id || _currentObject == null) {
       throw Exception('La scheda caricata non corrisponde all’oggetto selezionato ($id).');
     }
