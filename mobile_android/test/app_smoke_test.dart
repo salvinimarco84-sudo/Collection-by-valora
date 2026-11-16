@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valora_mobile/src/app.dart';
@@ -37,5 +38,10 @@ void main() {
       authLocales.map((locale) => locale.languageCode).toList(),
       ['it', 'en', 'fr', 'de', 'es', 'pt', 'zh', 'ja'],
     );
+  });
+
+  test('the VALORA brand logo is bundled as an application asset', () async {
+    final logo = await rootBundle.load('valora_logo.png');
+    expect(logo.lengthInBytes, greaterThan(0));
   });
 }

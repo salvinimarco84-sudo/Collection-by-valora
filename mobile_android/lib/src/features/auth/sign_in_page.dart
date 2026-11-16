@@ -85,6 +85,15 @@ class _SignInPageState extends State<SignInPage> {
     body: Center(child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 440),
       child: ListView(shrinkWrap: true, padding: const EdgeInsets.all(24), children: [
+        Center(
+          child: Image.asset(
+            'valora_logo.png',
+            height: 190,
+            fit: BoxFit.contain,
+            semanticLabel: 'COLLECTION by VALORA',
+          ),
+        ),
+        const SizedBox(height: 20),
         TextField(controller: _email, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: InputDecoration(labelText: authText(context, 'email'))),
         const SizedBox(height: 16),
         TextField(controller: _password, obscureText: true, decoration: InputDecoration(labelText: authText(context, 'password'))),

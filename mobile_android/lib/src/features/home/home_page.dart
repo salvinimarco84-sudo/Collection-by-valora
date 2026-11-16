@@ -17,6 +17,17 @@ class HomePage extends StatelessWidget {
         icon: const Icon(Icons.logout),
       )],
     ),
-    body: const Center(child: Text('COLLECTION by VALORA')),
+    body: Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Image.asset(
+          'valora_logo.png',
+          width: 360,
+          height: 360,
+          fit: BoxFit.contain,
+          semanticLabel: 'COLLECTION by VALORA',
+        ),
+      ),
+    ),
   );
 }
