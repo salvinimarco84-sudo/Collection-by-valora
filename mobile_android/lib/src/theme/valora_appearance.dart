@@ -7,6 +7,20 @@ class ValoraThemePreset {
   const ValoraThemePreset(this.id,this.name,this.background,this.card,this.accent,this.text,this.light);
   final String id,name; final Color background,card,accent,text; final bool light;
 }
+String themeBackgroundAsset(String id) => switch (id) {
+  'black_gold' => 'assets/themes/black_gold.jpg',
+  'midnight_blue' => 'assets/themes/midnight_blue.jpg',
+  'emerald' => 'assets/themes/electric_green.jpg',
+  'silver_light' => 'assets/themes/silver_light.jpg',
+  'dark_red' => 'assets/themes/fire_red.jpg',
+  'royal_purple' => 'assets/themes/royal_purple.jpg',
+  'comic' => 'assets/themes/comic_style.jpg',
+  'minimal_zen' => 'assets/themes/minimal_zen.jpg',
+  'industrial' => 'assets/themes/industrial.jpg',
+  'pastel' => 'assets/themes/pastel.jpg',
+  _ => 'assets/themes/black_gold.jpg',
+};
+
 class ValoraAppearance extends ChangeNotifier {
   ValoraAppearance._();
   static final instance=ValoraAppearance._();
