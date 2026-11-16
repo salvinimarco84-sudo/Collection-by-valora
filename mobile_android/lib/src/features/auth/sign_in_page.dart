@@ -171,7 +171,7 @@ class _SignInPageState extends State<SignInPage> {
           }),
           child: Text(authText(context, _register ? 'signIn' : 'signUp')),
         ),
-        if (_register && _accountMayAlreadyExist)
+        if (_register)
           TextButton(
             onPressed: _busy ? null : _resendConfirmation,
             child: Text(authText(context, 'resendConfirmation')),
