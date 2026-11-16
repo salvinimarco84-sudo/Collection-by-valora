@@ -71,10 +71,16 @@ jobs:
         run: flutter test
 
       - name: Build Android APK
-        run: >
-          flutter build apk --debug
-          --dart-define=SUPABASE_URL=https://hqiisivoistpejvilbeu.supabase.co
-          --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_placeholder
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VALORA_TEST2_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::Missing VALORA_TEST2_SUPABASE_PUBLISHABLE_KEY repository secret"
+            exit 1
+          fi
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL=https://hqiisivoistpejvilbeu.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
