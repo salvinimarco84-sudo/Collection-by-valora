@@ -5,6 +5,6 @@ void main() {
   testWidgets('TEST2 configuration screen renders', (tester) async {
     await tester.pumpWidget(const ValoraApp(configurationError: true));
 
-    expect(find.text('Configurazione TEST2 non impostata.'), findsOneWidget);
+    expect(find.text('TEST2 configuration is missing.'), findsOneWidget);
   });
 }
