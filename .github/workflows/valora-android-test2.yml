@@ -1,0 +1,68 @@
+name: VALORA Android TEST2
+
+on:
+  push:
+    branches:
+      - feature/flutter-android-test2-fresh
+    paths:
+      - "mobile_android/**"
+      - ".github/workflows/valora-android-test2.yml"
+  pull_request:
+    branches:
+      - feature/flutter-android-test2-fresh
+    paths:
+      - "mobile_android/**"
+      - ".github/workflows/valora-android-test2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Analyze, test and build Android
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Gradle wrapper in temporary Flutter host
+        run: |
+          flutter create --platforms=android --project-name valora_mobile /tmp/valora_android_wrapper
+          mkdir -p android/gradle/wrapper
+          cp /tmp/valora_android_wrapper/android/gradlew android/gradlew
+          cp /tmp/valora_android_wrapper/android/gradlew.bat android/gradlew.bat
+          cp /tmp/valora_android_wrapper/android/gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.jar
+          cp /tmp/valora_android_wrapper/android/gradle/wrapper/gradle-wrapper.properties android/gradle/wrapper/gradle-wrapper.properties
+          chmod +x android/gradlew
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Unit and widget tests
+        run: flutter test
+
+      - name: Build Android APK
+        run: >
+          flutter build apk --debug
+          --dart-define=SUPABASE_URL=https://hqiisivoistpejvilbeu.supabase.co
+          --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_ci_placeholder
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: valora-android-test2-debug
+          path: mobile_android/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
