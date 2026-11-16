@@ -2,6 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth_config.dart';
 
+enum SignUpOutcome { confirmationSent, accountMayAlreadyExist }
+
 class AuthRepository {
   AuthRepository(this._client);
   final SupabaseClient _client;
@@ -13,10 +15,26 @@ class AuthRepository {
     await _client.auth.signInWithPassword(email: email, password: password);
   }
 
-  Future<void> signUp({required String email, required String password}) async {
-    await _client.auth.signUp(
+  Future<SignUpOutcome> signUp({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _client.auth.signUp(
       email: email,
       password: password,
+      emailRedirectTo: ValoraAuthConfig.callbackUrl,
+    );
+    final identities = response.user?.identities;
+    if (identities != null && identities.isEmpty) {
+      return SignUpOutcome.accountMayAlreadyExist;
+    }
+    return SignUpOutcome.confirmationSent;
+  }
+
+  Future<void> resendSignupConfirmation(String email) async {
+    await _client.auth.resend(
+      type: OtpType.signup,
+      email: email,
       emailRedirectTo: ValoraAuthConfig.callbackUrl,
     );
   }
