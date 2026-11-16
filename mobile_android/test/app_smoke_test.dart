@@ -4,6 +4,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:valora_mobile/src/app.dart';
 import 'package:valora_mobile/src/features/auth/auth_copy.dart';
+import 'package:valora_mobile/src/features/auth/auth_repository.dart';
+import 'package:valora_mobile/src/features/auth/sign_in_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   testWidgets('TEST2 configuration screen renders', (tester) async {
@@ -31,6 +34,19 @@ void main() {
       app.localizationsDelegates,
       contains(GlobalCupertinoLocalizations.delegate),
     );
+  });
+
+
+  testWidgets('signup screen always exposes confirmation resend', (tester) async {
+    final client = SupabaseClient('https://example.supabase.co', 'test-anon-key');
+    await tester.pumpWidget(MaterialApp(
+      home: SignInPage(repository: AuthRepository(client)),
+    ));
+
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Resend confirmation email'), findsOneWidget);
   });
 
   test('the eight initial interface languages remain supported', () {
