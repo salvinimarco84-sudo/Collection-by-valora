@@ -173,7 +173,7 @@ class _HomePageState extends State<HomePage> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _blocks.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1.12, crossAxisSpacing: 12, mainAxisSpacing: 12),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1.0, crossAxisSpacing: 12, mainAxisSpacing: 12),
           itemBuilder: (context, index) {
             final item = _blocks[index];
             return _MainMenuBlockCard(block: item, title: _menuText(context, item.title), onTap: () => setState(() => _selectedBlock = item.key));
