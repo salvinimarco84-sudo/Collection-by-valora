@@ -13,17 +13,6 @@ class _MenuBlock {
   final List<String> items;
 }
 
-const _blockColors = <String, Color>{
-  'CATALOGO': Color(0xFF3978C5),
-  'WANTED LIST': Color(0xFFB8BEC6),
-  'ACQUISTI': Color(0xFFC74444),
-  'VENDITE': Color(0xFF39875B),
-  'VALUTAZIONI': Color(0xFF8556C7),
-  'REPORT': Color(0xFFE17D35),
-  'RICERCHE': Color(0xFFD6A83F),
-  'CONTROLLO': Color(0xFF777777),
-};
-
 const _blocks = <_MenuBlock>[
   _MenuBlock('COLLEZIONE', 'COLLEZIONE', 'Tutti i temi e tutti i record', Icons.inventory_2_outlined, Color(0xFFD6B15E), ['Apri collezione', 'Categorie collezionistiche', 'Ricerca schede']),
   _MenuBlock('CATALOGO', 'CATALOGO', 'Consulta e gestisci gli oggetti', Icons.inventory_2_outlined, Color(0xFF3978C5), ['Nuovo oggetto · PR-01', 'Modifica oggetto · PR-02', 'Chiudi oggetto · PR-03', 'Visualizza scheda', 'Elenco oggetti disponibili', 'Storico oggetto', 'Importa oggetti', 'Esporta oggetti']),
