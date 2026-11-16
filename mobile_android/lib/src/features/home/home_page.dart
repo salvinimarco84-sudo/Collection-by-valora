@@ -18,7 +18,7 @@ const _blocks = <_MenuBlock>[
   _MenuBlock('CATALOGO', 'CATALOGO', 'Consulta e gestisci gli oggetti', Icons.inventory_2_outlined, Color(0xFF3978C5), ['Nuovo oggetto · PR-01', 'Modifica oggetto · PR-02', 'Chiudi oggetto · PR-03', 'Visualizza scheda', 'Elenco oggetti disponibili', 'Storico oggetto', 'Importa oggetti', 'Esporta oggetti']),
   _MenuBlock('WANTED LIST', 'WANTED LIST', 'Desideri, obiettivi, offerte e storico', Icons.bookmark_outline, Color(0xFFB8BEC6), ['Nuovo desiderio', 'Lista dei desideri', 'Obiettivi di acquisto', 'Acquisto Wanted List', 'Ricerca offerte', 'Storico Wanted List']),
   _MenuBlock('ACQUISTI', 'ACQUISTI', 'Gestione acquisti e allocazioni', Icons.shopping_cart_outlined, Color(0xFFC74444), ['Nuovo acquisto · PR-04', 'Modifica acquisto · PR-05', 'PR-15 · Preorder', 'Acquisti comparati', 'Report acquisti']),
-  _MenuBlock('VENDITE', 'VENDITE E INSERZIONI', 'Vendite e inserzioni', Icons.sell_outlined, Color(0xFF39875B), ['Nuova vendita · PR-06', 'Modifica vendita · PR-07', 'Chiudi vendita · PR-08', 'Annulla vendita · PR-09', 'Report vendite attive', 'Report vendite', 'Bozze inserzioni VALORA']),
+  _MenuBlock('VENDITE', 'VENDITE', 'Vendite', Icons.sell_outlined, Color(0xFF39875B), ['Nuova vendita · PR-06', 'Modifica vendita · PR-07', 'Chiudi vendita · PR-08', 'Annulla vendita · PR-09', 'Report vendite attive', 'Report vendite', 'Bozze inserzioni VALORA']),
   _MenuBlock('VALUTAZIONI', 'VALUTAZIONI', 'VALORA e valore della collezione', Icons.query_stats, Color(0xFF8556C7), ['PR-11 · Valutazione complessiva collezione', 'PR-13 · Ricerca offerta', 'PR-14 · Assistente VALORA']),
   _MenuBlock('REPORT', 'REPORT', 'Riepiloghi e risultati', Icons.analytics_outlined, Color(0xFFE17D35), ['Report per franchise / tema', 'Flussi di cassa', 'Report mattutino']),
   _MenuBlock('RICERCHE', 'RICERCHE', 'Ricerca oggetti e fonti', Icons.search, Color(0xFFD6A83F), ['PR-21 · Ricerca schede', 'PR-12 · Ricerca metadati in lotti', 'Registro fonti · Cataloghi e siti', 'Le mie piattaforme di vendita']),
@@ -31,7 +31,7 @@ String _menuText(BuildContext context, String key) {
     'CATALOGO': {'it':'CATALOGO','en':'CATALOG','fr':'CATALOGUE','de':'KATALOG','es':'CATÁLOGO','pt':'CATÁLOGO','zh':'目录','ja':'カタログ'},
     'WANTED LIST': {'it':'WANTED LIST','en':'WANTED LIST','fr':'LISTE DE SOUHAITS','de':'WUNSCHLISTE','es':'LISTA DE DESEOS','pt':'LISTA DE DESEJOS','zh':'愿望清单','ja':'ウィッシュリスト'},
     'ACQUISTI': {'it':'ACQUISTI','en':'PURCHASES','fr':'ACHATS','de':'EINKÄUFE','es':'COMPRAS','pt':'COMPRAS','zh':'购入','ja':'購入'},
-    'VENDITE E INSERZIONI': {'it':'VENDITE E INSERZIONI','en':'SALES & LISTINGS','fr':'VENTES ET ANNONCES','de':'VERKÄUFE & INSERATE','es':'VENTAS Y ANUNCIOS','pt':'VENDAS E ANÚNCIOS','zh':'销售与刊登','ja':'販売・出品'},
+    'VENDITE': {'it':'VENDITE','en':'SALES','fr':'VENTES','de':'VERKÄUFE','es':'VENTAS','pt':'VENDAS','zh':'销售','ja':'販売'},
     'VALUTAZIONI': {'it':'VALUTAZIONI','en':'VALUATIONS','fr':'ÉVALUATIONS','de':'BEWERTUNGEN','es':'VALORACIONES','pt':'AVALIAÇÕES','zh':'估值','ja':'評価'},
     'REPORT': {'it':'REPORT','en':'REPORTS','fr':'RAPPORTS','de':'BERICHTE','es':'INFORMES','pt':'RELATÓRIOS','zh':'报告','ja':'レポート'},
     'RICERCHE': {'it':'RICERCHE','en':'SEARCHES','fr':'RECHERCHES','de':'SUCHEN','es':'BÚSQUEDAS','pt':'PESQUISAS','zh':'搜索','ja':'検索'},
@@ -51,7 +51,7 @@ String _localizedMenuLabel(BuildContext context, String label) {
     'Consulta e gestisci gli oggetti': {'it':'Consulta e gestisci gli oggetti','en':'Browse and manage objects','fr':'Consulter et gérer les objets','de':'Objekte anzeigen und verwalten','es':'Consulta y gestiona objetos','pt':'Consultar e gerir objetos','zh':'查看和管理藏品','ja':'アイテムの閲覧と管理'},
     'Desideri, obiettivi, offerte e storico': {'it':'Desideri, obiettivi, offerte e storico','en':'Wishes, goals, offers and history','fr':'Souhaits, objectifs, offres et historique','de':'Wünsche, Ziele, Angebote und Verlauf','es':'Deseos, objetivos, ofertas e historial','pt':'Desejos, objetivos, ofertas e histórico','zh':'愿望、目标、报价与历史','ja':'希望、目標、オファー、履歴'},
     'Gestione acquisti e allocazioni': {'it':'Gestione acquisti e allocazioni','en':'Purchases and allocations','fr':'Achats et affectations','de':'Einkäufe und Zuordnungen','es':'Compras y asignaciones','pt':'Compras e alocações','zh':'购买与分配管理','ja':'購入と割り当て管理'},
-    'Vendite e inserzioni': {'it':'Vendite e inserzioni','en':'Sales and listings','fr':'Ventes et annonces','de':'Verkäufe und Inserate','es':'Ventas y anuncios','pt':'Vendas e anúncios','zh':'销售与刊登','ja':'販売と出品'},
+    'Vendite': {'it':'Vendite','en':'Sales','fr':'Ventes','de':'Verkäufe','es':'Ventas','pt':'Vendas','zh':'销售','ja':'販売'},
     'VALORA e valore della collezione': {'it':'VALORA e valore della collezione','en':'VALORA and collection value','fr':'VALORA et valeur de la collection','de':'VALORA und Sammlungswert','es':'VALORA y valor de la colección','pt':'VALORA e valor da coleção','zh':'VALORA 与收藏价值','ja':'VALORAとコレクション価値'},
     'Riepiloghi e risultati': {'it':'Riepiloghi e risultati','en':'Summaries and results','fr':'Synthèses et résultats','de':'Übersichten und Ergebnisse','es':'Resúmenes y resultados','pt':'Resumos e resultados','zh':'汇总与结果','ja':'概要と結果'},
     'Ricerca oggetti e fonti': {'it':'Ricerca oggetti e fonti','en':'Object and source search','fr':'Recherche d’objets et de sources','de':'Objekt- und Quellensuche','es':'Búsqueda de objetos y fuentes','pt':'Pesquisa de objetos e fontes','zh':'藏品与来源搜索','ja':'アイテムと情報源の検索'},
@@ -123,6 +123,7 @@ class _HomePageState extends State<HomePage> {
         leading: inSection ? IconButton(icon: const Icon(Icons.arrow_back), tooltip: _menuText(context, 'back'), onPressed: () => setState(() => _selectedBlock = null)) : null,
         title: Text(inSection ? _menuText(context, block.title) : authText(context, 'home')),
         actions: [
+          if (!inSection) IconButton(tooltip: appearance.listMode ? 'Griglia' : 'Elenco', onPressed: appearance.toggleLayout, icon: Icon(appearance.listMode ? Icons.grid_view_rounded : Icons.view_agenda_rounded)),
           IconButton(tooltip: appearanceText(context, 'appearance'), onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppearanceSettingsPage())), icon: const Icon(Icons.palette_outlined)),
           IconButton(tooltip: authText(context, 'logout'), onPressed: widget.repository.signOut, icon: const Icon(Icons.logout)),
         ],
@@ -144,22 +145,43 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMainMenu(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
-    children: [
-      Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(_menuText(context, 'chooseBlock'), textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w600))),
-      GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: _blocks.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1.22, crossAxisSpacing: 12, mainAxisSpacing: 12),
-        itemBuilder: (context, index) {
-          final item = _blocks[index];
-          return _MainMenuBlockCard(block: item, title: _menuText(context, item.title), onTap: () => setState(() => _selectedBlock = item.key));
-        },
-      ),
-    ],
-  );
+  Widget _buildMainMenu(BuildContext context) {
+    final appearance = ValoraAppearance.instance;
+    final header = Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Text(_menuText(context, 'chooseBlock'), textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
+    );
+    if (appearance.listMode) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
+        children: [
+          header,
+          ..._blocks.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _MainMenuBlockListCard(block: item, title: _menuText(context, item.title),
+              onTap: () => setState(() => _selectedBlock = item.key)),
+          )),
+        ],
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
+      children: [
+        header,
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _blocks.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, childAspectRatio: 1.12, crossAxisSpacing: 12, mainAxisSpacing: 12),
+          itemBuilder: (context, index) {
+            final item = _blocks[index];
+            return _MainMenuBlockCard(block: item, title: _menuText(context, item.title), onTap: () => setState(() => _selectedBlock = item.key));
+          },
+        ),
+      ],
+    );
+  }
 
   Widget _buildSectionMenu(BuildContext context, _MenuBlock block) => ListView(
     padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
@@ -318,4 +340,41 @@ class AppearanceSettingsPage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MainMenuBlockListCard extends StatelessWidget {
+  const _MainMenuBlockListCard({required this.block, required this.title, required this.onTap});
+  final _MenuBlock block;
+  final String title;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Material(
+    color: block.color.withValues(alpha: .17),
+    borderRadius: BorderRadius.circular(18),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 112),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: block.color.withValues(alpha: .95), width: 1.6)),
+        child: Row(children: [
+          Container(width: 58, height: 58,
+            decoration: BoxDecoration(color: block.color.withValues(alpha: .18), borderRadius: BorderRadius.circular(14)),
+            child: Icon(block.icon, color: block.color, size: 30)),
+          const SizedBox(width: 16),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+            Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: block.key == 'WANTED LIST' ? const Color(0xFFE0E4E8) : block.color, fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 7),
+            Text(_localizedMenuLabel(context, block.description), maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          ])),
+          const SizedBox(width: 8),
+          Icon(Icons.chevron_right, color: block.color, size: 30),
+        ]),
+      ),
+    ),
+  );
 }
