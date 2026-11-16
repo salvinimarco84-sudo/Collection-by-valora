@@ -1,4 +1,5 @@
 name: VALORA Android TEST2
+# Rebuild requested after TEST2.0 publishable key secret was configured.
 
 on:
   push:
