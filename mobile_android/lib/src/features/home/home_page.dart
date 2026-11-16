@@ -60,8 +60,10 @@ class AppearanceSettingsPage extends StatelessWidget {
       body: ListenableBuilder(
         listenable: appearance,
         builder: (context, _) {
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
             children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 14),
@@ -139,6 +141,7 @@ class AppearanceSettingsPage extends StatelessWidget {
                 },
               ),
             ],
+            ),
           );
         },
       ),
