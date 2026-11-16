@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'auth_copy.dart';
 import 'auth_repository.dart';
 import 'password_update_page.dart';
 import 'sign_in_page.dart';
