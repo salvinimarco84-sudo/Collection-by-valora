@@ -13,7 +13,7 @@ class HomePage extends StatelessWidget {
    IconButton(tooltip:authText(context,'logout'),onPressed:repository.signOut,icon:const Icon(Icons.logout)),
   ]),
   body:Stack(fit:StackFit.expand,children:[
-   CustomPaint(painter:ValoraThemeBackdropPainter(preset:preset)),
+   Image.asset(themeBackgroundAsset(preset.id),fit:BoxFit.cover,width:double.infinity,height:double.infinity),
    Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Image.asset('valora_logo.png',width:360,height:360,fit:BoxFit.contain,semanticLabel:'COLLECTION by VALORA'))),
   ]));
  }
@@ -29,7 +29,7 @@ class AppearanceSettingsPage extends StatelessWidget {
      GridView.builder(shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),gridDelegate:const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount:2,childAspectRatio:1.32,crossAxisSpacing:12,mainAxisSpacing:12),itemCount:ValoraAppearance.presets.length,itemBuilder:(context,index){
       final p=ValoraAppearance.presets[index];final selected=p.id==appearance.selectedThemeId;
       return InkWell(borderRadius:BorderRadius.circular(14),onTap:()=>appearance.setTheme(p.id),child:Container(decoration:BoxDecoration(borderRadius:BorderRadius.circular(14),border:Border.all(color:selected?p.accent:Theme.of(context).dividerColor,width:selected?3:1)),clipBehavior:Clip.antiAlias,child:Stack(fit:StackFit.expand,children:[
-       CustomPaint(painter:ValoraThemeBackdropPainter(preset:p)),
+       Image.asset(themeBackgroundAsset(p.id),fit:BoxFit.cover,width:double.infinity,height:double.infinity),
        Align(alignment:Alignment.bottomCenter,child:Container(width:double.infinity,color:p.card.withValues(alpha:.92),padding:const EdgeInsets.symmetric(vertical:10,horizontal:8),child:Text(p.name,textAlign:TextAlign.center,style:TextStyle(color:p.text,fontWeight:FontWeight.w600)))),
        if(selected)Positioned(right:8,top:8,child:Icon(Icons.check_circle,color:p.accent)),
       ])));
