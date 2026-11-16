@@ -16,6 +16,8 @@ class _PasswordUpdatePageState extends State<PasswordUpdatePage> {
   final _password = TextEditingController();
   final _confirm = TextEditingController();
   bool _busy = false;
+  bool _showPassword = false;
+  bool _showConfirm = false;
   String? _message;
 
   @override
@@ -31,9 +33,12 @@ class _PasswordUpdatePageState extends State<PasswordUpdatePage> {
         !RegExp(r'[a-z]').hasMatch(value) ||
         !RegExp(r'[A-Z]').hasMatch(value) ||
         !RegExp(r'[0-9]').hasMatch(value) ||
-        !RegExp(r'[^A-Za-z0-9]').hasMatch(value) ||
-        value != _confirm.text) {
-      setState(() => _message = authText(context, 'error'));
+        !RegExp(r'[!@#$%^&*()_+\\-=\\[\\]{};:"|<>,.?/~`\\\\]').hasMatch(value)) {
+      setState(() => _message = authText(context, 'passwordRequirements'));
+      return;
+    }
+    if (value != _confirm.text) {
+      setState(() => _message = authText(context, 'passwordMismatch'));
       return;
     }
     setState(() { _busy = true; _message = null; });
@@ -43,8 +48,12 @@ class _PasswordUpdatePageState extends State<PasswordUpdatePage> {
         setState(() => _message = authText(context, 'passwordUpdated'));
         widget.onCompleted();
       }
-    } on AuthException {
-      if (mounted) setState(() => _message = authText(context, 'error'));
+    } on AuthException catch (error) {
+      if (mounted) {
+        final key = error.code == 'same_password' ? 'passwordSame' :
+            (error.statusCode == '422' ? 'passwordRequirements' : 'error');
+        setState(() => _message = authText(context, key));
+      }
     } catch (_) {
       if (mounted) setState(() => _message = authText(context, 'error'));
     } finally {
@@ -58,9 +67,31 @@ class _PasswordUpdatePageState extends State<PasswordUpdatePage> {
     body: Center(child: ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 440),
       child: ListView(shrinkWrap: true, padding: const EdgeInsets.all(24), children: [
-        TextField(controller: _password, obscureText: true, decoration: InputDecoration(labelText: authText(context, 'newPassword'))),
+        TextField(
+          controller: _password,
+          obscureText: !_showPassword,
+          decoration: InputDecoration(
+            labelText: authText(context, 'newPassword'),
+            suffixIcon: IconButton(
+              tooltip: authText(context, _showPassword ? 'hidePassword' : 'showPassword'),
+              onPressed: () => setState(() => _showPassword = !_showPassword),
+              icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+            ),
+          ),
+        ),
         const SizedBox(height: 16),
-        TextField(controller: _confirm, obscureText: true, decoration: InputDecoration(labelText: authText(context, 'password'))),
+        TextField(
+          controller: _confirm,
+          obscureText: !_showConfirm,
+          decoration: InputDecoration(
+            labelText: authText(context, 'password'),
+            suffixIcon: IconButton(
+              tooltip: authText(context, _showConfirm ? 'hidePassword' : 'showPassword'),
+              onPressed: () => setState(() => _showConfirm = !_showConfirm),
+              icon: Icon(_showConfirm ? Icons.visibility_off : Icons.visibility),
+            ),
+          ),
+        ),
         const SizedBox(height: 24),
         FilledButton(onPressed: _busy ? null : _save, child: Text(authText(context, 'savePassword'))),
         if (_message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_message!)),
