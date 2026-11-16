@@ -33,7 +33,11 @@ class _PasswordUpdatePageState extends State<PasswordUpdatePage> {
         !RegExp(r'[a-z]').hasMatch(value) ||
         !RegExp(r'[A-Z]').hasMatch(value) ||
         !RegExp(r'[0-9]').hasMatch(value) ||
-        !RegExp(r'[!@#$%^&*()_+\\-=\\[\\]{};:"|<>,.?/~`\\\\]').hasMatch(value)) {
+        !value.codeUnits.any((unit) =>
+            (unit >= 33 && unit <= 47) ||
+            (unit >= 58 && unit <= 64) ||
+            (unit >= 91 && unit <= 96) ||
+            (unit >= 123 && unit <= 126))) {
       setState(() => _message = authText(context, 'passwordRequirements'));
       return;
     }
