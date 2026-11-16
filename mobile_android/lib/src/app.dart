@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'features/auth/auth_copy.dart';
 import 'features/auth/auth_gate.dart';
@@ -10,6 +11,11 @@ class ValoraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
     supportedLocales: authLocales,
     localeResolutionCallback: (locale, supported) {
       if (locale == null) return const Locale('it');
