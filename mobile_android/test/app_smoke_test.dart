@@ -39,6 +39,7 @@ void main() {
 
   testWidgets('signup screen always exposes confirmation resend', (tester) async {
     final client = SupabaseClient('https://example.supabase.co', 'test-anon-key');
+    client.auth.stopAutoRefresh();
     await tester.pumpWidget(MaterialApp(
       home: SignInPage(repository: AuthRepository(client)),
     ));
