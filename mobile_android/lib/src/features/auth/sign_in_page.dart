@@ -17,6 +17,7 @@ class _SignInPageState extends State<SignInPage> {
   bool _register = false;
   bool _busy = false;
   bool _accountMayAlreadyExist = false;
+  bool _showPassword = false;
   String? _message;
 
   @override
@@ -153,8 +154,15 @@ class _SignInPageState extends State<SignInPage> {
         const SizedBox(height: 16),
         TextField(
           controller: _password,
-          obscureText: true,
-          decoration: InputDecoration(labelText: authText(context, 'password')),
+          obscureText: !_showPassword,
+          decoration: InputDecoration(
+            labelText: authText(context, 'password'),
+            suffixIcon: IconButton(
+              tooltip: authText(context, _showPassword ? 'hidePassword' : 'showPassword'),
+              onPressed: () => setState(() => _showPassword = !_showPassword),
+              icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+            ),
+          ),
         ),
         const SizedBox(height: 24),
         FilledButton(
