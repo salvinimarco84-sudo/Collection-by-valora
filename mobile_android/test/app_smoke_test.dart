@@ -40,6 +40,24 @@ void main() {
     );
   });
 
+  test('signup recovery messages are present in all eight languages', () {
+    const requiredKeys = [
+      'invalidEmail',
+      'passwordRequirements',
+      'accountMayExist',
+      'resendConfirmation',
+      'confirmationResent',
+      'rateLimited',
+    ];
+    for (final locale in authLocales) {
+      final copy = authCopy[locale.languageCode]!;
+      for (final key in requiredKeys) {
+        expect(copy[key], isNotNull, reason: '${locale.languageCode}: $key');
+        expect(copy[key], isNotEmpty, reason: '${locale.languageCode}: $key');
+      }
+    }
+  });
+
   test('the VALORA brand logo is bundled as an application asset', () async {
     final logo = await rootBundle.load('valora_logo.png');
     expect(logo.lengthInBytes, greaterThan(0));
