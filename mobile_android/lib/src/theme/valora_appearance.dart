@@ -37,11 +37,19 @@ class ValoraAppearance extends ChangeNotifier {
     ValoraThemePreset('pastel','Pastel',Color(0xFFFFF0F5),Colors.white,Color(0xFF19B7C9),Color(0xFF293344),true),
   ];
   String selectedThemeId='black_gold';
+  bool listMode=false;
   ValoraThemePreset get selected => presets.firstWhere((p)=>p.id==selectedThemeId,orElse:()=>presets.first);
   Future<void> load() async {
     final prefs=await SharedPreferences.getInstance();
     final id=prefs.getString('valora_selected_theme')??'black_gold';
+    listMode=prefs.getBool('valora_menu_list_mode')??false;
     selectedThemeId=presets.any((p)=>p.id==id)?id:'black_gold';
+    notifyListeners();
+  }
+  Future<void> toggleLayout() async {
+    listMode=!listMode;
+    final prefs=await SharedPreferences.getInstance();
+    await prefs.setBool('valora_menu_list_mode',listMode);
     notifyListeners();
   }
   Future<void> setTheme(String id) async {
