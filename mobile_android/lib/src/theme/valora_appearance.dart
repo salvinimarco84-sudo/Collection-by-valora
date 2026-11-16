@@ -52,24 +52,34 @@ class ValoraThemeBackdropPainter extends CustomPainter {
     switch(preset.id) {
       case 'emerald':
         for(int r=0;r<12;r++){final y=size.height*r/11;final path=Path()..moveTo(0,y);for(double x=0;x<size.width;x+=54){path.lineTo(x+27,y);path.lineTo(x+27,y+(r.isEven?13:-13));path.lineTo(x+54,y+(r.isEven?13:-13));}canvas.drawPath(path,line);}
+        break;
       case 'dark_red':
         for(int i=0;i<34;i++){final x=(i*79.0)%size.width,y=(i*113.0)%size.height;final path=Path()..moveTo(x,y);for(int n=1;n<6;n++){path.lineTo(x+n*8+(i%3)*4,y+n*15);}canvas.drawPath(path,line);}
+        break;
       case 'black_gold':
         for(int i=0;i<18;i++){final path=Path()..moveTo(i*size.width/17,0);for(double y=0;y<size.height;y+=35){path.lineTo((i*size.width/17+y*.31)%size.width,y);}canvas.drawPath(path,line);}
+        break;
       case 'comic':
         for(double x=0;x<size.width;x+=13){for(double y=0;y<size.height;y+=13){canvas.drawCircle(Offset(x,y),1.5,fill);}}
+        break;
       case 'industrial':
         for(double y=0;y<size.height;y+=7){canvas.drawLine(Offset(0,y),Offset(size.width,y),line);}
+        break;
       case 'midnight_blue':
         for(int i=0;i<90;i++){final p=Offset((i*67.0)%size.width,(i*131.0)%size.height);canvas.drawCircle(p,(i%3+1).toDouble(),fill);}
+        break;
       case 'royal_purple':
         for(int i=0;i<25;i++){final x=(i*73.0)%size.width,y=(i*97.0)%size.height;final path=Path()..moveTo(x,y-17)..lineTo(x+9,y)..lineTo(x,y+17)..lineTo(x-9,y)..close();canvas.drawPath(path,line);}
+        break;
       case 'silver_light':
         for(int i=0;i<17;i++){final p=Path()..moveTo(0,i*55.0)..cubicTo(size.width*.25,i*55+25,size.width*.7,i*55-20,size.width,i*55+8);canvas.drawPath(p,line);}
+        break;
       case 'minimal_zen':
         for(int i=0;i<12;i++){canvas.drawOval(Rect.fromCenter(center:Offset(size.width*.78,size.height*.18+i*19),width:size.width*.7+i*8,height:26+i*3),line);}
+        break;
       case 'pastel':
         final rnd=math.Random(9);for(int i=0;i<18;i++){canvas.drawCircle(Offset(rnd.nextDouble()*size.width,rnd.nextDouble()*size.height),18+rnd.nextDouble()*45,fill);}
+        break;
     }
   }
   @override bool shouldRepaint(covariant ValoraThemeBackdropPainter old)=>old.preset.id!=preset.id;
