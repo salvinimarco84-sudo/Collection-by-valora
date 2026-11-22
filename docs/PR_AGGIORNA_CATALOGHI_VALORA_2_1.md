@@ -56,3 +56,17 @@ Supabase Cron è configurato con un controllo orario UTC; il wrapper verifica il
 La prima fase non effettua ancora crawling né importazione automatica. Le fonti candidate sono inattive e non verificate. Occorre implementare adattatori per fonte, testare paginazione/rate limit/termini d'uso, normalizzazione e chiavi d'identità, quindi un validatore di applicazione specifico per ogni master. Il passaggio staging → master deve essere abilitato solo dopo test di conflitto, idempotenza, audit e rollback.
 
 Quattro categorie restano in attesa del master catalografico condiviso: HOT WHEELS, MODEL KIT, MODELLISMO STATICO, STATUE E FIGURE DA COLLEZIONE. PLAYMOBIL sarà aggiunto successivamente.
+
+
+## Collaudo TEST2 del 22/11/2026
+
+- Ultima esecuzione manuale: `c5b86ae3-d7ff-4f52-986d-12cb1c30f1d5`.
+- Esito: `COMPLETATA_CON_BLOCCHI`; 12 cataloghi controllati, 8 mapping ispezionabili, 4 master condivisi mancanti.
+- Conteggi letti: LEGO 1.906; Transformers 3.301; Saint Seiya 601; Barbie 3.204; Funko Pop 7.336; Action Figures 166; G.I. Joe 3.469; Soul of Chogokin 166 (sottoinsieme filtrato). I conteggi sono fotografia dell'esecuzione e possono variare.
+- Fonti candidate registrate: 22; fonti attive: 0; tutte richiedono validazione.
+- Cron job attivo: ID 2, esecuzione oraria con wrapper che applica il controllo solo alle 03:00 Europe/Rome del giorno 1.
+- Verificato il filtro ricorsivo immagini: chiavi `immagine` e `photo_url` vengono rimosse dal payload.
+
+## Sicurezza e comportamento
+
+La proposta richiede una fonte attiva e associata al catalogo. L'approvazione amministrativa genera audit per campo ma non aggiorna il master: il validatore specifico per catalogo e il controllo di concorrenza devono essere implementati e testati prima di consentire scritture.
