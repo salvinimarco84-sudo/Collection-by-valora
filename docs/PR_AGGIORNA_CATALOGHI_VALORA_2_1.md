@@ -5,6 +5,7 @@
 ## Perimetro iniziale
 
 1. LEGO
+   - Sottocatalogo LEGO Minifigure: collezioni ufficiali, personaggi e relazione collezione-personaggio.
 2. TRANSFORMERS
 3. SAINT SEIYA
 4. BARBIE
@@ -18,6 +19,19 @@
 12. SOUL OF CHOGOKIN
 
 PLAYMOBIL resta escluso fino alla creazione del suo master. SOUL OF CHOGOKIN è trattato come sotto-catalogo di ACTION FIGURES, non come categoria VALORA separata.
+
+## Sottocatalogo LEGO Minifigure
+
+Il controllo mensile comprende congiuntamente i tre master catalografici:
+- `master_collezioni_minifigure`: tutte le collezioni ufficiali LEGO di minifigure pubblicate fino alla data del controllo, incluse serie numerate, collezioni licenziate e speciali.
+- `master_minifigure_catalogo`: tutti i personaggi appartenenti alle collezioni ufficiali catalogate.
+- `master_collezioni_minifigure_elementi`: relazione tra collezione e personaggio, con posizione e identificativi verificati.
+
+Il controllo deve ricercare nuove collezioni pubblicate dopo l'ultima verifica e colmare le lacune storiche, senza limitarsi alle collezioni possedute dall'utente. La completezza del catalogo generale è indipendente dal possesso: la PR non deve modificare checklist, quantità o stato di possesso degli utenti.
+
+I codici ufficiali della fonte devono essere conservati separatamente dagli eventuali codici interni VALORA. L'ordine dei personaggi e il numero previsto per collezione richiedono fonti attendibili; in caso di conflitto o fonte non verificabile, la proposta resta in staging. Nessuna immagine viene acquisita o aggiornata.
+
+I tre mapping sono registrati in `pr_cataloghi_configurazione` con frequenza `MENSILE`, modalità `SOLO_CONTROLLO` e fonti `DA_CONFIGURARE` fino alla loro validazione. L'inclusione nella procedura non equivale quindi ad autorizzazione a scrivere automaticamente nei master.
 
 ## Regole di integrità
 
@@ -57,6 +71,15 @@ La prima fase non effettua ancora crawling né importazione automatica. Le fonti
 
 Quattro categorie restano in attesa del master catalografico condiviso: HOT WHEELS, MODEL KIT, MODELLISMO STATICO, STATUE E FIGURE DA COLLEZIONE. PLAYMOBIL sarà aggiunto successivamente.
 
+
+## Integrazione LEGO Minifigure del 23/11/2026
+
+Aggiunti alla configurazione mensile i tre mapping:
+- `LEGO_MINIFIGURE_COLLEZIONI` → `master_collezioni_minifigure`.
+- `LEGO_MINIFIGURE_PERSONAGGI` → `master_minifigure_catalogo`.
+- `LEGO_MINIFIGURE_ELEMENTI` → `master_collezioni_minifigure_elementi`.
+
+I mapping sono attivi per il controllo mensile, ma restano in modalità non distruttiva `SOLO_CONTROLLO`; le fonti sono ancora da configurare e validare. Non è stata attivata alcuna importazione automatica o modifica dei dati catalografici/di possesso.
 
 ## Collaudo TEST2 del 22/11/2026
 
