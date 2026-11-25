@@ -28,7 +28,7 @@ Procedure:
 - `pr_valida_progettazione_nuova_categoria(p_id_progettazione uuid, p_esito text, p_motivazione text)`
 - `pr_attiva_nuova_categoria_dinamica(p_id_progettazione uuid)`
 
-Le procedure PR-05 e PR-06 (`pr05_crea_oggetti`, `pr06_modifica_oggetti`, `pr06_modifica_catalogo_dinamico`) contengono già un percorso dinamico. Le categorie codificate 01–09 e 11–21 mantengono la mappatura dei Master esistenti; il codice 10 resta escluso. Le categorie ulteriori vengono risolte attraverso il registro dinamico.
+Le procedure PR-05 e PR-06 (`pr05_crea_oggetti`, `pr06_modifica_oggetti`, `pr06_modifica_catalogo_dinamico`) contengono già un percorso dinamico. Il trigger `valora_crea_record_catalogo_dinamico_pr05` crea automaticamente il record in `master_catalogo_dinamico` e valorizza `id_record_catalogo` quando PR-05 inserisce la proprietà dinamica. Le categorie codificate 01–09 e 11–21 mantengono la mappatura dei Master esistenti; il codice 10 resta escluso. Le categorie ulteriori vengono risolte attraverso il registro dinamico.
 
 ## 3. Regole funzionali verificate
 
@@ -79,11 +79,13 @@ Eseguiti flussi sintetici in transazione, con claim JWT dell'amministratore impo
 8. verifica oggetto ancora presente;
 9. modifica dell'oggetto dopo il rifiuto;
 10. verifica delle notifiche di esito;
-11. richiesta duplicata con differenze di maiuscole/minuscole e spazi: seconda richiesta respinta.
+11. richiesta duplicata con differenze di maiuscole/minuscole e spazi: seconda richiesta respinta;
+12. creazione automatica del record Master Catalogo da PR-05 e collegamento a `id_record_catalogo`;
+13. modifica Master Catalogo con PR-06 prima e dopo il rifiuto, con verifica di conservazione.
 
 I blocchi PL/pgSQL hanno completato senza eccezioni e con controlli di asserzione superati. Ogni collaudo è terminato con `ROLLBACK`.
 
-Verifica successiva: zero record di test persistenti in richieste, categorie, progettazioni e oggetti. Il controllo duplicati normalizzato ha superato il test dedicato.
+Verifica successiva: zero record di test persistenti in richieste, categorie, progettazioni e oggetti. Il controllo duplicati normalizzato ha superato il test dedicato. Anche il trigger di creazione Master Catalogo e la modifica del record catalogo prima/dopo il rifiuto hanno superato il collaudo transazionale.
 
 ## 6. Sicurezza e limiti residui
 
