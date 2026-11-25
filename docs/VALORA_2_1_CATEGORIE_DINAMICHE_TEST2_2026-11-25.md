@@ -90,7 +90,8 @@ Eseguiti flussi sintetici in transazione, con claim JWT dell'amministratore impo
 13. modifica Master Catalogo con PR-06 prima e dopo il rifiuto, con verifica di conservazione;
 14. richiesta di integrazione, nuova versione blueprint e successiva approvazione;
 15. test RLS con identità autenticata simulata non proprietaria: dati provvisori nascosti, dati attivi condivisi;
-16. test gate amministrativo: identità autenticata priva di ruolo amministrativo respinta.
+16. test gate amministrativo: identità autenticata priva di ruolo amministrativo respinta;
+17. revoca EXECUTE della RPC di attivazione diretta e verifica che il flusso di approvazione continui a completarsi.
 
 I blocchi PL/pgSQL hanno completato senza eccezioni e con controlli di asserzione superati. Ogni collaudo è terminato con `ROLLBACK`.
 
@@ -105,8 +106,12 @@ Verifica successiva: zero record di test persistenti in richieste, categorie, pr
 
 ## 7. Migration versionata
 
-La migration è registrata in Supabase TEST2 con versione `20261125085329`, nome `valora_dynamic_category_hardening_and_integration_state`, e file versionato nel repository Android: `supabase/migrations/20261125085329_valora_dynamic_category_hardening_and_integration_state.sql`.
+La migration principale è registrata in Supabase TEST2 con versione `20261125085329`, nome `valora_dynamic_category_hardening_and_integration_state`, e file versionato nel repository Android: `supabase/migrations/20261125085329_valora_dynamic_category_hardening_and_integration_state.sql`. Una seconda migration `20261125085620_valora_revoke_direct_dynamic_category_activation_rpc` revoca EXECUTE diretto della funzione di attivazione a PUBLIC, anon e authenticated. L'approvazione continua a funzionare perché l'attivazione è invocata internamente dalla procedura amministrativa di validazione.
 
-## 8. Vincolo operativo
+## 8. Ultimo controllo Advisor
+
+Dopo le correzioni l'Advisor segnala ancora avvisi generali sul progetto: 12 tabelle con RLS senza policy in altri ambiti, 26 funzioni SECURITY DEFINER eseguibili da authenticated e protezione password compromesse non abilitata. Non sono state applicate revoche o modifiche globali: le RPC legittime restano disponibili e le procedure amministrative verificano il ruolo. La funzione di attivazione diretta delle categorie dinamiche è stata esclusa dall'accesso client.
+
+## 9. Vincolo operativo
 
 Continuare esclusivamente su TEST2. Non applicare queste modifiche a produzione. Prima di dichiarare concluso il rilascio applicativo, allineare il client all'ambiente TEST2, effettuare login aggiornato e completare il test end-to-end con un utente ordinario e con l'amministratore.
