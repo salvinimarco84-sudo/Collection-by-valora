@@ -1,0 +1,90 @@
+# VALORA 2.1 — Categorie dinamiche: adeguamento e collaudo TEST2
+
+Data: 25 novembre 2026  
+Ambiente autorizzato: Supabase **COLLECTION by VALORA TEST2.0**  
+Project ref: `hqiisivoistpejvilbeu`  
+Produzione: **non consultata né modificata**.
+
+## 1. Stato di sicurezza iniziale verificato
+
+- Account amministratore presente in `public.master_utenti`: `AMMINISTRATORE`, `ATTIVO`.
+- `private.pr_bootstrap_primo_amministratore()` presente e protetta: nessun privilegio EXECUTE a `authenticated` o `anon`.
+- Le procedure operative pubbliche verificano `auth.uid()`; le procedure di progettazione/validazione/attivazione richiedono un account `PROPRIETARIO` o `AMMINISTRATORE` con stato `ATTIVO`.
+- Le funzioni privilegiate usano `SET search_path TO ''` e riferimenti schema-qualificati.
+- Le procedure necessarie al client non sono state revocate a `authenticated`; `anon` non può eseguirle.
+
+## 2. Componenti presenti
+
+Tabelle:
+- `master_richieste_nuove_categorie`
+- `master_progettazione_nuove_categorie`
+- `master_registro_categorie_dinamiche`
+- `master_catalogo_dinamico`
+- `master_proprieta_dinamiche`
+
+Procedure:
+- `pr_richiedi_nuova_categoria(p_richiesta jsonb)`
+- `pr_salva_progettazione_nuova_categoria(p_id_richiesta uuid, p_progetto jsonb)`
+- `pr_valida_progettazione_nuova_categoria(p_id_progettazione uuid, p_esito text, p_motivazione text)`
+- `pr_attiva_nuova_categoria_dinamica(p_id_progettazione uuid)`
+
+Le procedure PR-05 e PR-06 (`pr05_crea_oggetti`, `pr06_modifica_oggetti`, `pr06_modifica_catalogo_dinamico`) contengono già un percorso dinamico. Le categorie codificate 01–09 e 11–21 mantengono la mappatura dei Master esistenti; il codice 10 resta escluso. Le categorie ulteriori vengono risolte attraverso il registro dinamico.
+
+## 3. Regole funzionali verificate
+
+- La richiesta crea una categoria `PROVVISORIA`, privata del richiedente, con struttura iniziale ricavata dal campione.
+- La progettazione definisce separatamente schema Master Catalogo, schema Master Proprietà e regole di validazione.
+- L'approvazione ufficializza la categoria esistente, la rende `ATTIVA` e condivisa, senza crearne una seconda.
+- Il rifiuto porta la categoria a `SOSPESA` e il registro a `DEPRECATA`; non cancella gli oggetti già creati.
+- L'integrazione richiesta mantiene la categoria privata e utilizzabile dal richiedente.
+- I trigger `trg_valora_notifica_nuova_categoria` e `trg_valora_notifica_esito_categoria` sono presenti sulla tabella delle richieste.
+
+## 4. Correzioni applicate direttamente su TEST2
+
+### 4.1 Visibilità dopo il rifiuto
+
+Aggiornate le policy SELECT per:
+- `master_categorie`: il proprietario può leggere la propria categoria `SOSPESA`;
+- `master_registro_categorie_dinamiche`: il proprietario può leggere il proprio registro `DEPRECATA`;
+- `master_catalogo_dinamico`: il proprietario può leggere i record associati a categorie `DEPRECATA`.
+
+Le categorie `ATTIVE` restano condivise. Le categorie `PROVVISORIE` e `DEPRECATE/SOSPESE` restano visibili al proprietario e agli amministratori autorizzati secondo le policy.
+
+### 4.2 Risposta coerente all'approvazione
+
+Corretta `pr_valida_progettazione_nuova_categoria`: dopo la chiamata alla procedura di attivazione, il JSON restituisce:
+- `stato_richiesta = ATTIVATA`;
+- `categoria_attivata = true`;
+- messaggio che conferma l'ufficializzazione e la condivisione.
+
+Per il rifiuto restituisce `oggetti_esistenti_conservati = true` e conferma la conservazione e l'accessibilità degli oggetti del richiedente.
+
+## 5. Collaudo transazionale
+
+Eseguiti flussi sintetici in transazione, con claim JWT dell'amministratore impostato nella sessione SQL:
+
+1. richiesta nuova categoria;
+2. salvataggio blueprint;
+3. creazione oggetto con PR-05;
+4. modifica oggetto con PR-06;
+5. approvazione e verifica dello stato `ATTIVA`;
+6. secondo flusso con creazione oggetto;
+7. rifiuto con motivazione;
+8. verifica oggetto ancora presente;
+9. modifica dell'oggetto dopo il rifiuto;
+10. verifica delle notifiche di esito.
+
+I blocchi PL/pgSQL hanno completato senza eccezioni e con controlli di asserzione superati. Ogni collaudo è terminato con `ROLLBACK`.
+
+Verifica successiva: zero record di test persistenti in richieste, categorie, progettazioni e oggetti.
+
+## 6. Sicurezza e limiti residui
+
+- Le RPC dinamiche rivolte agli utenti mantengono EXECUTE per `authenticated` e negano `anon`; le azioni amministrative verificano il ruolo nel database. Le segnalazioni Advisor sulle funzioni SECURITY DEFINER richiedono revisione puntuale, non una revoca indiscriminata che interromperebbe le RPC legittime.
+- Advisor segnala inoltre 12 tabelle con RLS senza policy in altri ambiti/schema. Non sono state modificate perché fuori dal perimetro di questo collaudo.
+- Il collaudo SQL ha usato la sessione amministrativa esistente. Non è stato creato o modificato alcun altro account. Resta da eseguire un test applicativo autenticato con un account utente ordinario per certificare la visibilità owner-only e l'assenza di visibilità per gli altri utenti.
+- Il README del repository Flutter/SQL indica ancora il progetto Supabase TEST `eeiekkflpnkummxtvljy` come endpoint client. Questo lavoro è stato eseguito solo su TEST2 `hqiisivoistpejvilbeu`; il collegamento dell'applicazione a TEST2 e il collaudo HTTP/Flutter non sono inclusi in questa revisione.
+
+## 7. Vincolo operativo
+
+Continuare esclusivamente su TEST2. Non applicare queste modifiche a produzione. Prima di dichiarare concluso il rilascio applicativo, allineare il client all'ambiente TEST2, effettuare login aggiornato e completare il test end-to-end con un utente ordinario e con l'amministratore.
