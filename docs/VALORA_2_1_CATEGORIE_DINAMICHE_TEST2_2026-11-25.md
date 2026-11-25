@@ -83,7 +83,7 @@ Verifica successiva: zero record di test persistenti in richieste, categorie, pr
 - Le RPC dinamiche rivolte agli utenti mantengono EXECUTE per `authenticated` e negano `anon`; le azioni amministrative verificano il ruolo nel database. Le segnalazioni Advisor sulle funzioni SECURITY DEFINER richiedono revisione puntuale, non una revoca indiscriminata che interromperebbe le RPC legittime.
 - Advisor segnala inoltre 12 tabelle con RLS senza policy in altri ambiti/schema. Non sono state modificate perché fuori dal perimetro di questo collaudo.
 - Il collaudo SQL ha usato la sessione amministrativa esistente. Non è stato creato o modificato alcun altro account. Resta da eseguire un test applicativo autenticato con un account utente ordinario per certificare la visibilità owner-only e l'assenza di visibilità per gli altri utenti.
-- Il README del repository Flutter/SQL indica ancora il progetto Supabase TEST `eeiekkflpnkummxtvljy` come endpoint client. Questo lavoro è stato eseguito solo su TEST2 `hqiisivoistpejvilbeu`; il collegamento dell'applicazione a TEST2 e il collaudo HTTP/Flutter non sono inclusi in questa revisione.
+- Il repository Android corrente `salvinimarco84-sudo/Collection-by-valora-flutter` documenta TEST2 (`hqiisivoistpejvilbeu`) tramite `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` passate con `--dart-define`; `lib/main.dart` legge entrambe con `String.fromEnvironment`, senza endpoint hardcoded. Il vecchio repository combinato `Collection-by-valora` contiene invece un README storico che cita il progetto TEST precedente e non va usato come riferimento per il nuovo client Android. La build/run effettiva con la publishable key TEST2 e il collaudo HTTP/Flutter non sono inclusi in questa revisione.
 
 ## 7. Vincolo operativo
 
