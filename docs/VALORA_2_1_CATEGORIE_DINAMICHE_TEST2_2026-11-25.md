@@ -59,11 +59,17 @@ Corretta `pr_valida_progettazione_nuova_categoria`: dopo la chiamata alla proced
 
 Per il rifiuto restituisce `oggetti_esistenti_conservati = true` e conferma la conservazione e l'accessibilità degli oggetti del richiedente.
 
+Per `INTEGRAZIONE_RICHIESTA`, il vincolo CHECK del blueprint consente soltanto `BOZZA`, `IN_VALIDAZIONE`, `APPROVATA`, `RIFIUTATA`, `SUPERATA`. La procedura ora riporta quindi il blueprint a `BOZZA` modificabile, mentre la richiesta assume lo stato `INTEGRAZIONE_RICHIESTA`. La nuova versione può essere salvata e sottoposta nuovamente a validazione.
+
 ### 4.3 Protezione dai duplicati
 
 - Creato l'indice univoco `master_categorie_descrizione_normalizzata_key` su `lower(btrim(descrizione))`, dopo aver verificato che non esistessero duplicati normalizzati.
 - Spostato il lock transazionale `valora_dynamic_category_code_sequence` prima del controllo duplicati, così il controllo del nome e l'assegnazione del codice avvengono in una sezione serializzata.
 - La verifica intercetta differenze di maiuscole/minuscole e spazi iniziali/finali, oltre alla protezione dell'indice univoco.
+
+### 4.4 Stato integrazione e ripresentazione
+
+Collaudato il ciclo completo: richiesta di integrazione, blueprint riportato a `BOZZA`, salvataggio di una nuova versione e successiva approvazione con categoria `ATTIVA` e richiesta `ATTIVATA`.
 
 ## 5. Collaudo transazionale
 
@@ -81,11 +87,14 @@ Eseguiti flussi sintetici in transazione, con claim JWT dell'amministratore impo
 10. verifica delle notifiche di esito;
 11. richiesta duplicata con differenze di maiuscole/minuscole e spazi: seconda richiesta respinta;
 12. creazione automatica del record Master Catalogo da PR-05 e collegamento a `id_record_catalogo`;
-13. modifica Master Catalogo con PR-06 prima e dopo il rifiuto, con verifica di conservazione.
+13. modifica Master Catalogo con PR-06 prima e dopo il rifiuto, con verifica di conservazione;
+14. richiesta di integrazione, nuova versione blueprint e successiva approvazione;
+15. test RLS con identità autenticata simulata non proprietaria: dati provvisori nascosti, dati attivi condivisi;
+16. test gate amministrativo: identità autenticata priva di ruolo amministrativo respinta.
 
 I blocchi PL/pgSQL hanno completato senza eccezioni e con controlli di asserzione superati. Ogni collaudo è terminato con `ROLLBACK`.
 
-Verifica successiva: zero record di test persistenti in richieste, categorie, progettazioni e oggetti. Il controllo duplicati normalizzato ha superato il test dedicato. Anche il trigger di creazione Master Catalogo e la modifica del record catalogo prima/dopo il rifiuto hanno superato il collaudo transazionale.
+Verifica successiva: zero record di test persistenti in richieste, categorie, progettazioni e oggetti. Il controllo duplicati normalizzato ha superato il test dedicato. Anche il trigger di creazione Master Catalogo e la modifica del record catalogo prima/dopo il rifiuto hanno superato il collaudo transazionale. Il ciclo integrazione/ripresentazione è stato superato. I test RLS sono stati eseguiti con una identità JWT simulata, non con un account ordinario reale: in `master_utenti` è presente soltanto l'amministratore.
 
 ## 6. Sicurezza e limiti residui
 
@@ -94,6 +103,10 @@ Verifica successiva: zero record di test persistenti in richieste, categorie, pr
 - Il collaudo SQL ha usato la sessione amministrativa esistente. Non è stato creato o modificato alcun altro account. Resta da eseguire un test applicativo autenticato con un account utente ordinario per certificare la visibilità owner-only e l'assenza di visibilità per gli altri utenti.
 - Il repository Android corrente `salvinimarco84-sudo/Collection-by-valora-flutter` documenta TEST2 (`hqiisivoistpejvilbeu`) tramite `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` passate con `--dart-define`; `lib/main.dart` legge entrambe con `String.fromEnvironment`, senza endpoint hardcoded. Il vecchio repository combinato `Collection-by-valora` contiene invece un README storico che cita il progetto TEST precedente e non va usato come riferimento per il nuovo client Android. La build/run effettiva con la publishable key TEST2 e il collaudo HTTP/Flutter non sono inclusi in questa revisione.
 
-## 7. Vincolo operativo
+## 7. Migration versionata
+
+La migration è registrata in Supabase TEST2 con versione `20261125085329`, nome `valora_dynamic_category_hardening_and_integration_state`, e file versionato nel repository Android: `supabase/migrations/20261125085329_valora_dynamic_category_hardening_and_integration_state.sql`.
+
+## 8. Vincolo operativo
 
 Continuare esclusivamente su TEST2. Non applicare queste modifiche a produzione. Prima di dichiarare concluso il rilascio applicativo, allineare il client all'ambiente TEST2, effettuare login aggiornato e completare il test end-to-end con un utente ordinario e con l'amministratore.
