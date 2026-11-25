@@ -59,6 +59,12 @@ Corretta `pr_valida_progettazione_nuova_categoria`: dopo la chiamata alla proced
 
 Per il rifiuto restituisce `oggetti_esistenti_conservati = true` e conferma la conservazione e l'accessibilità degli oggetti del richiedente.
 
+### 4.3 Protezione dai duplicati
+
+- Creato l'indice univoco `master_categorie_descrizione_normalizzata_key` su `lower(btrim(descrizione))`, dopo aver verificato che non esistessero duplicati normalizzati.
+- Spostato il lock transazionale `valora_dynamic_category_code_sequence` prima del controllo duplicati, così il controllo del nome e l'assegnazione del codice avvengono in una sezione serializzata.
+- La verifica intercetta differenze di maiuscole/minuscole e spazi iniziali/finali, oltre alla protezione dell'indice univoco.
+
 ## 5. Collaudo transazionale
 
 Eseguiti flussi sintetici in transazione, con claim JWT dell'amministratore impostato nella sessione SQL:
@@ -72,11 +78,12 @@ Eseguiti flussi sintetici in transazione, con claim JWT dell'amministratore impo
 7. rifiuto con motivazione;
 8. verifica oggetto ancora presente;
 9. modifica dell'oggetto dopo il rifiuto;
-10. verifica delle notifiche di esito.
+10. verifica delle notifiche di esito;
+11. richiesta duplicata con differenze di maiuscole/minuscole e spazi: seconda richiesta respinta.
 
 I blocchi PL/pgSQL hanno completato senza eccezioni e con controlli di asserzione superati. Ogni collaudo è terminato con `ROLLBACK`.
 
-Verifica successiva: zero record di test persistenti in richieste, categorie, progettazioni e oggetti.
+Verifica successiva: zero record di test persistenti in richieste, categorie, progettazioni e oggetti. Il controllo duplicati normalizzato ha superato il test dedicato.
 
 ## 6. Sicurezza e limiti residui
 
